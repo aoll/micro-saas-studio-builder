@@ -255,3 +255,149 @@ describe("grantSignupBonus", () => {
     expect(rows).toHaveLength(0);
   });
 });
+
+describe("debit", () => {
+  it("debits the balance and replays the same key without a second debit", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct()).id;
+    await giveCredits(userId, productId, 3);
+    const generationId = await createGeneration(userId, productId);
+    const idempotencyKey = randomUUID();
+    asUser(userId);
+
+    const { debit, getBalance } = await import("./credits");
+    const first = await debit({ userId, productId, cost: 1, generationId, idempotencyKey });
+    expect(first).toEqual({ ok: true, balance: 2 });
+
+    const replay = await debit({ userId, productId, cost: 1, generationId, idempotencyKey });
+    expect(replay).toEqual({ ok: true, replay: true });
+    expect(await getBalance(userId, productId)).toBe(2);
+
+    const rows = await db
+      .select()
+      .from(creditTransactions)
+      .where(eq(creditTransactions.idempotencyKey, idempotencyKey));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ delta: -1, reason: "generation", generationId });
+    await expectLedgerMatchesBalance(userId, productId);
+  });
+
+  it("refuses at balance 0 without throwing, and writes no ledger row for its key", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct()).id;
+    const generationId = await createGeneration(userId, productId);
+    const idempotencyKey = randomUUID();
+    asUser(userId);
+
+    const { debit } = await import("./credits");
+    const result = await debit({ userId, productId, cost: 1, generationId, idempotencyKey });
+    expect(result).toEqual({ ok: false, reason: "insufficient_balance" });
+
+    const rows = await db
+      .select()
+      .from(creditTransactions)
+      .where(eq(creditTransactions.idempotencyKey, idempotencyKey));
+    expect(rows).toHaveLength(0);
+    await expectLedgerMatchesBalance(userId, productId);
+  });
+
+  it("refuses when the user was never credited on this product (no balances row); getBalance is 0", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct()).id;
+    const generationId = await createGeneration(userId, productId);
+    asUser(userId);
+
+    const { debit, getBalance } = await import("./credits");
+    const result = await debit({ userId, productId, cost: 1, generationId, idempotencyKey: randomUUID() });
+    expect(result).toEqual({ ok: false, reason: "insufficient_balance" });
+    expect(await getBalance(userId, productId)).toBe(0);
+  });
+
+  it("concurrency: balance 1 and two parallel debits, exactly one passes", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct()).id;
+    await giveCredits(userId, productId, 1);
+    const generationA = await createGeneration(userId, productId);
+    const generationB = await createGeneration(userId, productId);
+    asUser(userId);
+
+    const { debit, getBalance } = await import("./credits");
+    const [a, b] = await Promise.all([
+      debit({ userId, productId, cost: 1, generationId: generationA, idempotencyKey: randomUUID() }),
+      debit({ userId, productId, cost: 1, generationId: generationB, idempotencyKey: randomUUID() }),
+    ]);
+    const results = [a, b];
+    expect(results.filter((result) => result.ok && !("replay" in result))).toHaveLength(1);
+    expect(results.filter((result) => !result.ok)).toHaveLength(1);
+    expect(await getBalance(userId, productId)).toBe(0);
+    await expectLedgerMatchesBalance(userId, productId);
+  });
+
+  it("concurrency: balance 2 and 5 parallel debits, exactly two pass", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct()).id;
+    await giveCredits(userId, productId, 2);
+    const generationIds = await Promise.all(Array.from({ length: 5 }, () => createGeneration(userId, productId)));
+    asUser(userId);
+
+    const { debit, getBalance } = await import("./credits");
+    const results = await Promise.all(
+      generationIds.map((generationId) =>
+        debit({ userId, productId, cost: 1, generationId, idempotencyKey: randomUUID() }),
+      ),
+    );
+    expect(results.filter((result) => result.ok && !("replay" in result))).toHaveLength(2);
+    expect(results.filter((result) => !result.ok)).toHaveLength(3);
+    expect(await getBalance(userId, productId)).toBe(0);
+    await expectLedgerMatchesBalance(userId, productId);
+  });
+
+  it("concurrency: the same key twice in parallel debits once, one replay", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct()).id;
+    await giveCredits(userId, productId, 2);
+    const generationId = await createGeneration(userId, productId);
+    const idempotencyKey = randomUUID();
+    asUser(userId);
+
+    const { debit, getBalance } = await import("./credits");
+    const [a, b] = await Promise.all([
+      debit({ userId, productId, cost: 1, generationId, idempotencyKey }),
+      debit({ userId, productId, cost: 1, generationId, idempotencyKey }),
+    ]);
+    const results = [a, b];
+    expect(results.filter((result) => result.ok && "balance" in result && result.balance === 1)).toHaveLength(1);
+    expect(results.filter((result) => result.ok && "replay" in result)).toHaveLength(1);
+    expect(await getBalance(userId, productId)).toBe(1);
+
+    const rows = await db
+      .select()
+      .from(creditTransactions)
+      .where(eq(creditTransactions.idempotencyKey, idempotencyKey));
+    expect(rows).toHaveLength(1);
+    await expectLedgerMatchesBalance(userId, productId);
+  });
+
+  it("rejects a mismatched session and writes nothing", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct()).id;
+    const generationId = await createGeneration(userId, productId);
+    const otherId = await createUser();
+    asUser(otherId);
+
+    const { debit } = await import("./credits");
+    await expect(debit({ userId, productId, cost: 1, generationId, idempotencyKey: randomUUID() })).rejects.toThrow();
+  });
+
+  it("rejects a non-positive-integer cost", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct()).id;
+    const generationId = await createGeneration(userId, productId);
+    asUser(userId);
+
+    const { debit } = await import("./credits");
+    await expect(debit({ userId, productId, cost: 0, generationId, idempotencyKey: randomUUID() })).rejects.toThrow();
+    await expect(debit({ userId, productId, cost: -1, generationId, idempotencyKey: randomUUID() })).rejects.toThrow();
+    await expect(debit({ userId, productId, cost: 1.5, generationId, idempotencyKey: randomUUID() })).rejects.toThrow();
+  });
+});

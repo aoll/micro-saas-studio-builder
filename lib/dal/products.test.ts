@@ -42,6 +42,18 @@ describe("getProduct", () => {
   });
 });
 
+describe("listProducts", () => {
+  it("contains LettrePro, tags and caches the response", async () => {
+    const { listProducts } = await import("./products");
+    const products = await listProducts();
+    expect(products.map((product) => product.slug)).toContain("lettre-pro");
+    const lettrePro = products.find((product) => product.slug === "lettre-pro");
+    expect(lettrePro).toMatchObject({ name: "LettrePro", version: 1, isSeed: true });
+    expect(cacheTag).toHaveBeenCalledWith("products");
+    expect(cacheLife).toHaveBeenCalledWith("max");
+  });
+});
+
 describe("listProductSlugs", () => {
   it("contains the seeded lettre-pro slug", async () => {
     const { listProductSlugs } = await import("./products");

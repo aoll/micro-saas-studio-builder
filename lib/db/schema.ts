@@ -36,9 +36,9 @@ import { users } from "./auth-schema";
 // Enums are built from the Zod schemas' `.options` (specs/CONTRACT-data
 // plan › Frozen inputs) so the database and the shared Zod schemas cannot
 // drift apart.
-export const productStatus = pgEnum("product_status", productStatusSchema.options);
-export const landingVariant = pgEnum("landing_variant", landingVariantSchema.options);
-export const eventType = pgEnum("event_type", eventTypeSchema.options);
+export const productStatus = pgEnum("product_status", productStatusSchema.options as [string, ...string[]]);
+export const landingVariant = pgEnum("landing_variant", landingVariantSchema.options as [string, ...string[]]);
+export const eventType = pgEnum("event_type", eventTypeSchema.options as [string, ...string[]]);
 
 // Not driven by a Zod schema (docs/07 names these two enums directly, no
 // shared input schema references them).

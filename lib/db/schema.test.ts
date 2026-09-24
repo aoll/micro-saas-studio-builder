@@ -7,6 +7,8 @@ import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/auth-schema";
+import type { ProductConfig } from "@/lib/schemas/product-config";
+import type { ThemeTokens } from "@/lib/schemas/theme-tokens";
 import {
   balances,
   creditTransactions,
@@ -49,7 +51,7 @@ beforeAll(async () => {
     id: themeId,
     slug: slug("schema-theme"),
     name: "Schema test theme",
-    tokens: {},
+    tokens: {} as ThemeTokens, // constraint tests don't need valid tokens: Postgres doesn't validate jsonb content
     landingVariant: "centered",
   });
 
@@ -63,7 +65,7 @@ beforeAll(async () => {
     locale: "fr",
     createdBy: ownerId,
   });
-  await db.insert(productVersions).values({ productId, version: 1, config: {}, createdBy: ownerId });
+  await db.insert(productVersions).values({ productId, version: 1, config: {} as ProductConfig, createdBy: ownerId });
 });
 
 afterAll(async () => {
@@ -199,27 +201,26 @@ describe("purchases", () => {
 
 describe("decision_thresholds", () => {
   it("rejects a second default row (product_id null, nullsNotDistinct)", async () => {
-    const [row] = await db
-      .insert(decisionThresholds)
-      .values({
-        minVisits: 1000,
-        killMaxConversion: 0.02,
-        scaleMinConversion: 0.05,
-        scaleRequiresPositiveMargin: true,
-      })
-      .returning({ id: decisionThresholds.id });
-    try {
-      await expectViolation(
-        db.insert(decisionThresholds).values({
+    // Wrapped in its own transaction, rolled back on the expected failure
+    // (whichever insert trips the constraint): no row survives, so this
+    // stays correct whether or not the seed's own default row already
+    // exists in this shared worktree database (docs/11 › parallel tests).
+    await expectViolation(
+      db.transaction(async (tx) => {
+        await tx.insert(decisionThresholds).values({
+          minVisits: 1000,
+          killMaxConversion: 0.02,
+          scaleMinConversion: 0.05,
+          scaleRequiresPositiveMargin: true,
+        });
+        await tx.insert(decisionThresholds).values({
           minVisits: 1000,
           killMaxConversion: 0.01,
           scaleMinConversion: 0.05,
           scaleRequiresPositiveMargin: true,
-        }),
-      );
-    } finally {
-      await db.delete(decisionThresholds).where(sql`${decisionThresholds.id} = ${row!.id}`);
-    }
+        });
+      }),
+    );
   });
 
   it("rejects kill_max_conversion >= scale_min_conversion", async () => {

@@ -224,8 +224,14 @@ const SEED_THEMES: SeedTheme[] = [
 
 const fixturesDir = new URL("../fixtures/", import.meta.url);
 
+const createDb = (sql: postgres.Sql) =>
+  drizzle(sql, { schema: { products, productVersions, themes, decisionThresholds, users, accounts } });
+
+type SeedDb = ReturnType<typeof createDb>;
+type SeedTx = Parameters<Parameters<SeedDb["transaction"]>[0]>[0];
+
 async function seedCredentialUser(
-  tx: Parameters<Parameters<ReturnType<typeof drizzle>["transaction"]>[0]>[0],
+  tx: SeedTx,
   seedUser: { email: string; password: string },
   name: string,
   role: "admin" | "owner",
@@ -246,7 +252,7 @@ async function seedCredentialUser(
 
 export async function seed(): Promise<void> {
   const sql = postgres(requireDatabaseUrl(), { max: 1, connect_timeout: 5, onnotice: () => {} });
-  const db = drizzle(sql, { schema: { products, productVersions, themes, decisionThresholds, users, accounts } });
+  const db = createDb(sql);
   try {
     await db.transaction(async (tx) => {
       const themeIdBySlug: Record<string, string> = {};

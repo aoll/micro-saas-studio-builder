@@ -31,7 +31,7 @@ function toProduct(row: ProductRow, version: ProductVersionRow): Product {
 
 // Powers the portfolio (BO-02) and SA-08's "other products" list; cached
 // and tagged `products` (docs/04-nextjs.md).
-export async function listProducts(): Promise<Product[]> {
+export const listProducts: () => Promise<Product[]> = async () => {
   "use cache";
   cacheLife("max");
   cacheTag("products");
@@ -43,7 +43,7 @@ export async function listProducts(): Promise<Product[]> {
       and(eq(productVersions.productId, products.id), eq(productVersions.version, products.currentVersion)),
     );
   return rows.map(({ product, version }) => toProduct(product, version));
-}
+};
 
 // The product config is public data (it drives the public sub-app), so no
 // session check here, unlike the rest of lib/dal/*.

@@ -10,9 +10,9 @@ import { SEED_ADMIN } from "../scripts/seed";
 // Walking skeleton journeys (specs/SETUP-skeleton.md). Runs against the
 // webServer built by playwright.config.ts: migrated, seeded, AI_MODE=mock.
 
-test("/demo shows the product name", async ({ page }) => {
-  await page.goto("/demo");
-  await expect(page.locator("h1")).toHaveText("demo");
+test("/lettre-pro shows the product name", async ({ page }) => {
+  await page.goto("/lettre-pro");
+  await expect(page.locator("h1")).toHaveText("LettrePro");
 });
 
 test("/admin without a session ends on /admin/login", async ({ page }) => {

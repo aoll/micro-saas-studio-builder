@@ -14,6 +14,6 @@ export type TrackEvent = {
   metadata?: Record<string, string | number | boolean | null>;
 };
 
-export const track: (event: TrackEvent) => Promise<void> = async () => {
-  throw new Error("not implemented");
-};
+// V1 stub (docs/11 › Les contrats gelés en V1): no-op, replaced by
+// TRACKING's real insert into `events`.
+export const track: (event: TrackEvent) => Promise<void> = async () => undefined;

@@ -11,24 +11,24 @@
       "dependsOn": [
         "SETUP-skeleton"
       ],
-      "status": "dispatched",
-      "worktree": "contract-types",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 11
     },
     "CONTRACT-data": {
       "dependsOn": [
         "CONTRACT-types"
       ],
-      "status": "pending",
+      "status": "merged",
       "worktree": null,
-      "pr": null
+      "pr": 12
     },
     "CONTRACT-ui": {
       "dependsOn": [
         "CONTRACT-types"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "contract-ui",
       "pr": null
     },
     "SA-01-landing": {

@@ -202,6 +202,28 @@ describe("thresholdsInputSchema", () => {
     if (result.success) return;
     expect(result.error.issues.some((i) => i.path.join(".") === "scaleMinConversion")).toBe(true);
   });
+
+  // docs/07-modele-de-donnees.md: `decision_thresholds.min_visits` is
+  // `CHECK (min_visits > 0)`; this input schema mirrors it exactly.
+  it("rejects minVisits = 0", () => {
+    const result = thresholdsInputSchema.safeParse({
+      minVisits: 0,
+      killMaxConversion: 0.02,
+      scaleMinConversion: 0.05,
+      scaleRequiresPositiveMargin: true,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts minVisits = 1", () => {
+    const result = thresholdsInputSchema.safeParse({
+      minVisits: 1,
+      killMaxConversion: 0.02,
+      scaleMinConversion: 0.05,
+      scaleRequiresPositiveMargin: true,
+    });
+    expect(result.success).toBe(true);
+  });
 });
 
 describe("inferred types", () => {

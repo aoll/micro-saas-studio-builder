@@ -9,6 +9,6 @@ pnpm dev
 ```
 
 Runs in `AI_MODE=mock` by default: no AI Gateway key is needed. Open
-`http://localhost:3000/demo` for the seeded product and
+`http://localhost:3000/lettre-pro` for the seeded product (LettrePro) and
 `http://localhost:3000/admin/login` for the backoffice (seeded admin account,
 see `scripts/seed.ts`).

@@ -1,12 +1,25 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
+import { users } from "@/lib/db/auth-schema";
 import { events, products } from "@/lib/db/schema";
 import { eventTypeSchema } from "@/lib/schemas/event-type";
 
+const getSession = vi.fn();
+vi.mock("./session", () => ({ getSession: () => getSession() }));
+
+afterEach(() => {
+  getSession.mockReset();
+});
+
 async function lettreProId(): Promise<string> {
   const row = await db.query.products.findFirst({ where: eq(products.slug, "lettre-pro") });
+  return row!.id;
+}
+
+async function anyUserId(): Promise<string> {
+  const row = await db.query.users.findFirst();
   return row!.id;
 }
 
@@ -48,5 +61,71 @@ describe("track", () => {
     expect(rows[0]?.productId).toBe(productId);
 
     await db.delete(events).where(eq(events.anonymousId, anonymousId));
+  });
+
+  it("links a visit to the signup that follows it, via the shared anonymous id", async () => {
+    const productId = await lettreProId();
+    const anonymousId = randomUUID();
+    const userId = await anyUserId();
+    getSession.mockResolvedValue({ user: { id: userId } });
+
+    const { track } = await import("./events");
+    await track({ type: "visit", productId, userId: null, anonymousId });
+    await track({ type: "signup", productId, userId, anonymousId });
+
+    const rows = await db.select().from(events).where(eq(events.anonymousId, anonymousId));
+    expect(rows).toHaveLength(2);
+    const signupRow = rows.find((row) => row.type === "signup");
+    expect(signupRow?.userId).toBe(userId);
+    expect(signupRow?.anonymousId).toBe(anonymousId);
+    const visitRow = rows.find((row) => row.type === "visit");
+    expect(visitRow?.anonymousId).toBe(anonymousId);
+
+    await db.delete(events).where(eq(events.anonymousId, anonymousId));
+  });
+
+  it("inserts a purchase event carrying only a userId", async () => {
+    const productId = await lettreProId();
+    const userId = await anyUserId();
+    getSession.mockResolvedValue({ user: { id: userId } });
+
+    const { track } = await import("./events");
+    await track({ type: "purchase", productId, userId, anonymousId: null, metadata: { packId: "pack-10" } });
+
+    const rows = await db.select().from(events).where(eq(events.userId, userId));
+    const purchaseRow = rows.find((row) => row.type === "purchase" && row.productId === productId);
+    expect(purchaseRow).toBeDefined();
+    expect(purchaseRow?.anonymousId).toBeNull();
+
+    await db.delete(events).where(eq(events.id, purchaseRow!.id));
+  });
+
+  it("rejects a userId that does not match the caller's session", async () => {
+    const productId = await lettreProId();
+    getSession.mockResolvedValue({ user: { id: "someone-else" } });
+
+    const { track } = await import("./events");
+    await expect(
+      track({ type: "signup", productId, userId: "the-real-user", anonymousId: randomUUID() }),
+    ).rejects.toThrow(/does not match the caller's session/);
+  });
+
+  it("rejects a userId when there is no session", async () => {
+    const productId = await lettreProId();
+    getSession.mockResolvedValue(null);
+
+    const { track } = await import("./events");
+    await expect(
+      track({ type: "signup", productId, userId: "the-real-user", anonymousId: randomUUID() }),
+    ).rejects.toThrow(/does not match the caller's session/);
+  });
+
+  it("rejects an event with neither a userId nor an anonymousId", async () => {
+    const productId = await lettreProId();
+
+    const { track } = await import("./events");
+    await expect(track({ type: "purchase", productId, userId: null, anonymousId: null })).rejects.toThrow(
+      /needs a userId or an anonymousId/,
+    );
   });
 });

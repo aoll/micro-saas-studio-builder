@@ -57,4 +57,29 @@ describe("getThresholds", () => {
     vi.doUnmock("@/lib/db");
     vi.resetModules();
   });
+
+  it("throws when the default thresholds row has a null field (DB CHECK bypassed)", async () => {
+    vi.resetModules();
+    vi.doMock("@/lib/db", () => ({
+      db: {
+        query: {
+          decisionThresholds: {
+            findMany: async () => [
+              {
+                productId: null,
+                minVisits: 1000,
+                killMaxConversion: 0.02,
+                scaleMinConversion: null, // should be impossible per the DB CHECK, but not visible to TS
+                scaleRequiresPositiveMargin: true,
+              },
+            ],
+          },
+        },
+      },
+    }));
+    const { getThresholds } = await import("./thresholds");
+    await expect(getThresholds(lettreProId)).rejects.toThrow("default thresholds row incomplete");
+    vi.doUnmock("@/lib/db");
+    vi.resetModules();
+  });
 });

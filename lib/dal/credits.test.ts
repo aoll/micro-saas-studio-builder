@@ -3,7 +3,15 @@ import { and, eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/auth-schema";
-import { balances, creditTransactions, generations, productVersions, products, themes } from "@/lib/db/schema";
+import {
+  balances,
+  creditTransactions,
+  generations,
+  productVersions,
+  products,
+  purchases,
+  themes,
+} from "@/lib/db/schema";
 import type { ProductConfig } from "@/lib/schemas/product-config";
 
 // Real ledger tests (LEDGER spec): the V1 stub-value tests (docs/11 ›
@@ -124,6 +132,7 @@ async function expectLedgerMatchesBalance(userId: string, productId: string): Pr
 afterAll(async () => {
   for (const id of createdProductIds) {
     await db.delete(creditTransactions).where(eq(creditTransactions.productId, id));
+    await db.delete(purchases).where(eq(purchases.productId, id));
     await db.delete(balances).where(eq(balances.productId, id));
     await db.delete(generations).where(eq(generations.productId, id));
     await db.delete(productVersions).where(eq(productVersions.productId, id));
@@ -131,6 +140,7 @@ afterAll(async () => {
   }
   for (const id of createdUserIds) {
     await db.delete(creditTransactions).where(eq(creditTransactions.userId, id));
+    await db.delete(purchases).where(eq(purchases.userId, id));
     await db.delete(balances).where(eq(balances.userId, id));
     await db.delete(generations).where(eq(generations.userId, id));
     await db.delete(users).where(eq(users.id, id));
@@ -463,5 +473,76 @@ describe("refund", () => {
   it("resolves without effect for a non-uuid generationId", async () => {
     const { refund } = await import("./credits");
     expect(await refund("g1")).toBeUndefined();
+  });
+});
+
+describe("purchase", () => {
+  it("purchases a pack, crediting the ledger and balances in one transaction", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct()).id;
+    const idempotencyKey = randomUUID();
+    asUser(userId);
+
+    const { purchase, getBalance } = await import("./credits");
+    const result = await purchase({ userId, productId, packId: "pack-10", idempotencyKey });
+    expect(result).toEqual({ balance: 10 });
+    expect(await getBalance(userId, productId)).toBe(10);
+
+    const purchaseRow = await db.query.purchases.findFirst({ where: eq(purchases.idempotencyKey, idempotencyKey) });
+    expect(purchaseRow).toMatchObject({ credits: 10, amountCents: 490, currency: "EUR", packId: "pack-10" });
+
+    const ledgerRow = await db.query.creditTransactions.findFirst({
+      where: and(eq(creditTransactions.purchaseId, purchaseRow!.id), eq(creditTransactions.reason, "purchase")),
+    });
+    expect(ledgerRow).toMatchObject({ delta: 10, idempotencyKey: `purchase:${purchaseRow!.id}` });
+    await expectLedgerMatchesBalance(userId, productId);
+  });
+
+  it("a double click (same key, sequential and parallel) buys once", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct()).id;
+    const idempotencyKey = randomUUID();
+    asUser(userId);
+
+    const { purchase, getBalance } = await import("./credits");
+    await purchase({ userId, productId, packId: "pack-10", idempotencyKey });
+    const replay = await purchase({ userId, productId, packId: "pack-10", idempotencyKey });
+    expect(replay).toEqual({ balance: 10 });
+
+    const idempotencyKey2 = randomUUID();
+    const [a, b] = await Promise.all([
+      purchase({ userId, productId, packId: "pack-10", idempotencyKey: idempotencyKey2 }),
+      purchase({ userId, productId, packId: "pack-10", idempotencyKey: idempotencyKey2 }),
+    ]);
+    expect(a).toEqual({ balance: 20 });
+    expect(b).toEqual({ balance: 20 });
+    expect(await getBalance(userId, productId)).toBe(20);
+
+    const rows = await db.select().from(purchases).where(eq(purchases.userId, userId));
+    expect(rows).toHaveLength(2);
+    await expectLedgerMatchesBalance(userId, productId);
+  });
+
+  it("rejects an unknown pack, writing nothing", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct()).id;
+    asUser(userId);
+
+    const { purchase, getBalance } = await import("./credits");
+    await expect(purchase({ userId, productId, packId: "not-a-pack", idempotencyKey: randomUUID() })).rejects.toThrow();
+    expect(await getBalance(userId, productId)).toBe(0);
+  });
+
+  it("rejects a mismatched session and writes nothing", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct()).id;
+    const otherId = await createUser();
+    asUser(otherId);
+
+    const { purchase } = await import("./credits");
+    await expect(purchase({ userId, productId, packId: "pack-10", idempotencyKey: randomUUID() })).rejects.toThrow();
+
+    const rows = await db.select().from(purchases).where(eq(purchases.userId, userId));
+    expect(rows).toHaveLength(0);
   });
 });

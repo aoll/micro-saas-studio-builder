@@ -173,12 +173,12 @@
       "dependsOn": [
         "CONTRACT-types",
         "CONTRACT-data",
-        "CONTRACT-ui"
+        "CONTRACT-ui",
+        "BO-05a-formulaire"
       ],
-      "status": "blocked",
-      "worktree": "bo-07-themes",
-      "pr": null,
-      "blockedReason": "needs listThemes() (frozen DAL, not in any contract) and the theme thumbnail CONTRACT-ui never shipped; proposed residual contract spec CONTRACT-uib awaiting human approval"
+      "status": "pending",
+      "worktree": null,
+      "pr": null
     },
     "DEMO-mode": {
       "dependsOn": [
@@ -331,5 +331,12 @@
       "pr": null
     }
   },
-  "pendingIntegrations": []
+  "pendingIntegrations": [
+    {
+      "spec": "SA-02-outil",
+      "blockedOn": "TRACKING",
+      "what": "api/generate: use TRACKING anonymous-id helper (ANONYMOUS_ID_COOKIE, readAnonymousId, anonymousIdCookie) instead of inline cookie code",
+      "resolved": false
+    }
+  ]
 }

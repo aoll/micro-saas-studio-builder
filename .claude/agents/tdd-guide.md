@@ -102,7 +102,8 @@ pnpm test:coverage   # queued, 4 slots per machine
   `pnpm test:coverage` wait for one of the 4 machine-wide slots (up to 10
   worktrees share them): run them at the end of a phase, not after every
   step. One test file runs directly: `pnpm vitest run <file>`.
-- **Never merge, never push to the integration branch or `main`.**
+- **Never merge, never push to the integration branch or `main`.** Merging
+  belongs to the orchestrator.
 
 ## Finishing
 

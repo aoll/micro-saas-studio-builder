@@ -13,19 +13,18 @@ Trois règles structurent tout l'onglet :
 | # | Étape | Qui | Sortie |
 | --- | --- | --- | --- |
 | 1 | Écrire la spec minimale de la feature | Moi, avec Claude | `specs/<REF>-<nom>.md`, une dizaine de lignes |
-| 2 | **Porte 1 : valider la spec** | Moi | Spec mergée sur la branche d'intégration du run |
+| 2 | **Porte 1 : valider les specs** | Moi | Specs mergées sur `main`, avant le run |
 | 3 | Plan : tâches, fichiers, risques (`/plan`) | Agent `planner` | `.claude/plans/<REF>.plan.md` commité |
 | 4 | Boucle TDD : un comportement à la fois, test rouge puis code vert, commit et push à chaque étape verte, sans pause jusqu'à la fin de la spec (`/tdd`) | Agent `tdd-guide` | Trace rouge → vert dans les commits, 80 % de couverture sur `lib/**` |
 | 5 | Revue de code (`/review`), corrections jusqu'à zéro CRITICAL ou HIGH | `code-reviewer` + spécialistes | Corrections commitées et poussées |
 | 6 | `/verify` après merge de la branche d'intégration dans la branche | Agent | `pnpm check`, conformité à la spec, verdict **READY** |
-| 7 | Ouvrir la PR vers la branche d'intégration | Orchestrateur | Template rempli, preview Vercel |
-| 8 | **Porte 2 : relire** | Moi | Corrections demandées ou approbation |
-| 9 | Squash merge, titre de PR conventionnel | Moi | **Un commit** sur la branche d'intégration ; en prod au prochain jalon (merge dans `main`) |
+| 7 | PR vers la branche d'intégration, puis squash merge dès que `/verify` est READY et la revue propre | Orchestrateur | **Un commit** par spec sur la branche d'intégration ; les specs dépendantes démarrent |
+| 8 | **Porte 2 : relire la branche d'intégration** à chaque jalon | Moi | Corrections demandées, ou merge dans `main`, qui part en prod |
 
 Deux règles tiennent la boucle honnête :
 
 - **Un test commité est un contrat.** Si l'agent doit le modifier ensuite, il le fait dans un commit à part dont le message explique pourquoi (règle écrite dans `CLAUDE.md`). Je relis ces commits en premier : un agent qui adapte les tests au code, c'est le défaut classique.
-- **L'agent n'attend rien et ne merge jamais.** Il enchaîne les comportements sans s'arrêter, ouvre la PR une fois `/verify` READY, et s'arrête là. La porte 2 est le seul chemin vers la prod.
+- **Les agents n'attendent rien, et seul l'orchestrateur merge.** Les agents enchaînent les comportements sans s'arrêter ; l'orchestrateur merge chaque PR dans la branche d'intégration dès que `/verify` est READY et la revue propre, jamais dans `main`. La porte 2 est le seul chemin vers la prod.
 
 **Un historique propre.** Sur la branche, l'agent committe à chaque étape verte. Aucun hook ne lance les tests au commit. Au merge, tout est écrasé en **un seul commit par feature** sur `main`, dont le message est le titre de la PR. La trace rouge → vert ne se perd pas : elle reste dans l'onglet *Commits* de chaque PR.
 
@@ -151,7 +150,7 @@ De mon côté, `monitor.ts live` affiche l'usage en temps réel : machine, files
 
 ### Rôles
 
-- **Moi** : architecte et relecteur. J'écris et valide les specs, je relis chaque PR et je merge sur la branche d'intégration du run. À chaque jalon, je la vérifie sur sa preview puis je la merge dans `main`, qui part en prod.
+- **Moi** : architecte et relecteur. J'écris et valide les specs (porte 1). L'orchestrateur merge chaque PR de spec dans la branche d'intégration dès qu'elle passe `/verify` et la revue automatique ; à chaque jalon, je relis la branche d'intégration sur sa preview (porte 2) puis je la merge dans `main`, qui part en prod.
 - **Orchestrateur et agents** : l'orchestrateur répartit les specs sur les worktrees et suit leur état ; dans chaque worktree, `planner` écrit le plan, `tdd-guide` écrit les tests et implémente, les relecteurs passent le diff, puis l'orchestrateur ouvre la PR.
 - **Ordre de merge dans une vague** : le lot qui porte un contrat réel passe en premier (B, qui remplace le stub `debit()`), puis les autres mergent la branche d'intégration dans leur branche (jamais de rebase d'une branche poussée). PR courtes : un lot peut en ouvrir plusieurs, une par écran.
 

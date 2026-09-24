@@ -20,8 +20,9 @@ yourself; you dispatch agents, track state and talk to the human.
   `pnpm tsx scripts/worktree.ts integration integration/<run>` (e.g.
   `integration/v1-contracts`). The name is yours to choose per run; everything
   else reads it from `git config msb.integration`. Every worktree starts from it
-  and every pull request targets it. Merging it into
-  `main` is the human's call, at a validated milestone.
+  and every pull request targets it. **You merge the spec PRs into it as they
+  pass** (step 7 below): that is what it is for. Merging it into `main` is the
+  human's call, at a validated milestone, after reviewing it.
 - **Monitoring:** right after, set up the three layers of the Monitoring
   section below, before the first spec starts.
 - **Pool:** one worktree per spec, created and removed with
@@ -36,7 +37,7 @@ yourself; you dispatch agents, track state and talk to the human.
 - **Start rule:** whenever a worktree is free, start the next ready spec. Prefer
   specs on the critical path (the longest chain of dependants), then specs that
   unblock the most others.
-- **Free a worktree** only when its pull request is merged:
+- **Free a worktree** only when its pull request is merged (step 7):
   `pnpm tsx scripts/worktree.ts rm <slug>`, then start the next ready spec.
 
 ## Per-spec flow (classic ECC)
@@ -57,7 +58,29 @@ steps of different specs in the same message.
 | 3 | Code review | `/review`: `code-reviewer` + specialists | no CRITICAL or HIGH left; MEDIUM fixed when possible. Findings go back to `tdd-guide`, then review again |
 | 4 | Commit & push | the agent that fixed | nothing uncommitted or unpushed |
 | 5 | Pre-review checks | `verification-loop` (`/verify`) after merging the integration branch into the branch | READY |
-| 6 | Pull request | you: base = the integration branch, title `feat(<scope>): <REF> <summary>`, template filled | waiting for human review and merge |
+| 6 | Pull request | you: base = the integration branch, title `feat(<scope>): <REF> <summary>`, template filled | PR open |
+| 7 | Merge | you: squash merge into the integration branch, commit title = PR title | merged; worktree removed, dependants start |
+
+**Merge gate (step 7).** Merge a spec's PR into the integration branch yourself,
+without waiting for the human, as soon as all of these hold on its current head:
+
+- `/verify` READY after merging the latest integration branch into it, and
+  nothing pushed since;
+- the last `/review` has no CRITICAL or HIGH finding left;
+- GitHub reports it mergeable (no conflict); otherwise merge the integration
+  branch into it, re-run `/verify`, then merge;
+- its diff stays inside the spec's `Périmètre`, and touches a frozen contract
+  (`lib/db/schema.ts`, `lib/schemas/**`, DAL signatures) only if the spec is a
+  CONTRACT spec.
+
+Squash merge only, the PR title as commit title. If one condition fails, fix it
+through the flow (back to `tdd-guide`, review, `/verify`); if it cannot be
+fixed there, escalate and leave the PR open. Then, in this order:
+`pnpm tsx scripts/worktree.ts rm <slug>`, mark the spec merged, start every
+spec it unblocked, and tell the specs still running to merge the integration
+branch before their next `/verify`. Never merge into `main`, never force-push
+the integration branch.
+
 
 ## Monitoring (continuous, three layers)
 

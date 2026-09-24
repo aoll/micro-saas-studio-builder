@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { afterAll, describe, expect, it, vi } from "vitest";
@@ -28,11 +28,24 @@ vi.mock("next/headers", () => ({
 const sql = postgres(requireDatabaseUrl(), { max: 1, onnotice: () => {} });
 const db = drizzle(sql, { schema: { users, sessions } });
 
+const createdEmails: string[] = [];
+const uniqueEmail = (label: string) => {
+  const email = `${label}-${randomUUID()}@example.test`;
+  createdEmails.push(email);
+  return email;
+};
+
 afterAll(async () => {
+  // Deleting a user cascades its sessions (onDelete: "cascade"): this also
+  // removes the swapped session row from swapSessionToRoleUser below.
+  if (createdEmails.length) await db.delete(users).where(inArray(users.email, createdEmails));
+  // Signing SEED_ADMIN in for real leaves extra session rows for it: seed.ts
+  // never inserts a session, so every row here is a test artifact, safe to
+  // clear without touching the SEED_ADMIN user/account row itself.
+  const admin = await db.query.users.findFirst({ where: eq(users.email, SEED_ADMIN.email) });
+  if (admin) await db.delete(sessions).where(eq(sessions.userId, admin.id));
   await sql.end({ timeout: 5 });
 });
-
-const uniqueEmail = (label: string) => `${label}-${randomUUID()}@example.test`;
 
 /** Signs a user in through Better Auth and returns a Headers with the resulting session cookie. */
 const cookieHeadersFor = async (email: string, password: string): Promise<Headers> => {

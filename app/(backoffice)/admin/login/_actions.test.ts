@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { hashPassword } from "better-auth/crypto";
+import { eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { afterAll, describe, expect, it, vi } from "vitest";
-import { accounts, users } from "@/lib/db/auth-schema";
+import { accounts, sessions, users } from "@/lib/db/auth-schema";
 import { requireDatabaseUrl } from "@/lib/require-database-url";
 import { SEED_ADMIN } from "@/scripts/seed";
 
@@ -24,9 +25,23 @@ vi.mock("next/headers", () => ({
 }));
 
 const sql = postgres(requireDatabaseUrl(), { max: 1, onnotice: () => {} });
-const db = drizzle(sql, { schema: { users, accounts } });
+const db = drizzle(sql, { schema: { users, accounts, sessions } });
+
+const createdEmails: string[] = [];
+const uniqueEmail = (label: string) => {
+  const email = `${label}-${randomUUID()}@example.test`;
+  createdEmails.push(email);
+  return email;
+};
 
 afterAll(async () => {
+  // Deleting a user cascades its accounts and sessions (onDelete: "cascade").
+  if (createdEmails.length) await db.delete(users).where(inArray(users.email, createdEmails));
+  // A successful login() for SEED_ADMIN leaves a real session row: seed.ts
+  // never inserts a session, so every row here is a test artifact, safe to
+  // clear without touching the SEED_ADMIN user/account row itself.
+  const admin = await db.query.users.findFirst({ where: eq(users.email, SEED_ADMIN.email) });
+  if (admin) await db.delete(sessions).where(eq(sessions.userId, admin.id));
   await sql.end({ timeout: 5 });
 });
 
@@ -35,8 +50,6 @@ const formData = (fields: Record<string, string>): FormData => {
   for (const [key, value] of Object.entries(fields)) data.set(key, value);
   return data;
 };
-
-const uniqueEmail = (label: string) => `${label}-${randomUUID()}@example.test`;
 
 describe("login action", () => {
   it("returns an error without calling auth for an invalid email", async () => {

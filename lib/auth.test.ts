@@ -1,22 +1,39 @@
 import { randomUUID } from "node:crypto";
 import { hashPassword } from "better-auth/crypto";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { afterAll, describe, expect, it } from "vitest";
-import { accounts, magicLinkOutbox, users } from "@/lib/db/auth-schema";
+import { accounts, magicLinkOutbox, sessions, users } from "@/lib/db/auth-schema";
 import { requireDatabaseUrl } from "@/lib/require-database-url";
 import { SEED_ADMIN } from "@/scripts/seed";
 import { auth } from "./auth";
 
 const sql = postgres(requireDatabaseUrl(), { max: 1, onnotice: () => {} });
-const db = drizzle(sql, { schema: { users, accounts, magicLinkOutbox } });
+const db = drizzle(sql, { schema: { users, accounts, magicLinkOutbox, sessions } });
+
+// Every email this file creates a row for (user, account or outbox entry),
+// tracked so afterAll can clean them up without ever touching `demo` or
+// SEED_ADMIN.
+const createdEmails: string[] = [];
+const uniqueEmail = (label: string) => {
+  const email = `${label}-${randomUUID()}@example.test`;
+  createdEmails.push(email);
+  return email;
+};
 
 afterAll(async () => {
+  // Deleting a user cascades its accounts and sessions (onDelete: "cascade").
+  if (createdEmails.length) await db.delete(users).where(inArray(users.email, createdEmails));
+  await db.delete(magicLinkOutbox).where(inArray(magicLinkOutbox.email, createdEmails));
+  // Signing SEED_ADMIN in for real (not a role=user account we create and
+  // drop) leaves extra session rows for it: seed.ts never inserts a
+  // session, so every row is a test artifact, safe to clear without
+  // touching the SEED_ADMIN user/account row itself.
+  const admin = await db.query.users.findFirst({ where: eq(users.email, SEED_ADMIN.email) });
+  if (admin) await db.delete(sessions).where(eq(sessions.userId, admin.id));
   await sql.end({ timeout: 5 });
 });
-
-const uniqueEmail = (label: string) => `${label}-${randomUUID()}@example.test`;
 
 describe("auth plugins", () => {
   it("registers magic-link and ends with next-cookies", () => {

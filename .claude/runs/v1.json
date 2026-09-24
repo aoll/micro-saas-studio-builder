@@ -1,0 +1,334 @@
+{
+  "integration": "integration/v1",
+  "specs": {
+    "SETUP-skeleton": {
+      "dependsOn": [],
+      "status": "ready",
+      "worktree": null,
+      "pr": null
+    },
+    "CONTRACT-types": {
+      "dependsOn": [
+        "SETUP-skeleton"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "CONTRACT-data": {
+      "dependsOn": [
+        "CONTRACT-types"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "CONTRACT-ui": {
+      "dependsOn": [
+        "CONTRACT-types"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "SA-01-landing": {
+      "dependsOn": [
+        "CONTRACT-types",
+        "CONTRACT-data",
+        "CONTRACT-ui"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "SA-08-introuvable": {
+      "dependsOn": [
+        "CONTRACT-types",
+        "CONTRACT-data",
+        "CONTRACT-ui"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "SA-02-outil": {
+      "dependsOn": [
+        "CONTRACT-types",
+        "CONTRACT-data",
+        "CONTRACT-ui"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "SA-06-historique": {
+      "dependsOn": [
+        "SA-02-outil"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "LEDGER": {
+      "dependsOn": [
+        "CONTRACT-types",
+        "CONTRACT-data",
+        "CONTRACT-ui"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "SA-03-inscription": {
+      "dependsOn": [
+        "LEDGER"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "SA-04-tarifs": {
+      "dependsOn": [
+        "CONTRACT-types",
+        "CONTRACT-data",
+        "CONTRACT-ui"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "SA-05-paiement": {
+      "dependsOn": [
+        "LEDGER",
+        "SA-04-tarifs"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "SA-07-compte": {
+      "dependsOn": [
+        "LEDGER"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "BO-01-connexion": {
+      "dependsOn": [
+        "CONTRACT-types",
+        "CONTRACT-data",
+        "CONTRACT-ui"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "TRACKING": {
+      "dependsOn": [
+        "CONTRACT-types",
+        "CONTRACT-data",
+        "CONTRACT-ui"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "BO-02-portefeuille": {
+      "dependsOn": [
+        "TRACKING"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "BO-03-fiche": {
+      "dependsOn": [
+        "BO-02-portefeuille"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "BO-05a-formulaire": {
+      "dependsOn": [
+        "CONTRACT-types",
+        "CONTRACT-data",
+        "CONTRACT-ui"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "BO-05b-generation-publication": {
+      "dependsOn": [
+        "BO-05a-formulaire",
+        "SA-02-outil"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "BO-07-themes": {
+      "dependsOn": [
+        "CONTRACT-types",
+        "CONTRACT-data",
+        "CONTRACT-ui"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "DEMO-mode": {
+      "dependsOn": [
+        "SA-01-landing",
+        "SA-08-introuvable",
+        "SA-02-outil",
+        "SA-06-historique",
+        "LEDGER",
+        "SA-03-inscription",
+        "SA-04-tarifs",
+        "SA-05-paiement",
+        "SA-07-compte",
+        "BO-01-connexion",
+        "TRACKING",
+        "BO-02-portefeuille",
+        "BO-03-fiche",
+        "BO-05a-formulaire",
+        "BO-05b-generation-publication",
+        "BO-07-themes"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "SECURITY": {
+      "dependsOn": [
+        "SA-01-landing",
+        "SA-08-introuvable",
+        "SA-02-outil",
+        "SA-06-historique",
+        "LEDGER",
+        "SA-03-inscription",
+        "SA-04-tarifs",
+        "SA-05-paiement",
+        "SA-07-compte",
+        "BO-01-connexion",
+        "TRACKING",
+        "BO-02-portefeuille",
+        "BO-03-fiche",
+        "BO-05a-formulaire",
+        "BO-05b-generation-publication",
+        "BO-07-themes"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "I18N-SEO": {
+      "dependsOn": [
+        "SA-01-landing",
+        "SA-08-introuvable",
+        "SA-02-outil",
+        "SA-06-historique",
+        "LEDGER",
+        "SA-03-inscription",
+        "SA-04-tarifs",
+        "SA-05-paiement",
+        "SA-07-compte",
+        "BO-01-connexion",
+        "TRACKING",
+        "BO-02-portefeuille",
+        "BO-03-fiche",
+        "BO-05a-formulaire",
+        "BO-05b-generation-publication",
+        "BO-07-themes"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "BO-04-activite": {
+      "dependsOn": [
+        "SA-01-landing",
+        "SA-08-introuvable",
+        "SA-02-outil",
+        "SA-06-historique",
+        "LEDGER",
+        "SA-03-inscription",
+        "SA-04-tarifs",
+        "SA-05-paiement",
+        "SA-07-compte",
+        "BO-01-connexion",
+        "TRACKING",
+        "BO-02-portefeuille",
+        "BO-03-fiche",
+        "BO-05a-formulaire",
+        "BO-05b-generation-publication",
+        "BO-07-themes"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "BO-06-statut": {
+      "dependsOn": [
+        "BO-03-fiche"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "BO-09-seuils": {
+      "dependsOn": [
+        "BO-02-portefeuille"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "BO-08-editeur-theme": {
+      "dependsOn": [
+        "BO-07-themes"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "E2E-demo": {
+      "dependsOn": [
+        "SETUP-skeleton",
+        "CONTRACT-types",
+        "CONTRACT-data",
+        "CONTRACT-ui",
+        "SA-01-landing",
+        "SA-08-introuvable",
+        "SA-02-outil",
+        "SA-06-historique",
+        "LEDGER",
+        "SA-03-inscription",
+        "SA-04-tarifs",
+        "SA-05-paiement",
+        "SA-07-compte",
+        "BO-01-connexion",
+        "TRACKING",
+        "BO-02-portefeuille",
+        "BO-03-fiche",
+        "BO-05a-formulaire",
+        "BO-05b-generation-publication",
+        "BO-07-themes",
+        "DEMO-mode",
+        "SECURITY",
+        "I18N-SEO",
+        "BO-04-activite",
+        "BO-06-statut",
+        "BO-09-seuils",
+        "BO-08-editeur-theme"
+      ],
+      "status": "deferred",
+      "worktree": null,
+      "pr": null
+    }
+  },
+  "pendingIntegrations": []
+}

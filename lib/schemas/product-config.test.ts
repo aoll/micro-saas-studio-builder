@@ -158,6 +158,11 @@ describe("productConfigSchema remaining refinements", () => {
     const config = { ...validConfig, branding: { ...validConfig.branding, primaryColor: "blue" } };
     expect(productConfigSchema.safeParse(config).success).toBe(false);
   });
+
+  it("rejects a logoUrl using a non-http(s) protocol", () => {
+    const config = { ...validConfig, branding: { ...validConfig.branding, logoUrl: "javascript:alert(1)" } };
+    expect(productConfigSchema.safeParse(config).success).toBe(false);
+  });
 });
 
 describe("templateVariables", () => {

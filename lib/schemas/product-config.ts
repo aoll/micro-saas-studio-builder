@@ -4,7 +4,8 @@ import { packSchema } from "./pack";
 // Slugs reserved by the routing (docs/09-arborescence.md › Deux pièges
 // relevés en lisant la doc): `[app]` captures every top-level segment, so a
 // product cannot use a name that collides with a static route or a
-// public/ entry served without an extension.
+// public/ entry served without an extension. Any extension-less file added
+// to public/ (e.g. a new well-known file) must be added to this list too.
 export const RESERVED_SLUGS = ["admin", "api"] as const;
 
 const MIN_SLUG_LENGTH = 2;
@@ -53,7 +54,7 @@ export function templateVariables(template: string): string[] {
 }
 
 const brandingSchema = z.object({
-  logoUrl: z.url().optional(),
+  logoUrl: z.url({ protocol: /^https?$/ }).optional(),
   primaryColor: z
     .string()
     .regex(/^#[0-9a-fA-F]{6}$/, "must be a #rrggbb color")

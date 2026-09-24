@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { packSchema, type Pack } from "./pack";
 
 describe("packSchema", () => {
@@ -35,5 +35,14 @@ describe("packSchema", () => {
   it("infers credits as a number", () => {
     const pack: Pack = { id: "pack-10", credits: 10, priceCents: 490 };
     expect(pack.credits).toBe(10);
+  });
+
+  it("pins the Pack type", () => {
+    expectTypeOf<Pack>().toEqualTypeOf<{
+      id: string;
+      credits: number;
+      priceCents: number;
+      recommended?: boolean;
+    }>();
   });
 });

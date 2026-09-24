@@ -13,7 +13,7 @@ import { dbNameForBranch, dbUrlFor, readEnvVar, setEnvVar } from "./worktree-db"
 
 const WORKTREE_MAX = Number(process.env.WORKTREE_MAX ?? 10);
 // Feature branches start from, and open their PRs against, the integration branch.
-const INTEGRATION_BRANCH = process.env.INTEGRATION_BRANCH ?? "develop";
+const INTEGRATION_BRANCH = process.env.INTEGRATION_BRANCH ?? "orchestration";
 
 type Worktree = { path: string; branch: string | null };
 

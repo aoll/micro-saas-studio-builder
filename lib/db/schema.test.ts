@@ -21,6 +21,13 @@ import {
 
 const slug = (label: string) => `${label}-${randomUUID()}`;
 
+// Drizzle wraps a driver error as `Failed query: …`; the real Postgres
+// message ("… violates check constraint …", "… violates unique
+// constraint …", "… violates foreign key constraint …") lives on `.cause`.
+async function expectViolation(promise: Promise<unknown>): Promise<void> {
+  await expect(promise).rejects.toMatchObject({ cause: { message: expect.stringMatching(/violates/) } });
+}
+
 let ownerId: string;
 let themeId: string;
 let productId: string;
@@ -61,6 +68,10 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (createdProductIds.length) {
+    await db.delete(creditTransactions).where(sql`${creditTransactions.productId} IN ${createdProductIds}`);
+    await db.delete(purchases).where(sql`${purchases.productId} IN ${createdProductIds}`);
+    await db.delete(balances).where(sql`${balances.productId} IN ${createdProductIds}`);
+    await db.delete(decisionThresholds).where(sql`${decisionThresholds.productId} IN ${createdProductIds}`);
     await db.delete(generations).where(sql`${generations.productId} IN ${createdProductIds}`);
     await db.delete(productVersions).where(sql`${productVersions.productId} IN ${createdProductIds}`);
     await db.delete(products).where(sql`${products.id} IN ${createdProductIds}`);
@@ -89,7 +100,7 @@ describe("indexes", () => {
 
 describe("balances.balance CHECK (>= 0)", () => {
   it("rejects a negative balance", async () => {
-    await expect(db.insert(balances).values({ userId: ownerId, productId, balance: -1 })).rejects.toThrow(/violates/);
+    await expectViolation(db.insert(balances).values({ userId: ownerId, productId, balance: -1 }));
   });
 
   it("accepts a zero balance", async () => {
@@ -100,7 +111,7 @@ describe("balances.balance CHECK (>= 0)", () => {
 
 describe("credit_transactions.delta CHECK (<> 0)", () => {
   it("rejects a zero delta", async () => {
-    await expect(
+    await expectViolation(
       db.insert(creditTransactions).values({
         userId: ownerId,
         productId,
@@ -108,7 +119,7 @@ describe("credit_transactions.delta CHECK (<> 0)", () => {
         reason: "signup_bonus",
         idempotencyKey: randomUUID(),
       }),
-    ).rejects.toThrow(/violates/);
+    );
   });
 
   it("rejects a duplicate idempotency_key", async () => {
@@ -116,17 +127,17 @@ describe("credit_transactions.delta CHECK (<> 0)", () => {
     await db
       .insert(creditTransactions)
       .values({ userId: ownerId, productId, delta: 3, reason: "signup_bonus", idempotencyKey });
-    await expect(
+    await expectViolation(
       db
         .insert(creditTransactions)
         .values({ userId: ownerId, productId, delta: 3, reason: "signup_bonus", idempotencyKey }),
-    ).rejects.toThrow(/violates/);
+    );
   });
 });
 
 describe("generations composite FK (product_id, product_version)", () => {
   it("rejects a generation pointing at a version that does not exist", async () => {
-    await expect(
+    await expectViolation(
       db.insert(generations).values({
         productId,
         productVersion: 99,
@@ -134,21 +145,21 @@ describe("generations composite FK (product_id, product_version)", () => {
         input: {},
         idempotencyKey: randomUUID(),
       }),
-    ).rejects.toThrow(/violates/);
+    );
   });
 
   it("rejects a duplicate idempotency_key", async () => {
     const idempotencyKey = randomUUID();
     await db.insert(generations).values({ productId, productVersion: 1, ipHash: "hash", input: {}, idempotencyKey });
-    await expect(
+    await expectViolation(
       db.insert(generations).values({ productId, productVersion: 1, ipHash: "hash", input: {}, idempotencyKey }),
-    ).rejects.toThrow(/violates/);
+    );
   });
 });
 
 describe("purchases", () => {
   it("rejects credits = 0", async () => {
-    await expect(
+    await expectViolation(
       db.insert(purchases).values({
         userId: ownerId,
         productId,
@@ -157,11 +168,11 @@ describe("purchases", () => {
         amountCents: 490,
         idempotencyKey: randomUUID(),
       }),
-    ).rejects.toThrow(/violates/);
+    );
   });
 
   it("rejects amount_cents = 0", async () => {
-    await expect(
+    await expectViolation(
       db.insert(purchases).values({
         userId: ownerId,
         productId,
@@ -170,7 +181,7 @@ describe("purchases", () => {
         amountCents: 0,
         idempotencyKey: randomUUID(),
       }),
-    ).rejects.toThrow(/violates/);
+    );
   });
 
   it("rejects a duplicate idempotency_key", async () => {
@@ -178,34 +189,41 @@ describe("purchases", () => {
     await db
       .insert(purchases)
       .values({ userId: ownerId, productId, packId: "pack-10", credits: 10, amountCents: 490, idempotencyKey });
-    await expect(
+    await expectViolation(
       db
         .insert(purchases)
         .values({ userId: ownerId, productId, packId: "pack-10", credits: 10, amountCents: 490, idempotencyKey }),
-    ).rejects.toThrow(/violates/);
+    );
   });
 });
 
 describe("decision_thresholds", () => {
   it("rejects a second default row (product_id null, nullsNotDistinct)", async () => {
-    await db.insert(decisionThresholds).values({
-      minVisits: 1000,
-      killMaxConversion: 0.02,
-      scaleMinConversion: 0.05,
-      scaleRequiresPositiveMargin: true,
-    });
-    await expect(
-      db.insert(decisionThresholds).values({
+    const [row] = await db
+      .insert(decisionThresholds)
+      .values({
         minVisits: 1000,
-        killMaxConversion: 0.01,
+        killMaxConversion: 0.02,
         scaleMinConversion: 0.05,
         scaleRequiresPositiveMargin: true,
-      }),
-    ).rejects.toThrow(/violates/);
+      })
+      .returning({ id: decisionThresholds.id });
+    try {
+      await expectViolation(
+        db.insert(decisionThresholds).values({
+          minVisits: 1000,
+          killMaxConversion: 0.01,
+          scaleMinConversion: 0.05,
+          scaleRequiresPositiveMargin: true,
+        }),
+      );
+    } finally {
+      await db.delete(decisionThresholds).where(sql`${decisionThresholds.id} = ${row!.id}`);
+    }
   });
 
   it("rejects kill_max_conversion >= scale_min_conversion", async () => {
-    await expect(
+    await expectViolation(
       db.insert(decisionThresholds).values({
         productId,
         killMaxConversion: 0.05,
@@ -213,11 +231,11 @@ describe("decision_thresholds", () => {
         minVisits: 1000,
         scaleRequiresPositiveMargin: true,
       }),
-    ).rejects.toThrow(/violates/);
+    );
   });
 
   it("rejects a conversion above 1", async () => {
-    await expect(
+    await expectViolation(
       db.insert(decisionThresholds).values({
         productId,
         killMaxConversion: 1.5,
@@ -225,11 +243,11 @@ describe("decision_thresholds", () => {
         minVisits: 1000,
         scaleRequiresPositiveMargin: true,
       }),
-    ).rejects.toThrow(/violates/);
+    );
   });
 
   it("rejects min_visits = 0", async () => {
-    await expect(
+    await expectViolation(
       db.insert(decisionThresholds).values({
         productId,
         minVisits: 0,
@@ -237,18 +255,18 @@ describe("decision_thresholds", () => {
         scaleMinConversion: 0.05,
         scaleRequiresPositiveMargin: true,
       }),
-    ).rejects.toThrow(/violates/);
+    );
   });
 
   it("rejects a default row (product_id null) with a null column", async () => {
-    await expect(
+    await expectViolation(
       db.insert(decisionThresholds).values({
         minVisits: 1000,
         killMaxConversion: 0.02,
         scaleMinConversion: null,
         scaleRequiresPositiveMargin: true,
       }),
-    ).rejects.toThrow(/violates/);
+    );
   });
 
   it("accepts a per-product override with a single non-null column", async () => {
@@ -262,17 +280,17 @@ describe("decision_thresholds", () => {
 
 describe("products", () => {
   it("rejects a slug with spaces or uppercase letters", async () => {
-    await expect(
+    await expectViolation(
       db.insert(products).values({ slug: "Bad Slug", themeId, currentVersion: 1, locale: "fr", createdBy: ownerId }),
-    ).rejects.toThrow(/violates/);
+    );
   });
 
   it("rejects an unknown locale", async () => {
-    await expect(
+    await expectViolation(
       db
         .insert(products)
         .values({ slug: slug("bad-locale"), themeId, currentVersion: 1, locale: "de", createdBy: ownerId }),
-    ).rejects.toThrow(/violates/);
+    );
   });
 });
 

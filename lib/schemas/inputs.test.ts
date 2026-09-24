@@ -100,6 +100,44 @@ describe("trackEventInputSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("accepts metadata with up to 10 keys", () => {
+    const metadata = Object.fromEntries(Array.from({ length: 10 }, (_, i) => [`key${i}`, "value"]));
+    const result = trackEventInputSchema.safeParse({
+      type: "purchase",
+      anonymousId: "3f3f3f3f-3f3f-4f3f-8f3f-3f3f3f3f3f3f",
+      metadata,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects metadata with more than 10 keys", () => {
+    const metadata = Object.fromEntries(Array.from({ length: 11 }, (_, i) => [`key${i}`, "value"]));
+    const result = trackEventInputSchema.safeParse({
+      type: "purchase",
+      anonymousId: "3f3f3f3f-3f3f-4f3f-8f3f-3f3f3f3f3f3f",
+      metadata,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a metadata key longer than 40 characters", () => {
+    const result = trackEventInputSchema.safeParse({
+      type: "purchase",
+      anonymousId: "3f3f3f3f-3f3f-4f3f-8f3f-3f3f3f3f3f3f",
+      metadata: { ["k".repeat(41)]: "value" },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a metadata string value longer than 200 characters", () => {
+    const result = trackEventInputSchema.safeParse({
+      type: "purchase",
+      anonymousId: "3f3f3f3f-3f3f-4f3f-8f3f-3f3f3f3f3f3f",
+      metadata: { referrer: "a".repeat(201) },
+    });
+    expect(result.success).toBe(false);
+  });
 });
 
 describe("statusChangeInputSchema", () => {

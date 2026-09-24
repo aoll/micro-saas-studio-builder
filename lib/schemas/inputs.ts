@@ -43,11 +43,17 @@ export const purchaseInputSchema = z.object({
 export type PurchaseInput = z.infer<typeof purchaseInputSchema>;
 
 // TRACKING beacon (`api/events`): the product comes from the route's
-// `[app]`, not from the body.
+// `[app]`, not from the body. `metadata` is public, unauthenticated input
+// (sendBeacon, docs/04-nextjs.md), so it is bounded: at most 10 keys, each
+// at most 40 characters, and a string value at most 200 characters.
+const metadataValueSchema = z.union([z.string().max(200), z.number(), z.boolean(), z.null()]);
 export const trackEventInputSchema = z.object({
   type: eventTypeSchema,
   anonymousId: z.uuid(),
-  metadata: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
+  metadata: z
+    .record(z.string().max(40), metadataValueSchema)
+    .refine((metadata) => Object.keys(metadata).length <= 10, { error: "at most 10 metadata keys" })
+    .optional(),
 });
 export type TrackEventInput = z.infer<typeof trackEventInputSchema>;
 

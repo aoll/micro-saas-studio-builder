@@ -1,8 +1,20 @@
 import "server-only";
 import { isNull, or, eq } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
+import { z } from "zod";
 import { db } from "@/lib/db";
 import { decisionThresholds } from "@/lib/db/schema";
+
+// The default row's 4 fields are `CHECK (product_id IS NOT NULL OR all 4
+// values NOT NULL)` in the database (docs/07), but the Drizzle column
+// types stay nullable: this schema turns that DB invariant into a runtime
+// check instead of an unchecked `!` assertion.
+const defaultThresholdsRowSchema = z.object({
+  minVisits: z.number(),
+  killMaxConversion: z.number(),
+  scaleMinConversion: z.number(),
+  scaleRequiresPositiveMargin: z.boolean(),
+});
 
 // Frozen contract (specs/CONTRACT-types.md): the merged (default + product
 // override) decision thresholds (docs/07 › decision_thresholds), read by
@@ -29,12 +41,15 @@ export const getThresholds: (productId: string) => Promise<Thresholds> = async (
   });
   const defaultRow = rows.find((row) => row.productId === null);
   if (!defaultRow) throw new Error("default thresholds missing");
+  const parsedDefault = defaultThresholdsRowSchema.safeParse(defaultRow);
+  if (!parsedDefault.success) throw new Error("default thresholds row incomplete");
+  const defaults = parsedDefault.data;
   const override = rows.find((row) => row.productId === productId);
 
   return {
-    minVisits: override?.minVisits ?? defaultRow.minVisits!,
-    killMaxConversion: override?.killMaxConversion ?? defaultRow.killMaxConversion!,
-    scaleMinConversion: override?.scaleMinConversion ?? defaultRow.scaleMinConversion!,
-    scaleRequiresPositiveMargin: override?.scaleRequiresPositiveMargin ?? defaultRow.scaleRequiresPositiveMargin!,
+    minVisits: override?.minVisits ?? defaults.minVisits,
+    killMaxConversion: override?.killMaxConversion ?? defaults.killMaxConversion,
+    scaleMinConversion: override?.scaleMinConversion ?? defaults.scaleMinConversion,
+    scaleRequiresPositiveMargin: override?.scaleRequiresPositiveMargin ?? defaults.scaleRequiresPositiveMargin,
   };
 };

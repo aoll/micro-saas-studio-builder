@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // SessionStart: start the local Postgres (native cluster, else the Docker
-// service) when nothing answers on localhost:5432, and remind a worktree session that has no DATABASE_URL yet
+// service) when nothing answers on localhost:5432, raise a native cluster's
+// max_connections, and remind a worktree session that has no DATABASE_URL yet
 // to create its own database. Stdout becomes session context: keep it short.
 // Never blocks the session: always exits 0.
 
@@ -29,15 +30,28 @@ const portOpen = (port) =>
     socket.once("error", () => finish(false));
   });
 
+// Ten worktrees with four test slots open far more than the Debian default of
+// 100 connections; docker-compose.yml runs the service with the same value.
+const MAX_CONNECTIONS = 300;
+
 // A native Debian/Ubuntu cluster (cloud sandboxes, where the VM can be
 // recycled) takes precedence over the Docker service from docker-compose.yml.
-// Returns the command that was run, or null when there is nothing to start.
-function startPostgres(root) {
+// Raises max_connections (restarting a running cluster once) and starts the
+// clusters that are down. Returns what was done, or null when nothing was.
+function preparePostgres(root) {
   const clusters = sh("pg_lsclusters", ["--no-header"]);
   if (clusters) {
-    const down = clusters.split("\n").map((line) => line.split(/\s+/)).filter((c) => c[3] === "down");
-    for (const [version, name] of down) sh("pg_ctlcluster", [version, name, "start"], { timeout: 20000 });
-    return down.length ? down.map(([v, n]) => `pg_ctlcluster ${v} ${n} start`).join(", ") : null;
+    const done = [];
+    for (const [version, name, , status] of clusters.split("\n").map((line) => line.split(/\s+/))) {
+      const current = Number(sh("pg_conftool", ["-s", version, name, "show", "max_connections"]) ?? 100);
+      const raise = current < MAX_CONNECTIONS;
+      if (raise) sh("pg_conftool", [version, name, "set", "max_connections", String(MAX_CONNECTIONS)]);
+      const action = status === "down" ? "start" : raise ? "restart" : null;
+      if (!action) continue;
+      sh("pg_ctlcluster", [version, name, action], { timeout: 20000 });
+      done.push(`pg_ctlcluster ${version} ${name} ${action}` + (raise ? ` (max_connections ${MAX_CONNECTIONS})` : ""));
+    }
+    return done.length ? done.join(", ") : null;
   }
   if (existsSync(join(root, "docker-compose.yml")) && sh("docker", ["info"], { timeout: 5000 }) !== null) {
     sh("docker", ["compose", "up", "-d", "postgres"], { cwd: root, timeout: 20000 });
@@ -50,15 +64,15 @@ async function main() {
   const root = sh("git", ["rev-parse", "--show-toplevel"]) ?? process.env.CLAUDE_PROJECT_DIR;
   if (!root) return;
 
-  if (!(await portOpen(5432))) {
-    const how = startPostgres(root);
-    if (how) {
-      console.log(
-        (await portOpen(5432))
-          ? `Postgres was down: started it (${how}).`
-          : `Postgres is down and \`${how}\` did not bring it up; start it before running DB tests.`,
-      );
-    }
+  const wasUp = await portOpen(5432);
+  // The Docker service is only started when nothing answers on 5432.
+  const how = wasUp && !sh("pg_lsclusters", ["--no-header"]) ? null : preparePostgres(root);
+  if (how) {
+    console.log(
+      (await portOpen(5432))
+        ? `Postgres: ${how}.`
+        : `Postgres is down and \`${how}\` did not bring it up; start it before running DB tests.`,
+    );
   }
 
   const gitDir = sh("git", ["rev-parse", "--path-format=absolute", "--git-dir"], { cwd: root });

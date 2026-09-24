@@ -77,7 +77,8 @@ pnpm tsx scripts/worktree-db.ts prune --yes
 ## Troubleshooting
 
 - **Postgres down**: the SessionStart hook starts it (native cluster first,
-  then Docker); otherwise `pg_ctlcluster <version> main start` or
+  then Docker) and raises a native cluster's `max_connections` to 300;
+  otherwise `pg_ctlcluster <version> main start` or
   `docker compose up -d postgres`.
 - **`DATABASE_URL` missing or pointing at `msb` in a worktree**:
   `pnpm tsx scripts/worktree-db.ts ensure --seed`.

@@ -6,8 +6,10 @@
 #
 # Usage: scripts/queued.sh <test|typecheck|e2e> <command...>
 #   e.g. scripts/queued.sh test vitest run (what `pnpm test` runs; never wrap a pnpm script that already queues)
-# Slots: QUEUE_SLOTS_TEST (default 4), QUEUE_SLOTS_TYPECHECK (4), QUEUE_SLOTS_E2E (1).
-# Lock dir: QUEUE_LOCK_DIR (default /tmp/msb-queue).
+# Slots: QUEUE_SLOTS_TEST (default 4), QUEUE_SLOTS_TYPECHECK (4), QUEUE_SLOTS_E2E (1),
+# overridden by <lock dir>/<queue>.slots, which scripts/monitor.ts tunes to the
+# machine's load. Lock dir: QUEUE_LOCK_DIR (default /tmp/msb-queue).
+# Each job leaves a <queue>.wait.<pid> then <queue>.run.<pid> marker for the monitor.
 #
 # Locks use flock (no daemon): the lock is bound to the process's file
 # descriptor, so the kernel releases it even on kill -9 or a sandbox reset.
@@ -27,29 +29,40 @@ shift
 cmd=("$@")
 
 case "$queue" in
-test) slots="${QUEUE_SLOTS_TEST:-4}" ;;
-typecheck) slots="${QUEUE_SLOTS_TYPECHECK:-4}" ;;
-e2e) slots="${QUEUE_SLOTS_E2E:-1}" ;;
+test) default_slots="${QUEUE_SLOTS_TEST:-4}" ;;
+typecheck) default_slots="${QUEUE_SLOTS_TYPECHECK:-4}" ;;
+e2e) default_slots="${QUEUE_SLOTS_E2E:-1}" ;;
 *) usage ;;
 esac
 
-if ! [[ "$slots" =~ ^[1-9][0-9]*$ ]]; then
-	echo "[queue:$queue] invalid slot count '$slots' (must be a positive integer)" >&2
-	exit 2
-fi
+lock_dir="${QUEUE_LOCK_DIR:-/tmp/msb-queue}"
+mkdir -p "$lock_dir"
+
+# The monitor's value when there is one, else the environment default.
+read_slots() {
+	local value="$default_slots"
+	[ -f "$lock_dir/$queue.slots" ] && value="$(tr -d '[:space:]' <"$lock_dir/$queue.slots")"
+	if ! [[ "$value" =~ ^[1-9][0-9]*$ ]]; then
+		echo "[queue:$queue] invalid slot count '$value' (must be a positive integer)" >&2
+		exit 2
+	fi
+	slots="$value"
+}
+read_slots
 
 if ! command -v flock >/dev/null 2>&1; then
 	echo "[queue:$queue] 'flock' not found. On macOS: brew install flock. On Debian/Ubuntu it ships with util-linux." >&2
 	exit 127
 fi
 
-lock_dir="${QUEUE_LOCK_DIR:-/tmp/msb-queue}"
-mkdir -p "$lock_dir"
+trap 'rm -f "$lock_dir/$queue.wait.$$" "$lock_dir/$queue.run.$$"' EXIT
+: >"$lock_dir/$queue.wait.$$"
 
 # The lock is held on fixed fd 9 (works with macOS's bash 3.2, unlike {fd}).
 # The command runs with fd 9 closed so a daemon it spawns cannot keep the slot.
 run_locked() {
 	echo "[queue:$queue] slot $1 acquired: ${cmd[*]}" >&2
+	mv -f "$lock_dir/$queue.wait.$$" "$lock_dir/$queue.run.$$"
 	"${cmd[@]}" 9>&-
 	local code=$?
 	flock -u 9
@@ -71,6 +84,7 @@ fi
 start=$((RANDOM % slots))
 logged_wait=0
 while true; do
+	read_slots # the monitor may have changed it while we wait
 	for ((offset = 0; offset < slots; offset++)); do
 		i=$(((start + offset) % slots + 1))
 		exec 9>"$lock_dir/$queue-$i.lock"

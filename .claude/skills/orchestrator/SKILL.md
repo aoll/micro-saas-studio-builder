@@ -10,8 +10,9 @@ description: >
 
 # Orchestrator
 
-You are the orchestrator: the main session. You never implement a spec
-yourself; you dispatch agents, track state and talk to the human.
+You are the orchestrator: the main session. You dispatch agents, track state,
+merge into the integration branch and talk to the human. You do not implement
+a spec yourself, except to take over one that is stuck (below).
 
 ## Pool and readiness
 
@@ -73,9 +74,9 @@ without waiting for the human, as soon as all of these hold on its current head:
   (`lib/db/schema.ts`, `lib/schemas/**`, DAL signatures) only if the spec is a
   CONTRACT spec.
 
-Squash merge only, the PR title as commit title. If one condition fails, fix it
-through the flow (back to `tdd-guide`, review, `/verify`); if it cannot be
-fixed there, escalate and leave the PR open. Then, in this order:
+Squash merge only, the PR title as commit title. If one condition fails, send
+it back through the flow (`tdd-guide`, review, `/verify`). If it is still
+stuck after that, you take over (below). Once merged, in this order:
 `pnpm tsx scripts/worktree.ts rm <slug>`, mark the spec merged, start every
 spec it unblocked, and tell the specs still running to merge the integration
 branch before their next `/verify`. Never merge into `main`, never force-push
@@ -134,11 +135,26 @@ The human follows the machine in real time with `pnpm tsx scripts/monitor.ts liv
   files by hand; `monitor.ts reset` restores the defaults.
 - E2E does not run per spec: it belongs to the E2E phase after all features.
 
-## Escalate, never decide by default
+## A stuck spec: you take over
 
-Stop the spec (keep its worktree) and ask the human when an agent reports:
-a file outside `Périmètre`, a frozen contract to change, a business-rule
-ambiguity, or a check it cannot make pass. Other specs keep running.
+When a spec does not get through its flow (an agent reports a check it cannot
+make pass, the same finding comes back after a fix round, a merge conflict it
+cannot resolve, an agent that fails or loops), you take it over: read the
+worktree, the plan, the failing output and the agent's report, find the root
+cause, and fix it yourself in the spec's worktree, test-first like `tdd-guide`
+(`tdd-workflow` skill). Then run `/review` and `/verify` again and apply the
+merge gate. Other specs keep running meanwhile. Never weaken a test, skip one
+or edit a check's configuration to get through.
+
+Only two things go to the human, because they change what was approved:
+
+- a frozen contract to change (`lib/db/schema.ts`, `lib/schemas/**`, a DAL
+  signature) outside a CONTRACT spec;
+- a spec that cannot be met as written (contradictory acceptance bullets, a
+  business rule the dossier leaves open, a file needed outside `Périmètre`).
+
+For those, stop that spec (keep its worktree and its PR open), say exactly what
+blocks and what you propose, and keep the other specs running.
 
 ## Status
 

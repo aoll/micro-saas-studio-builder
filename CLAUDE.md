@@ -51,8 +51,8 @@ each one goes through the classic ECC flow below.
    before the PR is opened.
 6. **Pull request and merge.** The orchestrator opens the PR against the
    integration branch and squash-merges it once `/verify` is READY and the
-   review is clean. Other agents never merge; nobody but a human merges into
-   `main`.
+   review is clean, and takes over any spec that gets stuck. Other agents never
+   merge; nobody but a human merges into `main`.
 7. **E2E phase.** Once the features are done, Playwright journeys and fixes,
    with `next-dev-loop` and `agent-browser` on a running dev server.
 

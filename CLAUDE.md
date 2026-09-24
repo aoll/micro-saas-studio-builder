@@ -76,8 +76,10 @@ written first > readability for the reviewer > minimal code** (`ponytail`).
 
 ## Git
 
-- `$INTEGRATION_BRANCH` (default `develop`) is the integration branch:
-  feature branches start from it and their PRs target it. `main` is production.
+- `$INTEGRATION_BRANCH` (default `orchestration`) is the integration branch.
+  The orchestrator creates it from `main` at the start of a run; feature
+  branches start from it and their PRs target it. `main` is production: a
+  human merges the integration branch into it at each validated milestone.
 - Commit messages and PR titles and bodies in English.
 - Branches `feat/<slug>`, one worktree each. Conventional PR titles:
   `feat(<scope>): …` with scopes `bo`, `app`, `credits`, `ai`, `db`, `auth`,

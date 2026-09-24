@@ -16,7 +16,7 @@ checkout so that their branches, dev servers and databases never collide.
 
 | Resource  | Main checkout | Each worktree `../micro-saas-studio-builder-<slug>` |
 |-----------|---------------|------------------------------------------------------|
-| Branch    | `$INTEGRATION_BRANCH` (`orchestration`) | `feat/<slug>` from it (pushed with upstream set at creation) |
+| Branch    | `main`; the run's integration branch lives on origin | `feat/<slug>` from the integration branch (pushed with upstream set at creation) |
 | Dev server | port 3000     | none: typecheck and Vitest need no server; Playwright starts its own |
 | Database  | `msb`         | `msb_feat_<slug>`, migrated and seeded                |
 | Postgres  | one local cluster (native, or the Docker service), shared by all |           |
@@ -25,7 +25,10 @@ checkout so that their branches, dev servers and databases never collide.
 ## Lifecycle
 
 ```bash
-# create: branch + push -u, .env.local, pnpm install, database (migrate + seed)
+# once per orchestration run: create the integration branch from origin/main
+pnpm tsx scripts/worktree.ts integration integration/<run>
+
+# create: branch from the integration branch + push -u, .env.local, pnpm install, database (migrate + seed)
 pnpm tsx scripts/worktree.ts new <slug>
 
 # work inside it: Vitest and typecheck in the loop (E2E come in a later phase)
@@ -54,9 +57,9 @@ pnpm tsx scripts/worktree-db.ts prune --yes
    the integrator after the merges.
 3. **Frozen contracts.** A change to the schema, a Zod schema or a DAL
    signature goes through a dedicated contract PR, merged first; the other
-   branches then merge `origin/$INTEGRATION_BRANCH`.
+   branches then merge the integration branch.
 4. **Merge order.** The branch that replaces a stub with the real
-   implementation merges first; the others merge `origin/$INTEGRATION_BRANCH` into their branch
+   implementation merges first; the others merge the integration branch into their branch
    (never rebase a pushed branch) and re-run the checks.
 5. **Heavy commands are queued by their own scripts.** `package.json` wraps
    them in `scripts/queued.sh`, so every checkout shares the same slots:
@@ -85,5 +88,5 @@ pnpm tsx scripts/worktree-db.ts prune --yes
 - **Need to see the UI**: use the PR's Vercel preview, or run the branch in the
   main checkout. A dev server in a worktree (`pnpm dev -- -p 3005`) works for
   pages, not for magic links (`BETTER_AUTH_URL` stays on 3000).
-- **Branch tracks `origin/$INTEGRATION_BRANCH`**: the worktree was created by hand; run
+- **Branch tracks the integration branch**: the worktree was created by hand; run
   `git push -u origin feat/<slug>`.

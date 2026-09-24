@@ -1,7 +1,6 @@
 // One Postgres database per git worktree, all on the shared local cluster
 // (native cluster, or `docker compose up -d postgres`). The database name derives from the current
-// branch: main/master or the integration branch (INTEGRATION_BRANCH, default
-// orchestration) -> `msb`, anything else -> `msb_<sanitized branch>`.
+// branch: main/master -> `msb`, anything else -> `msb_<sanitized branch>`.
 //
 // Usage: pnpm tsx scripts/worktree-db.ts <ensure [--seed] | drop | url | list | prune [--yes]>
 // Admin connection: POSTGRES_ADMIN_URL (default postgres://postgres:postgres@localhost:5432/postgres).
@@ -16,7 +15,7 @@ const ADMIN_URL =
   process.env.POSTGRES_ADMIN_URL ??
   "postgres://postgres:postgres@localhost:5432/postgres";
 const MAIN_DB = "msb";
-const PROTECTED_BRANCHES = new Set(["main", "master", process.env.INTEGRATION_BRANCH ?? "orchestration"]);
+const PROTECTED_BRANCHES = new Set(["main", "master"]);
 
 const git = (args: string[], cwd?: string): string =>
   execFileSync("git", args, { cwd, encoding: "utf8" }).trim();

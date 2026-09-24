@@ -6,7 +6,7 @@
 
 import { execFileSync } from "node:child_process";
 
-const PROTECTED = new Set(["main", "master", process.env.INTEGRATION_BRANCH ?? "orchestration"]);
+const PROTECTED = new Set(["main", "master"]);
 const WRAPPERS = new Set(["sudo", "command", "exec", "time", "nohup", "env"]);
 const GIT_OPTS_WITH_VALUE = new Set(["-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path"]);
 const COMMIT_OPTS_WITH_VALUE = new Set([
@@ -84,6 +84,17 @@ const currentBranch = (cwd) => {
   }
 };
 
+// The integration branch of the current run (scripts/worktree.ts integration).
+const integrationBranch = (cwd) => {
+  try {
+    return execFileSync("git", ["config", "--get", "msb.integration"], {
+      cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 3000,
+    }).trim();
+  } catch {
+    return "";
+  }
+};
+
 const refName = (ref) => ref.replace(/^\+/, "").split(":").pop().replace(/^refs\/heads\//, "");
 
 function checkCommit(args) {
@@ -125,7 +136,8 @@ function checkPush(args, cwd) {
 
   const current = currentBranch(cwd);
   const targets = refspecs.length > 0 ? refspecs.map((r) => (refName(r) === "HEAD" ? current : refName(r))) : [current];
-  if (all || targets.some((t) => PROTECTED.has(t) || t === "")) {
+  const integration = integrationBranch(cwd);
+  if (all || targets.some((t) => PROTECTED.has(t) || t === "" || t === integration)) {
     return "Force pushing to main/master/the integration branch (or to an unknown target) is not allowed. Open a PR instead.";
   }
   if (force) return "Plain --force / -f / +refspec is not allowed. Use --force-with-lease on your feature branch.";

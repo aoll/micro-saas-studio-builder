@@ -15,15 +15,17 @@ yourself; you dispatch agents, track state and talk to the human.
 
 ## Pool and readiness
 
-- **Integration branch:** at the start of a run, create `$INTEGRATION_BRANCH`
-  (default `orchestration`) from `origin/main` if it does not exist yet, and
-  push it: `git push origin origin/main:refs/heads/$INTEGRATION_BRANCH`. Every
-  worktree starts from it and every pull request targets it. Merging it into
+- **Integration branch:** before starting any spec, create this run's
+  integration branch from `origin/main` and record it:
+  `pnpm tsx scripts/worktree.ts integration integration/<run>` (e.g.
+  `integration/v1-contracts`). The name is yours to choose per run; everything
+  else reads it from `git config msb.integration`. Every worktree starts from it
+  and every pull request targets it. Merging it into
   `main` is the human's call, at a validated milestone.
 - **Pool:** at most 10 worktrees at once (`WORKTREE_MAX=10`), one per spec,
   created and removed with `scripts/worktree.ts` (`worktrees` skill).
 - **Ready:** a spec is ready when every spec in its `Dépend de` has its pull
-  request merged on the integration branch `$INTEGRATION_BRANCH` (squash commit titled `feat(<scope>): <REF> …`).
+  request merged on the integration branch (squash commit titled `feat(<scope>): <REF> …`).
   Read the dependencies from the index of the Specs tab (`docs/`) or from each
   `specs/<REF>-<name>.md`.
 - **Start rule:** whenever a worktree is free, start the next ready spec. Prefer
@@ -46,8 +48,8 @@ steps of different specs in the same message.
 | 2 | TDD | `tdd-guide` agent (`/tdd`) | every acceptance bullet green, coverage 80%+ on `lib/**`, pushed |
 | 3 | Code review | `/review`: `code-reviewer` + specialists | no CRITICAL or HIGH left; MEDIUM fixed when possible. Findings go back to `tdd-guide`, then review again |
 | 4 | Commit & push | the agent that fixed | nothing uncommitted or unpushed |
-| 5 | Pre-review checks | `verification-loop` (`/verify`) after merging `origin/$INTEGRATION_BRANCH` into the branch | READY |
-| 6 | Pull request | you: base `$INTEGRATION_BRANCH`, title `feat(<scope>): <REF> <summary>`, template filled | waiting for human review and merge |
+| 5 | Pre-review checks | `verification-loop` (`/verify`) after merging the integration branch into the branch | READY |
+| 6 | Pull request | you: base = the integration branch, title `feat(<scope>): <REF> <summary>`, template filled | waiting for human review and merge |
 
 ## Machine limits
 

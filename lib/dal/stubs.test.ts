@@ -115,3 +115,22 @@ describe("magic-link", () => {
     await expect(getLatestMagicLink("visitor@example.com")).rejects.toThrow("not implemented");
   });
 });
+
+describe("metrics", () => {
+  it("getPortfolioMetrics throws not implemented", async () => {
+    const { getPortfolioMetrics } = await import("./metrics");
+    await expect(getPortfolioMetrics({ days: 30 })).rejects.toThrow("not implemented");
+  });
+
+  it("getFunnel throws not implemented", async () => {
+    const { getFunnel } = await import("./metrics");
+    await expect(getFunnel("p1", { days: 30 })).rejects.toThrow("not implemented");
+  });
+});
+
+describe("thresholds", () => {
+  it("getThresholds throws not implemented", async () => {
+    const { getThresholds } = await import("./thresholds");
+    await expect(getThresholds("p1")).rejects.toThrow("not implemented");
+  });
+});

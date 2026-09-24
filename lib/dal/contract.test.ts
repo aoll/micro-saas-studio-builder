@@ -127,3 +127,31 @@ describe("magic-link", () => {
     expectTypeOf(getLatestMagicLink).returns.resolves.toEqualTypeOf<{ url: string; createdAt: Date } | null>();
   });
 });
+
+describe("metrics", () => {
+  it("getPortfolioMetrics takes a MetricsRange and returns PortfolioMetrics", async () => {
+    const { getPortfolioMetrics } = await import("./metrics");
+    expectTypeOf(getPortfolioMetrics).parameters.toEqualTypeOf<[range: import("./metrics").MetricsRange]>();
+    expectTypeOf(getPortfolioMetrics).returns.resolves.toEqualTypeOf<import("./metrics").PortfolioMetrics>();
+  });
+
+  it("getFunnel takes a productId and a MetricsRange and returns a Funnel", async () => {
+    const { getFunnel } = await import("./metrics");
+    expectTypeOf(getFunnel).parameters.toEqualTypeOf<[productId: string, range: import("./metrics").MetricsRange]>();
+    expectTypeOf(getFunnel).returns.resolves.toEqualTypeOf<import("./metrics").Funnel>();
+  });
+
+  it("FunnelStep's type is one of the 5 funnel steps (no generation)", () => {
+    expectTypeOf<import("./metrics").FunnelStep["type"]>().toEqualTypeOf<
+      "visit" | "first_generation" | "signup" | "credits_exhausted" | "purchase"
+    >();
+  });
+});
+
+describe("thresholds", () => {
+  it("getThresholds takes a productId and returns Thresholds", async () => {
+    const { getThresholds } = await import("./thresholds");
+    expectTypeOf(getThresholds).parameters.toEqualTypeOf<[productId: string]>();
+    expectTypeOf(getThresholds).returns.resolves.toEqualTypeOf<import("./thresholds").Thresholds>();
+  });
+});

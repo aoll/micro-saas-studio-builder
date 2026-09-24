@@ -401,3 +401,67 @@ describe("debit", () => {
     await expect(debit({ userId, productId, cost: 1.5, generationId, idempotencyKey: randomUUID() })).rejects.toThrow();
   });
 });
+
+describe("refund", () => {
+  it("refunds a debited generation once, restoring the balance", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct()).id;
+    await giveCredits(userId, productId, 3);
+    const generationId = await createGeneration(userId, productId);
+    asUser(userId);
+
+    const { debit, refund, getBalance } = await import("./credits");
+    await debit({ userId, productId, cost: 1, generationId, idempotencyKey: randomUUID() });
+    expect(await getBalance(userId, productId)).toBe(2);
+
+    await refund(generationId);
+    expect(await getBalance(userId, productId)).toBe(3);
+    await refund(generationId);
+    expect(await getBalance(userId, productId)).toBe(3);
+
+    const rows = await db
+      .select()
+      .from(creditTransactions)
+      .where(and(eq(creditTransactions.generationId, generationId), eq(creditTransactions.reason, "refund")));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ delta: 1, idempotencyKey: `refund:${generationId}` });
+    await expectLedgerMatchesBalance(userId, productId);
+  });
+
+  it("refunds exactly once when called twice in parallel", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct()).id;
+    await giveCredits(userId, productId, 3);
+    const generationId = await createGeneration(userId, productId);
+    asUser(userId);
+
+    const { debit, refund, getBalance } = await import("./credits");
+    await debit({ userId, productId, cost: 1, generationId, idempotencyKey: randomUUID() });
+
+    await Promise.all([refund(generationId), refund(generationId)]);
+    expect(await getBalance(userId, productId)).toBe(3);
+
+    const rows = await db
+      .select()
+      .from(creditTransactions)
+      .where(and(eq(creditTransactions.generationId, generationId), eq(creditTransactions.reason, "refund")));
+    expect(rows).toHaveLength(1);
+    await expectLedgerMatchesBalance(userId, productId);
+  });
+
+  it("is a no-op for a generation that was never debited", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct()).id;
+    const generationId = await createGeneration(userId, productId);
+
+    const { refund, getBalance } = await import("./credits");
+    expect(await refund(generationId)).toBeUndefined();
+    asUser(userId);
+    expect(await getBalance(userId, productId)).toBe(0);
+  });
+
+  it("resolves without effect for a non-uuid generationId", async () => {
+    const { refund } = await import("./credits");
+    expect(await refund("g1")).toBeUndefined();
+  });
+});

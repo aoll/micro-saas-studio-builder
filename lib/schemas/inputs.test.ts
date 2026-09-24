@@ -177,6 +177,31 @@ describe("thresholdsInputSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("rejects killMaxConversion equal to scaleMinConversion", () => {
+    const result = thresholdsInputSchema.safeParse({
+      minVisits: 1000,
+      killMaxConversion: 0.05,
+      scaleMinConversion: 0.05,
+      scaleRequiresPositiveMargin: true,
+    });
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    const issue = result.error.issues.find((i) => i.path.join(".") === "scaleMinConversion");
+    expect(issue).toBeTruthy();
+  });
+
+  it("rejects killMaxConversion above scaleMinConversion (inverted)", () => {
+    const result = thresholdsInputSchema.safeParse({
+      minVisits: 1000,
+      killMaxConversion: 0.1,
+      scaleMinConversion: 0.05,
+      scaleRequiresPositiveMargin: true,
+    });
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.error.issues.some((i) => i.path.join(".") === "scaleMinConversion")).toBe(true);
+  });
 });
 
 describe("inferred types", () => {

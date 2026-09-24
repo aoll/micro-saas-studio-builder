@@ -64,11 +64,18 @@ export const statusChangeInputSchema = z.object({
 });
 export type StatusChangeInput = z.infer<typeof statusChangeInputSchema>;
 
-// BO-09 decision thresholds.
-export const thresholdsInputSchema = z.object({
-  minVisits: z.int().min(0),
-  killMaxConversion: z.number().min(0).max(1),
-  scaleMinConversion: z.number().min(0).max(1),
-  scaleRequiresPositiveMargin: z.boolean(),
-});
+// BO-09 decision thresholds. Mirrors docs/07's
+// `CHECK (kill_max_conversion < scale_min_conversion)`; BO-05's mockup
+// (docs/02-ecrans.md): "Erreur si « à couper » ≥ « à scaler »".
+export const thresholdsInputSchema = z
+  .object({
+    minVisits: z.int().min(0),
+    killMaxConversion: z.number().min(0).max(1),
+    scaleMinConversion: z.number().min(0).max(1),
+    scaleRequiresPositiveMargin: z.boolean(),
+  })
+  .refine((thresholds) => thresholds.killMaxConversion < thresholds.scaleMinConversion, {
+    error: "scaleMinConversion must be greater than killMaxConversion",
+    path: ["scaleMinConversion"],
+  });
 export type ThresholdsInput = z.infer<typeof thresholdsInputSchema>;

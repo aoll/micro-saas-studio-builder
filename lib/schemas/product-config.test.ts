@@ -1,5 +1,11 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { productConfigSchema, templateVariables, type ProductConfig } from "./product-config";
+import {
+  RESERVED_SLUGS,
+  productConfigSchema,
+  slugSchema,
+  templateVariables,
+  type ProductConfig,
+} from "./product-config";
 
 const validConfig = {
   slug: "lettre-motivation",
@@ -63,6 +69,32 @@ describe("productConfigSchema", () => {
       generation: { ...validConfig.generation, promptTemplate: "Rédige une lettre pour {{ poste }}." },
     };
     expect(productConfigSchema.safeParse(config).success).toBe(true);
+  });
+});
+
+describe("slugSchema", () => {
+  it.each(RESERVED_SLUGS)("rejects the reserved slug %s", (slug) => {
+    const result = slugSchema.safeParse(slug);
+    expect(result.success).toBe(false);
+  });
+
+  it.each(["Lettre-Pro", "lettre_pro", "-x", "x-", "a--b", "sitemap.xml", "a"])(
+    "rejects the malformed slug %s",
+    (slug) => {
+      expect(slugSchema.safeParse(slug).success).toBe(false);
+    },
+  );
+
+  it("accepts a well-formed kebab-case slug", () => {
+    expect(slugSchema.safeParse("lettre-pro").success).toBe(true);
+  });
+
+  it("rejects a config whose slug is reserved, with the slug path", () => {
+    const config = { ...validConfig, slug: "admin" };
+    const result = productConfigSchema.safeParse(config);
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.error.issues.some((i) => i.path.join(".") === "slug")).toBe(true);
   });
 });
 

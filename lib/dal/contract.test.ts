@@ -1,4 +1,5 @@
 import { describe, expectTypeOf, it } from "vitest";
+import type { EventType } from "@/lib/schemas/event-type";
 import type { DebitResult, Purchase } from "./credits";
 
 // Permanent contract tests (specs/CONTRACT-types.md): pin the *type* of
@@ -41,5 +42,36 @@ describe("credits", () => {
     const { purchase } = await import("./credits");
     expectTypeOf(purchase).parameters.toEqualTypeOf<[Purchase]>();
     expectTypeOf(purchase).returns.resolves.toEqualTypeOf<{ balance: number }>();
+  });
+});
+
+describe("generations", () => {
+  it("recordGeneration takes a NewGeneration and returns an id", async () => {
+    const { recordGeneration } = await import("./generations");
+    expectTypeOf(recordGeneration).parameters.toEqualTypeOf<[import("./generations").NewGeneration]>();
+    expectTypeOf(recordGeneration).returns.resolves.toEqualTypeOf<{ id: string }>();
+  });
+
+  it("saveGeneration takes a generationId and a GenerationResult", async () => {
+    const { saveGeneration } = await import("./generations");
+    expectTypeOf(saveGeneration).parameters.toEqualTypeOf<
+      [generationId: string, result: import("./generations").GenerationResult]
+    >();
+    expectTypeOf(saveGeneration).returns.resolves.toEqualTypeOf<void>();
+  });
+
+  it("markGenerationFailed takes a generationId", async () => {
+    const { markGenerationFailed } = await import("./generations");
+    expectTypeOf(markGenerationFailed).parameters.toEqualTypeOf<[generationId: string]>();
+    expectTypeOf(markGenerationFailed).returns.resolves.toEqualTypeOf<void>();
+  });
+});
+
+describe("events", () => {
+  it("track takes a TrackEvent with a typed EventType", async () => {
+    const { track } = await import("./events");
+    expectTypeOf(track).parameters.toEqualTypeOf<[import("./events").TrackEvent]>();
+    expectTypeOf(track).returns.resolves.toEqualTypeOf<void>();
+    expectTypeOf<import("./events").TrackEvent["type"]>().toEqualTypeOf<EventType>();
   });
 });

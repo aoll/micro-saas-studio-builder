@@ -34,3 +34,48 @@ describe("credits", () => {
     );
   });
 });
+
+describe("generations", () => {
+  it("recordGeneration throws not implemented", async () => {
+    const { recordGeneration } = await import("./generations");
+    await expect(
+      recordGeneration({
+        productId: "p1",
+        productVersion: 1,
+        userId: null,
+        anonymousId: "anon1",
+        ipHash: "hash1",
+        input: { poste: "Développeur" },
+        idempotencyKey: "k1",
+      }),
+    ).rejects.toThrow("not implemented");
+  });
+
+  it("saveGeneration throws not implemented", async () => {
+    const { saveGeneration } = await import("./generations");
+    await expect(
+      saveGeneration("g1", {
+        output: "Lettre générée",
+        model: "anthropic/claude-haiku-4.5",
+        inputTokens: 100,
+        outputTokens: 50,
+        cachedInputTokens: 0,
+        costMicros: 100,
+      }),
+    ).rejects.toThrow("not implemented");
+  });
+
+  it("markGenerationFailed throws not implemented", async () => {
+    const { markGenerationFailed } = await import("./generations");
+    await expect(markGenerationFailed("g1")).rejects.toThrow("not implemented");
+  });
+});
+
+describe("events", () => {
+  it("track throws not implemented", async () => {
+    const { track } = await import("./events");
+    await expect(track({ type: "visit", productId: "p1", userId: null, anonymousId: "anon1" })).rejects.toThrow(
+      "not implemented",
+    );
+  });
+});

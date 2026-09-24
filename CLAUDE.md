@@ -27,14 +27,17 @@ agents share this machine.
 
 1. **Spec.** One feature = one spec `specs/<REF>-<name>.md` = one PR. `/plan`
    drafts it (planner, then architect review). A human approves and merges it.
-2. **Tests first.** The implementing agent pushes failing tests for every
-   acceptance bullet as a draft PR. Red CI is expected.
-3. **Implement to green.** `/tdd <spec>` inside the spec's worktree. Stay inside
-   `Périmètre`. Tests from the first push are the contract: changing one must
-   be explained in the PR.
-4. **Verify.** `/verify` must end READY before the PR is marked ready.
-5. **Review and merge.** `/review` for a first pass; a human reviews and
+2. **Test-first loop.** `/tdd <spec>` inside the spec's worktree: the
+   `tdd-guide` agent takes one acceptance behavior at a time, red then green,
+   commits and pushes at every green step, and keeps going without waiting
+   for anything until the spec is done. It stays inside `Périmètre`. A
+   committed test is never weakened silently: its commit message says why.
+3. **Verify.** `/verify` (queued `pnpm check`, spec conformance) must end
+   READY before the PR is opened.
+4. **Review and merge.** `/review` for a first pass; a human reviews and
    squash-merges. Agents never merge.
+5. **E2E phase.** Once the features are done, Playwright journeys and fixes,
+   with `next-dev-loop` and `agent-browser` on a running dev server.
 
 Priority when rules pull in different directions: **approved spec > tests
 written first > readability for the reviewer > minimal code** (`ponytail`).
@@ -74,7 +77,7 @@ written first > readability for the reviewer > minimal code** (`ponytail`).
 | Agent | `planner` | Turn a need or a dossier section into minimal specs |
 | Agent | `architect` | Review the dossier, a spec, a blueprint or a plan before code |
 | Agent | `code-architect` | Blueprint a non-trivial spec before implementing it |
-| Agent | `tdd-writer` | Implement a spec, tests first |
+| Agent | `tdd-guide` | Implement a spec, test-first, commit at every green step |
 | Agent | `code-reviewer`, `nextjs-reviewer`, `database-reviewer`, `security-reviewer`, `silent-failure-hunter` | Review a diff |
 | Agent | `e2e-runner` | Write and run Playwright journeys |
 | Skill | `tdd-workflow`, `verification-loop`, `worktrees`, `ponytail`, `ponytail-review` | Loaded on demand |

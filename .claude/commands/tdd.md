@@ -1,5 +1,5 @@
 ---
-description: Implement one approved spec test-first, ending with a pull request ready for human review.
+description: Implement one approved spec test-first, committing at every green step, ending with a pull request ready for human review.
 argument-hint: "<specs/REF-name.md>"
 ---
 
@@ -13,11 +13,12 @@ Spec: $ARGUMENTS
    modal, a cache boundary or an AI call, delegate to the `code-architect` agent with the spec. If it
    reports a blocker (file outside Périmètre, frozen contract change), stop and show it to the user.
    Skip this step for copy, style or single-component changes.
-3. **Implement.** Delegate to the `tdd-writer` agent with the spec path, the blueprint if any, and the
+3. **Implement.** Delegate to the `tdd-guide` agent with the spec path, the blueprint if any, and the
    worktree to use (one worktree and one database per writing agent, created as described in the
-   `worktrees` skill). It follows the `tdd-workflow` skill: failing tests pushed first as a draft PR,
-   then implementation to green, refactor, queued full checks, PR marked ready.
-4. **Report.** Show the PR link, the acceptance -> tests table, any test changed after the first push,
+   `worktrees` skill). It follows the `tdd-workflow` skill: one behavior at a time, red then green,
+   commit and push at every green step, no pause until the spec is done; then coverage, the
+   `verification-loop` skill until READY, and the PR.
+4. **Report.** Show the PR link, the acceptance -> tests table, any test changed after being committed,
    and any blocker. Stop there: review and merge are human steps.
 
 <!-- Adapted from everything-claude-code (MIT). See .claude/THIRD_PARTY.md -->

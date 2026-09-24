@@ -28,9 +28,8 @@ checkout so that their branches, dev servers and databases never collide.
 # create: branch + push -u, .env.local, pnpm install, database (migrate + seed)
 pnpm tsx scripts/worktree.ts new <slug>
 
-# work inside it: typecheck and Vitest in the loop, E2E at the end of the feature
+# work inside it: Vitest and typecheck in the loop (E2E come in a later phase)
 cd ../micro-saas-studio-builder-<slug>
-scripts/queued.sh e2e pnpm test:e2e
 
 # inspect
 pnpm tsx scripts/worktree.ts list

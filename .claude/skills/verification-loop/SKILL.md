@@ -25,8 +25,8 @@ pnpm knip
 scripts/queued.sh test pnpm test
 ```
 
-Run the E2E suite when the diff touches `app/**`, `e2e/**`, or anything a page
-renders:
+The E2E suite runs in the E2E phase, once the features are done, not on each
+feature branch:
 
 ```bash
 scripts/queued.sh e2e pnpm test:e2e
@@ -50,8 +50,8 @@ Open the spec named in the branch or PR (`specs/<REF>-<name>.md`).
   `git diff --name-only origin/main...HEAD`
 - No frozen contract changed (`lib/db/schema.ts`, `lib/schemas/**`, DAL
   signatures) unless the spec is a contract spec.
-- Tests from the first push were not weakened:
-  `git diff <first-push-sha>..HEAD -- '*.test.ts' e2e/`
+- No committed test was weakened: every commit that edits an existing test
+  says why in its message (`git log -p origin/main..HEAD -- '*.test.ts' '*.test.tsx'`)
 
 ## Phase 3 — Diff hygiene
 
@@ -75,7 +75,7 @@ Reply with exactly this block:
 
 ```
 VERIFICATION — <REF> <branch>
-Checks     typecheck ✓ | lint ✓ | format ✓ | knip ✓ | unit ✓ (<n> tests) | e2e ✓/skipped
+Checks     typecheck ✓ | lint ✓ | format ✓ | knip ✓ | unit ✓ (<n> tests) | e2e ✓/E2E phase
 Spec       <k>/<k> acceptance bullets covered · scope ✓ · contracts ✓
 Hygiene    ✓ | <issues fixed>
 Verdict    READY | NOT READY — <blocking reason>

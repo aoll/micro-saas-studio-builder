@@ -5,7 +5,7 @@ tools: Read, Grep, Glob, Bash
 model: sonnet
 ---
 
-Role: turn one approved spec into a concrete blueprint that the `tdd-writer` agent can follow step by
+Role: turn one approved spec into a concrete blueprint that the `tdd-guide` agent can follow step by
 step. No code beyond signatures and short type shapes. Bash is for read-only inspection (`ls`, `git log`,
 `git grep`, `pnpm list`, reading installed types under `node_modules/`); never modify files.
 

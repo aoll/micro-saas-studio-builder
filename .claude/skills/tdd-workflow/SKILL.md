@@ -5,21 +5,23 @@ description: Test-first playbook for this stack (Vitest, Playwright with instant
 
 # TDD workflow
 
-The spec's `Acceptation` list is the test plan. Every bullet maps to at least one test, written and
-pushed before the implementation. Coverage percentage is not a target; an acceptance bullet without a
-test is a defect.
+The spec's `Acceptation` list is the test plan. Every bullet maps to at least one test, written before
+the code that makes it pass. An acceptance bullet without a test is a defect. Coverage on `lib/**` must
+reach 80% (branches, functions, lines, statements).
 
 ## Cycle
 
-1. **RED.** Write the tests for all acceptance bullets. Run them. Each must fail because the behavior is
-   missing, not because of a typo, a wrong import path or a broken fixture.
-2. **Push red.** Commit the tests alone and open a draft PR. Red CI is expected.
-3. **GREEN.** Write the smallest code that makes one test pass. Run that test. Repeat.
-4. **REFACTOR.** Clean names and duplication with every test green. No new behavior.
-5. **Verify.** Lint, then full suite, typecheck and e2e through `scripts/queued.sh`.
+One behavior at a time, without stopping between behaviors:
 
-Tests from step 2 are the contract with the reviewer. Changing one later is allowed only in its own
-commit, listed in the PR description with the reason.
+1. **RED.** Write the test for the behavior. Run it. It must fail because the behavior is missing, not
+   because of a typo, a wrong import path or a broken fixture.
+2. **GREEN.** Write the smallest code that makes it pass. Run it.
+3. **Commit.** Test and code together, then push. Move to the next behavior.
+4. **REFACTOR.** Clean names and duplication with every test green. No new behavior.
+5. **Verify.** Once every behavior is green: coverage, then the `verification-loop` skill.
+
+A committed test is part of the contract with the reviewer. Changing one later is allowed only in its
+own commit, whose message says why.
 
 ## Where each test goes
 
@@ -30,12 +32,12 @@ commit, listed in the PR description with the reason.
 | DAL (`lib/dal/*`) | Vitest against the worktree Postgres | colocated `*.test.ts` |
 | Server Action logic | Vitest, calling the action function with a test session | colocated `*.test.ts` |
 | Client components (forms, modals, optimistic badge) | Vitest + Testing Library | colocated `*.test.tsx` |
-| Pages, layouts, async Server Components, streaming | Playwright | `e2e/<name>.spec.ts` |
-| Intercepting routes, modal vs full page, mobile layout | Playwright | `e2e/<name>.spec.ts` |
-| Instant navigation (what shows before network data) | Playwright + `instant()` | `e2e/<name>.spec.ts` |
+| Pages, layouts, async Server Components, streaming | Playwright (E2E phase) | `e2e/<name>.spec.ts` |
+| Intercepting routes, modal vs full page, mobile layout | Playwright (E2E phase) | `e2e/<name>.spec.ts` |
+| Instant navigation (what shows before network data) | Playwright + `instant()` (E2E phase) | `e2e/<name>.spec.ts` |
 
-Async Server Components are not rendered in Vitest. Test their data through the DAL in Vitest and their
-output through Playwright.
+Async Server Components are not rendered in Vitest. Test their data through the DAL in Vitest during
+the feature; their rendered output is covered by Playwright in the E2E phase, once the features are done.
 
 ## Naming
 
@@ -47,11 +49,11 @@ output through Playwright.
 ## Commands
 
 ```bash
-pnpm vitest run lib/dal/credits.test.ts          # one file, no queue needed
-scripts/queued.sh e2e pnpm test:e2e e2e/checkout.spec.ts   # Playwright: always queued
-scripts/queued.sh test pnpm test                 # full Vitest suite
-scripts/queued.sh typecheck pnpm typecheck       # full typecheck
-scripts/queued.sh e2e pnpm test:e2e              # full Playwright suite
+pnpm vitest run lib/dal/credits.test.ts                 # one file, no queue needed
+scripts/queued.sh test pnpm test                        # full Vitest suite
+scripts/queued.sh test pnpm vitest run --coverage       # coverage, 80%+ on lib/**
+scripts/queued.sh typecheck pnpm typecheck              # full typecheck
+scripts/queued.sh e2e pnpm test:e2e                     # Playwright (E2E phase), always queued
 ```
 
 ## Database tests
@@ -104,7 +106,7 @@ For every write keyed by `idempotency_key` (purchase, signup bonus, generation d
 - Cover success, provider error (refund written, "credit refunded" message shown) and aborted stream.
 - Assert on the recorded generation (tokens, cost, status) rather than on exact generated prose.
 
-## Playwright and instant()
+## Playwright and instant() (E2E phase)
 
 - Use `instant()` from `@next/playwright` for bullets about what is visible immediately on navigation:
   landing content, product sheet name and status, payment modal opening from the tool.
@@ -121,6 +123,6 @@ For every write keyed by `idempotency_key` (purchase, signup bonus, generation d
 - Mocking the database in DAL tests, or mocking the unit under test.
 - Tests that depend on execution order or on data left by another test.
 - Assertions that cannot fail (`expect(result).toBeDefined()` as the only check).
-- Rewriting a first-push test to match the implementation without flagging it.
+- Rewriting a committed test to match the implementation without saying why in its commit.
 
 <!-- Adapted from everything-claude-code (MIT). See .claude/THIRD_PARTY.md -->

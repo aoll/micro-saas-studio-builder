@@ -64,23 +64,24 @@ Request: "SA-05 from the dossier". Output (the dossier's own spec):
 # SA-05 · Paiement simulé
 Réf         : Écrans › SA-05 · Produit › Paiement : une seule fonction purchase
               · specs/mockups/SA-05.png
-Contrat     : purchase(packId, idempotencyKey) → { balance }
+Contrat     : purchase(packId, idempotencyKey) → { balance }, guardRequest
 Dépend de   : LEDGER, SA-04
 Acceptation :
 - Modale sur l'outil et sur /pricing, plein écran sur mobile ; /checkout/[packId]
   en accès direct → page complète
 - Récapitulatif du pack, carte de test préremplie, mention « paiement simulé »
-- Payer → état en cours → confirmation avec le nouveau solde (badge du header mis
+- Payer → guardRequest('purchase') → état en cours → confirmation avec le nouveau solde (badge du header mis
   à jour par useOptimistic), CTA « Reprendre » qui ferme la modale
 - Double clic ou rejeu → un seul crédit ; event purchase avec le pack en metadata
-Périmètre   : [app]/checkout/**, [app]/@modal/(.)checkout/**,
-              [app]/_components/checkout/**, messages/*/credits.json,
+Périmètre   : [app]/checkout/** (dont _actions.ts et _components/),
+              [app]/@modal/(.)checkout/**, messages/*/checkout.json,
               e2e/checkout.spec.ts
 Hors périmètre : Stripe
 ```
 
-Dependencies: wave after LEDGER and SA-04. `messages/*/credits.json` is shared with SA-04; that is
-safe only because SA-05 depends on SA-04 and is implemented after it merges.
+Dependencies: wave after LEDGER and SA-04. Every file in Périmètre belongs to SA-05 alone: its
+actions live in `[app]/checkout/_actions.ts`, next to `[app]/checkout/_components/`, and its texts in
+`messages/*/checkout.json` (French and English).
 
 ## Output format
 

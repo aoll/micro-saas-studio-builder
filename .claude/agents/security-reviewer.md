@@ -80,7 +80,7 @@ Security reviewer for this repo. Users are anonymous visitors of public AI produ
 
 ```
 [CRITICAL] Admin action trusts layout auth
-File: app/(backoffice)/admin/products/actions.ts:12
+File: app/(backoffice)/admin/products/[slug]/_actions.ts:12
 Issue: killProduct() has no session check; any visitor can POST the action id and kill a product.
 Fix: call the shared session/role guard at the top of the action.
 ```

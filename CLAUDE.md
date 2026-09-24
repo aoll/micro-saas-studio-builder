@@ -56,6 +56,10 @@ written first > readability for the reviewer > minimal code** (`ponytail`).
 - Cache: `'use cache'` + explicit `cacheLife` + `cacheTag`, invalidated with
   `updateTag()` in the action that writes. User-specific data is never cached;
   it streams under `<Suspense>`.
+- Server Actions live in `<domain>/_actions.ts`, next to `<domain>/_components/`
+  (e.g. `[app]/checkout/_actions.ts`); never a shared actions file, so parallel
+  agents never write the same file. Each spec ships its `messages/*/<zone>.json`
+  in French and English.
 - `'use client'` only on interactive leaves. No barrel files. Alias `@/*`.
 - AI calls only through `lib/ai/*`; `AI_MODE=mock` in dev, tests and
   previews.

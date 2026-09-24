@@ -1,5 +1,5 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { productConfigSchema, type ProductConfig } from "./product-config";
+import { productConfigSchema, templateVariables, type ProductConfig } from "./product-config";
 
 const validConfig = {
   slug: "lettre-motivation",
@@ -43,5 +43,31 @@ describe("productConfigSchema", () => {
 
   it("types status as the product status union", () => {
     expectTypeOf<ProductConfig["status"]>().toEqualTypeOf<"test" | "learn" | "scale" | "killed">();
+  });
+
+  it("rejects a {{variable}} with no matching input field", () => {
+    const config = {
+      ...validConfig,
+      generation: { ...validConfig.generation, promptTemplate: "Rédige un post pour {{entreprise}}." },
+    };
+    const result = productConfigSchema.safeParse(config);
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    const issue = result.error.issues.find((i) => i.path.join(".") === "generation.promptTemplate");
+    expect(issue?.message).toBe("Variable {{entreprise}} sans champ correspondant");
+  });
+
+  it("accepts a {{ variable }} with surrounding spaces that matches a field", () => {
+    const config = {
+      ...validConfig,
+      generation: { ...validConfig.generation, promptTemplate: "Rédige une lettre pour {{ poste }}." },
+    };
+    expect(productConfigSchema.safeParse(config).success).toBe(true);
+  });
+});
+
+describe("templateVariables", () => {
+  it("extracts the deduplicated list of variables in order of appearance", () => {
+    expect(templateVariables("{{a}} {{ b }} {{a}}")).toEqual(["a", "b"]);
   });
 });

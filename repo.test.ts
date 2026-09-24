@@ -41,15 +41,17 @@ describe("pre-commit hook", () => {
 });
 
 describe("agentic tooling files (bullet 7)", () => {
-  it("AGENTS.md exists and references the Next docs it is generated from", () => {
-    expect(existsSync("AGENTS.md")).toBe(true);
-    const agents = readFileSync("AGENTS.md", "utf8");
-    expect(agents).toMatch(/node_modules\/next\/dist\/docs/);
-  });
-
-  it("CLAUDE.md mentions AGENTS.md", () => {
+  // node_modules/next/dist/server/lib/generate-agent-files.js: `next dev`
+  // only creates a *separate* AGENTS.md when neither AGENTS.md nor
+  // CLAUDE.md exists yet. This repo already had CLAUDE.md before the
+  // managed block existed, so Next upserts the block into CLAUDE.md
+  // instead (`claudeMdHostsBlock`) and leaves AGENTS.md untouched.
+  // Verified by running `next dev` once against this repo.
+  it("CLAUDE.md is managed by Next and references the bundled docs", () => {
+    expect(existsSync("AGENTS.md")).toBe(false);
     const claudeMd = readFileSync("CLAUDE.md", "utf8");
-    expect(claudeMd).toContain("AGENTS.md");
+    expect(claudeMd).toContain("<!-- BEGIN:nextjs-agent-rules -->");
+    expect(claudeMd).toMatch(/node_modules\/next\/dist\/docs/);
   });
 
   it(".mcp.json declares next-devtools-mcp", () => {

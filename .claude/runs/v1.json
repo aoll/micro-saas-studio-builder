@@ -19,9 +19,9 @@
       "dependsOn": [
         "CONTRACT-types"
       ],
-      "status": "dispatched",
-      "worktree": "contract-data",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 12
     },
     "CONTRACT-ui": {
       "dependsOn": [

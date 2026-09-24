@@ -22,8 +22,12 @@ yourself; you dispatch agents, track state and talk to the human.
   else reads it from `git config msb.integration`. Every worktree starts from it
   and every pull request targets it. Merging it into
   `main` is the human's call, at a validated milestone.
-- **Pool:** at most 10 worktrees at once (`WORKTREE_MAX=10`), one per spec,
-  created and removed with `scripts/worktree.ts` (`worktrees` skill).
+- **Monitoring:** right after, set up the three layers of the Monitoring
+  section below, before the first spec starts.
+- **Pool:** one worktree per spec, created and removed with
+  `scripts/worktree.ts` (`worktrees` skill). Its size starts at 10
+  (`WORKTREE_MAX`) and follows the monitor: read it with
+  `pnpm tsx scripts/monitor.ts status` before starting a spec.
 - **Ready:** a spec is ready when every spec in its `Dépend de` has its pull
   request merged on the integration branch (squash commit titled `feat(<scope>): <REF> …`).
   Read the dependencies from the index of the Specs tab (`docs/`) or from each
@@ -51,12 +55,56 @@ steps of different specs in the same message.
 | 5 | Pre-review checks | `verification-loop` (`/verify`) after merging the integration branch into the branch | READY |
 | 6 | Pull request | you: base = the integration branch, title `feat(<scope>): <REF> <summary>`, template filled | waiting for human review and merge |
 
+## Monitoring (continuous, three layers)
+
+1. **Daemon:** `pnpm tsx scripts/monitor.ts start`. It samples CPU and memory
+   every 5 s, checks the disk and Postgres, tunes the limits below on its own,
+   and writes one line per event to `/tmp/msb-queue/monitor.log`. It does not
+   depend on you: it keeps tuning while you are busy or between two turns.
+   `start` is a no-op when it already runs.
+2. **Event stream:** follow that log with the Monitor tool, so each event
+   reaches you as it happens:
+   `Monitor({ description: 'machine monitor events (msb)', timeout_ms: 1800000,
+   command: 'tail -n 0 -F /tmp/msb-queue/monitor.log' })`. A Monitor expires
+   after 30 min: re-arm it at each expiry.
+3. **Heartbeat:** a `send_later` every 5 min, re-armed at each firing, the
+   only layer that survives a container reset:
+   `mcp__Claude_Code_Remote__send_later({ delay_minutes: 5, message: 'Orchestrator heartbeat: run pnpm tsx scripts/monitor.ts start (restarts the daemon if it died) and pnpm tsx scripts/monitor.ts status; re-arm the Monitor on monitor.log if it expired; post one short line with the status table state. If no spec is left running, stop here; otherwise re-arm this same send_later.' })`.
+
+Act on each event:
+
+| Event | What to do |
+|-------|------------|
+| `ADJUST` | Nothing: the daemon changed a limit. Note the new pool size before starting a spec |
+| `SATURATION-MEM` | Start no new spec until it clears; if it lasts, find the heaviest job with `monitor.ts live` or `ps` |
+| `SATURATION-CPU` | Usually a burst of queued jobs, already capped: check it clears; if not, look for a runaway process |
+| `SATURATION-DISK` | Start no new spec; remove the worktrees of merged specs; tell the human if it does not clear |
+| `SATURATION-PG-CONNS` | Look for `idle in transaction` sessions in `pg_stat_activity` and the worktree they come from |
+| `CRASH-POSTGRES` | `node .claude/hooks/session-start.mjs` restarts it; agents with DB tests re-run them once it clears |
+| `MONITOR-STOPPED`, `MONITOR-CRASH` | `monitor.ts start`, then read `/tmp/msb-queue/monitor.err` for a crash |
+| `… cleared` | The condition is over: resume what you paused |
+
+An alert is not always an incident: check before acting. At the end of the run:
+`monitor.ts stop`, stop the Monitor (`TaskStop`) and let the heartbeat lapse.
+The human follows the machine in real time with `pnpm tsx scripts/monitor.ts live`.
+
 ## Machine limits
 
 - Typecheck and tests are queued machine-wide: `pnpm typecheck` and
-  `pnpm test` each wait for one of **4 slots**, whatever the number of
-  worktrees. Agents run single test files directly while iterating and the
+  `pnpm test` each wait for a free slot (4 at the start), whatever the number
+  of worktrees. Agents run single test files directly while iterating and the
   full commands at the end of a phase.
+- The daemon tunes the `test` and `typecheck` slots and the worktree pool,
+  one step at a time, at most every 30 s:
+  - **up** when, over the last 30 s, CPU stays under 60 % and more than 40 %
+    of memory is free, and the limit is the bottleneck (jobs waiting in the
+    queue, or every worktree in use), up to a cap derived from the cores and
+    the memory;
+  - **down** on pressure: CPU over 90 % on average over 30 s, or less than
+    15 % of memory free right now; the pool only on memory pressure; never
+    below 2. A lowered pool never
+  stops a running spec: it only delays the next one. Never edit the limit
+  files by hand; `monitor.ts reset` restores the defaults.
 - E2E does not run per spec: it belongs to the E2E phase after all features.
 
 ## Escalate, never decide by default
@@ -72,5 +120,7 @@ Keep one table up to date and show it on every change:
 | Spec | State | Worktree | PR |
 |------|-------|----------|----|
 | `<REF>` | waiting deps · planning · tdd · review · verify · PR open · merged · blocked | `<slug>` | link |
+
+Under it, one line from `monitor.ts status`: CPU, memory, slots and pool size.
 
 <!-- Adapted from everything-claude-code (MIT). See .claude/THIRD_PARTY.md -->

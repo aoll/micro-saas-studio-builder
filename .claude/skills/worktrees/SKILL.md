@@ -45,7 +45,8 @@ pnpm tsx scripts/worktree.ts rm <slug>
 pnpm tsx scripts/worktree-db.ts prune --yes
 ```
 
-`worktree.ts new` refuses to create an eleventh worktree (`WORKTREE_MAX`, default 10).
+`worktree.ts new` refuses to go beyond the pool size: `WORKTREE_MAX` (default 10),
+or the value `scripts/monitor.ts` tuned to the machine's load during a run.
 
 ## Rules for dispatching agents
 
@@ -69,6 +70,11 @@ pnpm tsx scripts/worktree-db.ts prune --yes
    | `pnpm test`, `pnpm test:coverage` | `test` | `QUEUE_SLOTS_TEST=4` |
    | `pnpm typecheck` | `typecheck` | `QUEUE_SLOTS_TYPECHECK=4` |
    | `pnpm test:e2e` | `e2e` | `QUEUE_SLOTS_E2E=1` |
+
+   During an orchestration run, the `scripts/monitor.ts` daemon raises or lowers the
+   `test` and `typecheck` slots with the machine's load (`<queue>.slots` in
+   the queue directory); `pnpm tsx scripts/monitor.ts live` shows the machine,
+   the queues and every queued job (worktree, time, memory) in real time.
 
    Never wrap these scripts in `scripts/queued.sh` again: the nested call
    would wait for a second slot of the queue it already holds. A single test

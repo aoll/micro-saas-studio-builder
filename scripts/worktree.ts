@@ -1,17 +1,22 @@
 // Create, remove and list sibling git worktrees, one per feature agent. Each
 // worktree gets its own branch (feat/<slug>) and its own Postgres database, so
-// up to WORKTREE_MAX agents can run side by side. No dev server runs in a
+// up to worktreeMax() agents can run side by side. No dev server runs in a
 // worktree: agents loop on typecheck and Vitest, and Playwright starts its own
 // server on E2E_PORT, serialised by the `e2e` queue that `pnpm test:e2e` takes itself.
 //
 // Usage: pnpm tsx scripts/worktree.ts <integration [<branch>] | new <slug> [--from <ref>] | rm <slug> [--keep-branch] | list>
 
 import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync } from "node:fs";
+import { copyFileSync, existsSync, readFileSync } from "node:fs";
 import { basename, dirname, resolve, sep } from "node:path";
 import { dbNameForBranch, dbUrlFor, readEnvVar, setEnvVar } from "./worktree-db";
 
-const WORKTREE_MAX = Number(process.env.WORKTREE_MAX ?? 10);
+/** Pool size: the value scripts/monitor.ts tuned to the machine's load, else WORKTREE_MAX. */
+const worktreeMax = (): number => {
+  const file = resolve(process.env.QUEUE_LOCK_DIR ?? "/tmp/msb-queue", "worktrees.max");
+  const n = Number(existsSync(file) ? readFileSync(file, "utf8").trim() : (process.env.WORKTREE_MAX ?? 10));
+  return Number.isInteger(n) && n > 0 ? n : 10;
+};
 // The integration branch of the current orchestration run: created by
 // `worktree.ts integration <branch>` and recorded in the repository's git config,
 // which every worktree shares. Feature branches start from it and target it.
@@ -108,7 +113,8 @@ const cmdNew = (slug: string, from: string): void => {
   } else {
     if (existsSync(path)) fail(`${path} exists but is not a git worktree; move it away first`);
     const active = extraWorktrees(root).length;
-    if (active >= WORKTREE_MAX) fail(`${active} worktrees already active (WORKTREE_MAX=${WORKTREE_MAX}); remove one first`);
+    const max = worktreeMax();
+    if (active >= max) fail(`${active} worktrees already active (max ${max}); remove one first`);
     run("git", ["fetch", "origin"], root);
     if (branchExists(branch)) run("git", ["worktree", "add", path, branch], root);
     else run("git", ["worktree", "add", path, "-b", branch, from], root);

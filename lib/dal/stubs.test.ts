@@ -79,3 +79,39 @@ describe("events", () => {
     );
   });
 });
+
+describe("products", () => {
+  it("listProducts throws not implemented", async () => {
+    const { listProducts } = await import("./products");
+    await expect(listProducts()).rejects.toThrow("not implemented");
+  });
+});
+
+describe("themes", () => {
+  it("getTheme throws not implemented", async () => {
+    const { getTheme } = await import("./themes");
+    await expect(getTheme("theme1")).rejects.toThrow("not implemented");
+  });
+});
+
+describe("product-editor", () => {
+  it("createProduct throws not implemented", async () => {
+    const { createProduct } = await import("./product-editor");
+    const config = {} as Parameters<typeof createProduct>[0];
+    await expect(createProduct(config)).rejects.toThrow("not implemented");
+  });
+});
+
+describe("product-status", () => {
+  it("updateStatus throws not implemented", async () => {
+    const { updateStatus } = await import("./product-status");
+    await expect(updateStatus("p1", "scale", null)).rejects.toThrow("not implemented");
+  });
+});
+
+describe("magic-link", () => {
+  it("getLatestMagicLink throws not implemented", async () => {
+    const { getLatestMagicLink } = await import("./magic-link");
+    await expect(getLatestMagicLink("visitor@example.com")).rejects.toThrow("not implemented");
+  });
+});

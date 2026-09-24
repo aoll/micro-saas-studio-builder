@@ -1,5 +1,6 @@
 import { describe, expectTypeOf, it } from "vitest";
 import type { EventType } from "@/lib/schemas/event-type";
+import type { ProductConfig, ProductStatus } from "@/lib/schemas/product-config";
 import type { DebitResult, Purchase } from "./credits";
 
 // Permanent contract tests (specs/CONTRACT-types.md): pin the *type* of
@@ -73,5 +74,56 @@ describe("events", () => {
     expectTypeOf(track).parameters.toEqualTypeOf<[import("./events").TrackEvent]>();
     expectTypeOf(track).returns.resolves.toEqualTypeOf<void>();
     expectTypeOf<import("./events").TrackEvent["type"]>().toEqualTypeOf<EventType>();
+  });
+});
+
+describe("products", () => {
+  it("Product extends ProductConfig with id, version and isSeed", () => {
+    expectTypeOf<import("./products").Product>().toMatchTypeOf<ProductConfig>();
+    expectTypeOf<import("./products").Product>().toMatchTypeOf<{
+      id: string;
+      version: number;
+      isSeed: boolean;
+    }>();
+  });
+
+  it("listProducts takes no argument and returns Product[]", async () => {
+    const { listProducts } = await import("./products");
+    expectTypeOf(listProducts).parameters.toEqualTypeOf<[]>();
+    expectTypeOf(listProducts).returns.resolves.toEqualTypeOf<import("./products").Product[]>();
+  });
+});
+
+describe("themes", () => {
+  it("getTheme takes an id and returns a Theme or null", async () => {
+    const { getTheme } = await import("./themes");
+    expectTypeOf(getTheme).parameters.toEqualTypeOf<[id: string]>();
+    expectTypeOf(getTheme).returns.resolves.toEqualTypeOf<import("./themes").Theme | null>();
+  });
+});
+
+describe("product-editor", () => {
+  it("createProduct takes a ProductConfig and returns id, slug, version", async () => {
+    const { createProduct } = await import("./product-editor");
+    expectTypeOf(createProduct).parameters.toEqualTypeOf<[config: ProductConfig]>();
+    expectTypeOf(createProduct).returns.resolves.toEqualTypeOf<{ id: string; slug: string; version: number }>();
+  });
+});
+
+describe("product-status", () => {
+  it("updateStatus takes a productId, a ProductStatus and a nullable note", async () => {
+    const { updateStatus } = await import("./product-status");
+    expectTypeOf(updateStatus).parameters.toEqualTypeOf<
+      [productId: string, status: ProductStatus, note: string | null]
+    >();
+    expectTypeOf(updateStatus).returns.resolves.toEqualTypeOf<void>();
+  });
+});
+
+describe("magic-link", () => {
+  it("getLatestMagicLink takes an email and returns a url and createdAt, or null", async () => {
+    const { getLatestMagicLink } = await import("./magic-link");
+    expectTypeOf(getLatestMagicLink).parameters.toEqualTypeOf<[email: string]>();
+    expectTypeOf(getLatestMagicLink).returns.resolves.toEqualTypeOf<{ url: string; createdAt: Date } | null>();
   });
 });

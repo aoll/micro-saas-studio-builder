@@ -6,7 +6,7 @@
 
 import { execFileSync } from "node:child_process";
 
-const PROTECTED = new Set(["main", "master", process.env.INTEGRATION_BRANCH ?? "develop"]);
+const PROTECTED = new Set(["main", "master", process.env.INTEGRATION_BRANCH ?? "orchestration"]);
 const WRAPPERS = new Set(["sudo", "command", "exec", "time", "nohup", "env"]);
 const GIT_OPTS_WITH_VALUE = new Set(["-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path"]);
 const COMMIT_OPTS_WITH_VALUE = new Set([

@@ -4,6 +4,8 @@ specs/
 drizzle/
 pnpm-lock.yaml
 AGENTS.md
+CLAUDE.md
+README.md
 .next/
 coverage/
 playwright-report/

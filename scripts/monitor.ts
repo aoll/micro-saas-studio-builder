@@ -68,9 +68,27 @@ const cores = availableParallelism();
 type Limit = { file: string; env: string; fallback: number; floor: number; cap: number };
 // A typecheck or a Vitest suite peaks around 1.5-2 GB; an agent session with its worktree around 1 GB.
 const LIMITS = {
-  test: { file: "test.slots", env: "QUEUE_SLOTS_TEST", fallback: 4, floor: 2, cap: Math.min(cores * 2, Math.floor(memTotal / (2 * GB))) },
-  typecheck: { file: "typecheck.slots", env: "QUEUE_SLOTS_TYPECHECK", fallback: 4, floor: 2, cap: Math.min(cores * 2, Math.floor(memTotal / (2 * GB))) },
-  worktrees: { file: "worktrees.max", env: "WORKTREE_MAX", fallback: 10, floor: 2, cap: Math.min(20, Math.floor(memTotal / GB)) },
+  test: {
+    file: "test.slots",
+    env: "QUEUE_SLOTS_TEST",
+    fallback: 4,
+    floor: 2,
+    cap: Math.min(cores * 2, Math.floor(memTotal / (2 * GB))),
+  },
+  typecheck: {
+    file: "typecheck.slots",
+    env: "QUEUE_SLOTS_TYPECHECK",
+    fallback: 4,
+    floor: 2,
+    cap: Math.min(cores * 2, Math.floor(memTotal / (2 * GB))),
+  },
+  worktrees: {
+    file: "worktrees.max",
+    env: "WORKTREE_MAX",
+    fallback: 10,
+    floor: 2,
+    cap: Math.min(20, Math.floor(memTotal / GB)),
+  },
 } satisfies Record<string, Limit>;
 type Name = keyof typeof LIMITS;
 
@@ -133,7 +151,10 @@ const count = (all: Job[], queue: string) => ({
 
 const activeWorktrees = (): number => {
   try {
-    const out = execFileSync("git", ["worktree", "list", "--porcelain"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+    const out = execFileSync("git", ["worktree", "list", "--porcelain"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
     return out.split("\n").filter((l) => l.startsWith("worktree ")).length - 1; // minus the main checkout
   } catch {
     return 0;
@@ -160,7 +181,10 @@ const sample = async (ms: number): Promise<Usage> => {
   const b = cpuTimes();
   const total = b.total - a.total;
   // availableMemory() honours the cgroup limit of a container; freemem() only sees the host.
-  return { cpu: total > 0 ? 1 - (b.idle - a.idle) / total : 0, memFree: Math.min(process.availableMemory(), memTotal) / memTotal };
+  return {
+    cpu: total > 0 ? 1 - (b.idle - a.idle) / total : 0,
+    memFree: Math.min(process.availableMemory(), memTotal) / memTotal,
+  };
 };
 
 /** Free share of the disk holding the worktrees (they are siblings of this checkout). */
@@ -215,7 +239,10 @@ const run = async (): Promise<void> => {
   };
   process.on("SIGTERM", () => stop("SIGTERM"));
   process.on("SIGINT", () => stop("SIGINT"));
-  emit("MONITOR-STARTED", `pid ${process.pid}, sample ${SAMPLE_MS / 1000}s, decisions on ${(WINDOW * SAMPLE_MS) / 1000}s`);
+  emit(
+    "MONITOR-STARTED",
+    `pid ${process.pid}, sample ${SAMPLE_MS / 1000}s, decisions on ${(WINDOW * SAMPLE_MS) / 1000}s`,
+  );
 
   const history: Usage[] = [];
   const active = new Map<string, string>(); // alert -> detail, to emit on enter and on clear
@@ -235,12 +262,14 @@ const run = async (): Promise<void> => {
 
     // Alerts: one line when a condition starts, one when it clears.
     const alerts = new Map<string, string>();
-    if (history.length === WINDOW && avg.cpu > PRESSURE.cpu) alerts.set("SATURATION-CPU", `cpu ${pct(avg.cpu)} over the window on ${cores} cores`);
+    if (history.length === WINDOW && avg.cpu > PRESSURE.cpu)
+      alerts.set("SATURATION-CPU", `cpu ${pct(avg.cpu)} over the window on ${cores} cores`);
     if (now.memFree < PRESSURE.memFree) alerts.set("SATURATION-MEM", `memory available ${pct(now.memFree)}`);
     const disk = diskFree();
     if (disk < ALERT.diskFree) alerts.set("SATURATION-DISK", `disk available ${pct(disk)}`);
     if (pg === "down") alerts.set("CRASH-POSTGRES", "no answer on the admin URL");
-    else if (pg && pg.used / pg.max > ALERT.pgConnections) alerts.set("SATURATION-PG-CONNS", `${pg.used}/${pg.max} connections`);
+    else if (pg && pg.used / pg.max > ALERT.pgConnections)
+      alerts.set("SATURATION-PG-CONNS", `${pg.used}/${pg.max} connections`);
     for (const [key, detail] of alerts) if (!active.has(key)) emit(key, detail);
     for (const key of active.keys()) if (!alerts.has(key)) emit(key, "cleared");
     active.clear();
@@ -270,7 +299,10 @@ const run = async (): Promise<void> => {
     }
     if (changes.length) {
       lastChange = Date.now();
-      emit("ADJUST", `${changes.join(", ")} (cpu ${pct(avg.cpu)} over the window, memory available ${pct(now.memFree)})`);
+      emit(
+        "ADJUST",
+        `${changes.join(", ")} (cpu ${pct(avg.cpu)} over the window, memory available ${pct(now.memFree)})`,
+      );
     }
   }
 };
@@ -333,7 +365,10 @@ const treeMemory = (roots: number[]): Map<number, number> => {
   if (roots.length === 0) return result;
   let rows: number[][] = [];
   try {
-    rows = execFileSync("ps", ["-A", "-o", "pid=,ppid=,rss="], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] })
+    rows = execFileSync("ps", ["-A", "-o", "pid=,ppid=,rss="], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    })
       .trim()
       .split("\n")
       .map((l) => l.trim().split(/\s+/).map(Number));
@@ -379,7 +414,8 @@ const duration = (ms: number): string => {
   return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m${String(s % 60).padStart(2, "0")}s`;
 };
 
-const lastEvents = (n: number): string[] => (existsSync(LOG) ? readFileSync(LOG, "utf8").trim().split("\n").slice(-n) : []);
+const lastEvents = (n: number): string[] =>
+  existsSync(LOG) ? readFileSync(LOG, "utf8").trim().split("\n").slice(-n) : [];
 
 /** Full-screen view for `live`. */
 const render = (s: Snapshot): string => {
@@ -398,11 +434,22 @@ const render = (s: Snapshot): string => {
   ];
   const memory = treeMemory(s.jobs.filter((j) => j.state === "run").map((j) => j.pid));
   const sorted = [...s.jobs].sort((a, b) => a.state.localeCompare(b.state) || a.since - b.since);
-  lines.push(sorted.length ? "QUEUE      STATE  TIME     MEM      WORKTREE                        COMMAND" : "no queued jobs");
+  lines.push(
+    sorted.length ? "QUEUE      STATE  TIME     MEM      WORKTREE                        COMMAND" : "no queued jobs",
+  );
   for (const j of sorted) {
     const { cmd, where } = describe(j.pid);
     const mem = j.state === "run" ? `${((memory.get(j.pid) ?? 0) / GB).toFixed(2)} GB` : "-";
-    lines.push([j.queue.padEnd(10), j.state.padEnd(6), duration(Date.now() - j.since).padEnd(8), mem.padEnd(8), where.padEnd(31), cmd].join(" "));
+    lines.push(
+      [
+        j.queue.padEnd(10),
+        j.state.padEnd(6),
+        duration(Date.now() - j.since).padEnd(8),
+        mem.padEnd(8),
+        where.padEnd(31),
+        cmd,
+      ].join(" "),
+    );
   }
   const events = lastEvents(5);
   if (events.length) lines.push("", "last events:", ...events.map((l) => `  ${l}`));
@@ -410,7 +457,9 @@ const render = (s: Snapshot): string => {
 };
 
 const printStatus = (s: Snapshot): void => {
-  console.log(`cpu ${pct(s.cpu)} of ${cores} cores · memory available ${pct(s.memFree)} of ${(memTotal / GB).toFixed(1)} GB · disk available ${pct(diskFree())}`);
+  console.log(
+    `cpu ${pct(s.cpu)} of ${cores} cores · memory available ${pct(s.memFree)} of ${(memTotal / GB).toFixed(1)} GB · disk available ${pct(diskFree())}`,
+  );
   for (const line of queueLines(s)) console.log(line);
   console.log(`worktrees  ${s.worktrees}/${s.limits.worktrees} active (cap ${LIMITS.worktrees.cap})`);
   console.log(daemonLine());

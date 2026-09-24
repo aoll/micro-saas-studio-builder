@@ -36,8 +36,8 @@ The `orchestrator` skill runs the approved specs with up to 10 worktrees: a
 spec starts as soon as its dependencies are merged and a worktree is free, and
 each one goes through the classic ECC flow below.
 
-1. **Spec.** One feature = one spec `specs/<REF>-<name>.md` = one PR, written
-   from the dossier and reviewed by `architect`. A human approves and merges it.
+1. **Spec.** One feature = one spec `specs/<REF>-<name>.md`, written from the
+   dossier. A human approves the specs by merging them into `main` (gate 1).
 2. **Plan.** `/plan <spec>`: the `planner` agent turns the spec into tasks,
    files and risks, committed as `.claude/plans/<REF>.plan.md`.
 3. **Test-first loop.** `/tdd <spec>` inside the spec's worktree: the
@@ -99,7 +99,6 @@ written first > readability for the reviewer > minimal code** (`ponytail`).
 | | Name | Use it to |
 |---|---|---|
 | Agent | `planner` | Plan one approved spec: tasks, files, risks |
-| Agent | `architect` | Review the dossier, a spec or a plan before code |
 | Agent | `tdd-guide` | Implement a spec, test-first, commit at every green step |
 | Agent | `code-reviewer`, `nextjs-reviewer`, `database-reviewer`, `security-reviewer`, `silent-failure-hunter` | Review a diff |
 | Agent | `e2e-runner` | Write and run Playwright journeys |

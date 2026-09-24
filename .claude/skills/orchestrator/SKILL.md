@@ -18,7 +18,8 @@ yourself; you dispatch agents, track state and talk to the human.
 - **Pool:** at most 10 worktrees at once (`WORKTREE_MAX=10`), one per spec,
   created and removed with `scripts/worktree.ts` (`worktrees` skill).
 - **Ready:** a spec is ready when every spec in its `Dépend de` has its pull
-  request merged on `main` (squash commit titled `feat(<scope>): <REF> …`).
+  request merged on the integration branch `$INTEGRATION_BRANCH` (default
+  `develop`; squash commit titled `feat(<scope>): <REF> …`).
   Read the dependencies from the index of the Specs tab (`docs/`) or from each
   `specs/<REF>-<name>.md`.
 - **Start rule:** whenever a worktree is free, start the next ready spec. Prefer
@@ -41,8 +42,8 @@ steps of different specs in the same message.
 | 2 | TDD | `tdd-guide` agent (`/tdd`) | every acceptance bullet green, coverage 80%+ on `lib/**`, pushed |
 | 3 | Code review | `/review`: `code-reviewer` + specialists | no CRITICAL or HIGH left; MEDIUM fixed when possible. Findings go back to `tdd-guide`, then review again |
 | 4 | Commit & push | the agent that fixed | nothing uncommitted or unpushed |
-| 5 | Pre-review checks | `verification-loop` (`/verify`) after merging `main` into the branch | READY |
-| 6 | Pull request | you: `feat(<scope>): <REF> <summary>`, template filled | waiting for human review and merge |
+| 5 | Pre-review checks | `verification-loop` (`/verify`) after merging `origin/$INTEGRATION_BRANCH` into the branch | READY |
+| 6 | Pull request | you: base `$INTEGRATION_BRANCH`, title `feat(<scope>): <REF> <summary>`, template filled | waiting for human review and merge |
 
 ## Machine limits
 

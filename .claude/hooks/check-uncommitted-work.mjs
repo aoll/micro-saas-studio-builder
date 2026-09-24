@@ -19,7 +19,7 @@ try {
     // --porcelain also lists untracked files, which `git diff` misses.
     const files = (git(["status", "--porcelain"]) ?? "").split("\n").filter(Boolean);
     // Commits reachable from HEAD but from no remote ref: robust even when the
-    // upstream is missing or wrongly points at origin/main.
+    // upstream is missing or wrongly points at the integration branch.
     const unpushed = Number(git(["rev-list", "--count", "HEAD", "--not", "--remotes"]) ?? 0);
 
     const problems = [];

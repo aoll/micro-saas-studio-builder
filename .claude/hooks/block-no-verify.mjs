@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // PreToolUse (Bash): block git commands that skip the git hooks (--no-verify,
 // `commit -n`, `-c core.hooksPath=`) and force pushes that can rewrite
-// main/master. On feature branches only --force-with-lease is allowed.
+// main/master or the integration branch. On feature branches only --force-with-lease is allowed.
 // Exit 2 blocks with a message on stderr; anything unparseable is allowed.
 
 import { execFileSync } from "node:child_process";
 
-const PROTECTED = new Set(["main", "master"]);
+const PROTECTED = new Set(["main", "master", process.env.INTEGRATION_BRANCH ?? "develop"]);
 const WRAPPERS = new Set(["sudo", "command", "exec", "time", "nohup", "env"]);
 const GIT_OPTS_WITH_VALUE = new Set(["-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path"]);
 const COMMIT_OPTS_WITH_VALUE = new Set([
@@ -126,7 +126,7 @@ function checkPush(args, cwd) {
   const current = currentBranch(cwd);
   const targets = refspecs.length > 0 ? refspecs.map((r) => (refName(r) === "HEAD" ? current : refName(r))) : [current];
   if (all || targets.some((t) => PROTECTED.has(t) || t === "")) {
-    return "Force pushing to main/master (or to an unknown target) is not allowed. Open a PR instead.";
+    return "Force pushing to main/master/the integration branch (or to an unknown target) is not allowed. Open a PR instead.";
   }
   if (force) return "Plain --force / -f / +refspec is not allowed. Use --force-with-lease on your feature branch.";
   return null;

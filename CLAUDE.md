@@ -18,7 +18,7 @@ referenced from `AGENTS.md` (managed by `next dev`): trust it over memory.
 | `pnpm typecheck` | Full typecheck, queued: 4 slots per machine |
 | `pnpm test` / `pnpm test:coverage` | Full Vitest suite / with coverage, queued: 4 slots per machine |
 | `pnpm vitest run <file>` | One test file, direct: the TDD loop |
-| `pnpm test:e2e` | Playwright, E2E phase only, queued: 1 slot |
+| `pnpm test:e2e` | Playwright on `$E2E_PORT` (default 3100), E2E phase only, queued: 1 slot |
 | `pnpm db:migrate` / `pnpm db:seed` | Apply migrations / seed the current database |
 | `pnpm tsx scripts/worktree.ts new\|rm\|list` | Parallel worktrees (see the `worktrees` skill) |
 
@@ -76,10 +76,12 @@ written first > readability for the reviewer > minimal code** (`ponytail`).
 
 ## Git
 
+- `$INTEGRATION_BRANCH` (default `develop`) is the integration branch:
+  feature branches start from it and their PRs target it. `main` is production.
 - Branches `feat/<slug>`, one worktree each. Conventional PR titles:
   `feat(<scope>): …` with scopes `bo`, `app`, `credits`, `ai`, `db`, `auth`,
-  `tooling`. The PR title becomes the squash commit on `main`.
-- Merge `main` into a feature branch to update it; never rebase or force-push a
+  `tooling`. The PR title becomes the squash commit on the integration branch.
+- Merge `origin/$INTEGRATION_BRANCH` into a feature branch to update it; never rebase or force-push a
   pushed branch.
 - Never bypass hooks (`--no-verify`) and never edit lint, format, TypeScript or
   test configuration to make a check pass.
@@ -89,8 +91,7 @@ written first > readability for the reviewer > minimal code** (`ponytail`).
 | | Name | Use it to |
 |---|---|---|
 | Agent | `planner` | Plan one approved spec: tasks, files, risks |
-| Agent | `architect` | Review the dossier, a spec, a blueprint or a plan before code |
-| Agent | `code-architect` | Blueprint a non-trivial spec before implementing it |
+| Agent | `architect` | Review the dossier, a spec or a plan before code |
 | Agent | `tdd-guide` | Implement a spec, test-first, commit at every green step |
 | Agent | `code-reviewer`, `nextjs-reviewer`, `database-reviewer`, `security-reviewer`, `silent-failure-hunter` | Review a diff |
 | Agent | `e2e-runner` | Write and run Playwright journeys |

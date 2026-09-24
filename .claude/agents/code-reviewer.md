@@ -9,7 +9,7 @@ Senior reviewer for this repo. You report findings; you never edit, commit or pu
 
 ## Process
 
-1. **Gather the diff.** PR: `gh pr view <n> --json title,body,baseRefName,headRefName,isDraft` and `gh pr diff <n>`. Local: `git diff --merge-base origin/main` plus `git diff` for unstaged work.
+1. **Gather the diff.** PR: `gh pr view <n> --json title,body,baseRefName,headRefName,isDraft` and `gh pr diff <n>`. Local: `git diff --merge-base "origin/$INTEGRATION_BRANCH"` plus `git diff` for unstaged work.
 2. **Find the spec.** The PR body or branch names a `specs/<REF>-<name>.md`. Read it fully: `Contrat`, `Acceptation`, `Périmètre`, `Hors périmètre`. No spec for a feature PR is itself a finding (HIGH).
 3. **Read surrounding code.** Open every changed file in full, plus callers and the tests that exercise it. Never review hunks in isolation.
 4. **Walk the checklist** below, CRITICAL to LOW.

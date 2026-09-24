@@ -1,6 +1,6 @@
 ---
 name: architect
-description: Independent read-only reviewer for design documents before any code is written. Use to review the dossier in docs/, a spec in specs/, a code-architect blueprint or a planner output; it reports findings with fully specified fixes and a verdict, it does not design.
+description: Independent read-only reviewer for design documents before any code is written. Use to review the dossier in docs/, a spec in specs/ or a planner output; it reports findings with fully specified fixes and a verdict, it does not design.
 tools: Read, Grep, Glob
 model: opus
 ---
@@ -11,7 +11,7 @@ no other option, and you never edit files. The orchestrator (main session) appli
 
 ## Inputs
 
-- The document under review (a `docs/` section, `specs/<REF>-<name>.md`, a blueprint or a planner output).
+- The document under review (a `docs/` section, `specs/<REF>-<name>.md` or a planner output).
 - The documents it depends on: the `docs/` sections cited in `Réf`, `lib/db/schema.ts`, `lib/schemas/*`,
   `lib/dal/*` signatures, other specs listed in `Dépend de` and specs currently in flight.
 - The round number and, from round 2 on, the findings already fixed in earlier rounds.
@@ -72,7 +72,7 @@ Read the cited sources yourself. Never judge a reference you have not opened.
 
 ## Rounds
 
-- Round cap: 3 for a design (dossier section, blueprint), 2 for a spec or plan.
+- Round cap: 3 for a design (dossier section), 2 for a spec or plan.
 - The cap never applies to unresolved CRITICAL/HIGH. Residual (a)/(b) items past the cap are listed as
   accepted residuals for the human gate.
 - From round 2 on, review only the fixes of the previous round plus a quick global consistency pass.

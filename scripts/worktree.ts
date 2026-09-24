@@ -2,7 +2,7 @@
 // worktree gets its own branch (feat/<slug>) and its own Postgres database, so
 // up to WORKTREE_MAX agents can run side by side. No dev server runs in a
 // worktree: agents loop on typecheck and Vitest, and Playwright starts its own
-// server on a fixed port, serialised by the `e2e` queue that `pnpm test:e2e` takes itself.
+// server on E2E_PORT, serialised by the `e2e` queue that `pnpm test:e2e` takes itself.
 //
 // Usage: pnpm tsx scripts/worktree.ts <new <slug> [--from <ref>] | rm <slug> [--keep-branch] | list>
 
@@ -12,6 +12,8 @@ import { basename, dirname, resolve, sep } from "node:path";
 import { dbNameForBranch, dbUrlFor, readEnvVar, setEnvVar } from "./worktree-db";
 
 const WORKTREE_MAX = Number(process.env.WORKTREE_MAX ?? 10);
+// Feature branches start from, and open their PRs against, the integration branch.
+const INTEGRATION_BRANCH = process.env.INTEGRATION_BRANCH ?? "develop";
 
 type Worktree = { path: string; branch: string | null };
 
@@ -76,9 +78,9 @@ const cmdNew = (slug: string, from: string): void => {
     else run("git", ["worktree", "add", path, "-b", branch, from], root);
   }
 
-  // `worktree add -b <branch> origin/main` sets the new branch's upstream to
-  // origin/main. A bare `git push` from an agent would then push feature
-  // commits straight to main. Pushing with -u rebinds the upstream to
+  // `worktree add -b <branch> origin/<integration>` sets the new branch's
+  // upstream to the integration branch. A bare `git push` from an agent would
+  // then push feature commits straight to it. Pushing with -u rebinds the upstream to
   // origin/feat/<slug> before anything else can push.
   run("git", ["push", "-u", "origin", branch], path);
 
@@ -185,7 +187,7 @@ const main = async (): Promise<void> => {
   };
   switch (command) {
     case "new":
-      return cmdNew(validateSlug(args[0]), flag("--from") ?? "origin/main");
+      return cmdNew(validateSlug(args[0]), flag("--from") ?? `origin/${INTEGRATION_BRANCH}`);
     case "rm":
       return cmdRm(validateSlug(args[0]), args.includes("--keep-branch"));
     case "list":

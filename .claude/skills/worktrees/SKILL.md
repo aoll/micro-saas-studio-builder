@@ -16,7 +16,7 @@ checkout so that their branches, dev servers and databases never collide.
 
 | Resource  | Main checkout | Each worktree `../micro-saas-studio-builder-<slug>` |
 |-----------|---------------|------------------------------------------------------|
-| Branch    | `main`        | `feat/<slug>` (pushed with upstream set at creation) |
+| Branch    | `$INTEGRATION_BRANCH` (`develop`) | `feat/<slug>` from it (pushed with upstream set at creation) |
 | Dev server | port 3000     | none: typecheck and Vitest need no server; Playwright starts its own |
 | Database  | `msb`         | `msb_feat_<slug>`, migrated and seeded                |
 | Postgres  | one local cluster (native, or the Docker service), shared by all |           |
@@ -54,9 +54,9 @@ pnpm tsx scripts/worktree-db.ts prune --yes
    the integrator after the merges.
 3. **Frozen contracts.** A change to the schema, a Zod schema or a DAL
    signature goes through a dedicated contract PR, merged first; the other
-   branches then merge `main`.
+   branches then merge `origin/$INTEGRATION_BRANCH`.
 4. **Merge order.** The branch that replaces a stub with the real
-   implementation merges first; the others merge `main` into their branch
+   implementation merges first; the others merge `origin/$INTEGRATION_BRANCH` into their branch
    (never rebase a pushed branch) and re-run the checks.
 5. **Heavy commands are queued by their own scripts.** `package.json` wraps
    them in `scripts/queued.sh`, so every checkout shares the same slots:
@@ -71,7 +71,7 @@ pnpm tsx scripts/worktree-db.ts prune --yes
    would wait for a second slot of the queue it already holds. A single test
    file (`pnpm vitest run lib/dal/credits.test.ts`) runs directly.
 6. **E2E on a fixed port.** `playwright.config.ts` builds and starts the app
-   on port 3100 with `reuseExistingServer: false` and `BETTER_AUTH_URL` set to
+   on `$E2E_PORT` (default 3100) with `reuseExistingServer: false` and `BETTER_AUTH_URL` set to
    that port. The `e2e` queue has one slot, so two worktrees never share it.
 
 ## Troubleshooting
@@ -85,5 +85,5 @@ pnpm tsx scripts/worktree-db.ts prune --yes
 - **Need to see the UI**: use the PR's Vercel preview, or run the branch in the
   main checkout. A dev server in a worktree (`pnpm dev -- -p 3005`) works for
   pages, not for magic links (`BETTER_AUTH_URL` stays on 3000).
-- **Branch tracks `origin/main`**: the worktree was created by hand; run
+- **Branch tracks `origin/$INTEGRATION_BRANCH`**: the worktree was created by hand; run
   `git push -u origin feat/<slug>`.

@@ -7,8 +7,8 @@ Review target: `$ARGUMENTS`. Read-only: never edit, commit, push, comment on or 
 
 ## 1. Gather
 - PR number: `gh pr view $ARGUMENTS --json number,title,body,isDraft,baseRefName,headRefName` and `gh pr diff $ARGUMENTS --name-only`.
-- Branch name: `git diff --name-only origin/main...$ARGUMENTS`.
-- Empty: `git diff --name-only --merge-base origin/main` plus unstaged and untracked files.
+- Branch name: `git diff --name-only "origin/$INTEGRATION_BRANCH"...$ARGUMENTS`.
+- Empty: `git diff --name-only --merge-base "origin/$INTEGRATION_BRANCH"` plus unstaged and untracked files.
 - Stop with "Nothing to review." if the file list is empty.
 - Locate the spec (`specs/<REF>-*.md`) from the PR body, branch name or changed files. If none is found, say so; code-reviewer will treat it as a finding.
 

@@ -48,16 +48,16 @@ Open the spec named in the branch or PR (`specs/<REF>-<name>.md`).
 
 - Every `Acceptation` bullet maps to at least one named test. List the mapping.
 - Every changed file is inside `Périmètre`:
-  `git diff --name-only origin/main...HEAD`
+  `git diff --name-only "origin/$INTEGRATION_BRANCH"...HEAD`
 - No frozen contract changed (`lib/db/schema.ts`, `lib/schemas/**`, DAL
   signatures) unless the spec is a contract spec.
 - No committed test was weakened: every commit that edits an existing test
-  says why in its message (`git log -p origin/main..HEAD -- '*.test.ts' '*.test.tsx'`)
+  says why in its message (`git log -p "origin/$INTEGRATION_BRANCH"..HEAD -- '*.test.ts' '*.test.tsx'`)
 
 ## Phase 3 — Diff hygiene
 
 ```bash
-git diff origin/main...HEAD
+git diff "origin/$INTEGRATION_BRANCH"...HEAD
 ```
 
 Look for, and fix:

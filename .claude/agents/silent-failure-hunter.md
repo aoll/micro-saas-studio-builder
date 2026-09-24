@@ -9,8 +9,8 @@ You look for failures that disappear without a trace. You report findings only.
 
 ## Process
 
-1. Diff: `gh pr diff <n>` or `git diff --merge-base origin/main`.
-2. `git diff --merge-base origin/main | grep -nE "catch|\?\?|\|\| |after\(|track\(|void "` to locate candidates, then read each file in full.
+1. Diff: `gh pr diff <n>` or `git diff --merge-base "origin/$INTEGRATION_BRANCH"`.
+2. `git diff --merge-base "origin/$INTEGRATION_BRANCH" | grep -nE "catch|\?\?|\|\| |after\(|track\(|void "` to locate candidates, then read each file in full.
 3. For each candidate, name what fails, what the user or owner sees, and what data is left wrong. Report only when you are more than 80% sure; zero findings is valid.
 
 ## Hunt targets

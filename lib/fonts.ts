@@ -12,13 +12,13 @@ export type FontKey = (typeof FONT_KEYS)[number];
 // Every loader shares the same `variable`: the theme applies its font by
 // putting the matching `className` on `<html>`, and `--font-theme` is read
 // by `@theme inline` in app/globals.css. `preload: false` so only the
-// active theme's font is preloaded by the browser, not all 4.
-const FONT_OPTIONS = { variable: "--font-theme", display: "swap", preload: false } as const;
-
-const serif = Fraunces(FONT_OPTIONS);
-const grotesk = Space_Grotesk(FONT_OPTIONS);
-const sans = Inter(FONT_OPTIONS);
-const rounded = Nunito(FONT_OPTIONS);
+// active theme's font is preloaded by the browser, not all 4. The options
+// object is repeated (not shared through a constant): `next/font`'s
+// compiler statically analyzes each call and requires an inline literal.
+const serif = Fraunces({ variable: "--font-theme", display: "swap", preload: false });
+const grotesk = Space_Grotesk({ variable: "--font-theme", display: "swap", preload: false });
+const sans = Inter({ variable: "--font-theme", display: "swap", preload: false });
+const rounded = Nunito({ variable: "--font-theme", display: "swap", preload: false });
 
 const FONTS: Record<FontKey, { variable: string; className: string }> = { serif, grotesk, sans, rounded };
 

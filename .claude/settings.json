@@ -37,7 +37,7 @@
     "QUEUE_SLOTS_TEST": "2",
     "QUEUE_SLOTS_TYPECHECK": "2",
     "QUEUE_SLOTS_E2E": "1",
-    "WORKTREE_MAX": "4"
+    "WORKTREE_MAX": "10"
   },
   "enabledMcpjsonServers": ["next-devtools", "context7"],
   "hooks": {

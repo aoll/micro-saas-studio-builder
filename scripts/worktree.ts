@@ -2,7 +2,7 @@
 // worktree gets its own branch (feat/<slug>) and its own Postgres database, so
 // up to WORKTREE_MAX agents can run side by side. No dev server runs in a
 // worktree: agents loop on typecheck and Vitest, and Playwright starts its own
-// server on a fixed port, serialised by the `e2e` queue (scripts/queued.sh).
+// server on a fixed port, serialised by the `e2e` queue that `pnpm test:e2e` takes itself.
 //
 // Usage: pnpm tsx scripts/worktree.ts <new <slug> [--from <ref>] | rm <slug> [--keep-branch] | list>
 
@@ -11,7 +11,7 @@ import { copyFileSync, existsSync } from "node:fs";
 import { basename, dirname, resolve, sep } from "node:path";
 import { dbNameForBranch, dbUrlFor, readEnvVar, setEnvVar } from "./worktree-db";
 
-const WORKTREE_MAX = Number(process.env.WORKTREE_MAX ?? 4);
+const WORKTREE_MAX = Number(process.env.WORKTREE_MAX ?? 10);
 
 type Worktree = { path: string; branch: string | null };
 

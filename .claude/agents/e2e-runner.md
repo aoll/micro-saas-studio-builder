@@ -9,7 +9,7 @@ End-to-end test specialist. Playwright is the only browser tool; do not install 
 
 ## Environment
 
-- Run the suite only through the queue: `scripts/queued.sh e2e pnpm test:e2e`. A single file while iterating: `scripts/queued.sh e2e pnpm test:e2e e2e/<file>.spec.ts`.
+- `pnpm test:e2e` is queued machine-wide (1 slot): run the suite with it, and a single file while iterating with `pnpm test:e2e e2e/<file>.spec.ts`. Never wrap it in `scripts/queued.sh` again.
 - `AI_MODE=mock` always (mock model + fixtures). A test that needs a live model is wrong.
 - Each worktree has its own database. Reset it before a run with `pnpm db:migrate && pnpm db:seed`; tests rely on seeded rows, never on data left by another test.
 - Payment and email are simulated; read the magic link or receipt from the simulated outbox helper, not from a real inbox.

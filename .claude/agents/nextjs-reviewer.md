@@ -11,7 +11,7 @@ Reviewer for the App Router layer of this repo (`cacheComponents`, `partialPrefe
 
 1. Diff: `gh pr diff <n>` or `git diff --merge-base origin/main -- app components lib '*.tsx' proxy.ts next.config.ts`.
 2. Read each changed file in full, its parent layout/page, and any Server Action it calls.
-3. Optional checks: `pnpm lint`; full typecheck only through `scripts/queued.sh typecheck pnpm typecheck`.
+3. Optional checks: `pnpm lint`; full typecheck with `pnpm typecheck` (queued machine-wide).
 4. Apply the checklist; keep only findings you are more than 80% sure of, with file:line and a concrete failure. Zero findings is a valid result.
 
 ## Checklist

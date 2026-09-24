@@ -15,28 +15,38 @@ referenced from `AGENTS.md` (managed by `next dev`): trust it over memory.
 |---------|--------------|
 | `pnpm dev` | Dev server on port 3000, main checkout only |
 | `pnpm check` | typecheck + lint + format check + knip + unit tests |
-| `pnpm test` / `pnpm test:e2e` | Vitest / Playwright |
+| `pnpm typecheck` | Full typecheck, queued: 2 slots per machine |
+| `pnpm test` / `pnpm test:coverage` | Full Vitest suite / with coverage, queued: 2 slots per machine |
+| `pnpm vitest run <file>` | One test file, direct: the TDD loop |
+| `pnpm test:e2e` | Playwright, E2E phase only, queued: 1 slot |
 | `pnpm db:migrate` / `pnpm db:seed` | Apply migrations / seed the current database |
-| `scripts/queued.sh <test\|typecheck\|e2e> <cmd>` | Run a heavy command in a machine-wide slot |
 | `pnpm tsx scripts/worktree.ts new\|rm\|list` | Parallel worktrees (see the `worktrees` skill) |
 
-Full test, typecheck and E2E runs always go through `scripts/queued.sh`: several
-agents share this machine.
+Up to 10 worktrees share this machine. `typecheck`, `test`, `test:coverage` and
+`test:e2e` wrap themselves in `scripts/queued.sh`: never wrap them again (a
+nested call waits for a second slot of the queue it already holds).
 
 ## Workflow
 
-1. **Spec.** One feature = one spec `specs/<REF>-<name>.md` = one PR. `/plan`
-   drafts it (planner, then architect review). A human approves and merges it.
-2. **Test-first loop.** `/tdd <spec>` inside the spec's worktree: the
+The `orchestrator` skill runs the approved specs with up to 10 worktrees: a
+spec starts as soon as its dependencies are merged and a worktree is free, and
+each one goes through the classic ECC flow below.
+
+1. **Spec.** One feature = one spec `specs/<REF>-<name>.md` = one PR, written
+   from the dossier and reviewed by `architect`. A human approves and merges it.
+2. **Plan.** `/plan <spec>`: the `planner` agent turns the spec into tasks,
+   files and risks, committed as `.claude/plans/<REF>.plan.md`.
+3. **Test-first loop.** `/tdd <spec>` inside the spec's worktree: the
    `tdd-guide` agent takes one acceptance behavior at a time, red then green,
    commits and pushes at every green step, and keeps going without waiting
    for anything until the spec is done. It stays inside `Périmètre`. A
    committed test is never weakened silently: its commit message says why.
-3. **Verify.** `/verify` (queued `pnpm check`, spec conformance) must end
-   READY before the PR is opened.
-4. **Review and merge.** `/review` for a first pass; a human reviews and
-   squash-merges. Agents never merge.
-5. **E2E phase.** Once the features are done, Playwright journeys and fixes,
+4. **Code review.** `/review`: `code-reviewer` plus the specialists; findings
+   go back to `tdd-guide` until no CRITICAL or HIGH is left.
+5. **Verify.** `/verify` (`pnpm check`, spec conformance) must end READY
+   before the PR is opened.
+6. **Pull request.** A human reviews and squash-merges. Agents never merge.
+7. **E2E phase.** Once the features are done, Playwright journeys and fixes,
    with `next-dev-loop` and `agent-browser` on a running dev server.
 
 Priority when rules pull in different directions: **approved spec > tests
@@ -78,11 +88,12 @@ written first > readability for the reviewer > minimal code** (`ponytail`).
 
 | | Name | Use it to |
 |---|---|---|
-| Agent | `planner` | Turn a need or a dossier section into minimal specs |
+| Agent | `planner` | Plan one approved spec: tasks, files, risks |
 | Agent | `architect` | Review the dossier, a spec, a blueprint or a plan before code |
 | Agent | `code-architect` | Blueprint a non-trivial spec before implementing it |
 | Agent | `tdd-guide` | Implement a spec, test-first, commit at every green step |
 | Agent | `code-reviewer`, `nextjs-reviewer`, `database-reviewer`, `security-reviewer`, `silent-failure-hunter` | Review a diff |
 | Agent | `e2e-runner` | Write and run Playwright journeys |
+| Skill | `orchestrator` | Run every approved spec to a PR, 10 worktrees in parallel |
 | Skill | `tdd-workflow`, `verification-loop`, `worktrees`, `ponytail`, `ponytail-review` | Loaded on demand |
 | Command | `/plan`, `/tdd`, `/verify`, `/review` | The workflow above |

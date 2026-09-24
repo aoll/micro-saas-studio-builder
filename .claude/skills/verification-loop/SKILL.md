@@ -16,20 +16,21 @@ stop at the first hard failure: fix it, then restart from phase 1.
 
 Several worktrees share this machine. Full runs go through the queues so
 parallel agents never run more than a few `tsc` or Vitest processes at once.
+The scripts take their queue themselves: never wrap them in `scripts/queued.sh`.
 
 ```bash
-scripts/queued.sh typecheck pnpm typecheck
+pnpm typecheck   # queued: waits for one of 2 machine-wide slots
 pnpm lint
 pnpm format:check
 pnpm knip
-scripts/queued.sh test pnpm test
+pnpm test        # queued: waits for one of 2 machine-wide slots
 ```
 
 The E2E suite runs in the E2E phase, once the features are done, not on each
 feature branch:
 
 ```bash
-scripts/queued.sh e2e pnpm test:e2e
+pnpm test:e2e    # queued: 1 slot
 ```
 
 Rules:

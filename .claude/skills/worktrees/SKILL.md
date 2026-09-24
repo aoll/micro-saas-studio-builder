@@ -9,7 +9,7 @@ description: >
 
 # Parallel work with worktrees
 
-Up to four agents implement specs at the same time. Each one gets an isolated
+Up to ten agents implement specs at the same time (`orchestrator` skill). Each one gets an isolated
 checkout so that their branches, dev servers and databases never collide.
 
 ## Model
@@ -42,7 +42,7 @@ pnpm tsx scripts/worktree.ts rm <slug>
 pnpm tsx scripts/worktree-db.ts prune --yes
 ```
 
-`worktree.ts new` refuses to create a fifth worktree (`WORKTREE_MAX`, default 4).
+`worktree.ts new` refuses to create an eleventh worktree (`WORKTREE_MAX`, default 10).
 
 ## Rules for dispatching agents
 
@@ -58,16 +58,18 @@ pnpm tsx scripts/worktree-db.ts prune --yes
 4. **Merge order.** The branch that replaces a stub with the real
    implementation merges first; the others merge `main` into their branch
    (never rebase a pushed branch) and re-run the checks.
-5. **Heavy commands go through the queues.**
+5. **Heavy commands are queued by their own scripts.** `package.json` wraps
+   them in `scripts/queued.sh`, so every checkout shares the same slots:
 
-   | Command | Queue | Slots (default) |
-   |---------|-------|-----------------|
-   | full Vitest run | `scripts/queued.sh test …` | `QUEUE_SLOTS_TEST=2` |
-   | full typecheck | `scripts/queued.sh typecheck …` | `QUEUE_SLOTS_TYPECHECK=2` |
-   | Playwright | `scripts/queued.sh e2e …` | `QUEUE_SLOTS_E2E=1` |
+   | Script | Queue | Slots (default) |
+   |--------|-------|-----------------|
+   | `pnpm test`, `pnpm test:coverage` | `test` | `QUEUE_SLOTS_TEST=2` |
+   | `pnpm typecheck` | `typecheck` | `QUEUE_SLOTS_TYPECHECK=2` |
+   | `pnpm test:e2e` | `e2e` | `QUEUE_SLOTS_E2E=1` |
 
-   A single test file (`pnpm vitest run lib/dal/credits.test.ts`) does not
-   need the queue.
+   Never wrap these scripts in `scripts/queued.sh` again: the nested call
+   would wait for a second slot of the queue it already holds. A single test
+   file (`pnpm vitest run lib/dal/credits.test.ts`) runs directly.
 6. **E2E on a fixed port.** `playwright.config.ts` builds and starts the app
    on port 3100 with `reuseExistingServer: false` and `BETTER_AUTH_URL` set to
    that port. The `e2e` queue has one slot, so two worktrees never share it.

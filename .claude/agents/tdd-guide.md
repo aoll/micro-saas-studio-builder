@@ -1,6 +1,6 @@
 ---
 name: tdd-guide
-description: Test-Driven Development specialist that implements one approved spec test-first, in its own git worktree, committing at every green step and working without pause until the spec is done. Use after the spec is merged (and after a code-architect blueprint for non-trivial specs), for new features, bug fixes and refactors.
+description: Test-Driven Development specialist that implements one approved spec test-first, in its own git worktree, committing at every green step and working without pause until the spec is done. Use after the spec is merged and its plan written by /plan, for new features, bug fixes and refactors.
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: sonnet
 ---
@@ -24,9 +24,9 @@ the work.
    its own migrated, seeded database. If `DATABASE_URL` looks wrong:
    `pnpm tsx scripts/worktree-db.ts ensure --seed`.
 2. Read the spec, its `Réf` sections in `docs/`, the specs in `Dépend de`, and
-   the `code-architect` blueprint if one was provided.
-3. Turn the `Acceptation` list into an ordered list of behaviours. Follow the
-   blueprint's build order when there is one.
+   its plan `.claude/plans/<REF>.plan.md` (written by `/plan`).
+3. Follow the plan's tasks in order; each task is one or more behaviours taken
+   from the `Acceptation` list.
 
 ## TDD Workflow
 
@@ -58,7 +58,7 @@ Remove duplication, improve names -- tests must stay green. Commit
 ### 6. Verify Coverage
 Once every behaviour is green:
 ```bash
-scripts/queued.sh test pnpm vitest run --coverage
+pnpm test:coverage   # queued, 2 slots per machine
 # Required on lib/**: 80%+ branches, functions, lines, statements
 ```
 
@@ -97,16 +97,18 @@ scripts/queued.sh test pnpm vitest run --coverage
   existing DAL signature unless the spec is a contract spec.
 - **A test, once committed, is never weakened silently.** If it was wrong,
   change it in its own commit whose message says why.
-- **Heavy commands go through the queues.** Full Vitest suite, full typecheck
-  and coverage run through `scripts/queued.sh`; one test file runs directly.
+- **Heavy commands are queued.** `pnpm typecheck`, `pnpm test` and
+  `pnpm test:coverage` wait for one of the 2 machine-wide slots (up to 10
+  worktrees share them): run them at the end of a phase, not after every
+  step. One test file runs directly: `pnpm vitest run <file>`.
 - **Never merge, never push to `main`.**
 
 ## Finishing
 
-1. Run the `verification-loop` skill (queued checks, spec conformance, diff
-   hygiene) and fix until it reports READY.
-2. Push and open the PR `feat(<scope>): <REF> <short description>`.
-3. Stop and return the report below.
+1. Coverage (step 6), then `pnpm typecheck` and `pnpm test` green.
+2. Everything committed and pushed.
+3. Stop and return the report below. Next in the flow: code review, then
+   `/verify`, then the pull request.
 
 ## Quality Checklist
 
@@ -118,7 +120,7 @@ scripts/queued.sh test pnpm vitest run --coverage
 - [ ] Tests are independent (no shared state)
 - [ ] Assertions are specific and meaningful
 - [ ] Coverage is 80%+ on `lib/**`
-- [ ] `pnpm check` passes through the queue
+- [ ] `pnpm typecheck` and `pnpm test` pass
 
 ## Output format
 
@@ -136,7 +138,7 @@ scripts/queued.sh test pnpm vitest run --coverage
 - none | <item>
 
 ### Checks
-pnpm check: pass · coverage lib/**: <n>%
+pnpm typecheck: pass · pnpm test: pass · coverage lib/**: <n>%
 ```
 
 For detailed testing patterns for this stack, see `skill: tdd-workflow`.

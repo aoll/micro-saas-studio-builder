@@ -68,5 +68,7 @@ export const magicLinkOutbox = pgTable("magic_link_outbox", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull(),
   url: text("url").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  // Our own table (not a Better Auth one): house convention is timestamptz
+  // (docs/07-modele-de-donnees.md), unlike the four Better Auth tables above.
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

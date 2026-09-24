@@ -3,16 +3,16 @@
   "specs": {
     "SETUP-skeleton": {
       "dependsOn": [],
-      "status": "dispatched",
-      "worktree": "setup-skeleton",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 10
     },
     "CONTRACT-types": {
       "dependsOn": [
         "SETUP-skeleton"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "contract-types",
       "pr": null
     },
     "CONTRACT-data": {

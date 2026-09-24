@@ -55,12 +55,25 @@ const balanceResultSchema = z.object({ balance: z.int().min(0) });
 
 describe("credits", () => {
   it("debit matches DebitResult", async () => {
+    // A real ledger enforces the FK from credit_transactions.generation_id
+    // to generations.id (LEDGER): pass a real generation instead of the
+    // non-uuid "g1" no honest ledger could accept.
+    const { recordGeneration } = await import("./generations");
+    const { id: generationId } = await recordGeneration({
+      productId: lettreProId,
+      productVersion: 1,
+      userId: ownerId,
+      anonymousId: null,
+      ipHash: "hash",
+      input: {},
+      idempotencyKey: randomUUID(),
+    });
     const { debit } = await import("./credits");
     const result = await debit({
       userId: ownerId,
       productId: lettreProId,
       cost: 1,
-      generationId: "g1",
+      generationId,
       idempotencyKey: randomUUID(),
     });
     expect(debitResultSchema.safeParse(result).success).toBe(true);

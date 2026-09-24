@@ -189,3 +189,69 @@ describe("getBalance", () => {
     await expect(getBalance(userId, productId)).rejects.toThrow();
   });
 });
+
+describe("grantSignupBonus", () => {
+  it("credits the signup bonus once for a fresh user, creating the balances row", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct({ freeCreditsOnSignup: 3 })).id;
+    asUser(userId);
+
+    const { grantSignupBonus, getBalance } = await import("./credits");
+    const result = await grantSignupBonus({ userId, productId });
+    expect(result).toEqual({ balance: 3 });
+    expect(await getBalance(userId, productId)).toBe(3);
+    await expectLedgerMatchesBalance(userId, productId);
+  });
+
+  it("does not credit twice: a second call keeps a single signup_bonus row", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct({ freeCreditsOnSignup: 3 })).id;
+    asUser(userId);
+
+    const { grantSignupBonus } = await import("./credits");
+    await grantSignupBonus({ userId, productId });
+    const second = await grantSignupBonus({ userId, productId });
+    expect(second).toEqual({ balance: 3 });
+
+    const rows = await db
+      .select()
+      .from(creditTransactions)
+      .where(
+        and(
+          eq(creditTransactions.userId, userId),
+          eq(creditTransactions.productId, productId),
+          eq(creditTransactions.reason, "signup_bonus"),
+        ),
+      );
+    expect(rows).toHaveLength(1);
+    await expectLedgerMatchesBalance(userId, productId);
+  });
+
+  it("grants the bonus per product: another product's bonus doesn't affect lettre-pro's", async () => {
+    const userId = await createUser();
+    const testProductId = (await createProduct({ freeCreditsOnSignup: 3 })).id;
+    const lettrePro = await lettreProId();
+    asUser(userId);
+
+    const { grantSignupBonus, getBalance } = await import("./credits");
+    await grantSignupBonus({ userId, productId: testProductId });
+    expect(await getBalance(userId, lettrePro)).toBe(0);
+    await expectLedgerMatchesBalance(userId, lettrePro);
+  });
+
+  it("rejects a mismatched session and writes nothing", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct({ freeCreditsOnSignup: 3 })).id;
+    const otherId = await createUser();
+    asUser(otherId);
+
+    const { grantSignupBonus } = await import("./credits");
+    await expect(grantSignupBonus({ userId, productId })).rejects.toThrow();
+
+    const rows = await db
+      .select()
+      .from(creditTransactions)
+      .where(and(eq(creditTransactions.userId, userId), eq(creditTransactions.productId, productId)));
+    expect(rows).toHaveLength(0);
+  });
+});

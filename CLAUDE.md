@@ -57,7 +57,7 @@ written first > readability for the reviewer > minimal code** (`ponytail`).
   `updateTag()` in the action that writes. User-specific data is never cached;
   it streams under `<Suspense>`.
 - `'use client'` only on interactive leaves. No barrel files. Alias `@/*`.
-- AI calls only through `lib/ai/*`; `AI_MODE=mock` in dev, tests, CI and
+- AI calls only through `lib/ai/*`; `AI_MODE=mock` in dev, tests and
   previews.
 
 ## Git

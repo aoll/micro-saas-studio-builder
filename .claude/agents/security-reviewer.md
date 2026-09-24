@@ -47,7 +47,7 @@ Security reviewer for this repo. Users are anonymous visitors of public AI produ
 - Prompt injection: user input is placed in the prompt as delimited data (tagged block, separate message), never concatenated into system instructions. The system prompt states that the delimited content is data.
 - Output safety: model output is rendered as text (no `dangerouslySetInnerHTML`); structured output is Zod-parsed; links or HTML from the model are not trusted.
 - Cost abuse: input length capped by Zod, `maxOutputTokens` set, model string from the product config (never from the client), credits debited before the call.
-- AI Gateway budget or spend limit respected; `AI_MODE=mock` in tests and CI, `live` only where configured.
+- AI Gateway budget or spend limit respected; `AI_MODE=mock` in dev and tests, `live` only where configured.
 
 ### Demo mode (HIGH)
 - Seeded demo rows are locked: actions refuse to edit or delete them.

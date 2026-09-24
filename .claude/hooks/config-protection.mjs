@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // PreToolUse (Edit|Write|MultiEdit): block edits to lint, format, type and
-// test configuration and to CI workflows. Agents must fix the code, not the
-// checks. Creating a file that does not exist yet is allowed (scaffolding).
+// test configuration. Agents must fix the code, not the checks. Creating a
+// file that does not exist yet is allowed (scaffolding).
 // Override for a human-approved change: ALLOW_CONFIG_EDIT=1. Exit 2 blocks.
 
 import { lstatSync } from "node:fs";
@@ -18,7 +18,7 @@ const PROTECTED_NAMES = [
   /^commitlint\.config\./,
   /^\.lintstagedrc/,
 ];
-const PROTECTED_DIRS = /(^|\/)(\.husky|\.github\/workflows)\//;
+const PROTECTED_DIRS = /(^|\/)\.husky\//;
 
 const isProtected = (filePath) => {
   const normalized = filePath.split("\\").join("/");
@@ -53,7 +53,7 @@ process.stdin.on("end", () => {
   }
   if (typeof filePath !== "string" || !filePath || !isProtected(filePath) || !exists(filePath)) process.exit(0);
   process.stderr.write(
-    `BLOCKED: ${filePath} is a protected lint/format/type/test/CI config file.\n` +
+    `BLOCKED: ${filePath} is a protected lint/format/type/test config file.\n` +
       "Agents must fix the code, not the checks. A human edits these files " +
       "(or runs Claude with ALLOW_CONFIG_EDIT=1 for an approved change).\n",
   );

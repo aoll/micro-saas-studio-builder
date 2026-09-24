@@ -1,1 +1,94 @@
 @import "tailwindcss";
+
+/*
+ * Product layouts overwrite `--light-*` / `--dark-*` / `--radius` inline
+ * with the current theme's tokens (`components/product/theme-vars.ts`,
+ * docs/01-produit.md › Thèmes). The neutral values below are the backoffice's
+ * fallback (no theme applied there) and the shell's default before a theme
+ * loads. `@media (prefers-color-scheme: dark)` alone decides light vs dark,
+ * no theme JavaScript (docs/04-nextjs.md).
+ */
+:root {
+  --background: var(--light-background, oklch(1 0 0));
+  --foreground: var(--light-foreground, oklch(0.145 0 0));
+  --card: var(--light-card, oklch(1 0 0));
+  --card-foreground: var(--light-card-foreground, oklch(0.145 0 0));
+  --primary: var(--light-primary, oklch(0.205 0 0));
+  --primary-foreground: var(--light-primary-foreground, oklch(0.985 0 0));
+  --secondary: var(--light-secondary, oklch(0.97 0 0));
+  --secondary-foreground: var(--light-secondary-foreground, oklch(0.205 0 0));
+  --muted: var(--light-muted, oklch(0.97 0 0));
+  --muted-foreground: var(--light-muted-foreground, oklch(0.556 0 0));
+  --accent: var(--light-accent, oklch(0.97 0 0));
+  --accent-foreground: var(--light-accent-foreground, oklch(0.205 0 0));
+  --destructive: var(--light-destructive, oklch(0.577 0.245 27.325));
+  --border: var(--light-border, oklch(0.922 0 0));
+  --input: var(--light-input, oklch(0.922 0 0));
+  --ring: var(--light-ring, oklch(0.708 0 0));
+  --radius: 0.625rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: var(--dark-background, var(--light-background, oklch(0.145 0 0)));
+    --foreground: var(--dark-foreground, var(--light-foreground, oklch(0.985 0 0)));
+    --card: var(--dark-card, var(--light-card, oklch(0.205 0 0)));
+    --card-foreground: var(--dark-card-foreground, var(--light-card-foreground, oklch(0.985 0 0)));
+    --primary: var(--dark-primary, var(--light-primary, oklch(0.922 0 0)));
+    --primary-foreground: var(--dark-primary-foreground, var(--light-primary-foreground, oklch(0.205 0 0)));
+    --secondary: var(--dark-secondary, var(--light-secondary, oklch(0.269 0 0)));
+    --secondary-foreground: var(--dark-secondary-foreground, var(--light-secondary-foreground, oklch(0.985 0 0)));
+    --muted: var(--dark-muted, var(--light-muted, oklch(0.269 0 0)));
+    --muted-foreground: var(--dark-muted-foreground, var(--light-muted-foreground, oklch(0.708 0 0)));
+    --accent: var(--dark-accent, var(--light-accent, oklch(0.269 0 0)));
+    --accent-foreground: var(--dark-accent-foreground, var(--light-accent-foreground, oklch(0.985 0 0)));
+    --destructive: var(--dark-destructive, var(--light-destructive, oklch(0.704 0.191 22.216)));
+    --border: var(--dark-border, var(--light-border, oklch(1 0 0 / 10%)));
+    --input: var(--dark-input, var(--light-input, oklch(1 0 0 / 15%)));
+    --ring: var(--dark-ring, var(--light-ring, oklch(0.556 0 0)));
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--card);
+  --color-popover-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--primary-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* `--font-theme` is the active theme's `next/font` variable
+     (`lib/fonts.ts`, `fontFor().variable`), set as a class on `<html>`. */
+  --font-sans: var(--font-theme, ui-sans-serif), system-ui, sans-serif;
+}
+
+/* BalanceBadge replays this on every optimistic delta (components/product/balance.tsx). */
+@keyframes badge-pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}

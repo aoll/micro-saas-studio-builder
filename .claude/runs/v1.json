@@ -175,9 +175,10 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "dispatched",
+      "status": "blocked",
       "worktree": "bo-07-themes",
-      "pr": null
+      "pr": null,
+      "blockedReason": "needs listThemes() (frozen DAL, not in any contract) and the theme thumbnail CONTRACT-ui never shipped; proposed residual contract spec CONTRACT-uib awaiting human approval"
     },
     "DEMO-mode": {
       "dependsOn": [

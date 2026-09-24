@@ -34,4 +34,10 @@ describe("ExampleResult", () => {
     const { container } = renderUi(<ExampleResult exampleOutput="   " />);
     expect(container.innerHTML).toBe("");
   });
+
+  it("renders a bare blockquote, without card chrome, when bare is set", () => {
+    const { container } = renderUi(<ExampleResult exampleOutput="Madame, Monsieur," bare />);
+    expect(container.querySelector("blockquote")).toBeTruthy();
+    expect(container.querySelector('[data-slot="card"]')).toBeNull();
+  });
 });

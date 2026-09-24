@@ -54,4 +54,15 @@ describe("Hero", () => {
     renderWithLocale("en", <Hero {...baseProps} anonymousFreeGenerations={1} />);
     expect(screen.getByRole("link", { name: "Try it free" })).toBeTruthy();
   });
+
+  it("exposes a landing-hero test id, and renders children inside it (split variant)", () => {
+    const { container } = renderWithLocale(
+      "fr",
+      <Hero {...baseProps} anonymousFreeGenerations={1}>
+        <p>Example inside hero</p>
+      </Hero>,
+    );
+    const hero = container.querySelector('[data-testid="landing-hero"]');
+    expect(hero?.textContent).toContain("Example inside hero");
+  });
 });

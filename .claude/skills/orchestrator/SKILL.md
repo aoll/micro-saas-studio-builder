@@ -47,7 +47,7 @@ steps of different specs in the same message.
 ## Machine limits
 
 - Typecheck and tests are queued machine-wide: `pnpm typecheck` and
-  `pnpm test` each wait for one of **2 slots**, whatever the number of
+  `pnpm test` each wait for one of **4 slots**, whatever the number of
   worktrees. Agents run single test files directly while iterating and the
   full commands at the end of a phase.
 - E2E does not run per spec: it belongs to the E2E phase after all features.

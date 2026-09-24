@@ -58,7 +58,7 @@ Remove duplication, improve names -- tests must stay green. Commit
 ### 6. Verify Coverage
 Once every behaviour is green:
 ```bash
-pnpm test:coverage   # queued, 2 slots per machine
+pnpm test:coverage   # queued, 4 slots per machine
 # Required on lib/**: 80%+ branches, functions, lines, statements
 ```
 
@@ -98,7 +98,7 @@ pnpm test:coverage   # queued, 2 slots per machine
 - **A test, once committed, is never weakened silently.** If it was wrong,
   change it in its own commit whose message says why.
 - **Heavy commands are queued.** `pnpm typecheck`, `pnpm test` and
-  `pnpm test:coverage` wait for one of the 2 machine-wide slots (up to 10
+  `pnpm test:coverage` wait for one of the 4 machine-wide slots (up to 10
   worktrees share them): run them at the end of a phase, not after every
   step. One test file runs directly: `pnpm vitest run <file>`.
 - **Never merge, never push to `main`.**

@@ -65,8 +65,8 @@ it (`docs(<scope>): <REF> implementation plan`):
 ## Validation
 ```bash
 pnpm vitest run <test files of this spec>
-pnpm typecheck        # queued, 2 slots per machine
-pnpm test             # queued, 2 slots per machine
+pnpm typecheck        # queued, 4 slots per machine
+pnpm test             # queued, 4 slots per machine
 pnpm check
 ```
 

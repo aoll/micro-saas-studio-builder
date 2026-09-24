@@ -15,8 +15,8 @@ referenced from `AGENTS.md` (managed by `next dev`): trust it over memory.
 |---------|--------------|
 | `pnpm dev` | Dev server on port 3000, main checkout only |
 | `pnpm check` | typecheck + lint + format check + knip + unit tests |
-| `pnpm typecheck` | Full typecheck, queued: 2 slots per machine |
-| `pnpm test` / `pnpm test:coverage` | Full Vitest suite / with coverage, queued: 2 slots per machine |
+| `pnpm typecheck` | Full typecheck, queued: 4 slots per machine |
+| `pnpm test` / `pnpm test:coverage` | Full Vitest suite / with coverage, queued: 4 slots per machine |
 | `pnpm vitest run <file>` | One test file, direct: the TDD loop |
 | `pnpm test:e2e` | Playwright, E2E phase only, queued: 1 slot |
 | `pnpm db:migrate` / `pnpm db:seed` | Apply migrations / seed the current database |

@@ -63,8 +63,8 @@ pnpm tsx scripts/worktree-db.ts prune --yes
 
    | Script | Queue | Slots (default) |
    |--------|-------|-----------------|
-   | `pnpm test`, `pnpm test:coverage` | `test` | `QUEUE_SLOTS_TEST=2` |
-   | `pnpm typecheck` | `typecheck` | `QUEUE_SLOTS_TYPECHECK=2` |
+   | `pnpm test`, `pnpm test:coverage` | `test` | `QUEUE_SLOTS_TEST=4` |
+   | `pnpm typecheck` | `typecheck` | `QUEUE_SLOTS_TYPECHECK=4` |
    | `pnpm test:e2e` | `e2e` | `QUEUE_SLOTS_E2E=1` |
 
    Never wrap these scripts in `scripts/queued.sh` again: the nested call

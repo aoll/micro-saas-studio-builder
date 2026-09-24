@@ -19,11 +19,11 @@ parallel agents never run more than a few `tsc` or Vitest processes at once.
 The scripts take their queue themselves: never wrap them in `scripts/queued.sh`.
 
 ```bash
-pnpm typecheck   # queued: waits for one of 2 machine-wide slots
+pnpm typecheck   # queued: waits for one of 4 machine-wide slots
 pnpm lint
 pnpm format:check
 pnpm knip
-pnpm test        # queued: waits for one of 2 machine-wide slots
+pnpm test        # queued: waits for one of 4 machine-wide slots
 ```
 
 The E2E suite runs in the E2E phase, once the features are done, not on each

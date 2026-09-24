@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Machine-wide concurrency queue for heavy commands, shared by every worktree.
-# Up to 4 worktrees run agents in parallel on one machine; when all of them
+# Up to 10 worktrees run agents in parallel on one machine; when all of them
 # start a full typecheck or test suite at once, memory runs out and the OOM
 # killer takes processes down. This caps concurrency per queue.
 #
 # Usage: scripts/queued.sh <test|typecheck|e2e> <command...>
-#   e.g. scripts/queued.sh typecheck pnpm typecheck
-# Slots: QUEUE_SLOTS_TEST (default 2), QUEUE_SLOTS_TYPECHECK (2), QUEUE_SLOTS_E2E (1).
+#   e.g. scripts/queued.sh test vitest run (what `pnpm test` runs; never wrap a pnpm script that already queues)
+# Slots: QUEUE_SLOTS_TEST (default 4), QUEUE_SLOTS_TYPECHECK (4), QUEUE_SLOTS_E2E (1).
 # Lock dir: QUEUE_LOCK_DIR (default /tmp/msb-queue).
 #
 # Locks use flock (no daemon): the lock is bound to the process's file
@@ -27,8 +27,8 @@ shift
 cmd=("$@")
 
 case "$queue" in
-test) slots="${QUEUE_SLOTS_TEST:-2}" ;;
-typecheck) slots="${QUEUE_SLOTS_TYPECHECK:-2}" ;;
+test) slots="${QUEUE_SLOTS_TEST:-4}" ;;
+typecheck) slots="${QUEUE_SLOTS_TYPECHECK:-4}" ;;
 e2e) slots="${QUEUE_SLOTS_E2E:-1}" ;;
 *) usage ;;
 esac

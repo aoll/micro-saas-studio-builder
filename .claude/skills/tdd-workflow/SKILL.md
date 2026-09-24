@@ -50,9 +50,9 @@ the feature; their rendered output is covered by Playwright in the E2E phase, on
 
 ```bash
 pnpm vitest run lib/dal/credits.test.ts   # one file, direct: the TDD loop
-pnpm test                                 # full Vitest suite, queued (2 slots)
-pnpm test:coverage                        # coverage, 80%+ on lib/**, queued (2 slots)
-pnpm typecheck                            # full typecheck, queued (2 slots)
+pnpm test                                 # full Vitest suite, queued (4 slots)
+pnpm test:coverage                        # coverage, 80%+ on lib/**, queued (4 slots)
+pnpm typecheck                            # full typecheck, queued (4 slots)
 pnpm test:e2e                             # Playwright, E2E phase only, queued (1 slot)
 ```
 

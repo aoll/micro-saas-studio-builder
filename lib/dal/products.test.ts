@@ -34,6 +34,34 @@ describe("getProduct", () => {
     expect(product).toBeNull();
   });
 
+  it("throws when the product_versions row for current_version is missing", async () => {
+    vi.resetModules();
+    vi.doMock("@/lib/db", () => ({
+      db: {
+        query: {
+          products: {
+            findFirst: async () => ({
+              id: "p1",
+              slug: "broken-product",
+              status: "test",
+              themeId: "t1",
+              currentVersion: 1,
+              locale: "fr",
+              isSeed: false,
+            }),
+          },
+          productVersions: { findFirst: async () => undefined },
+        },
+      },
+    }));
+    const { getProduct } = await import("./products");
+    await expect(getProduct("broken-product")).rejects.toThrow(
+      "getProduct(broken-product): missing product_versions row for current_version",
+    );
+    vi.doUnmock("@/lib/db");
+    vi.resetModules();
+  });
+
   it("tags and caches the response", async () => {
     const { getProduct } = await import("./products");
     await getProduct("lettre-pro");

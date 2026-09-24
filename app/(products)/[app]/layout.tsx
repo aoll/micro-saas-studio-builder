@@ -7,10 +7,13 @@ export async function generateStaticParams() {
   return slugs.map((app) => ({ app }));
 }
 
-export default function ProductLayout({ children }: LayoutProps<"/[app]">) {
+export default function ProductLayout({ children, modal }: LayoutProps<"/[app]">) {
   return (
     <html lang="fr">
-      <body>{children}</body>
+      <body>
+        {children}
+        {modal}
+      </body>
     </html>
   );
 }

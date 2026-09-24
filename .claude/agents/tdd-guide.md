@@ -94,6 +94,10 @@ pnpm test:coverage   # queued, 4 slots per machine
 
 - **Périmètre only.** If something outside it must change, record it as a
   blocker and keep going with the other behaviours.
+- **A dependency that is not there yet.** If a behaviour needs another spec of
+  the run that is not merged yet (a table, a DAL function, a component), do
+  not stub it: deliver the rest, and report exactly what you left out under
+  `Dependency gaps`. The orchestrator schedules it once that spec is merged.
 - **Frozen contracts.** Never change `lib/db/schema.ts`, `lib/schemas/*` or an
   existing DAL signature unless the spec is a contract spec.
 - **A test, once committed, is never weakened silently.** If it was wrong,
@@ -135,6 +139,9 @@ pnpm test:coverage   # queued, 4 slots per machine
 
 ### Tests changed after being committed
 - none | <test>: <what changed and why> (<commit>)
+
+### Dependency gaps
+- none | missing spec: <REF> · scope left out: <what, precisely>
 
 ### Blockers / out of scope
 - none | <item>

@@ -32,9 +32,11 @@ nested call waits for a second slot of the queue it already holds).
 
 ## Workflow
 
-The `orchestrator` skill runs the approved specs with up to 10 worktrees: a
-spec starts as soon as its dependencies are merged and a worktree is free, and
-each one goes through the classic ECC flow below.
+The `orchestrator` skill runs the approved specs with up to 10 worktrees, from
+a dependency registry versioned on the integration branch: a spec starts as
+soon as its own dependencies are merged and a worktree is free (the waves of
+`specs/README.md` are a reading aid, never a barrier), and each one goes
+through the classic ECC flow below.
 
 1. **Spec.** One feature = one spec `specs/<REF>-<name>.md`, written from the
    dossier. A human approves the specs by merging them into `main` (gate 1).
@@ -87,8 +89,8 @@ written first > readability for the reviewer > minimal code** (`ponytail`).
   orchestrator and created from `main` with `pnpm tsx scripts/worktree.ts
   integration <branch>`; `git config msb.integration` gives its name. Feature
   branches start from it and their PRs target it. `main` is production: a
-  human reviews the integration branch and merges it into `main` at each
-  validated milestone; the orchestrator merges the spec PRs into the
+  human reviews the integration branch and merges it into `main` once every
+  spec of the run is merged; the orchestrator merges the spec PRs into the
   integration branch as they pass.
 - Commit messages and PR titles and bodies in English.
 - Branches `feat/<slug>`, one worktree each. Conventional PR titles:

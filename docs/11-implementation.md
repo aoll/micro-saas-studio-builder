@@ -18,8 +18,8 @@ Trois règles structurent tout l'onglet :
 | 4 | Boucle TDD : un comportement à la fois, test rouge puis code vert, commit et push à chaque étape verte, sans pause jusqu'à la fin de la spec (`/tdd`) | Agent `tdd-guide` | Trace rouge → vert dans les commits, 80 % de couverture sur `lib/**` |
 | 5 | Revue de code (`/review`), corrections jusqu'à zéro CRITICAL ou HIGH | `code-reviewer` + spécialistes | Corrections commitées et poussées |
 | 6 | `/verify` après merge de la branche d'intégration dans la branche | Agent | `pnpm check`, conformité à la spec, verdict **READY** |
-| 7 | PR vers la branche d'intégration, puis squash merge dès que `/verify` est READY et la revue propre | Orchestrateur | **Un commit** par spec sur la branche d'intégration ; les specs dépendantes démarrent |
-| 8 | **Porte 2 : relire la branche d'intégration** à chaque jalon | Moi | Corrections demandées, ou merge dans `main`, qui part en prod |
+| 7 | PR vers la branche d'intégration, puis squash merge dès que `/verify` est READY et la revue propre | Orchestrateur | **Un commit** par spec sur la branche d'intégration ; les specs débloquées démarrent |
+| 8 | **Porte 2 : relire la branche d'intégration** une fois toutes les specs mergées | Moi | Corrections demandées, ou merge dans `main`, qui part en prod |
 
 Deux règles tiennent la boucle honnête :
 
@@ -79,7 +79,7 @@ C'est le cœur du parallèle : tout ce qu'un lot consomme chez un autre existe d
 
 ## Roadmap technique en vagues
 
-Les lots du planning (onglet Candidature) sont réorganisés en **vagues**. Dans une vague, les lots tournent en parallèle. Entre deux vagues, on merge et on stabilise.
+Les lots du planning (onglet Candidature) sont regroupés en **vagues** pour la lecture. Ce n'est pas une barrière : l'orchestrateur tient un **registre de dépendances** versionné sur la branche d'intégration et démarre une spec dès que **ses propres** dépendances sont mergées et qu'un worktree est libre, sans attendre le reste de sa vague. Le registre est recalculé à chaque merge ; une dépendance découverte en cours de route devient une intégration en attente ou une spec résiduelle, jamais un oubli.
 
 ```mermaid
 flowchart LR
@@ -150,7 +150,7 @@ De mon côté, `monitor.ts live` affiche l'usage en temps réel : machine, files
 
 ### Rôles
 
-- **Moi** : architecte et relecteur. J'écris et valide les specs (porte 1). L'orchestrateur merge chaque PR de spec dans la branche d'intégration dès qu'elle passe `/verify` et la revue automatique ; à chaque jalon, je relis la branche d'intégration sur sa preview (porte 2) puis je la merge dans `main`, qui part en prod.
+- **Moi** : architecte et relecteur. J'écris et valide les specs (porte 1). L'orchestrateur merge chaque PR de spec dans la branche d'intégration dès qu'elle passe `/verify` et la revue automatique, et reprend lui-même une spec bloquée. Une fois toutes les specs mergées, je relis la branche d'intégration (porte 2) puis je la merge dans `main`, qui part en prod.
 - **Orchestrateur et agents** : l'orchestrateur répartit les specs sur les worktrees et suit leur état ; dans chaque worktree, `planner` écrit le plan, `tdd-guide` écrit les tests et implémente, les relecteurs passent le diff, puis l'orchestrateur ouvre la PR.
 - **Ordre de merge dans une vague** : le lot qui porte un contrat réel passe en premier (B, qui remplace le stub `debit()`), puis les autres mergent la branche d'intégration dans leur branche (jamais de rebase d'une branche poussée). PR courtes : un lot peut en ouvrir plusieurs, une par écran.
 

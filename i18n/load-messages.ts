@@ -20,5 +20,13 @@ export async function loadMessages(locale: ProductConfig["locale"]): Promise<Rec
     if (!path.includes(`/${locale}/`)) continue;
     messages[zoneName(path)] = content;
   }
+  // Never render a page with silently missing translations (the Turbopack
+  // glob regression that fixed by messages/manifest.ts, docs/11
+  // "no silent failure"): an empty result or a locale without its common
+  // zone means messages/manifest.ts stopped globbing files, not that this
+  // product genuinely has none.
+  if (Object.keys(messages).length === 0 || !("common" in messages)) {
+    throw new Error(`loadMessages(${locale}): no messages resolved, check messages/manifest.ts`);
+  }
   return messages;
 }

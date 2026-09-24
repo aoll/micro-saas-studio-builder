@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { loadMessages } from "./load-messages";
 
 function keyPaths(value: unknown, prefix = ""): string[] {
@@ -21,5 +21,29 @@ describe("loadMessages", () => {
     const fr = await loadMessages("fr");
     const en = await loadMessages("en");
     expect(keyPaths(fr.common).sort()).toEqual(keyPaths(en.common).sort());
+  });
+});
+
+describe("loadMessages with a broken manifest (guards the Turbopack glob regression)", () => {
+  it("throws when the manifest has no entry at all for the locale", async () => {
+    vi.resetModules();
+    vi.doMock("@/messages/manifest", () => ({ default: { "./en/common.json": { header: {} } } }));
+    const { loadMessages: brokenLoadMessages } = await import("./load-messages");
+    await expect(brokenLoadMessages("fr")).rejects.toThrow(
+      "loadMessages(fr): no messages resolved, check messages/manifest.ts",
+    );
+    vi.doUnmock("@/messages/manifest");
+    vi.resetModules();
+  });
+
+  it("throws when the locale resolves files but none of them is the common zone", async () => {
+    vi.resetModules();
+    vi.doMock("@/messages/manifest", () => ({ default: { "./fr/tool.json": { title: "Outil" } } }));
+    const { loadMessages: brokenLoadMessages } = await import("./load-messages");
+    await expect(brokenLoadMessages("fr")).rejects.toThrow(
+      "loadMessages(fr): no messages resolved, check messages/manifest.ts",
+    );
+    vi.doUnmock("@/messages/manifest");
+    vi.resetModules();
   });
 });

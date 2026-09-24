@@ -12,7 +12,7 @@
     "dev:live": "AI_MODE=live next dev",
     "build": "next typegen && next build",
     "start": "next start",
-    "typecheck": "scripts/queued.sh typecheck sh -c 'next typegen && tsc --noEmit'",
+    "typecheck": "scripts/queued.sh typecheck sh -c 'next typegen && tsc -p tsconfig.build.json --noEmit'",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

@@ -3,8 +3,8 @@
   "specs": {
     "SETUP-skeleton": {
       "dependsOn": [],
-      "status": "ready",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "setup-skeleton",
       "pr": null
     },
     "CONTRACT-types": {

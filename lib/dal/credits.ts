@@ -35,7 +35,10 @@ export const getBalance: (userId: string, productId: string) => Promise<number> 
 };
 
 // Called by `api/generate` (SA-02) after the caller is authenticated (or
-// resolved as anonymous); never called directly by a Server Action.
+// resolved as anonymous); never called directly by a Server Action. The
+// real implementation derives `userId` from the session (or accepts it
+// only for an anonymous generation with no session), never from a
+// client-supplied argument that could target another user's balance.
 export const debit: (args: Debit) => Promise<DebitResult> = async () => {
   throw new Error("not implemented");
 };
@@ -47,6 +50,8 @@ export const refund: (generationId: string) => Promise<void> = async () => {
 };
 
 // Called once by the signup action (SA-03), right after account creation.
+// The real implementation derives `userId` from the just-created session,
+// never from a client-supplied argument.
 export const grantSignupBonus: (args: {
   userId: string;
   productId: string;
@@ -56,6 +61,8 @@ export const grantSignupBonus: (args: {
 
 // Called by the checkout Server Action (SA-05) for the session user; a pack
 // id is only unique within a product, hence `productId` alongside `packId`.
+// The real implementation checks `userId` matches the session, never
+// trusts it from client input.
 export const purchase: (args: Purchase) => Promise<{ balance: number }> = async () => {
   throw new Error("not implemented");
 };

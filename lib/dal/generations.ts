@@ -28,6 +28,9 @@ export type GenerationResult = {
   costMicros: number;
 };
 
+// The real implementation derives `userId` from the session (or accepts
+// only `anonymousId` with no session), never from a client-supplied
+// `userId` argument that could attribute a generation to another user.
 export const recordGeneration: (generation: NewGeneration) => Promise<{ id: string }> = async () => {
   throw new Error("not implemented");
 };

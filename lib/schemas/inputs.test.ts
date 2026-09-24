@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import {
   generateInputSchema,
   purchaseInputSchema,
@@ -6,6 +6,12 @@ import {
   statusChangeInputSchema,
   thresholdsInputSchema,
   trackEventInputSchema,
+  type GenerateInput,
+  type PurchaseInput,
+  type SignupInput,
+  type StatusChangeInput,
+  type ThresholdsInput,
+  type TrackEventInput,
 } from "./inputs";
 
 describe("generateInputSchema", () => {
@@ -105,5 +111,26 @@ describe("thresholdsInputSchema", () => {
       scaleRequiresPositiveMargin: true,
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("inferred types", () => {
+  it("pins the shape of each input type", () => {
+    expectTypeOf<GenerateInput>().toEqualTypeOf<{ input: Record<string, string>; idempotencyKey: string }>();
+    expectTypeOf<SignupInput>().toEqualTypeOf<{ email: string }>();
+    expectTypeOf<PurchaseInput>().toEqualTypeOf<{ packId: string; idempotencyKey: string }>();
+    expectTypeOf<TrackEventInput["type"]>().toEqualTypeOf<
+      "visit" | "first_generation" | "signup" | "generation" | "credits_exhausted" | "purchase"
+    >();
+    expectTypeOf<StatusChangeInput>().toEqualTypeOf<{
+      status: "test" | "learn" | "scale" | "killed";
+      note: string | null;
+    }>();
+    expectTypeOf<ThresholdsInput>().toEqualTypeOf<{
+      minVisits: number;
+      killMaxConversion: number;
+      scaleMinConversion: number;
+      scaleRequiresPositiveMargin: boolean;
+    }>();
   });
 });

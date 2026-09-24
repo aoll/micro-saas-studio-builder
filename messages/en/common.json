@@ -3,9 +3,6 @@
     "signIn": "Sign in",
     "credits": "{count, plural, =0 {0 credit} one {# credit} other {# credits}}"
   },
-  "footer": {
-    "studioLink": "See the studio's other products"
-  },
   "demo": {
     "banner": "Demo: payment and email are simulated"
   },

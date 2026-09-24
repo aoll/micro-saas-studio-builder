@@ -1,0 +1,41 @@
+import { describe, expect, it } from "vitest";
+import { createAppEnv } from "./env";
+
+const validSource = {
+  DATABASE_URL: "postgres://postgres:postgres@localhost:5432/msb",
+  BETTER_AUTH_SECRET: "a".repeat(32),
+  BETTER_AUTH_URL: "http://localhost:3000",
+  AI_MODE: "mock",
+  DEMO_MODE: "false",
+  AI_GATEWAY_API_KEY: "gw-key",
+  BLOB_READ_WRITE_TOKEN: "blob-token",
+  CRON_SECRET: "cron-secret",
+};
+
+describe("createAppEnv", () => {
+  it("parses a complete valid source", () => {
+    const env = createAppEnv(validSource);
+    expect(env.AI_MODE).toBe("mock");
+    expect(env.DEMO_MODE).toBe(false);
+    expect(env.DATABASE_URL).toBe(validSource.DATABASE_URL);
+  });
+
+  it.each(Object.keys(validSource))("throws when %s is missing", (key) => {
+    const source = { ...validSource };
+    delete (source as Record<string, string>)[key];
+    expect(() => createAppEnv(source)).toThrow();
+  });
+
+  it.each(Object.keys(validSource))("throws when %s is an empty string", (key) => {
+    const source = { ...validSource, [key]: "" };
+    expect(() => createAppEnv(source)).toThrow();
+  });
+
+  it("throws on an invalid AI_MODE", () => {
+    expect(() => createAppEnv({ ...validSource, AI_MODE: "foo" })).toThrow();
+  });
+
+  it("throws on a DATABASE_URL that is not a URL", () => {
+    expect(() => createAppEnv({ ...validSource, DATABASE_URL: "not-a-url" })).toThrow();
+  });
+});

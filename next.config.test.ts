@@ -14,6 +14,11 @@ describe("next.config", () => {
     expect(config.typedRoutes).toBe(true);
   });
 
+  it("wires next-intl to i18n/request.ts", async () => {
+    const { default: config } = await import("./next.config");
+    expect(config.turbopack?.resolveAlias?.["next-intl/config"]).toContain("i18n/request");
+  });
+
   it("fails to load without a complete environment", async () => {
     vi.stubEnv("DATABASE_URL", "");
     vi.resetModules();

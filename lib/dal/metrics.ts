@@ -85,11 +85,11 @@ async function buildProductMetrics(productId: string): Promise<ProductMetrics> {
     generations: FIXTURE.generations,
     revenueCents: FIXTURE.revenueCents,
     aiCostMicros,
-    signupToPurchaseRate: FIXTURE.signups > 0 ? FIXTURE.purchases / FIXTURE.signups : null,
-    marginPerGenerationMicros:
-      FIXTURE.generations > 0
-        ? Math.round(revenueMicros / FIXTURE.generations) - FIXTURE.costMicrosPerGeneration
-        : null,
+    // FIXTURE.signups and FIXTURE.generations are hardcoded positive
+    // constants (never 0): no `null` branch to guard here, unlike
+    // buildSteps' rateFromPrevious below, whose denominator does vary.
+    signupToPurchaseRate: FIXTURE.purchases / FIXTURE.signups,
+    marginPerGenerationMicros: Math.round(revenueMicros / FIXTURE.generations) - FIXTURE.costMicrosPerGeneration,
   };
 }
 

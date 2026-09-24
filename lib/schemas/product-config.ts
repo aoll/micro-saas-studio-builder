@@ -13,7 +13,9 @@ const MAX_NAME_LENGTH = 60;
 const MAX_SEO_TITLE_LENGTH = 60;
 const MAX_SEO_DESCRIPTION_LENGTH = 160;
 const MIN_INPUTS = 1;
-const MAX_INPUTS = 10;
+// Exported: reused by lib/schemas/inputs.ts to bound generateInputSchema's
+// `input` record to the number of fields a product can actually declare.
+export const MAX_INPUTS = 10;
 
 export const slugSchema = z
   .string()

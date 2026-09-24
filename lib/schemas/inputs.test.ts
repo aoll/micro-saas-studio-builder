@@ -1,4 +1,5 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
+import { MAX_INPUTS } from "./product-config";
 import {
   generateInputSchema,
   purchaseInputSchema,
@@ -25,6 +26,32 @@ describe("generateInputSchema", () => {
 
   it("rejects a non-uuid idempotencyKey", () => {
     const result = generateInputSchema.safeParse({ input: { poste: "Développeur" }, idempotencyKey: "not-a-uuid" });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts exactly MAX_INPUTS keys", () => {
+    const input = Object.fromEntries(Array.from({ length: MAX_INPUTS }, (_, i) => [`field_${i}`, "value"]));
+    const result = generateInputSchema.safeParse({
+      input,
+      idempotencyKey: "3f3f3f3f-3f3f-4f3f-8f3f-3f3f3f3f3f3f",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects MAX_INPUTS + 1 keys", () => {
+    const input = Object.fromEntries(Array.from({ length: MAX_INPUTS + 1 }, (_, i) => [`field_${i}`, "value"]));
+    const result = generateInputSchema.safeParse({
+      input,
+      idempotencyKey: "3f3f3f3f-3f3f-4f3f-8f3f-3f3f3f3f3f3f",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a key that does not look like an input field key", () => {
+    const result = generateInputSchema.safeParse({
+      input: { "Not A Key!": "value" },
+      idempotencyKey: "3f3f3f3f-3f3f-4f3f-8f3f-3f3f3f3f3f3f",
+    });
     expect(result.success).toBe(false);
   });
 });

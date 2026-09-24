@@ -1,7 +1,11 @@
 import { z } from "zod";
 import { eventTypeSchema } from "./event-type";
 import { packSchema } from "./pack";
-import { productStatusSchema } from "./product-config";
+import { MAX_INPUTS, productStatusSchema } from "./product-config";
+
+// Same key format as inputFieldSchema.key (product-config.ts): a field key
+// is always a lowercase identifier.
+const inputFieldKeySchema = z.string().regex(/^[a-z][a-z0-9_]*$/, "key must start with a lowercase letter");
 
 // Input schemas of the Server Actions and Route Handlers of later specs
 // (CLAUDE.md: "Every Server Action and Route Handler re-checks auth and
@@ -10,9 +14,16 @@ import { productStatusSchema } from "./product-config";
 // Périmètre.
 
 // SA-02 `api/generate`: the per-field check against `config.inputs` happens
-// in the route, from the product config; this schema only bounds the shape.
+// in the route, from the product config; this schema only bounds the shape
+// and rejects an oversized payload before that comparison runs — a product
+// declares at most MAX_INPUTS fields (product-config.ts), so the record
+// can never legitimately carry more keys.
 export const generateInputSchema = z.object({
-  input: z.record(z.string(), z.string().max(5000)),
+  input: z
+    .record(inputFieldKeySchema, z.string().max(5000))
+    .refine((input) => Object.keys(input).length <= MAX_INPUTS, {
+      error: `at most ${MAX_INPUTS} input keys`,
+    }),
   idempotencyKey: z.uuid(),
 });
 export type GenerateInput = z.infer<typeof generateInputSchema>;

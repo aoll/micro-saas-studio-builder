@@ -24,8 +24,9 @@ yourself; you dispatch agents, track state and talk to the human.
   `main` is the human's call, at a validated milestone.
 - **Monitoring:** right after, start the monitor as a background command for
   the whole run: `pnpm tsx scripts/monitor.ts watch` (a tick every 60 s). It
-  adapts the limits below to the machine's CPU and memory; stop it at the end
-  of the run.
+  prints one usage line per tick and adapts the limits below to the machine's
+  CPU and memory; stop it at the end of the run. The human follows the usage
+  in real time with `pnpm tsx scripts/monitor.ts live` in a terminal.
 - **Pool:** one worktree per spec, created and removed with
   `scripts/worktree.ts` (`worktrees` skill). Its size starts at 10
   (`WORKTREE_MAX`) and follows the monitor: read it with

@@ -73,7 +73,8 @@ or the value `scripts/monitor.ts` tuned to the machine's load during a run.
 
    During an orchestration run, `scripts/monitor.ts` raises or lowers the
    `test` and `typecheck` slots with the machine's load (`<queue>.slots` in
-   the queue directory); `pnpm tsx scripts/monitor.ts status` shows them.
+   the queue directory); `pnpm tsx scripts/monitor.ts live` shows the machine,
+   the queues and every queued job (worktree, time, memory) in real time.
 
    Never wrap these scripts in `scripts/queued.sh` again: the nested call
    would wait for a second slot of the queue it already holds. A single test

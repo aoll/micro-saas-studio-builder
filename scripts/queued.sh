@@ -62,7 +62,8 @@ trap 'rm -f "$lock_dir/$queue.wait.$$" "$lock_dir/$queue.run.$$"' EXIT
 # The command runs with fd 9 closed so a daemon it spawns cannot keep the slot.
 run_locked() {
 	echo "[queue:$queue] slot $1 acquired: ${cmd[*]}" >&2
-	mv -f "$lock_dir/$queue.wait.$$" "$lock_dir/$queue.run.$$"
+	rm -f "$lock_dir/$queue.wait.$$"
+	: >"$lock_dir/$queue.run.$$" # fresh mtime: the monitor shows time since start
 	"${cmd[@]}" 9>&-
 	local code=$?
 	flock -u 9

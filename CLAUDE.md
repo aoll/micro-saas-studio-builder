@@ -21,7 +21,7 @@ referenced from `AGENTS.md` (managed by `next dev`): trust it over memory.
 | `pnpm test:e2e` | Playwright on `$E2E_PORT` (default 3100), E2E phase only, queued: 1 slot |
 | `pnpm db:migrate` / `pnpm db:seed` | Apply migrations / seed the current database |
 | `pnpm tsx scripts/worktree.ts integration\|new\|rm\|list` | Integration branch of a run, parallel worktrees (`worktrees` skill) |
-| `pnpm tsx scripts/monitor.ts status\|watch` | CPU and memory; tunes slots and pool size during a run |
+| `pnpm tsx scripts/monitor.ts live\|status\|watch` | Real-time CPU, memory, queues and jobs; `watch` tunes slots and pool size during a run |
 
 Up to 10 worktrees share this machine at the start of a run; the monitor
 raises or lowers that pool and the 4 + 4 slots with the load. `typecheck`, `test`, `test:coverage` and

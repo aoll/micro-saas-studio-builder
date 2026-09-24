@@ -1,7 +1,13 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 // Fails the build (and this import) if any of the 8 required variables is
 // missing or invalid (docs/10-tooling-dev.md).
 import "./lib/env";
+
+// next-intl without i18n routing (docs/08-stack.md): i18n/request.ts reads
+// the locale from the product config via next/root-params, not a URL
+// segment.
+const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 const nextConfig: NextConfig = {
   cacheComponents: true, // 'use cache', PPR, dynamic by default
@@ -18,4 +24,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

@@ -36,26 +36,33 @@ The `orchestrator` skill runs the approved specs with up to 10 worktrees, from
 a dependency registry versioned on the integration branch: a spec starts as
 soon as its own dependencies are merged and a worktree is free (the waves of
 `specs/README.md` are a reading aid, never a barrier), and each one goes
-through the classic ECC flow below.
+through the flow below: a triage first, then the classic ECC flow when the
+spec needs it.
 
 1. **Spec.** One feature = one spec `specs/<REF>-<name>.md`, written from the
    dossier. A human approves the specs by merging them into `main` (gate 1).
-2. **Plan.** `/plan <spec>`: the `planner` agent turns the spec into tasks,
+2. **Triage.** The `triage` agent reads the real code of the worktree and
+   picks a mode: `direct` (one coherent change, implemented at once),
+   `inline` (a short plan, then implemented at once, behavior by behavior) or
+   `classic` (steps 3 and 4 below). Specs that touch a frozen contract,
+   credits, auth or several domains go `classic`. Every mode continues at
+   step 5.
+3. **Plan** (`classic`). `/plan <spec>`: the `planner` agent turns the spec into tasks,
    files and risks, committed as `.claude/plans/<REF>.plan.md`.
-3. **Test-first loop.** `/tdd <spec>` inside the spec's worktree: the
+4. **Test-first loop** (`classic`; `direct` and `inline` follow the same rules). `/tdd <spec>` inside the spec's worktree: the
    `tdd-guide` agent takes one acceptance behavior at a time, red then green,
    commits and pushes at every green step, and keeps going without waiting
    for anything until the spec is done. It stays inside `Périmètre`. A
    committed test is never weakened silently: its commit message says why.
-4. **Code review.** `/review`: `code-reviewer` plus the specialists; findings
+5. **Code review.** `/review`: `code-reviewer` plus the specialists; findings
    go back to `tdd-guide` until no CRITICAL or HIGH is left.
-5. **Verify.** `/verify` (`pnpm check`, spec conformance) must end READY
+6. **Verify.** `/verify` (`pnpm check`, spec conformance) must end READY
    before the PR is opened.
-6. **Pull request and merge.** The orchestrator opens the PR against the
+7. **Pull request and merge.** The orchestrator opens the PR against the
    integration branch and squash-merges it once `/verify` is READY and the
    review is clean, and takes over any spec that gets stuck. Other agents never
    merge; nobody but a human merges into `main`.
-7. **E2E phase.** Once the features are done, Playwright journeys and fixes,
+8. **E2E phase.** Once the features are done, Playwright journeys and fixes,
    with `next-dev-loop` and `agent-browser` on a running dev server.
 
 Priority when rules pull in different directions: **approved spec > tests
@@ -105,6 +112,7 @@ written first > readability for the reviewer > minimal code** (`ponytail`).
 
 | | Name | Use it to |
 |---|---|---|
+| Agent | `triage` | First step of a spec: pick `direct`, `inline` or `classic`, and implement it in the first two |
 | Agent | `planner` | Plan one approved spec: tasks, files, risks |
 | Agent | `tdd-guide` | Implement a spec, test-first, commit at every green step |
 | Agent | `code-reviewer`, `nextjs-reviewer`, `database-reviewer`, `security-reviewer`, `silent-failure-hunter` | Review a diff |

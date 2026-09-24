@@ -8,7 +8,8 @@ argument-hint: "<specs/REF-name.md>"
 Spec: $ARGUMENTS
 
 1. **Check the input.** The spec exists on the integration branch (`git config msb.integration`), its `Dépend de` specs are merged, and
-   `.claude/plans/<REF>.plan.md` exists in the worktree. No plan: run `/plan` first.
+   `.claude/plans/<REF>.plan.md` exists in the worktree. No plan: run `/plan` first (in an orchestrated run, only `classic`
+   specs come here: `direct` and `inline` ones are implemented by `triage`).
 2. **Implement.** Delegate to the `tdd-guide` agent with the spec path, the plan path and the worktree
    (one worktree and one database per writing agent, `worktrees` skill). It follows the plan task by
    task and the `tdd-workflow` skill: red then green, commit and push at every green step, no pause

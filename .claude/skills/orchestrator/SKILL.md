@@ -4,8 +4,8 @@ description: >
   Runs every approved spec to a merge into the run's integration branch, with
   up to 10 worktrees in parallel: keeps a versioned dependency registry,
   starts a spec as soon as its own dependencies are merged and a worktree is
-  free, drives each one through the classic ECC flow (plan, TDD, code review,
-  checks, PR, merge), takes over stuck specs, and hands the integration branch
+  free, triages each one (direct, inline, or the classic ECC flow of planner
+  then TDD), drives it through code review, checks, PR and merge, takes over stuck specs, and hands the integration branch
   to the human at the end. Use when asked to implement several specs or "all
   the specs".
 ---
@@ -45,8 +45,8 @@ You are its only writer; agents never touch it.
 {
   "integration": "integration/v1",
   "specs": {
-    "SETUP-skeleton": { "dependsOn": [], "status": "ready", "worktree": null, "pr": null },
-    "CONTRACT-types": { "dependsOn": ["SETUP-skeleton"], "status": "pending", "worktree": null, "pr": null }
+    "SETUP-skeleton": { "dependsOn": [], "status": "ready", "worktree": null, "mode": null, "pr": null },
+    "CONTRACT-types": { "dependsOn": ["SETUP-skeleton"], "status": "pending", "worktree": null, "mode": null, "pr": null }
   },
   "pendingIntegrations": []
 }
@@ -80,7 +80,13 @@ spec blocked or unblocked, a pool size change), never computed once:
 
 The `ready` entries are the queue: nothing else to keep on the side.
 
-**Dependency gaps found on the way.** `tdd-guide` reports, even when empty,
+`mode` is the triage decision (step 1): `direct`, `inline` or `classic`,
+`null` until the triage reports. Set it before dispatch only to force a mode
+(a spec you took over, or one whose triage went wrong); the triage then
+applies it.
+
+**Dependency gaps found on the way.** `tdd-guide` (and `triage` in `direct`
+or `inline` mode) reports, even when empty,
 the scope it had to leave out because another spec of the run was not merged
 yet (`Dependency gaps`: missing spec, scope left out). Never ignore one because
 the spec is otherwise green: it is real scope not delivered. For each gap:
@@ -98,7 +104,7 @@ is now `merged`: dispatch the integration (a short spec flow in the
 when it is inside its `Périmètre`), then set `resolved: true`. The run is not
 over while one is unresolved.
 
-## Per-spec flow (classic ECC)
+## Per-spec flow (triage, then ECC)
 
 Each step is one background agent working in the spec's worktree. Give it the
 absolute worktree path and tell it to run every command there. Every brief
@@ -111,9 +117,10 @@ steps of different specs in the same message.
 | # | Step | Who | Done when |
 |---|------|-----|-----------|
 | 0 | Worktree | you: `pnpm tsx scripts/worktree.ts new <slug>` | branch pushed, database migrated and seeded |
-| 1 | Plan | `planner` agent, then you write and commit `.claude/plans/<REF>.plan.md` (`/plan`) | plan committed; no user wait, the merged spec is the approval |
-| 2 | TDD | `tdd-guide` agent (`/tdd`) | every acceptance bullet green, coverage 80%+ on `lib/**`, pushed |
-| 3 | Code review | `/review`: `code-reviewer` + specialists | no CRITICAL or HIGH left; MEDIUM fixed when possible. Findings go back to `tdd-guide`, then review again |
+| 1 | Triage | `triage` agent: investigates the real code, picks `direct`, `inline` or `classic`; you record `mode` in the registry | mode recorded; for `direct` and `inline`, the spec is implemented: go to step 3 |
+| 2a | Plan (`classic`) | `planner` agent, given the triage report; then you write and commit `.claude/plans/<REF>.plan.md` (`/plan`) | plan committed; no user wait, the merged spec is the approval |
+| 2b | TDD (`classic`) | `tdd-guide` agent (`/tdd`) | every acceptance bullet green, coverage 80%+ on `lib/**`, pushed |
+| 3 | Code review | `/review`: `code-reviewer` + specialists, whatever the mode | no CRITICAL or HIGH left; MEDIUM fixed when possible. Findings go back to `tdd-guide`, then review again |
 | 4 | Commit & push | the agent that fixed | nothing uncommitted or unpushed |
 | 5 | Pre-review checks | `verification-loop` (`/verify`) after merging the integration branch into the branch | READY |
 | 6 | Pull request | you: base = the integration branch, title `feat(<scope>): <REF> <summary>`, template filled | PR open |
@@ -225,7 +232,7 @@ exactly what blocks and what you propose, and keep the other specs running.
 The run is over when every spec is `merged` (or `deferred`), no
 `pendingIntegrations` entry is unresolved and the integration branch passes
 `/verify`. Then: stop the monitoring (below), and hand over to the human with
-the integration branch, the registry and a short report (specs merged, specs
+the integration branch, the registry and a short report (specs merged with their mode, specs
 you took over and why, residual specs added, anything left for the E2E
 phase). This is the milestone: the human reviews the integration branch and
 merges it into `main`. You never merge into `main`.
@@ -237,7 +244,7 @@ derived from it, with the flow step of each dispatched spec:
 
 | Spec | Status | Step | Worktree | PR |
 |------|--------|------|----------|----|
-| `<REF>` | pending · ready · dispatched · merged · blocked · deferred | plan · tdd · review · verify · PR | `<slug>` | link |
+| `<REF>` | pending · ready · dispatched · merged · blocked · deferred | triage · plan · tdd · review · verify · PR (+ mode) | `<slug>` | link |
 
 Under it, one line from `monitor.ts status`: CPU, memory, slots and pool size.
 

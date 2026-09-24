@@ -94,6 +94,10 @@ If you want changes, respond with:
 - "different approach: [alternative]"
 - "skip phase 2 and do phase 3 first"
 
+In an orchestrated run, `/plan` is the plan of a `classic` spec: the `triage` agent
+has already looked at the code, so give its report to the `planner`. `inline` specs get a
+shorter plan written by `triage` itself; `direct` specs get none.
+
 ## Integration with Other Commands
 
 After planning:

@@ -28,7 +28,7 @@ Périmètre   : <chemins>
 Hors périmètre : <ce qu'on ne fait pas ici>
 ```
 
-**Contexte donné à chaque agent** : l'orchestrateur (skill `orchestrator`) lance les agents d'une spec — `planner`, `tdd-guide`, relecteurs — avec le même brief, seul le nom de la spec change. Tout le dossier exporté dans `docs/` (hors cet onglet, les specs vivant dans `specs/`) est le contexte de la spec : chaque agent doit lire chaque document en entier avant de commencer, pas seulement les sections citées dans `Réf`.
+**Contexte donné à chaque agent** : l'orchestrateur (skill `orchestrator`) lance les agents d'une spec — `triage`, puis `planner` et `tdd-guide` si le triage choisit le flux classique, relecteurs — avec le même brief, seul le nom de la spec change. Tout le dossier exporté dans `docs/` (hors cet onglet, les specs vivant dans `specs/`) est le contexte de la spec : chaque agent doit lire chaque document en entier avant de commencer, pas seulement les sections citées dans `Réf`.
 
 ```md
 Spec : specs/<REF>-<nom>.md, dans ton worktree <chemin>.
@@ -36,7 +36,8 @@ Spec : specs/<REF>-<nom>.md, dans ton worktree <chemin>.
 1. Contexte : lis en entier CHAQUE document de docs/ (docs/README.md les liste).
    C'est le contexte de ta spec : produit, écrans, maquettes, modèle de données,
    arborescence, stack, choix Next.js et IA, méthode. Puis CLAUDE.md et la spec.
-2. Fais ta part du flux : plan (planner), boucle TDD (tdd-guide) ou revue.
+2. Fais ta part du flux : triage (triage), plan (planner), boucle TDD
+   (tdd-guide) ou revue.
    TDD : un critère d'acceptation à la fois, test rouge, code minimal jusqu'au
    vert, commit et push ; enchaîne sans attendre.
 3. Ne sors pas du périmètre, ne modifie aucun contrat : note le blocage et

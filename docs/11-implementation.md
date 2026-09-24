@@ -14,8 +14,9 @@ Trois règles structurent tout l'onglet :
 | --- | --- | --- | --- |
 | 1 | Écrire la spec minimale de la feature | Moi, avec Claude | `specs/<REF>-<nom>.md`, une dizaine de lignes |
 | 2 | **Porte 1 : valider les specs** | Moi | Specs mergées sur `main`, avant le run |
-| 3 | Plan : tâches, fichiers, risques (`/plan`) | Agent `planner` | `.claude/plans/<REF>.plan.md` commité |
-| 4 | Boucle TDD : un comportement à la fois, test rouge puis code vert, commit et push à chaque étape verte, sans pause jusqu'à la fin de la spec (`/tdd`) | Agent `tdd-guide` | Trace rouge → vert dans les commits, 80 % de couverture sur `lib/**` |
+| 3 | Triage : l'agent lit le code réel du worktree et choisit le mode. `direct` : un changement cohérent, implémenté tout de suite. `inline` : un plan court, puis implémenté tout de suite, comportement par comportement. `classic` : plan puis boucle TDD par deux agents dédiés (contrat gelé, crédits, auth, plusieurs domaines) | Agent `triage` | Mode noté dans le registre ; en `direct` et `inline`, la spec est implémentée (même règles qu'en 4) |
+| 3b | Plan (`classic`) : tâches, fichiers, risques (`/plan`) | Agent `planner`, avec le rapport du triage | `.claude/plans/<REF>.plan.md` commité |
+| 4 | Boucle TDD : un comportement à la fois, test rouge puis code vert, commit et push à chaque étape verte, sans pause jusqu'à la fin de la spec (`/tdd`, en `classic`) | Agent `tdd-guide` | Trace rouge → vert dans les commits, 80 % de couverture sur `lib/**` |
 | 5 | Revue de code (`/review`), corrections jusqu'à zéro CRITICAL ou HIGH | `code-reviewer` + spécialistes | Corrections commitées et poussées |
 | 6 | `/verify` après merge de la branche d'intégration dans la branche | Agent | `pnpm check`, conformité à la spec, verdict **READY** |
 | 7 | PR vers la branche d'intégration, puis squash merge dès que `/verify` est READY et la revue propre | Orchestrateur | **Un commit** par spec sur la branche d'intégration ; les specs débloquées démarrent |
@@ -124,7 +125,7 @@ Chaque lot vit dans son propre worktree git, créé par `pnpm tsx scripts/worktr
 - sa propre base ;
 - **pas de serveur de dev** : typecheck et Vitest n'en ont pas besoin, et Playwright lance le sien en fin de feature.
 
-Au plus 10 worktrees actifs (`WORKTREE_MAX`). L'**orchestrateur** (la session principale, skill `orchestrator`) démarre une spec dès que ses dépendances sont mergées et qu'un worktree est libre, puis l'enchaîne de bout en bout : plan, TDD, revue, `/verify`, PR. Il libère le worktree après le merge : `worktree.ts rm <slug>` supprime la base, le worktree et la branche mergée ; le skill `worktrees` décrit tout le cycle. Pour voir l'interface : la preview Vercel de la PR, ou la branche lancée dans le checkout principal.
+Au plus 10 worktrees actifs (`WORKTREE_MAX`). L'**orchestrateur** (la session principale, skill `orchestrator`) démarre une spec dès que ses dépendances sont mergées et qu'un worktree est libre, puis l'enchaîne de bout en bout : triage, plan et TDD si le triage choisit `classic`, revue, `/verify`, PR. Il libère le worktree après le merge : `worktree.ts rm <slug>` supprime la base, le worktree et la branche mergée ; le skill `worktrees` décrit tout le cycle. Pour voir l'interface : la preview Vercel de la PR, ou la branche lancée dans le checkout principal.
 
 **Une base par worktree** : un seul Postgres local (cluster natif, ou le service Docker de `docker-compose.yml`) et une base par branche (`msb` pour `main`, `msb_feat_<slug>` pour un worktree), gérée par `scripts/worktree-db.ts`. Le hook de démarrage de session relance Postgres s'il est tombé. La preview Vercel, elle, pointe sur la base de preview partagée, en `AI_MODE=mock`.
 
@@ -151,7 +152,7 @@ De mon côté, `monitor.ts live` affiche l'usage en temps réel : machine, files
 ### Rôles
 
 - **Moi** : architecte et relecteur. J'écris et valide les specs (porte 1). L'orchestrateur merge chaque PR de spec dans la branche d'intégration dès qu'elle passe `/verify` et la revue automatique, et reprend lui-même une spec bloquée. Une fois toutes les specs mergées, je relis la branche d'intégration (porte 2) puis je la merge dans `main`, qui part en prod.
-- **Orchestrateur et agents** : l'orchestrateur répartit les specs sur les worktrees et suit leur état ; dans chaque worktree, `planner` écrit le plan, `tdd-guide` écrit les tests et implémente, les relecteurs passent le diff, puis l'orchestrateur ouvre la PR.
+- **Orchestrateur et agents** : l'orchestrateur répartit les specs sur les worktrees et suit leur état ; dans chaque worktree, `triage` choisit le mode et implémente lui-même les specs simples ; sinon `planner` écrit le plan et `tdd-guide` écrit les tests et implémente ; les relecteurs passent le diff, puis l'orchestrateur ouvre la PR.
 - **Ordre de merge dans une vague** : le lot qui porte un contrat réel passe en premier (B, qui remplace le stub `debit()`), puis les autres mergent la branche d'intégration dans leur branche (jamais de rebase d'une branche poussée). PR courtes : un lot peut en ouvrir plusieurs, une par écran.
 
 ## Rendre la méthode visible

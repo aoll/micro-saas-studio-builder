@@ -11,14 +11,11 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import postgres from "postgres";
 
-const ADMIN_URL =
-  process.env.POSTGRES_ADMIN_URL ??
-  "postgres://postgres:postgres@localhost:5432/postgres";
+const ADMIN_URL = process.env.POSTGRES_ADMIN_URL ?? "postgres://postgres:postgres@localhost:5432/postgres";
 const MAIN_DB = "msb";
 const PROTECTED_BRANCHES = new Set(["main", "master"]);
 
-const git = (args: string[], cwd?: string): string =>
-  execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
+const git = (args: string[], cwd?: string): string => execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
 
 export const dbNameForBranch = (branch: string): string => {
   if (PROTECTED_BRANCHES.has(branch)) return MAIN_DB;

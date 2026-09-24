@@ -33,7 +33,8 @@ describe("themeTokensSchema", () => {
   });
 
   it("rejects a token set missing dark", () => {
-    const { dark: _dark, ...withoutDark } = fullTokens;
+    const withoutDark: Partial<typeof fullTokens> = { ...fullTokens };
+    delete withoutDark.dark;
     expect(themeTokensSchema.safeParse(withoutDark).success).toBe(false);
   });
 

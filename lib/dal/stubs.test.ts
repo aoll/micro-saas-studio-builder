@@ -134,3 +134,22 @@ describe("thresholds", () => {
     await expect(getThresholds("p1")).rejects.toThrow("not implemented");
   });
 });
+
+describe("guards", () => {
+  it("isEditable throws not implemented", async () => {
+    const { isEditable } = await import("./guards");
+    expect(() => isEditable({ isSeed: true })).toThrow("not implemented");
+  });
+
+  it("assertEditable throws not implemented", async () => {
+    const { assertEditable } = await import("./guards");
+    expect(() => assertEditable({ isSeed: true })).toThrow("not implemented");
+  });
+});
+
+describe("security", () => {
+  it("guardRequest throws not implemented", async () => {
+    const { guardRequest } = await import("@/lib/security");
+    await expect(guardRequest("generate")).rejects.toThrow("not implemented");
+  });
+});

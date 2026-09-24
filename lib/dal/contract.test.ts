@@ -155,3 +155,31 @@ describe("thresholds", () => {
     expectTypeOf(getThresholds).returns.resolves.toEqualTypeOf<import("./thresholds").Thresholds>();
   });
 });
+
+describe("guards", () => {
+  it("assertEditable takes a Lockable and returns void", async () => {
+    const { assertEditable } = await import("./guards");
+    expectTypeOf(assertEditable).parameters.toEqualTypeOf<[row: import("./guards").Lockable]>();
+    expectTypeOf(assertEditable).returns.toEqualTypeOf<void>();
+  });
+
+  it("isEditable takes a Lockable and returns a boolean", async () => {
+    const { isEditable } = await import("./guards");
+    expectTypeOf(isEditable).parameters.toEqualTypeOf<[row: import("./guards").Lockable]>();
+    expectTypeOf(isEditable).returns.toEqualTypeOf<boolean>();
+  });
+});
+
+describe("security", () => {
+  it("guardRequest takes a GuardKind and returns a GuardResult", async () => {
+    const { guardRequest } = await import("@/lib/security");
+    expectTypeOf(guardRequest).parameters.toEqualTypeOf<[kind: import("@/lib/security").GuardKind]>();
+    expectTypeOf(guardRequest).returns.resolves.toEqualTypeOf<import("@/lib/security").GuardResult>();
+  });
+
+  it("GuardKind has exactly the 4 kinds cited by SA-02, SA-03, SA-05 and BO-05b", () => {
+    expectTypeOf<import("@/lib/security").GuardKind>().toEqualTypeOf<
+      "generate" | "signup" | "purchase" | "test-prompt"
+    >();
+  });
+});

@@ -11,6 +11,7 @@
     "copied": "Copied",
     "copyError": "Could not copy",
     "download": "Download",
+    "downloadError": "Could not download",
     "regenerate": "Regenerate"
   },
   "pack": {

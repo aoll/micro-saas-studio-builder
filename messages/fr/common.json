@@ -11,6 +11,7 @@
     "copied": "Copié",
     "copyError": "Impossible de copier",
     "download": "Télécharger",
+    "downloadError": "Impossible de télécharger",
     "regenerate": "Régénérer"
   },
   "pack": {

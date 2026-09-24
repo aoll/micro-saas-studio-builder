@@ -42,13 +42,20 @@ export function ResultCard({
   function handleDownload(event: React.MouseEvent) {
     event.preventDefault();
     if (output.kind !== "markdown") return;
-    const blob = new Blob([output.text], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${fileName}.md`;
-    link.click();
-    URL.revokeObjectURL(url);
+    try {
+      const blob = new Blob([output.text], { type: "text/markdown" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${fileName}.md`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      // Never swallowed: the user needs to know the download failed
+      // (CLAUDE.md: no silent failure).
+      toast.error(t("downloadError"));
+      console.error("[ResultCard] download failed", error);
+    }
   }
 
   return (
@@ -67,7 +74,6 @@ export function ResultCard({
                 {copied ? t("copied") : t("copy")}
               </Button>
               <Button asChild variant="outline">
-                {}
                 <a role="link" onClick={handleDownload} download={`${fileName}.md`} href="#">
                   {t("download")}
                 </a>

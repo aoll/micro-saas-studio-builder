@@ -62,6 +62,16 @@ describe("ResultCard", () => {
     expect(link.download).toBe("lettre-motivation.md");
   });
 
+  it("shows a toast error when the download fails, never swallowed", () => {
+    const createObjectURL = vi.fn().mockImplementation(() => {
+      throw new Error("out of memory");
+    });
+    Object.assign(URL, { createObjectURL });
+    renderCard();
+    fireEvent.click(screen.getByRole("link", { name: "Télécharger" }));
+    expect(toastError).toHaveBeenCalled();
+  });
+
   it("calls onRegenerate when the regenerate button is clicked", () => {
     const onRegenerate = vi.fn();
     renderCard({ onRegenerate });

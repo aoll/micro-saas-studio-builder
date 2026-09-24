@@ -3,8 +3,9 @@ import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/auth-schema";
-import { events, products } from "@/lib/db/schema";
+import { events, productVersions, products, themes } from "@/lib/db/schema";
 import { eventTypeSchema } from "@/lib/schemas/event-type";
+import type { ProductConfig } from "@/lib/schemas/product-config";
 
 const getSession = vi.fn();
 vi.mock("./session", () => ({ getSession: () => getSession() }));
@@ -21,6 +22,35 @@ async function lettreProId(): Promise<string> {
 async function anyUserId(): Promise<string> {
   const row = await db.query.users.findFirst();
   return row!.id;
+}
+
+// A throwaway product, inserted directly (not through product-editor, whose
+// `createProduct` needs `requireAdmin` — a different export of the mocked
+// "./session" module), used only to prove the visit dedupe is scoped per
+// product.
+async function createTempProduct(): Promise<{ id: string; cleanup: () => Promise<void> }> {
+  const theme = await db.query.themes.findFirst({ where: eq(themes.slug, "editorial") });
+  const owner = await db.query.users.findFirst();
+  const id = randomUUID();
+  await db.insert(products).values({
+    id,
+    slug: `events-test-${randomUUID()}`,
+    themeId: theme!.id,
+    currentVersion: 1,
+    locale: "fr",
+    createdBy: owner!.id,
+  });
+  await db
+    .insert(productVersions)
+    .values({ productId: id, version: 1, config: {} as ProductConfig, createdBy: owner!.id });
+  return {
+    id,
+    cleanup: async () => {
+      await db.delete(events).where(eq(events.productId, id));
+      await db.delete(productVersions).where(eq(productVersions.productId, id));
+      await db.delete(products).where(eq(products.id, id));
+    },
+  };
 }
 
 // Real implementation (specs/TRACKING.md bullet 3): track() writes to
@@ -127,5 +157,99 @@ describe("track", () => {
     await expect(track({ type: "purchase", productId, userId: null, anonymousId: null })).rejects.toThrow(
       /needs a userId or an anonymousId/,
     );
+  });
+
+  it("rejects a visit event without an anonymousId", async () => {
+    const productId = await lettreProId();
+    const userId = await anyUserId();
+    getSession.mockResolvedValue({ user: { id: userId } });
+
+    const { track } = await import("./events");
+    await expect(track({ type: "visit", productId, userId, anonymousId: null })).rejects.toThrow(
+      /visit needs an anonymousId/,
+    );
+  });
+
+  describe("visit dedupe", () => {
+    it("writes at most one row per anonymous id, product and UTC day", async () => {
+      const productId = await lettreProId();
+      const anonymousId = randomUUID();
+
+      const { track } = await import("./events");
+      await track({ type: "visit", productId, userId: null, anonymousId });
+      await track({ type: "visit", productId, userId: null, anonymousId });
+
+      const rows = await db.select().from(events).where(eq(events.anonymousId, anonymousId));
+      expect(rows).toHaveLength(1);
+
+      await db.delete(events).where(eq(events.anonymousId, anonymousId));
+    });
+
+    it("serializes 5 concurrent visits into one row", async () => {
+      const productId = await lettreProId();
+      const anonymousId = randomUUID();
+
+      const { track } = await import("./events");
+      await Promise.all(
+        Array.from({ length: 5 }, () => track({ type: "visit", productId, userId: null, anonymousId })),
+      );
+
+      const rows = await db.select().from(events).where(eq(events.anonymousId, anonymousId));
+      expect(rows).toHaveLength(1);
+
+      await db.delete(events).where(eq(events.anonymousId, anonymousId));
+    });
+
+    it("writes a separate row for the same anonymous id on a different product", async () => {
+      const productId = await lettreProId();
+      const anonymousId = randomUUID();
+      const other = await createTempProduct();
+
+      const { track } = await import("./events");
+      await track({ type: "visit", productId, userId: null, anonymousId });
+      await track({ type: "visit", productId: other.id, userId: null, anonymousId });
+
+      const rows = await db.select().from(events).where(eq(events.anonymousId, anonymousId));
+      expect(rows).toHaveLength(2);
+      expect(new Set(rows.map((row) => row.productId))).toEqual(new Set([productId, other.id]));
+
+      await db.delete(events).where(eq(events.anonymousId, anonymousId));
+      await other.cleanup();
+    });
+
+    it("writes a new row once the previous visit is more than a day old", async () => {
+      const productId = await lettreProId();
+      const anonymousId = randomUUID();
+      const twentyFiveHoursAgo = new Date(Date.now() - 25 * 60 * 60 * 1000);
+      await db.insert(events).values({
+        productId,
+        type: "visit",
+        userId: null,
+        anonymousId,
+        createdAt: twentyFiveHoursAgo,
+      });
+
+      const { track } = await import("./events");
+      await track({ type: "visit", productId, userId: null, anonymousId });
+
+      const rows = await db.select().from(events).where(eq(events.anonymousId, anonymousId));
+      expect(rows).toHaveLength(2);
+
+      await db.delete(events).where(eq(events.anonymousId, anonymousId));
+    });
+
+    it("does not dedupe non-visit types", async () => {
+      const productId = await lettreProId();
+      const anonymousId = randomUUID();
+
+      const { track } = await import("./events");
+      await track({ type: "first_generation", productId, userId: null, anonymousId });
+      await track({ type: "first_generation", productId, userId: null, anonymousId });
+
+      const rows = await db.select().from(events).where(eq(events.anonymousId, anonymousId));
+      expect(rows).toHaveLength(2);
+
+      await db.delete(events).where(eq(events.anonymousId, anonymousId));
+    });
   });
 });

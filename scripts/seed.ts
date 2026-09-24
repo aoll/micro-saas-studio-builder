@@ -18,6 +18,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { accounts, users } from "../lib/db/auth-schema";
 import { products } from "../lib/db/schema";
+import { requireDatabaseUrl } from "../lib/require-database-url";
 
 loadEnvConfig(process.cwd());
 
@@ -27,7 +28,7 @@ loadEnvConfig(process.cwd());
 export const SEED_ADMIN = { email: "admin@msb.local", password: "dev-admin-password-msb" };
 
 export async function seed(): Promise<void> {
-  const sql = postgres(process.env.DATABASE_URL!, { max: 1, connect_timeout: 5, onnotice: () => {} });
+  const sql = postgres(requireDatabaseUrl(), { max: 1, connect_timeout: 5, onnotice: () => {} });
   const db = drizzle(sql, { schema: { products, users, accounts } });
   try {
     await db.insert(products).values({ slug: "demo", name: "demo" }).onConflictDoNothing({ target: products.slug });

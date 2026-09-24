@@ -4,9 +4,10 @@ import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { accounts, users } from "../lib/db/auth-schema";
 import { products } from "../lib/db/schema";
+import { requireDatabaseUrl } from "../lib/require-database-url";
 import { SEED_ADMIN, seed } from "./seed";
 
-const sql = postgres(process.env.DATABASE_URL!, { max: 1, onnotice: () => {} });
+const sql = postgres(requireDatabaseUrl(), { max: 1, onnotice: () => {} });
 const db = drizzle(sql, { schema: { products, users, accounts } });
 
 beforeAll(async () => {

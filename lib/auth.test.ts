@@ -5,10 +5,11 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { afterAll, describe, expect, it } from "vitest";
 import { accounts, magicLinkOutbox, users } from "@/lib/db/auth-schema";
+import { requireDatabaseUrl } from "@/lib/require-database-url";
 import { SEED_ADMIN } from "@/scripts/seed";
 import { auth } from "./auth";
 
-const sql = postgres(process.env.DATABASE_URL!, { max: 1, onnotice: () => {} });
+const sql = postgres(requireDatabaseUrl(), { max: 1, onnotice: () => {} });
 const db = drizzle(sql, { schema: { users, accounts, magicLinkOutbox } });
 
 afterAll(async () => {

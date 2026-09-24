@@ -4,6 +4,7 @@ import { hashPassword } from "better-auth/crypto";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { accounts, users } from "../lib/db/auth-schema";
+import { requireDatabaseUrl } from "../lib/require-database-url";
 import { SEED_ADMIN } from "../scripts/seed";
 
 // Walking skeleton journeys (specs/SETUP-skeleton.md). Runs against the
@@ -32,7 +33,7 @@ test("the seeded admin can sign in and reach /admin", async ({ page }) => {
 test("a role=user account stays on /admin/login with an error", async ({ page }) => {
   const email = `plain-user-${randomUUID()}@example.test`;
   const password = "correct-horse-battery-staple";
-  const sql = postgres(process.env.DATABASE_URL!, { max: 1, onnotice: () => {} });
+  const sql = postgres(requireDatabaseUrl(), { max: 1, onnotice: () => {} });
   const db = drizzle(sql, { schema: { users, accounts } });
   try {
     const userId = randomUUID();

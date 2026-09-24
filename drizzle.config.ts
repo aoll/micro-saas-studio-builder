@@ -1,4 +1,5 @@
 import { defineConfig } from "drizzle-kit";
+import { requireDatabaseUrl } from "./lib/require-database-url";
 // Namespace import: @next/env's CJS bundle defines its exports with
 // Object.defineProperty getters, which different loaders (drizzle-kit's
 // esbuild, tsx, Vite) unwrap inconsistently between `default` and named
@@ -17,6 +18,6 @@ export default defineConfig({
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL!,
+    url: requireDatabaseUrl(),
   },
 });

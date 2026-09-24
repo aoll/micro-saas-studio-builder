@@ -26,19 +26,27 @@ import {
   unique,
   uuid,
 } from "drizzle-orm/pg-core";
-import { eventTypeSchema } from "../schemas/event-type";
-import { productStatusSchema } from "../schemas/product-config";
+import { eventTypeSchema, type EventType } from "../schemas/event-type";
+import { productStatusSchema, type ProductStatus } from "../schemas/product-config";
 import type { ProductConfig } from "../schemas/product-config";
-import { landingVariantSchema } from "../schemas/theme-tokens";
+import { landingVariantSchema, type LandingVariant } from "../schemas/theme-tokens";
 import type { ThemeTokens } from "../schemas/theme-tokens";
 import { users } from "./auth-schema";
 
 // Enums are built from the Zod schemas' `.options` (specs/CONTRACT-data
 // plan › Frozen inputs) so the database and the shared Zod schemas cannot
-// drift apart.
-export const productStatus = pgEnum("product_status", productStatusSchema.options as [string, ...string[]]);
-export const landingVariant = pgEnum("landing_variant", landingVariantSchema.options as [string, ...string[]]);
-export const eventType = pgEnum("event_type", eventTypeSchema.options as [string, ...string[]]);
+// drift apart. `.options` is a plain (runtime) array; the cast below only
+// restores the literal tuple type pgEnum expects, from the very type the
+// Zod schema already carries.
+export const productStatus = pgEnum(
+  "product_status",
+  productStatusSchema.options as unknown as [ProductStatus, ...ProductStatus[]],
+);
+export const landingVariant = pgEnum(
+  "landing_variant",
+  landingVariantSchema.options as unknown as [LandingVariant, ...LandingVariant[]],
+);
+export const eventType = pgEnum("event_type", eventTypeSchema.options as unknown as [EventType, ...EventType[]]);
 
 // Not driven by a Zod schema (docs/07 names these two enums directly, no
 // shared input schema references them).

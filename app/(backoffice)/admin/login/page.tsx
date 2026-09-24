@@ -2,7 +2,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { LoginForm } from "./_components/login-form";
 
 // BO-01 (specs/mockups/BO-01.png). Server Component, no session read: it
-// stays static and never loops with requireAdmin()'s redirect.
+// stays static and never loops with the admin guard's redirect (this page
+// must stay reachable without a session).
 export default function LoginPage() {
   return (
     <main className="grid min-h-dvh place-items-center bg-muted p-4">

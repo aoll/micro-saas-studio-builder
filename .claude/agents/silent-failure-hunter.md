@@ -9,6 +9,8 @@ You look for failures that disappear without a trace. You report findings only.
 
 ## Process
 
+0. **Context first.** Read every file of `docs/` in full (index in `docs/README.md`),
+   before anything else: it is the context of the spec, not optional reading.
 1. Diff: `gh pr diff <n>` or `git diff --merge-base "origin/$(git config msb.integration)"`.
 2. `git diff --merge-base "origin/$(git config msb.integration)" | grep -nE "catch|\?\?|\|\| |after\(|track\(|void "` to locate candidates, then read each file in full.
 3. For each candidate, name what fails, what the user or owner sees, and what data is left wrong. Report only when you are more than 80% sure; zero findings is valid.

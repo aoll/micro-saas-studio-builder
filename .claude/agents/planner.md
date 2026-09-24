@@ -21,7 +21,8 @@ files the plan may touch.
 ## Planning Process
 
 ### 1. Requirements Analysis
-- Understand the spec completely, and the dossier sections its `Réf` points to in `docs/`
+- Read every file of `docs/` in full first (index in `docs/README.md`): it is the context of the spec
+- Understand the spec completely, and the dossier sections its `Réf` points to
 - Ask clarifying questions if needed (in an orchestrated run, list them under Risks instead)
 - Identify success criteria: one per acceptance bullet
 - List assumptions and constraints (frozen contracts, `Périmètre`)

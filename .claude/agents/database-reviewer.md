@@ -9,6 +9,8 @@ Reviewer for the data layer: Drizzle ORM with the `postgres` driver, Postgres (l
 
 ## Process
 
+0. **Context first.** Read every file of `docs/` in full (index in `docs/README.md`),
+   before anything else: it is the context of the spec, not optional reading.
 1. Diff: `git diff --merge-base "origin/$(git config msb.integration)" -- lib/db lib/dal drizzle` (or `gh pr diff <n>`).
 2. Read `lib/db/schema.ts` in full and every DAL function the diff touches, plus its callers.
 3. Run `pnpm drizzle-kit check` (migration journal consistency). If the schema changed, confirm `pnpm drizzle-kit generate` produces no new file, i.e. the committed migration matches the schema.

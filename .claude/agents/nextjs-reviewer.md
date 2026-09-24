@@ -9,6 +9,8 @@ Reviewer for the App Router layer of this repo (`cacheComponents`, `partialPrefe
 
 ## Process
 
+0. **Context first.** Read every file of `docs/` in full (index in `docs/README.md`),
+   before anything else: it is the context of the spec, not optional reading.
 1. Diff: `gh pr diff <n>` or `git diff --merge-base "origin/$(git config msb.integration)" -- app components lib '*.tsx' proxy.ts next.config.ts`.
 2. Read each changed file in full, its parent layout/page, and any Server Action it calls.
 3. Optional checks: `pnpm lint`; full typecheck with `pnpm typecheck` (queued machine-wide).

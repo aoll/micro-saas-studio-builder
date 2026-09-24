@@ -23,7 +23,8 @@ the work.
 1. Work in your own worktree (`worktrees` skill): its branch `feat/<slug>` and
    its own migrated, seeded database. If `DATABASE_URL` looks wrong:
    `pnpm tsx scripts/worktree-db.ts ensure --seed`.
-2. Read the spec, its `Réf` sections in `docs/`, the specs in `Dépend de`, and
+2. Read every file of `docs/` in full (index in `docs/README.md`): it is the
+   context of your spec. Then the spec, the specs in `Dépend de`, and
    its plan `.claude/plans/<REF>.plan.md` (written by `/plan`).
 3. Follow the plan's tasks in order; each task is one or more behaviours taken
    from the `Acceptation` list.
@@ -93,6 +94,10 @@ pnpm test:coverage   # queued, 4 slots per machine
 
 - **Périmètre only.** If something outside it must change, record it as a
   blocker and keep going with the other behaviours.
+- **A dependency that is not there yet.** If a behaviour needs another spec of
+  the run that is not merged yet (a table, a DAL function, a component), do
+  not stub it: deliver the rest, and report exactly what you left out under
+  `Dependency gaps`. The orchestrator schedules it once that spec is merged.
 - **Frozen contracts.** Never change `lib/db/schema.ts`, `lib/schemas/*` or an
   existing DAL signature unless the spec is a contract spec.
 - **A test, once committed, is never weakened silently.** If it was wrong,
@@ -101,7 +106,8 @@ pnpm test:coverage   # queued, 4 slots per machine
   `pnpm test:coverage` wait for one of the 4 machine-wide slots (up to 10
   worktrees share them): run them at the end of a phase, not after every
   step. One test file runs directly: `pnpm vitest run <file>`.
-- **Never merge, never push to the integration branch or `main`.**
+- **Never merge, never push to the integration branch or `main`.** Merging
+  belongs to the orchestrator.
 
 ## Finishing
 
@@ -133,6 +139,9 @@ pnpm test:coverage   # queued, 4 slots per machine
 
 ### Tests changed after being committed
 - none | <test>: <what changed and why> (<commit>)
+
+### Dependency gaps
+- none | missing spec: <REF> · scope left out: <what, precisely>
 
 ### Blockers / out of scope
 - none | <item>

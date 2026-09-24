@@ -4,9 +4,11 @@ A Next.js back-office that launches AI micro-SaaS products from a form and runs
 each one on data (funnel, AI cost, margin, status Test → Learn → Scale → Killed).
 Every product is an AI tool with credits, served at `/{slug}`.
 
-The design dossier lives in `docs/` (French). It is the source of truth for
-screens, data model, contracts and decisions: read the relevant section before
-changing anything. Next.js 16.3 documentation for the installed version is
+The design dossier lives in `docs/` (French, index in `docs/README.md`). It is
+the source of truth for screens, data model, contracts and decisions, and the
+context of every spec: an agent working on a spec reads every file of `docs/`
+in full before starting, not only the sections its `Réf` cites. Specs live in
+`specs/` (index, dependencies and conventions in `specs/README.md`). Next.js 16.3 documentation for the installed version is
 referenced from `AGENTS.md` (managed by `next dev`): trust it over memory.
 
 ## Commands
@@ -30,12 +32,14 @@ nested call waits for a second slot of the queue it already holds).
 
 ## Workflow
 
-The `orchestrator` skill runs the approved specs with up to 10 worktrees: a
-spec starts as soon as its dependencies are merged and a worktree is free, and
-each one goes through the classic ECC flow below.
+The `orchestrator` skill runs the approved specs with up to 10 worktrees, from
+a dependency registry versioned on the integration branch: a spec starts as
+soon as its own dependencies are merged and a worktree is free (the waves of
+`specs/README.md` are a reading aid, never a barrier), and each one goes
+through the classic ECC flow below.
 
-1. **Spec.** One feature = one spec `specs/<REF>-<name>.md` = one PR, written
-   from the dossier and reviewed by `architect`. A human approves and merges it.
+1. **Spec.** One feature = one spec `specs/<REF>-<name>.md`, written from the
+   dossier. A human approves the specs by merging them into `main` (gate 1).
 2. **Plan.** `/plan <spec>`: the `planner` agent turns the spec into tasks,
    files and risks, committed as `.claude/plans/<REF>.plan.md`.
 3. **Test-first loop.** `/tdd <spec>` inside the spec's worktree: the
@@ -47,7 +51,10 @@ each one goes through the classic ECC flow below.
    go back to `tdd-guide` until no CRITICAL or HIGH is left.
 5. **Verify.** `/verify` (`pnpm check`, spec conformance) must end READY
    before the PR is opened.
-6. **Pull request.** A human reviews and squash-merges. Agents never merge.
+6. **Pull request and merge.** The orchestrator opens the PR against the
+   integration branch and squash-merges it once `/verify` is READY and the
+   review is clean, and takes over any spec that gets stuck. Other agents never
+   merge; nobody but a human merges into `main`.
 7. **E2E phase.** Once the features are done, Playwright journeys and fixes,
    with `next-dev-loop` and `agent-browser` on a running dev server.
 
@@ -82,7 +89,9 @@ written first > readability for the reviewer > minimal code** (`ponytail`).
   orchestrator and created from `main` with `pnpm tsx scripts/worktree.ts
   integration <branch>`; `git config msb.integration` gives its name. Feature
   branches start from it and their PRs target it. `main` is production: a
-  human merges the integration branch into it at each validated milestone.
+  human reviews the integration branch and merges it into `main` once every
+  spec of the run is merged; the orchestrator merges the spec PRs into the
+  integration branch as they pass.
 - Commit messages and PR titles and bodies in English.
 - Branches `feat/<slug>`, one worktree each. Conventional PR titles:
   `feat(<scope>): …` with scopes `bo`, `app`, `credits`, `ai`, `db`, `auth`,
@@ -97,7 +106,6 @@ written first > readability for the reviewer > minimal code** (`ponytail`).
 | | Name | Use it to |
 |---|---|---|
 | Agent | `planner` | Plan one approved spec: tasks, files, risks |
-| Agent | `architect` | Review the dossier, a spec or a plan before code |
 | Agent | `tdd-guide` | Implement a spec, test-first, commit at every green step |
 | Agent | `code-reviewer`, `nextjs-reviewer`, `database-reviewer`, `security-reviewer`, `silent-failure-hunter` | Review a diff |
 | Agent | `e2e-runner` | Write and run Playwright journeys |

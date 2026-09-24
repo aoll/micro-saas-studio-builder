@@ -51,7 +51,7 @@ or the value `scripts/monitor.ts` tuned to the machine's load during a run.
 ## Rules for dispatching agents
 
 1. **One worktree per writing agent.** Never two writers in one checkout.
-   Read-only agents (review, architect) can share the main checkout.
+   Read-only agents (reviewers) can share the main checkout.
 2. **Disjoint write scopes.** Before launching a wave, compare the `Périmètre`
    of every spec. Any shared file — `lib/db/schema.ts`, `lib/schemas/**`,
    `messages/*`, `components/ui/**` — is either split per spec or handled by

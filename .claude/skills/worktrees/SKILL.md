@@ -2,9 +2,9 @@
 name: worktrees
 description: >
   How to run several agents in parallel safely: one git worktree per spec, its
-  own dev port and database, disjoint write scopes, machine-wide queues for
+  own database, disjoint write scopes, machine-wide queues for
   heavy checks. Use before creating or removing a worktree, before dispatching
-  parallel agents, and when a worktree's database or port looks wrong.
+  parallel agents, and when a worktree's database looks wrong.
 ---
 
 # Parallel work with worktrees
@@ -17,7 +17,7 @@ checkout so that their branches, dev servers and databases never collide.
 | Resource  | Main checkout | Each worktree `../micro-saas-studio-builder-<slug>` |
 |-----------|---------------|------------------------------------------------------|
 | Branch    | `main`        | `feat/<slug>` (pushed with upstream set at creation) |
-| Dev port  | 3000          | 3001–3004, written as `PORT` in `.env.local`          |
+| Dev server | port 3000     | none: typecheck and Vitest need no server; Playwright starts its own |
 | Database  | `msb`         | `msb_feat_<slug>`, migrated and seeded                |
 | Postgres  | one local cluster (native, or the Docker service), shared by all |           |
 | Queues    | `scripts/queued.sh` slots are shared by every checkout |                     |
@@ -25,11 +25,12 @@ checkout so that their branches, dev servers and databases never collide.
 ## Lifecycle
 
 ```bash
-# create: branch + push -u, port, .env.local, pnpm install, database (migrate + seed)
+# create: branch + push -u, .env.local, pnpm install, database (migrate + seed)
 pnpm tsx scripts/worktree.ts new <slug>
 
-# work inside it
-cd ../micro-saas-studio-builder-<slug> && pnpm dev
+# work inside it: typecheck and Vitest in the loop, E2E at the end of the feature
+cd ../micro-saas-studio-builder-<slug>
+scripts/queued.sh e2e pnpm test:e2e
 
 # inspect
 pnpm tsx scripts/worktree.ts list
@@ -68,6 +69,9 @@ pnpm tsx scripts/worktree-db.ts prune --yes
 
    A single test file (`pnpm vitest run lib/dal/credits.test.ts`) does not
    need the queue.
+6. **E2E on a fixed port.** `playwright.config.ts` builds and starts the app
+   on port 3100 with `reuseExistingServer: false` and `BETTER_AUTH_URL` set to
+   that port. The `e2e` queue has one slot, so two worktrees never share it.
 
 ## Troubleshooting
 
@@ -76,7 +80,8 @@ pnpm tsx scripts/worktree-db.ts prune --yes
   `docker compose up -d postgres`.
 - **`DATABASE_URL` missing or pointing at `msb` in a worktree**:
   `pnpm tsx scripts/worktree-db.ts ensure --seed`.
-- **Port already used**: another dev server is still running for a removed
-  worktree; stop it, or edit `PORT` in `.env.local`.
+- **Need to see the UI**: use the PR's Vercel preview, or run the branch in the
+  main checkout. A dev server in a worktree (`pnpm dev -- -p 3005`) works for
+  pages, not for magic links (`BETTER_AUTH_URL` stays on 3000).
 - **Branch tracks `origin/main`**: the worktree was created by hand; run
   `git push -u origin feat/<slug>`.

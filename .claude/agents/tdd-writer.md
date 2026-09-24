@@ -23,7 +23,7 @@ for what to test where and how.
   `scripts/queued.sh e2e pnpm test:e2e`. Playwright always goes through the e2e queue, even for one
   file (`scripts/queued.sh e2e pnpm test:e2e e2e/checkout.spec.ts`). A single Vitest file can run
   directly (`pnpm vitest run lib/dal/credits.test.ts`).
-- Work only in your own worktree (see the `worktrees` skill); it has its own port and migrated, seeded
+- Work only in your own worktree (see the `worktrees` skill); it has its own migrated, seeded
   database. If `DATABASE_URL` looks wrong, run `pnpm tsx scripts/worktree-db.ts ensure --seed`.
 
 ## Step 1: RED (failing tests, draft PR)

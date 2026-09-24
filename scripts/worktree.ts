@@ -1,20 +1,17 @@
 // Create, remove and list sibling git worktrees, one per feature agent. Each
-// worktree gets its own branch (feat/<slug>), its own dev port and its own
-// Postgres database, so up to WORKTREE_MAX agents can run side by side.
-// `pnpm dev` runs `next dev -p ${PORT:-3000}`; the main checkout keeps 3000.
-// Next reads .env.local only after the server has bound its port, so the dev
-// script must load .env.local into the shell first for PORT to take effect.
+// worktree gets its own branch (feat/<slug>) and its own Postgres database, so
+// up to WORKTREE_MAX agents can run side by side. No dev server runs in a
+// worktree: agents loop on typecheck and Vitest, and Playwright starts its own
+// server on a fixed port, serialised by the `e2e` queue (scripts/queued.sh).
 //
 // Usage: pnpm tsx scripts/worktree.ts <new <slug> [--from <ref>] | rm <slug> [--keep-branch] | list>
 
 import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync } from "node:fs";
-import { createServer } from "node:net";
 import { basename, dirname, resolve, sep } from "node:path";
 import { dbNameForBranch, dbUrlFor, readEnvVar, setEnvVar } from "./worktree-db";
 
 const WORKTREE_MAX = Number(process.env.WORKTREE_MAX ?? 4);
-const BASE_PORT = 3000;
 
 type Worktree = { path: string; branch: string | null };
 
@@ -51,33 +48,6 @@ const validateSlug = (slug: string | undefined): string => {
   return slug as string;
 };
 
-const isPortFree = (port: number): Promise<boolean> =>
-  new Promise((resolvePort) => {
-    const server = createServer();
-    server.unref();
-    server.once("error", () => resolvePort(false));
-    // No host: binds all interfaces, like `next dev`, so any listener conflicts.
-    server.listen(port, () => server.close(() => resolvePort(true)));
-  });
-
-/** Lowest port in 3001..3000+WORKTREE_MAX not claimed by another worktree and not bound. */
-const allocatePort = async (root: string, self: string): Promise<number> => {
-  const current = Number(readEnvVar(resolve(self, ".env.local"), "PORT"));
-  const taken = new Set(
-    worktrees()
-      .filter((w) => resolve(w.path) !== resolve(self))
-      .map((w) => Number(readEnvVar(resolve(w.path, ".env.local"), "PORT")))
-      .filter(Number.isFinite),
-  );
-  taken.add(BASE_PORT);
-  // Keep the port this worktree already has (re-running `new` is idempotent).
-  if (current > BASE_PORT && current <= BASE_PORT + WORKTREE_MAX && !taken.has(current)) return current;
-  for (let port = BASE_PORT + 1; port <= BASE_PORT + WORKTREE_MAX; port++) {
-    if (!taken.has(port) && (await isPortFree(port))) return port;
-  }
-  return fail(`no free dev port in ${BASE_PORT + 1}..${BASE_PORT + WORKTREE_MAX} (root: ${root})`);
-};
-
 const branchExists = (branch: string): boolean => {
   try {
     git(["rev-parse", "--verify", "--quiet", `refs/heads/${branch}`]);
@@ -87,7 +57,7 @@ const branchExists = (branch: string): boolean => {
   }
 };
 
-const cmdNew = async (slug: string, from: string): Promise<void> => {
+const cmdNew = (slug: string, from: string): void => {
   const root = mainRoot();
   const path = pathFor(root, slug);
   const branch = `feat/${slug}`;
@@ -112,7 +82,6 @@ const cmdNew = async (slug: string, from: string): Promise<void> => {
   // origin/feat/<slug> before anything else can push.
   run("git", ["push", "-u", "origin", branch], path);
 
-  const port = await allocatePort(root, path);
   const envLocal = resolve(path, ".env.local");
   if (!existsSync(envLocal)) {
     const source = [resolve(root, ".env.local"), resolve(path, ".env.example")].find(existsSync);
@@ -122,8 +91,6 @@ const cmdNew = async (slug: string, from: string): Promise<void> => {
   // Point at the worktree's own database right away so a copied main
   // DATABASE_URL is never left in place if a later step fails.
   setEnvVar(envLocal, "DATABASE_URL", dbUrlFor(dbName));
-  setEnvVar(envLocal, "PORT", String(port));
-  setEnvVar(envLocal, "BETTER_AUTH_URL", `http://localhost:${port}`);
 
   if (existsSync(resolve(path, "package.json"))) {
     run("pnpm", ["install", "--frozen-lockfile", "--prefer-offline"], path);
@@ -138,9 +105,8 @@ const cmdNew = async (slug: string, from: string): Promise<void> => {
       `Worktree ready`,
       `  path    ${path}`,
       `  branch  ${branch}`,
-      `  port    ${port}`,
       `  db      ${dbName}`,
-      `Next: cd ${path} && pnpm dev`,
+      `Next: cd ${path}`,
     ].join("\n"),
   );
 };
@@ -198,7 +164,6 @@ const cmdList = (): void => {
     return [
       name.startsWith(prefix) ? name.slice(prefix.length) : name,
       w.branch ?? "(detached)",
-      readEnvVar(env, "PORT") ?? "-",
       dbUrl ? new URL(dbUrl).pathname.slice(1) : "-",
       dirty,
     ];
@@ -207,7 +172,7 @@ const cmdList = (): void => {
     console.log("No extra worktrees.");
     return;
   }
-  const table = [["SLUG", "BRANCH", "PORT", "DB", "DIRTY"], ...rows];
+  const table = [["SLUG", "BRANCH", "DB", "DIRTY"], ...rows];
   const widths = table[0]!.map((_, i) => Math.max(...table.map((r) => r[i]!.length)));
   for (const r of table) console.log(r.map((c, i) => c.padEnd(widths[i]!)).join("  "));
 };

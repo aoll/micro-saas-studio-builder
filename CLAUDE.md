@@ -13,7 +13,7 @@ referenced from `AGENTS.md` (managed by `next dev`): trust it over memory.
 
 | Command | What it does |
 |---------|--------------|
-| `pnpm dev` | Dev server on `$PORT` (3000 on main, 3001–3004 in worktrees) |
+| `pnpm dev` | Dev server on port 3000, main checkout only |
 | `pnpm check` | typecheck + lint + format check + knip + unit tests |
 | `pnpm test` / `pnpm test:e2e` | Vitest / Playwright |
 | `pnpm db:migrate` / `pnpm db:seed` | Apply migrations / seed the current database |

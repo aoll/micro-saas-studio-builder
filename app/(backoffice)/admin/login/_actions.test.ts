@@ -104,4 +104,20 @@ describe("login action", () => {
       "redirect:/admin",
     );
   });
+
+  it("logs and still returns the generic error for a non-auth (infrastructure) failure", async () => {
+    const { auth } = await import("@/lib/auth");
+    const infraError = new Error("ECONNREFUSED: could not reach Postgres");
+    const authSpy = vi.spyOn(auth.api, "signInEmail").mockRejectedValueOnce(infraError);
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { login } = await import("./_actions");
+
+    const result = await login({}, formData({ email: SEED_ADMIN.email, password: SEED_ADMIN.password }));
+
+    expect(result.error).toBe("Identifiants invalides");
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("admin/login"), infraError);
+
+    authSpy.mockRestore();
+    consoleSpy.mockRestore();
+  });
 });

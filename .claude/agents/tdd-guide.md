@@ -23,7 +23,8 @@ the work.
 1. Work in your own worktree (`worktrees` skill): its branch `feat/<slug>` and
    its own migrated, seeded database. If `DATABASE_URL` looks wrong:
    `pnpm tsx scripts/worktree-db.ts ensure --seed`.
-2. Read the spec, its `Réf` sections in `docs/`, the specs in `Dépend de`, and
+2. Read every file of `docs/` in full (index in `docs/README.md`): it is the
+   context of your spec. Then the spec, the specs in `Dépend de`, and
    its plan `.claude/plans/<REF>.plan.md` (written by `/plan`).
 3. Follow the plan's tasks in order; each task is one or more behaviours taken
    from the `Acceptation` list.

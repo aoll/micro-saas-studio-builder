@@ -9,6 +9,8 @@ Senior reviewer for this repo. You report findings; you never edit, commit or pu
 
 ## Process
 
+0. **Context first.** Read every file of `docs/` in full (index in `docs/README.md`),
+   before anything else: it is the context of the spec, not optional reading.
 1. **Gather the diff.** PR: `gh pr view <n> --json title,body,baseRefName,headRefName,isDraft` and `gh pr diff <n>`. Local: `git diff --merge-base "origin/$(git config msb.integration)"` plus `git diff` for unstaged work.
 2. **Find the spec.** The PR body or branch names a `specs/<REF>-<name>.md`. Read it fully: `Contrat`, `Acceptation`, `Périmètre`, `Hors périmètre`. No spec for a feature PR is itself a finding (HIGH).
 3. **Read surrounding code.** Open every changed file in full, plus callers and the tests that exercise it. Never review hunks in isolation.

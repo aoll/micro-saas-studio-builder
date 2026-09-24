@@ -9,6 +9,8 @@ Security reviewer for this repo. Users are anonymous visitors of public AI produ
 
 ## Process
 
+0. **Context first.** Read every file of `docs/` in full (index in `docs/README.md`),
+   before anything else: it is the context of the spec, not optional reading.
 1. Diff: `gh pr diff <n>` or `git diff --merge-base "origin/$(git config msb.integration)"`.
 2. Map the entry points in the diff: every `'use server'` export, `app/**/route.ts`, page under `admin/`, and any call into `lib/ai/*` or `lib/dal/*`.
 3. For each entry point trace input -> auth check -> validation -> DAL -> response. Read the full files.

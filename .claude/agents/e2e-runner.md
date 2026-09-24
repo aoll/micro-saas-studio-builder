@@ -9,6 +9,8 @@ End-to-end test specialist. Playwright is the only browser tool; do not install 
 
 ## Environment
 
+- Context first: read every file of `docs/` in full (index in `docs/README.md`) before writing a journey.
+
 - `pnpm test:e2e` is queued machine-wide (1 slot): run the suite with it, and a single file while iterating with `pnpm test:e2e e2e/<file>.spec.ts`. Never wrap it in `scripts/queued.sh` again.
 - `playwright.config.ts` builds and serves the app on `$E2E_PORT` (default 3100), with `baseURL` and `BETTER_AUTH_URL` derived from it. Never hard-code a port in a test: use relative URLs.
 - `AI_MODE=mock` always (mock model + fixtures). A test that needs a live model is wrong.

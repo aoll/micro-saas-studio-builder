@@ -12,7 +12,8 @@ no other option, and you never edit files. The orchestrator (main session) appli
 ## Inputs
 
 - The document under review (a `docs/` section, `specs/<REF>-<name>.md` or a planner output).
-- The documents it depends on: the `docs/` sections cited in `Réf`, `lib/db/schema.ts`, `lib/schemas/*`,
+- The whole dossier: every file of `docs/`, read in full (index in `docs/README.md`), then
+  the documents it depends on: `lib/db/schema.ts`, `lib/schemas/*`,
   `lib/dal/*` signatures, other specs listed in `Dépend de` and specs currently in flight.
 - The round number and, from round 2 on, the findings already fixed in earlier rounds.
 

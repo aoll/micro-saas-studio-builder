@@ -4,9 +4,11 @@ A Next.js back-office that launches AI micro-SaaS products from a form and runs
 each one on data (funnel, AI cost, margin, status Test → Learn → Scale → Killed).
 Every product is an AI tool with credits, served at `/{slug}`.
 
-The design dossier lives in `docs/` (French). It is the source of truth for
-screens, data model, contracts and decisions: read the relevant section before
-changing anything. Next.js 16.3 documentation for the installed version is
+The design dossier lives in `docs/` (French, index in `docs/README.md`). It is
+the source of truth for screens, data model, contracts and decisions, and the
+context of every spec: an agent working on a spec reads every file of `docs/`
+in full before starting, not only the sections its `Réf` cites. Specs live in
+`specs/` (index, dependencies and conventions in `specs/README.md`). Next.js 16.3 documentation for the installed version is
 referenced from `AGENTS.md` (managed by `next dev`): trust it over memory.
 
 ## Commands

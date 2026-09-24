@@ -30,8 +30,9 @@ yourself; you dispatch agents, track state and talk to the human.
   `pnpm tsx scripts/monitor.ts status` before starting a spec.
 - **Ready:** a spec is ready when every spec in its `Dépend de` has its pull
   request merged on the integration branch (squash commit titled `feat(<scope>): <REF> …`).
-  Read the dependencies from the index of the Specs tab (`docs/`) or from each
-  `specs/<REF>-<name>.md`.
+  Read the dependencies from the index in `specs/README.md` or from each
+  `specs/<REF>-<name>.md`. `Contrats` means the three CONTRACT specs, `V2` every
+  V2 spec, `Tout` every spec.
 - **Start rule:** whenever a worktree is free, start the next ready spec. Prefer
   specs on the critical path (the longest chain of dependants), then specs that
   unblock the most others.
@@ -41,7 +42,10 @@ yourself; you dispatch agents, track state and talk to the human.
 ## Per-spec flow (classic ECC)
 
 Each step is one background agent working in the spec's worktree. Give it the
-absolute worktree path and tell it to run every command there. When its
+absolute worktree path and tell it to run every command there. Every brief
+starts with the same context instruction: "Before anything else, read every
+file of docs/ in full (index in docs/README.md): it is the context of your spec,
+not optional reading. Then CLAUDE.md and specs/<REF>-<name>.md." When its
 notification arrives, launch the next step of that spec. Launch independent
 steps of different specs in the same message.
 

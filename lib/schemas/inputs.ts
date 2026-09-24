@@ -65,11 +65,12 @@ export const statusChangeInputSchema = z.object({
 export type StatusChangeInput = z.infer<typeof statusChangeInputSchema>;
 
 // BO-09 decision thresholds. Mirrors docs/07's
-// `CHECK (kill_max_conversion < scale_min_conversion)`; BO-05's mockup
-// (docs/02-ecrans.md): "Erreur si « à couper » ≥ « à scaler »".
+// `CHECK (kill_max_conversion < scale_min_conversion)` and
+// `CHECK (min_visits > 0)`; BO-05's mockup (docs/02-ecrans.md): "Erreur si
+// « à couper » ≥ « à scaler »".
 export const thresholdsInputSchema = z
   .object({
-    minVisits: z.int().min(0),
+    minVisits: z.int().min(1),
     killMaxConversion: z.number().min(0).max(1),
     scaleMinConversion: z.number().min(0).max(1),
     scaleRequiresPositiveMargin: z.boolean(),

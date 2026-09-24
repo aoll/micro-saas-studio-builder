@@ -7,10 +7,7 @@ import "server-only";
 // specified here.
 export type Lockable = { isSeed: boolean };
 
-export const assertEditable: (row: Lockable) => void = () => {
-  throw new Error("not implemented");
-};
+// V1 stub (docs/11 › Les contrats gelés en V1): nothing is locked.
+export const assertEditable: (row: Lockable) => void = () => undefined;
 
-export const isEditable: (row: Lockable) => boolean = () => {
-  throw new Error("not implemented");
-};
+export const isEditable: (row: Lockable) => boolean = () => true;

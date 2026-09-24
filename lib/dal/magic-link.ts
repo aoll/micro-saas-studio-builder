@@ -1,4 +1,7 @@
 import "server-only";
+import { desc, sql } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { magicLinkOutbox } from "@/lib/db/auth-schema";
 
 // Frozen contract (specs/CONTRACT-types.md, orchestrator decision 1). SA-03
 // has no `lib/dal` file in its own Périmètre but must show the simulated
@@ -13,6 +16,12 @@ import "server-only";
 // users, so a demo visitor typing an admin email finds nothing here.
 // Showing the link to whoever typed the email is the dossier's accepted
 // demo design; the call is throttled by `guardRequest("signup")`.
-export const getLatestMagicLink: (email: string) => Promise<{ url: string; createdAt: Date } | null> = async () => {
-  throw new Error("not implemented");
+export const getLatestMagicLink: (email: string) => Promise<{ url: string; createdAt: Date } | null> = async (
+  email,
+) => {
+  const row = await db.query.magicLinkOutbox.findFirst({
+    where: sql`lower(${magicLinkOutbox.email}) = lower(${email})`,
+    orderBy: desc(magicLinkOutbox.createdAt),
+  });
+  return row ? { url: row.url, createdAt: row.createdAt } : null;
 };

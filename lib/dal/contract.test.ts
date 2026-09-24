@@ -185,9 +185,7 @@ describe("security", () => {
 });
 
 // Characterization tests (SETUP-skeleton, real code, no red phase): pin the
-// existing signatures so a later spec cannot silently change them. Note
-// `getProduct`'s return type is deliberately not pinned here: CONTRACT-data
-// widens it to `Product | null`.
+// existing signatures so a later spec cannot silently change them.
 describe("session (SETUP-skeleton)", () => {
   it("requireAdmin returns a Session", async () => {
     const { requireAdmin } = await import("./session");
@@ -204,5 +202,12 @@ describe("products (SETUP-skeleton)", () => {
   it("getProduct takes a single slug argument", async () => {
     const { getProduct } = await import("./products");
     expectTypeOf(getProduct).parameters.toEqualTypeOf<[slug: string]>();
+  });
+
+  // CONTRACT-data widens getProduct's return type from the skeleton's raw
+  // row to `Product | null` (task 4 of the plan).
+  it("getProduct returns Product | null", async () => {
+    const { getProduct } = await import("./products");
+    expectTypeOf(getProduct).returns.resolves.toEqualTypeOf<import("./products").Product | null>();
   });
 });

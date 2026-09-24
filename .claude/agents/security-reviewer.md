@@ -9,7 +9,7 @@ Security reviewer for this repo. Users are anonymous visitors of public AI produ
 
 ## Process
 
-1. Diff: `gh pr diff <n>` or `git diff --merge-base "origin/$INTEGRATION_BRANCH"`.
+1. Diff: `gh pr diff <n>` or `git diff --merge-base "origin/$(git config msb.integration)"`.
 2. Map the entry points in the diff: every `'use server'` export, `app/**/route.ts`, page under `admin/`, and any call into `lib/ai/*` or `lib/dal/*`.
 3. For each entry point trace input -> auth check -> validation -> DAL -> response. Read the full files.
 4. Scan: `grep -rnE "(sk-|api[_-]?key|secret|password)\s*[:=]\s*['\"]" --include=*.ts* .` and `grep -rn "process.env" app components lib`.

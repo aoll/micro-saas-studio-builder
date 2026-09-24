@@ -20,7 +20,7 @@ referenced from `AGENTS.md` (managed by `next dev`): trust it over memory.
 | `pnpm vitest run <file>` | One test file, direct: the TDD loop |
 | `pnpm test:e2e` | Playwright on `$E2E_PORT` (default 3100), E2E phase only, queued: 1 slot |
 | `pnpm db:migrate` / `pnpm db:seed` | Apply migrations / seed the current database |
-| `pnpm tsx scripts/worktree.ts new\|rm\|list` | Parallel worktrees (see the `worktrees` skill) |
+| `pnpm tsx scripts/worktree.ts integration\|new\|rm\|list` | Integration branch of a run, parallel worktrees (`worktrees` skill) |
 
 Up to 10 worktrees share this machine. `typecheck`, `test`, `test:coverage` and
 `test:e2e` wrap themselves in `scripts/queued.sh`: never wrap them again (a
@@ -76,15 +76,16 @@ written first > readability for the reviewer > minimal code** (`ponytail`).
 
 ## Git
 
-- `$INTEGRATION_BRANCH` (default `orchestration`) is the integration branch.
-  The orchestrator creates it from `main` at the start of a run; feature
+- Each orchestration run has its own integration branch, named by the
+  orchestrator and created from `main` with `pnpm tsx scripts/worktree.ts
+  integration <branch>`; `git config msb.integration` gives its name. Feature
   branches start from it and their PRs target it. `main` is production: a
   human merges the integration branch into it at each validated milestone.
 - Commit messages and PR titles and bodies in English.
 - Branches `feat/<slug>`, one worktree each. Conventional PR titles:
   `feat(<scope>): …` with scopes `bo`, `app`, `credits`, `ai`, `db`, `auth`,
   `tooling`. The PR title becomes the squash commit on the integration branch.
-- Merge `origin/$INTEGRATION_BRANCH` into a feature branch to update it; never rebase or force-push a
+- Merge the integration branch into a feature branch to update it; never rebase or force-push a
   pushed branch.
 - Never bypass hooks (`--no-verify`) and never edit lint, format, TypeScript or
   test configuration to make a check pass.

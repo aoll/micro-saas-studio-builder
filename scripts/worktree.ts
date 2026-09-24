@@ -4,7 +4,7 @@
 // worktree: agents loop on typecheck and Vitest, and Playwright starts its own
 // server on E2E_PORT, serialised by the `e2e` queue that `pnpm test:e2e` takes itself.
 //
-// Usage: pnpm tsx scripts/worktree.ts <new <slug> [--from <ref>] | rm <slug> [--keep-branch] | list>
+// Usage: pnpm tsx scripts/worktree.ts <integration [<branch>] | new <slug> [--from <ref>] | rm <slug> [--keep-branch] | list>
 
 import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync } from "node:fs";
@@ -12,8 +12,10 @@ import { basename, dirname, resolve, sep } from "node:path";
 import { dbNameForBranch, dbUrlFor, readEnvVar, setEnvVar } from "./worktree-db";
 
 const WORKTREE_MAX = Number(process.env.WORKTREE_MAX ?? 10);
-// Feature branches start from, and open their PRs against, the integration branch.
-const INTEGRATION_BRANCH = process.env.INTEGRATION_BRANCH ?? "orchestration";
+// The integration branch of the current orchestration run: created by
+// `worktree.ts integration <branch>` and recorded in the repository's git config,
+// which every worktree shares. Feature branches start from it and target it.
+const INTEGRATION_KEY = "msb.integration";
 
 type Worktree = { path: string; branch: string | null };
 
@@ -57,6 +59,40 @@ const branchExists = (branch: string): boolean => {
   } catch {
     return false;
   }
+};
+
+const integrationBranch = (): string | null => {
+  try {
+    return git(["config", "--get", INTEGRATION_KEY]) || null;
+  } catch {
+    return null;
+  }
+};
+
+/** Without a name, print the current integration branch. With one, create it
+ * from origin/main (unless it already exists on origin), push it and record it. */
+const cmdIntegration = (branch: string | undefined): void => {
+  if (!branch) {
+    console.log(integrationBranch() ?? fail("no integration branch; create one with: worktree.ts integration <branch>"));
+    return;
+  }
+  const root = mainRoot();
+  try {
+    git(["check-ref-format", "--branch", branch]);
+  } catch {
+    fail(`invalid branch name: ${branch}`);
+  }
+  if (["main", "master"].includes(branch) || branch.startsWith("feat/")) fail(`${branch} cannot be an integration branch`);
+  run("git", ["fetch", "origin"], root);
+  let onOrigin = true;
+  try {
+    git(["rev-parse", "--verify", "--quiet", `refs/remotes/origin/${branch}`], root);
+  } catch {
+    onOrigin = false;
+  }
+  if (!onOrigin) run("git", ["push", "origin", `origin/main:refs/heads/${branch}`], root);
+  git(["config", INTEGRATION_KEY, branch], root);
+  console.log(`Integration branch: ${branch}${onOrigin ? " (already on origin)" : " (created from origin/main)"}`);
 };
 
 const cmdNew = (slug: string, from: string): void => {
@@ -186,15 +222,20 @@ const main = async (): Promise<void> => {
     return i >= 0 ? args[i + 1] : undefined;
   };
   switch (command) {
-    case "new":
-      return cmdNew(validateSlug(args[0]), flag("--from") ?? `origin/${INTEGRATION_BRANCH}`);
+    case "integration":
+      return cmdIntegration(args[0]);
+    case "new": {
+      const from = flag("--from") ?? integrationBranch();
+      if (!from) return fail("no integration branch; create one first: worktree.ts integration <branch>");
+      return cmdNew(validateSlug(args[0]), flag("--from") ? from : `origin/${from}`);
+    }
     case "rm":
       return cmdRm(validateSlug(args[0]), args.includes("--keep-branch"));
     case "list":
       return cmdList();
     default:
       console.error(
-        "Usage: pnpm tsx scripts/worktree.ts <new <slug> [--from <ref>] | rm <slug> [--keep-branch] | list>",
+        "Usage: pnpm tsx scripts/worktree.ts <integration [<branch>] | new <slug> [--from <ref>] | rm <slug> [--keep-branch] | list>",
       );
       process.exit(2);
   }

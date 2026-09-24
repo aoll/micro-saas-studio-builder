@@ -16,7 +16,7 @@ checkout so that their branches, dev servers and databases never collide.
 
 | Resource  | Main checkout | Each worktree `../micro-saas-studio-builder-<slug>` |
 |-----------|---------------|------------------------------------------------------|
-| Branch    | `$INTEGRATION_BRANCH` (`develop`) | `feat/<slug>` from it (pushed with upstream set at creation) |
+| Branch    | `$INTEGRATION_BRANCH` (`orchestration`) | `feat/<slug>` from it (pushed with upstream set at creation) |
 | Dev server | port 3000     | none: typecheck and Vitest need no server; Playwright starts its own |
 | Database  | `msb`         | `msb_feat_<slug>`, migrated and seeded                |
 | Postgres  | one local cluster (native, or the Docker service), shared by all |           |

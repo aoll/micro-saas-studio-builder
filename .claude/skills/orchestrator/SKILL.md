@@ -15,11 +15,15 @@ yourself; you dispatch agents, track state and talk to the human.
 
 ## Pool and readiness
 
+- **Integration branch:** at the start of a run, create `$INTEGRATION_BRANCH`
+  (default `orchestration`) from `origin/main` if it does not exist yet, and
+  push it: `git push origin origin/main:refs/heads/$INTEGRATION_BRANCH`. Every
+  worktree starts from it and every pull request targets it. Merging it into
+  `main` is the human's call, at a validated milestone.
 - **Pool:** at most 10 worktrees at once (`WORKTREE_MAX=10`), one per spec,
   created and removed with `scripts/worktree.ts` (`worktrees` skill).
 - **Ready:** a spec is ready when every spec in its `Dépend de` has its pull
-  request merged on the integration branch `$INTEGRATION_BRANCH` (default
-  `develop`; squash commit titled `feat(<scope>): <REF> …`).
+  request merged on the integration branch `$INTEGRATION_BRANCH` (squash commit titled `feat(<scope>): <REF> …`).
   Read the dependencies from the index of the Specs tab (`docs/`) or from each
   `specs/<REF>-<name>.md`.
 - **Start rule:** whenever a worktree is free, start the next ready spec. Prefer

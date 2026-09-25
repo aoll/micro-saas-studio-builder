@@ -101,9 +101,9 @@
     },
     "QA1-P1-Q5-funnel-personnes": {
       "dependsOn": [],
-      "status": "dispatched",
-      "worktree": "qa1-p1-q5-funnel-personnes",
-      "pr": null,
+      "status": "merged",
+      "worktree": null,
+      "pr": 57,
       "note": "B4/B5 dependency was semantic only (no shared file): dispatched early"
     }
   },

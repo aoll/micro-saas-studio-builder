@@ -228,6 +228,15 @@ export function toProductMetrics(row: PortfolioRow): ProductMetrics {
 // `generations` (succeeded count, AI cost over every status), grouped by `product_id` so no
 // product fans out into duplicate rows. With no `productId`, every product is returned, `killed`
 // included; with one, at most one row (empty when the id doesn't exist).
+//
+// Each of the 5 step counts is `count(distinct coalesce(user_id, anonymous_id))` (QA1-P1-Q5): one
+// identity for every type, not user_id for signup/credits_exhausted/purchase and anonymous_id for
+// visit separately. In production this is exactly D1's identity (every real signup/
+// credits_exhausted/purchase write always carries a userId, so coalesce resolves to user_id
+// there, and visit/first_generation never carry a userId of their own kind that would collide) —
+// the change only matters for scripts/seed.ts's synthetic story, which sets anonymous_id alone
+// for all 5 types and must still count as one person per anonymous_id, not 0 (orchestrator
+// decision: scripts/seed.ts itself stays untouched, out of this spec's Périmètre).
 async function selectProductRows(since: string, productId?: string): Promise<PortfolioRow[]> {
   const result = await db.execute<PortfolioRow>(sql`
     select
@@ -252,11 +261,11 @@ async function selectProductRows(since: string, productId?: string): Promise<Por
     left join (
       select
         product_id,
-        count(distinct anonymous_id) filter (where type = 'visit') as visits,
+        count(distinct coalesce(user_id, anonymous_id)) filter (where type = 'visit') as visits,
         count(distinct coalesce(user_id, anonymous_id)) filter (where type = 'first_generation') as first_generations,
-        count(distinct user_id) filter (where type = 'signup') as signups,
-        count(distinct user_id) filter (where type = 'credits_exhausted') as credits_exhausted,
-        count(distinct user_id) filter (where type = 'purchase') as purchases
+        count(distinct coalesce(user_id, anonymous_id)) filter (where type = 'signup') as signups,
+        count(distinct coalesce(user_id, anonymous_id)) filter (where type = 'credits_exhausted') as credits_exhausted,
+        count(distinct coalesce(user_id, anonymous_id)) filter (where type = 'purchase') as purchases
       from events
       where created_at >= ${since}
       group by product_id

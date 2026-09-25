@@ -2,7 +2,9 @@ import { randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
 import { TransactionRollbackError } from "drizzle-orm";
 import { describe, expect, it, vi } from "vitest";
+import { auth } from "@/lib/auth";
 import { baseDb, db } from "./index";
+import { magicLinkOutbox } from "./auth-schema";
 import { themes } from "./schema";
 import { withTestTransaction } from "./test-transaction";
 
@@ -168,5 +170,25 @@ describe("withTestTransaction", () => {
 
     expect(await themeExistsInBase(slugA)).toBe(false);
     expect(await themeExistsInBase(slugB)).toBe(false);
+  });
+
+  // Optional (TOOLING-test-transaction plan, task 9): `lib/auth.ts` wires
+  // Better Auth's own storage with `drizzleAdapter(db)` — the exact same
+  // `db` this module routes. No mock, no change to lib/auth.ts: signing in
+  // with a magic link both writes Better Auth's own verification token
+  // (through the adapter) and this app's outbox row (lib/auth.ts's
+  // sendMagicLink, a plain `db.insert`); both must vanish once the scope
+  // rolls back.
+  it("routes Better Auth's own writes (drizzleAdapter(db)) into the transaction", async () => {
+    const email = `wtt-magic-link-${randomUUID()}@example.test`;
+
+    await withTestTransaction(async () => {
+      await auth.api.signInMagicLink({ body: { email }, headers: new Headers() });
+      const rows = await db.select().from(magicLinkOutbox).where(eq(magicLinkOutbox.email, email));
+      expect(rows).toHaveLength(1);
+    });
+
+    const rowsAfter = await baseDb.select().from(magicLinkOutbox).where(eq(magicLinkOutbox.email, email));
+    expect(rowsAfter).toHaveLength(0);
   });
 });

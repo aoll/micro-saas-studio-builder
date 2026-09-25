@@ -63,7 +63,11 @@ export function PricingStep({
             min={0}
             value={pricing.freeCreditsOnSignup}
             onChange={(event) => onChange({ freeCreditsOnSignup: Number(event.target.value) })}
+            aria-invalid={errors["pricing.freeCreditsOnSignup"] ? "true" : undefined}
           />
+          {errors["pricing.freeCreditsOnSignup"] ? (
+            <p className="text-sm text-destructive">{errors["pricing.freeCreditsOnSignup"]}</p>
+          ) : null}
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="pricing-anonymous-generations">Générations anonymes gratuites</Label>
@@ -73,7 +77,11 @@ export function PricingStep({
             min={0}
             value={pricing.anonymousFreeGenerations}
             onChange={(event) => onChange({ anonymousFreeGenerations: Number(event.target.value) })}
+            aria-invalid={errors["pricing.anonymousFreeGenerations"] ? "true" : undefined}
           />
+          {errors["pricing.anonymousFreeGenerations"] ? (
+            <p className="text-sm text-destructive">{errors["pricing.anonymousFreeGenerations"]}</p>
+          ) : null}
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="pricing-cost-per-generation">Coût par génération (crédits)</Label>
@@ -103,7 +111,11 @@ export function PricingStep({
 
         {pricing.packs.map((pack, index) => {
           const margin = marginByPackId.get(pack.id);
-          const negative = margin !== undefined && margin.marginMicros < 0;
+          // QA1-P6-E3 (B-P6-1): a pack with 0 credits (or another value that
+          // makes the margin non-finite) shows "—" instead of "$Infinity" or
+          // "$NaN" while the field itself is invalid.
+          const marginValid = margin !== undefined && Number.isFinite(margin.marginMicros);
+          const negative = marginValid && margin.marginMicros < 0;
           return (
             <div key={index} className="grid gap-2 rounded-md border p-3">
               <div className="grid grid-cols-3 gap-2">
@@ -115,7 +127,11 @@ export function PricingStep({
                     min={1}
                     value={pack.credits}
                     onChange={(event) => updatePack(index, { credits: Number(event.target.value) })}
+                    aria-invalid={errors[`pricing.packs.${index}.credits`] ? "true" : undefined}
                   />
+                  {errors[`pricing.packs.${index}.credits`] ? (
+                    <p className="text-sm text-destructive">{errors[`pricing.packs.${index}.credits`]}</p>
+                  ) : null}
                 </div>
                 <div className="grid gap-1.5">
                   <Label htmlFor={`pricing-pack-price-${index}`}>Prix (€)</Label>
@@ -126,7 +142,11 @@ export function PricingStep({
                     step="0.01"
                     value={centsToEuroInput(pack.priceCents)}
                     onChange={(event) => updatePack(index, { priceCents: euroInputToCents(event.target.value) })}
+                    aria-invalid={errors[`pricing.packs.${index}.priceCents`] ? "true" : undefined}
                   />
+                  {errors[`pricing.packs.${index}.priceCents`] ? (
+                    <p className="text-sm text-destructive">{errors[`pricing.packs.${index}.priceCents`]}</p>
+                  ) : null}
                 </div>
                 <div className="flex items-end gap-2">
                   <input
@@ -144,7 +164,8 @@ export function PricingStep({
 
               {margin ? (
                 <p data-testid="pack-margin" className={cn("text-sm", negative && "text-destructive")}>
-                  {formatEur(pack.priceCents)} · marge {formatUsd(margin.marginMicros)} par génération
+                  {formatEur(pack.priceCents)} · marge {marginValid ? formatUsd(margin.marginMicros) : "—"} par
+                  génération
                 </p>
               ) : null}
 

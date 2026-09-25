@@ -81,7 +81,7 @@ describe("[app]/opengraph-image", () => {
     const { default: OpengraphImage, size, contentType } = await import("./opengraph-image");
     const response = (await OpengraphImage({
       params: Promise.resolve({ app: "lettre-pro" }),
-    })) as MockImageResponse;
+    })) as unknown as MockImageResponse;
 
     expect(size).toEqual({ width: 1200, height: 630 });
     expect(contentType).toBe("image/png");
@@ -97,7 +97,9 @@ describe("[app]/opengraph-image", () => {
     getProduct.mockResolvedValue({ ...ACTIVE_PRODUCT, branding: { primaryColor: "#00ff00" } });
     getTheme.mockResolvedValue(THEME);
     const { default: OpengraphImage } = await import("./opengraph-image");
-    const response = (await OpengraphImage({ params: Promise.resolve({ app: "lettre-pro" }) })) as MockImageResponse;
+    const response = (await OpengraphImage({
+      params: Promise.resolve({ app: "lettre-pro" }),
+    })) as unknown as MockImageResponse;
     expect(JSON.stringify(response.element)).toContain("#00ff00");
   });
 

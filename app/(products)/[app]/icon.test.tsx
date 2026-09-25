@@ -78,7 +78,7 @@ describe("[app]/icon", () => {
     getProduct.mockResolvedValue(ACTIVE_PRODUCT);
     getTheme.mockResolvedValue(THEME);
     const { default: Icon, size, contentType } = await import("./icon");
-    const response = (await Icon({ params: Promise.resolve({ app: "lettre-pro" }) })) as MockImageResponse;
+    const response = (await Icon({ params: Promise.resolve({ app: "lettre-pro" }) })) as unknown as MockImageResponse;
 
     expect(size).toEqual({ width: 32, height: 32 });
     expect(contentType).toBe("image/png");
@@ -94,7 +94,7 @@ describe("[app]/icon", () => {
     getProduct.mockResolvedValue({ ...ACTIVE_PRODUCT, branding: { primaryColor: "#00ff00" } });
     getTheme.mockResolvedValue(THEME);
     const { default: Icon } = await import("./icon");
-    const response = (await Icon({ params: Promise.resolve({ app: "lettre-pro" }) })) as MockImageResponse;
+    const response = (await Icon({ params: Promise.resolve({ app: "lettre-pro" }) })) as unknown as MockImageResponse;
     const element = response.element as { props: { style: Record<string, string> } };
     expect(element.props.style.background).toBe("#00ff00");
   });

@@ -234,11 +234,28 @@ export function ProductForm({
     return testPrompt(publishSlug, {}, data);
   }
 
-  function handleNext() {
+  // QA1-P2-S1 (specs/qa/QA1-P2-S1-slug-pris.md): `validateStep` only checks
+  // the slug's local format (`slugSchema`: kebab-case, not reserved) — a
+  // taken slug like "lettre-pro" is perfectly valid there, since only the
+  // database knows it's unavailable. `handleIdentityChange`'s own
+  // `checkSlug` call (fired on every keystroke) races this click: it may
+  // still be in flight, or its result may already be stale by the time the
+  // admin clicks. So leaving step 1 in create mode re-checks (and awaits)
+  // the slug's availability itself, instead of trusting whatever `errors`
+  // happens to hold at click time.
+  async function handleNext() {
     const stepErrors = validateStep(currentStep, stepPatch(currentStep, draft));
     if (Object.keys(stepErrors).length > 0) {
       setErrors((current) => ({ ...current, ...stepErrors }));
       return;
+    }
+    if (currentStep === 1 && mode === "create") {
+      const result = await checkSlug(draft.slug);
+      if (!result.available) {
+        setErrors((current) => ({ ...current, slug: result.error ?? "Slug indisponible" }));
+        return;
+      }
+      clearError("slug");
     }
     setCurrentStep((step) => Math.min(step + 1, STEPS.length));
   }

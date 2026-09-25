@@ -162,6 +162,23 @@ describe("ProductForm", () => {
     await screen.findByText("Ce slug est déjà utilisé");
   });
 
+  // QA1-P2-S1 (specs/qa/QA1-P2-S1-slug-pris.md): the slug's format is valid
+  // ("lettre-pro" is a well-formed, non-reserved slug per slugSchema), so
+  // `validateStep`'s local Zod check alone lets Suivant through. Only
+  // `checkSlug`'s async availability check (the DB) knows it's taken, and
+  // Suivant must wait for (or re-run) that check instead of racing it.
+  it("blocks Suivant on a slug that's already taken, even though its format is valid", async () => {
+    checkSlug.mockResolvedValue({ available: false, error: "Ce slug est déjà utilisé" });
+    render(
+      <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
+    );
+    fireEvent.change(screen.getByLabelText("Nom"), { target: { value: "LettrePro bis" } });
+    fireEvent.change(screen.getByLabelText("Slug"), { target: { value: "lettre-pro" } });
+    fireEvent.click(screen.getByRole("button", { name: "Suivant" }));
+    await screen.findByText("Ce slug est déjà utilisé");
+    expect(screen.getByRole("button", { name: /1\. Identité/ }).getAttribute("aria-current")).toBe("step");
+  });
+
   it("posts the cleaned config as JSON and shows success on save", async () => {
     saveProduct.mockResolvedValue({ ok: true, slug: "generateur-de-bio", version: 1 });
     render(

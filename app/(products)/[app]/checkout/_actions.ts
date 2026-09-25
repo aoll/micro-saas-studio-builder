@@ -1,6 +1,5 @@
 "use server";
 
-import { refresh } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { after } from "next/server";
 import { purchase as purchaseCredits } from "@/lib/dal/credits";
@@ -17,7 +16,11 @@ import { guardRequest } from "@/lib/security";
 // (plan's design decision 1): session → parse slug + purchaseInputSchema →
 // guardRequest("purchase") → getProduct (killed counts as unknown) → pack
 // checked against the config, before any write → ledger purchase() →
-// after(track) → refresh() → { ok: true, balance }.
+// after(track) → { ok: true, balance }; the router refresh is CheckoutFlow's,
+// see QA1-P1-B3 (.claude/qa/reports/2026-09-25-full.md › B3): a server
+// refresh() re-fetches the full /pricing page kept behind the checkout
+// modal, which gets intercepted by @modal/(.)pricing and forces a hard
+// reload (.claude/plans/QA1-P1-B3.plan.md, root cause).
 export type PurchaseResult =
   | { ok: true; balance: number }
   | { ok: false; error: "unauthenticated" | "invalid_request" | "unknown_pack" | "bot" | "rate_limited" | "failed" };
@@ -70,7 +73,6 @@ export async function purchase(slug: string, packId: string, idempotencyKey: str
       }
     });
 
-    refresh();
     return { ok: true, balance: result.balance };
   } catch (error) {
     unstable_rethrow(error);

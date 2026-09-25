@@ -87,4 +87,15 @@ describe("PricingContent", () => {
     const link = screen.getByRole("link") as HTMLAnchorElement;
     expect(link.getAttribute("data-variant")).toBe("outline");
   });
+
+  // QA1-P1-B3 (.claude/plans/QA1-P1-B3.plan.md, step 4): CheckoutFlow reads
+  // this marker to tell the full /pricing page apart from other checkout
+  // backgrounds (tool paywall, direct access), where it must not refresh the
+  // router while the modal is still mounted (see checkout-flow.tsx).
+  it("marks its root with data-slot=pricing-content, containing the buy links", () => {
+    const { container } = renderWithLocale("fr", <PricingContent slug="lettre-pro" pricing={pricing} />);
+    const marker = container.querySelector('[data-slot="pricing-content"]');
+    expect(marker).toBe(container.firstElementChild);
+    expect(marker?.querySelectorAll("a")).toHaveLength(2);
+  });
 });

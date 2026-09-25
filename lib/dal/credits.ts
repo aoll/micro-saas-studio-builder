@@ -141,9 +141,21 @@ export const debit: (args: Debit) => Promise<DebitResult> = async ({
 
       // 1. The ledger row first: if the key already exists (retry), nothing
       // is inserted and the debit replays without touching the balance.
+      // Namespaced (`debit:`): the raw client-supplied key otherwise shares
+      // the same unique column as the derived `refund:`/`signup_bonus:`/
+      // `purchase:` keys, so a malicious client could pick a key that
+      // collides with (and silently blocks) another user's future
+      // derived movement.
       const inserted = await tx
         .insert(creditTransactions)
-        .values({ userId, productId, delta: -cost, reason: "generation", generationId, idempotencyKey })
+        .values({
+          userId,
+          productId,
+          delta: -cost,
+          reason: "generation",
+          generationId,
+          idempotencyKey: `debit:${idempotencyKey}`,
+        })
         .onConflictDoNothing({ target: creditTransactions.idempotencyKey })
         .returning({ id: creditTransactions.id });
       if (inserted.length === 0) return { ok: true as const, replay: true as const };

@@ -286,7 +286,7 @@ describe("debit", () => {
     const rows = await db
       .select()
       .from(creditTransactions)
-      .where(eq(creditTransactions.idempotencyKey, idempotencyKey));
+      .where(eq(creditTransactions.idempotencyKey, `debit:${idempotencyKey}`));
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ delta: -1, reason: "generation", generationId });
     await expectLedgerMatchesBalance(userId, productId);
@@ -306,7 +306,7 @@ describe("debit", () => {
     const rows = await db
       .select()
       .from(creditTransactions)
-      .where(eq(creditTransactions.idempotencyKey, idempotencyKey));
+      .where(eq(creditTransactions.idempotencyKey, `debit:${idempotencyKey}`));
     expect(rows).toHaveLength(0);
     await expectLedgerMatchesBalance(userId, productId);
   });
@@ -383,7 +383,7 @@ describe("debit", () => {
     const rows = await db
       .select()
       .from(creditTransactions)
-      .where(eq(creditTransactions.idempotencyKey, idempotencyKey));
+      .where(eq(creditTransactions.idempotencyKey, `debit:${idempotencyKey}`));
     expect(rows).toHaveLength(1);
     await expectLedgerMatchesBalance(userId, productId);
   });
@@ -415,7 +415,7 @@ describe("debit", () => {
     const rows = await db
       .select()
       .from(creditTransactions)
-      .where(eq(creditTransactions.idempotencyKey, idempotencyKey));
+      .where(eq(creditTransactions.idempotencyKey, `debit:${idempotencyKey}`));
     expect(rows).toHaveLength(0);
   });
 
@@ -435,7 +435,7 @@ describe("debit", () => {
     const rows = await db
       .select()
       .from(creditTransactions)
-      .where(eq(creditTransactions.idempotencyKey, idempotencyKey));
+      .where(eq(creditTransactions.idempotencyKey, `debit:${idempotencyKey}`));
     expect(rows).toHaveLength(0);
   });
 
@@ -449,6 +449,43 @@ describe("debit", () => {
     await expect(debit({ userId, productId, cost: 0, generationId, idempotencyKey: randomUUID() })).rejects.toThrow();
     await expect(debit({ userId, productId, cost: -1, generationId, idempotencyKey: randomUUID() })).rejects.toThrow();
     await expect(debit({ userId, productId, cost: 1.5, generationId, idempotencyKey: randomUUID() })).rejects.toThrow();
+  });
+
+  it("namespaces its idempotency key: a client key shaped like a derived key doesn't block it", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct({ freeCreditsOnSignup: 3 })).id;
+    await giveCredits(userId, productId, 3);
+    const generationId = await createGeneration(userId, productId);
+    asUser(userId);
+
+    const { debit, refund, grantSignupBonus, getBalance } = await import("./credits");
+
+    // A client-chosen debit key equal to refund's derived key must not
+    // occupy that namespace and block the real refund later.
+    const debitAsRefundKey = await debit({
+      userId,
+      productId,
+      cost: 1,
+      generationId,
+      idempotencyKey: `refund:${generationId}`,
+    });
+    expect(debitAsRefundKey).toEqual({ ok: true, balance: 2 });
+    await refund(generationId);
+    expect(await getBalance(userId, productId)).toBe(3);
+
+    // Same for the signup_bonus namespace.
+    const generationId2 = await createGeneration(userId, productId);
+    const debitAsBonusKey = await debit({
+      userId,
+      productId,
+      cost: 1,
+      generationId: generationId2,
+      idempotencyKey: `signup_bonus:${userId}:${productId}`,
+    });
+    expect(debitAsBonusKey).toEqual({ ok: true, balance: 2 });
+    const bonus = await grantSignupBonus({ userId, productId });
+    expect(bonus).toEqual({ balance: 5 });
+    await expectLedgerMatchesBalance(userId, productId);
   });
 });
 

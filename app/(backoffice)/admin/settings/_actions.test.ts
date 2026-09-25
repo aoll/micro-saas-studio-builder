@@ -160,6 +160,59 @@ describe("saveThresholdSettings", () => {
   });
 });
 
+describe("saveThresholdSettings · CHECK violation", () => {
+  // Review round (MEDIUM): a same-row race the form's own Zod `.refine`
+  // cannot catch — two admins racing a save that each look valid in
+  // isolation, only the database's `decision_thresholds_kill_lt_scale`
+  // CHECK catches it. Mocks the DAL (mirrors admin/products/_actions.test.ts's
+  // "saveProduct · slug race" pattern) since provoking a real 23514 from
+  // this action would need two genuinely concurrent requests.
+  afterEach(() => {
+    vi.doUnmock("@/lib/dal/thresholds");
+    vi.resetModules();
+  });
+
+  it("maps a cause.code 23514 to the French kill/scale field error, without calling updateTag", async () => {
+    await currentAdmin();
+    vi.resetModules();
+    vi.doMock("@/lib/dal/thresholds", async () => {
+      const actual = await vi.importActual<typeof import("@/lib/dal/thresholds")>("@/lib/dal/thresholds");
+      return {
+        ...actual,
+        saveThresholds: async () => {
+          throw Object.assign(new Error("Failed query"), { cause: { code: "23514" } });
+        },
+      };
+    });
+    const { saveThresholdSettings } = await import("./_actions");
+    const state = await saveThresholdSettings(null, {}, defaultForm());
+    expect(state).toEqual({
+      errors: { scaleMinConversion: "Le seuil « à scaler » doit être supérieur au seuil « à couper »" },
+    });
+    expect(updateTag).not.toHaveBeenCalled();
+  });
+
+  it("also maps a top-level code 23514 (no .cause wrapper)", async () => {
+    await currentAdmin();
+    vi.resetModules();
+    vi.doMock("@/lib/dal/thresholds", async () => {
+      const actual = await vi.importActual<typeof import("@/lib/dal/thresholds")>("@/lib/dal/thresholds");
+      return {
+        ...actual,
+        saveThresholds: async () => {
+          throw Object.assign(new Error("CHECK violation"), { code: "23514" });
+        },
+      };
+    });
+    const { saveThresholdSettings } = await import("./_actions");
+    const state = await saveThresholdSettings(null, {}, defaultForm());
+    expect(state).toEqual({
+      errors: { scaleMinConversion: "Le seuil « à scaler » doit être supérieur au seuil « à couper »" },
+    });
+    expect(updateTag).not.toHaveBeenCalled();
+  });
+});
+
 describe("resetProductThresholds", () => {
   it("redirects a non-admin caller", async () => {
     requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));

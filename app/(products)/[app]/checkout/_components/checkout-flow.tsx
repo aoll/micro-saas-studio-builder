@@ -63,6 +63,13 @@ export function CheckoutFlow({
       if (result.ok) {
         setBalance(result.balance);
         setStatus("confirmed");
+        // QA1-P1-B3 (.claude/qa/reports/2026-09-25-full.md › B3): purchase()
+        // no longer calls refresh() itself — a server refresh re-fetches the
+        // full /pricing page kept behind the checkout modal, and gets
+        // intercepted by @modal/(.)pricing, which mismatches the tree and
+        // forces a hard reload (.claude/plans/QA1-P1-B3.plan.md, root cause).
+        // Only CheckoutFlow knows whether that background is present.
+        router.refresh();
       } else {
         setStatus("error");
         setErrorCode(result.error);

@@ -10,7 +10,9 @@ import type { Pack } from "@/lib/schemas/pack";
 import { CheckoutFlow } from "./checkout-flow";
 
 const replace = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, back: vi.fn() }) }));
+const back = vi.fn();
+const refresh = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, back, refresh }) }));
 
 const purchase = vi.fn();
 vi.mock("../_actions", () => ({
@@ -20,6 +22,8 @@ vi.mock("../_actions", () => ({
 afterEach(() => {
   cleanup();
   replace.mockClear();
+  back.mockClear();
+  refresh.mockClear();
   purchase.mockReset();
 });
 
@@ -119,6 +123,44 @@ describe("CheckoutFlow — confirmation", () => {
 
     await screen.findByText("+50 crédits");
     expect(screen.getByRole("dialog").textContent).toContain("Paiement confirmé");
+  });
+});
+
+// QA1-P1-B3 (.claude/qa/reports/2026-09-25-full.md › B3,
+// .claude/plans/QA1-P1-B3.plan.md step 2): no `[data-slot="pricing-content"]`
+// marker in the DOM means the background isn't the full /pricing page (tool
+// paywall or a direct load), so CheckoutFlow refreshes the router itself
+// once the purchase succeeds, exactly like the server refresh() it replaces.
+describe("CheckoutFlow — router refresh outside the pricing page (A2)", () => {
+  it("refreshes once after a successful purchase in the modal variant, and Resume replaces without going back", async () => {
+    purchase.mockResolvedValue({ ok: true, balance: 50 });
+    renderFlow("modal", 0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Payer 14,90 € (simulé)" }));
+    await screen.findByText("+50 crédits");
+    expect(refresh).toHaveBeenCalledOnce();
+
+    fireEvent.click(screen.getByRole("button", { name: "Reprendre ma génération →" }));
+    expect(replace).toHaveBeenCalledWith("/bio-insta/tool");
+    expect(back).not.toHaveBeenCalled();
+  });
+
+  it("refreshes once after a successful purchase in the page variant", async () => {
+    purchase.mockResolvedValue({ ok: true, balance: 50 });
+    renderFlow("page", 0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Payer 14,90 € (simulé)" }));
+    await screen.findByText("+50 crédits");
+    expect(refresh).toHaveBeenCalledOnce();
+  });
+
+  it("does not refresh when the purchase fails", async () => {
+    purchase.mockResolvedValue({ ok: false, error: "failed" });
+    renderFlow("page");
+
+    fireEvent.click(screen.getByRole("button", { name: "Payer 14,90 € (simulé)" }));
+    await screen.findByText("Le paiement a échoué, réessayez");
+    expect(refresh).not.toHaveBeenCalled();
   });
 });
 

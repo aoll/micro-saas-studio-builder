@@ -67,9 +67,9 @@
         "QA1-P1-B5-premiere-generation",
         "QA1-P1-L1-lot-leger"
       ],
-      "status": "dispatched",
-      "worktree": "qa1-p1-b7-refus-402-activite",
-      "pr": null,
+      "status": "merged",
+      "worktree": null,
+      "pr": 58,
       "note": "planning early to use free worktree slots; TDD starts once dependsOn are merged"
     },
     "QA1-P1-B14-cache-components": {

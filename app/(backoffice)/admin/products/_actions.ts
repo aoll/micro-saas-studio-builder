@@ -7,8 +7,8 @@ import { unstable_rethrow } from "next/navigation";
 import { env } from "@/lib/env";
 import { createProduct, isSlugAvailable, listThemeOptions, saveVersion } from "@/lib/dal/product-editor";
 import { requireAdmin } from "@/lib/dal/session";
-import { detectImageType, IMAGE_EXTENSIONS, type DetectedImageType } from "@/lib/image-signature";
 import { productConfigSchema, slugSchema } from "@/lib/schemas/product-config";
+import { detectImageType, IMAGE_EXTENSIONS, type DetectedImageType } from "./_components/product-form/image-signature";
 import { issuesToErrors, stepOfPath } from "./_components/product-form/validation";
 
 // BO-05a (specs/BO-05a-formulaire.md): one Server Action per domain

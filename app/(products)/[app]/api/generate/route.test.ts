@@ -103,6 +103,17 @@ async function flushAfterCallbacks(): Promise<void> {
   await Promise.all(afterCallbacks.splice(0).map((callback) => callback()));
 }
 
+/** A promise plus its own resolve/reject, for controlling when a mock settles. */
+function deferred<T = void>(): { promise: Promise<T>; resolve: (value: T) => void; reject: (reason: unknown) => void } {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
 async function cleanupGeneration(idempotencyKey: string): Promise<void> {
   await db.delete(generations).where(eq(generations.idempotencyKey, idempotencyKey));
 }
@@ -239,6 +250,52 @@ describe("POST [app]/api/generate — logged-in happy path", () => {
 
     await cleanupGeneration(firstKey);
     await cleanupGeneration(secondKey);
+  });
+
+  it("the tracking after() task waits for track() to settle before resolving", async () => {
+    const user = await db.query.users.findFirst();
+    getSession.mockResolvedValue({ user: { id: user!.id } });
+    const trackCall = deferred<void>();
+    track.mockReturnValue(trackCall.promise);
+    const idempotencyKey = randomUUID();
+
+    const { POST } = await import("./route");
+    const response = await POST(postRequest({ input: validInput, idempotencyKey }), ctx());
+    await readTextDeltas(response);
+    // saveGeneration's after() (the tracking task) is registered from
+    // onSuccess, itself only invoked once the stream is fully drained above.
+    await vi.waitFor(() => expect(afterCallbacks.length).toBeGreaterThanOrEqual(2));
+    const trackingTask = afterCallbacks.at(-1)!;
+
+    let settled = false;
+    const taskPromise = Promise.resolve(trackingTask()).then(() => {
+      settled = true;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(settled).toBe(false); // still pending: the task must not resolve before track() does
+
+    trackCall.resolve();
+    await taskPromise;
+    expect(settled).toBe(true);
+
+    await cleanupGeneration(idempotencyKey);
+  });
+
+  it("a rejecting track() surfaces as a rejected after() task, never swallowed", async () => {
+    const user = await db.query.users.findFirst();
+    getSession.mockResolvedValue({ user: { id: user!.id } });
+    track.mockRejectedValue(new Error("track down"));
+    const idempotencyKey = randomUUID();
+
+    const { POST } = await import("./route");
+    const response = await POST(postRequest({ input: validInput, idempotencyKey }), ctx());
+    await readTextDeltas(response);
+    await vi.waitFor(() => expect(afterCallbacks.length).toBeGreaterThanOrEqual(2));
+    const trackingTask = afterCallbacks.at(-1)!;
+
+    await expect(Promise.resolve(trackingTask())).rejects.toThrow("track down");
+
+    await cleanupGeneration(idempotencyKey);
   });
 });
 

@@ -148,8 +148,13 @@ export async function POST(request: Request, { params }: RouteContext<"/[app]/ap
       inputs: fields.data,
       onSuccess: async (generationResult) => {
         await saveGeneration(generationId, generationResult);
-        after(() => {
-          void track({
+        // Awaited inside the after() callback (silent-failure review,
+        // MEDIUM): an un-awaited `void track(...)` returned undefined from
+        // the callback, so after()'s waitUntil considered the task done
+        // before the tracking write actually settled, and a rejection was
+        // never reported anywhere.
+        after(async () => {
+          await track({
             type: "generation",
             productId: product.id,
             userId,
@@ -157,7 +162,7 @@ export async function POST(request: Request, { params }: RouteContext<"/[app]/ap
             metadata: { generationId },
           });
           if (isFirstGeneration) {
-            void track({
+            await track({
               type: "first_generation",
               productId: product.id,
               userId,

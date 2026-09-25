@@ -75,9 +75,9 @@
       "dependsOn": [
         "QA1-P1-B3-paiement-pricing"
       ],
-      "status": "dispatched",
-      "worktree": "qa1-p1-b14-cache-components",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 65
     },
     "QA1-P1-M1-config-complete": {
       "dependsOn": [

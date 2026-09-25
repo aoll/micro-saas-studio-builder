@@ -25,6 +25,16 @@ export type RateLimitIdentity = { userId: string | null; ipHash: string };
 // with a `>` window boundary on the database clock; the `>=` here (decision
 // D3) means the guard, called before `recordGeneration`, refuses the
 // (N+1)th request first — the Nth still gets through.
+//
+// Accepted race (security/DB review, LOW note 2): this is a plain
+// count-then-insert, not serialized by a lock like
+// `recordAnonymousGeneration`'s advisory lock. A burst of concurrent
+// `generate` requests can each read the same "under the limit" count
+// before any of their rows is written, so the limit can be exceeded
+// briefly under real concurrency. Bounded, not a correctness bug: credits
+// are still debited atomically (lib/dal/credits.ts's `debit`), so nobody
+// generates for free, and the AI Gateway's own budget cap is the backstop
+// against a determined burst.
 export async function isGenerationRateLimited({ userId, ipHash }: RateLimitIdentity): Promise<boolean> {
   const { byUser, byIp } = await countRecentGenerations({ userId, ipHash, windowSeconds: 60 });
   const limit = env.GENERATION_RATE_LIMIT_PER_MINUTE;

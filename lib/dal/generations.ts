@@ -266,19 +266,20 @@ export const countRecentGenerations: (who: {
 
   const withinWindow = sql`${generations.createdAt} > now() - make_interval(secs => ${who.windowSeconds})`;
 
-  const byIpRows = await db.query.generations.findMany({
-    where: and(eq(generations.ipHash, who.ipHash), withinWindow),
-    columns: { id: true },
-  });
+  // A SQL count(*) aggregate (security/DB review, LOW note 1), not
+  // findMany + .length: only a count crosses the wire, not one row per
+  // generation, and the query plan can use the covering index directly.
+  const countOf = (condition: ReturnType<typeof and>) =>
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(generations)
+      .where(condition)
+      .then((rows) => rows[0]?.n ?? 0);
 
-  let byUser = 0;
-  if (who.userId) {
-    const byUserRows = await db.query.generations.findMany({
-      where: and(eq(generations.userId, who.userId), withinWindow),
-      columns: { id: true },
-    });
-    byUser = byUserRows.length;
-  }
+  const [byIp, byUser] = await Promise.all([
+    countOf(and(eq(generations.ipHash, who.ipHash), withinWindow)),
+    who.userId ? countOf(and(eq(generations.userId, who.userId), withinWindow)) : Promise.resolve(0),
+  ]);
 
-  return { byUser, byIp: byIpRows.length };
+  return { byUser, byIp };
 };

@@ -1,0 +1,108 @@
+// @vitest-environment jsdom
+import { cleanup, render } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/dom";
+import { NextIntlClientProvider } from "next-intl";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import frAuth from "@/messages/fr/auth.json";
+import enAuth from "@/messages/en/auth.json";
+import frCommon from "@/messages/fr/common.json";
+import enCommon from "@/messages/en/common.json";
+
+afterEach(cleanup);
+
+const { requestMagicLink } = vi.hoisted(() => ({ requestMagicLink: vi.fn() }));
+vi.mock("../_actions", () => ({
+  requestMagicLink,
+  initialSignupState: { status: "idle" },
+}));
+
+function renderUi(ui: React.ReactElement, locale: "fr" | "en" = "fr") {
+  const messages = locale === "fr" ? { auth: frAuth, common: frCommon } : { auth: enAuth, common: enCommon };
+  return render(
+    <NextIntlClientProvider locale={locale} messages={messages}>
+      {ui}
+    </NextIntlClientProvider>,
+  );
+}
+
+describe("SignupFlow: form (fr and en)", () => {
+  it("renders the heading with the free-credits count and an empty, required email field (fr)", async () => {
+    requestMagicLink.mockResolvedValue({ status: "idle" });
+    const { SignupFlow } = await import("./signup-flow");
+    renderUi(<SignupFlow slug="lettre-pro" freeCreditsOnSignup={3} />, "fr");
+
+    expect(screen.getByText(/3 crédits offerts/)).toBeTruthy();
+    const email = screen.getByLabelText("Email") as HTMLInputElement;
+    expect(email.type).toBe("email");
+    expect(email.required).toBe(true);
+    expect(email.value).toBe("");
+    expect(screen.getByRole("button", { name: "Recevoir mon lien de connexion" })).toBeTruthy();
+  });
+
+  it("renders the heading with the free-credits count in English", async () => {
+    requestMagicLink.mockResolvedValue({ status: "idle" });
+    const { SignupFlow } = await import("./signup-flow");
+    renderUi(<SignupFlow slug="lettre-pro" freeCreditsOnSignup={3} />, "en");
+
+    expect(screen.getByText(/3 free credits/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Get my sign-in link" })).toBeTruthy();
+  });
+
+  it("submits the typed email to requestMagicLink", async () => {
+    requestMagicLink.mockResolvedValue({ status: "idle" });
+    const { SignupFlow } = await import("./signup-flow");
+    renderUi(<SignupFlow slug="lettre-pro" freeCreditsOnSignup={3} />);
+
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "lea@exemple.fr" } });
+    fireEvent.submit(screen.getByLabelText("Email").closest("form")!);
+
+    await vi.waitFor(() => expect(requestMagicLink).toHaveBeenCalled());
+    // requestMagicLink.bind(null, slug) prepends the bound slug, so the
+    // call is (slug, prevState, formData).
+    const [boundSlug, , formData] = requestMagicLink.mock.calls[0] as [string, unknown, FormData];
+    expect(boundSlug).toBe("lettre-pro");
+    expect(formData.get("email")).toBe("lea@exemple.fr");
+  });
+
+  it("shows the translated error message for an action error", async () => {
+    requestMagicLink.mockResolvedValue({ status: "error", error: "invalid_email" });
+    const { SignupFlow } = await import("./signup-flow");
+    renderUi(<SignupFlow slug="lettre-pro" freeCreditsOnSignup={3} />);
+
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "not-an-email" } });
+    fireEvent.submit(screen.getByLabelText("Email").closest("form")!);
+
+    await vi.waitFor(() => expect(screen.getByRole("alert").textContent).toBe("Adresse email invalide"));
+  });
+});
+
+describe("SignupFlow: inbox after sending", () => {
+  it("shows the simulated inbox with a 'Me connecter' link to the verify URL", async () => {
+    requestMagicLink.mockResolvedValue({
+      status: "sent",
+      email: "lea@exemple.fr",
+      magicLinkUrl: "/api/auth/magic-link/verify?token=abc",
+    });
+    const { SignupFlow } = await import("./signup-flow");
+    renderUi(<SignupFlow slug="lettre-pro" freeCreditsOnSignup={3} />);
+
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "lea@exemple.fr" } });
+    fireEvent.submit(screen.getByLabelText("Email").closest("form")!);
+
+    await vi.waitFor(() => expect(screen.getByText(/lea@exemple\.fr/)).toBeTruthy());
+    const link = screen.getByRole("link", { name: "Me connecter" }) as HTMLAnchorElement;
+    expect(link.getAttribute("href")).toBe("/api/auth/magic-link/verify?token=abc");
+  });
+
+  it("shows the empty-inbox message when there is no magic link (admin/owner email)", async () => {
+    requestMagicLink.mockResolvedValue({ status: "sent", email: "admin@msb.local", magicLinkUrl: null });
+    const { SignupFlow } = await import("./signup-flow");
+    renderUi(<SignupFlow slug="lettre-pro" freeCreditsOnSignup={3} />);
+
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "admin@msb.local" } });
+    fireEvent.submit(screen.getByLabelText("Email").closest("form")!);
+
+    await vi.waitFor(() => expect(screen.getByRole("status").textContent).toBe("Aucun email envoyé à cette adresse"));
+    expect(screen.queryByRole("link", { name: "Me connecter" })).toBeNull();
+  });
+});

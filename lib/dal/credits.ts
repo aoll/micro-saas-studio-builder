@@ -2,7 +2,7 @@ import "server-only";
 import { and, eq, gte, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { balances, creditTransactions, generations, productVersions, products, purchases } from "@/lib/db/schema";
+import { balances, creditTransactions, productVersions, products, purchases } from "@/lib/db/schema";
 import type { ProductConfig } from "@/lib/schemas/product-config";
 import { getSession } from "./session";
 

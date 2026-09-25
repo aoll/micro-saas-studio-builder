@@ -10,6 +10,7 @@ import {
   findGenerationByKey,
   hashIp,
   markGenerationFailed,
+  recordAnonymousGeneration,
   recordGeneration,
   saveGeneration,
 } from "@/lib/dal/generations";
@@ -17,14 +18,8 @@ import { getProduct } from "@/lib/dal/products";
 import { getSession } from "@/lib/dal/session";
 import { generateInputSchema } from "@/lib/schemas/inputs";
 import { guardRequest } from "@/lib/security";
+import { ANONYMOUS_ID_COOKIE, anonymousIdCookie, readAnonymousId } from "../events/anonymous-id";
 import { toolInputSchema } from "../../tool/_lib/tool-input-schema";
-
-// Anonymous identity cookie (SA-02 plan › orchestrator decision 2, shared
-// with TRACKING): a year-long, httpOnly, same-site cookie so the free
-// anonymous generation (docs/01-produit.md) survives a browser restart but
-// is invisible to client-side scripts.
-const ANONYMOUS_COOKIE = "anonymous_id";
-const ANONYMOUS_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 export const maxDuration = 60;
 
@@ -32,6 +27,13 @@ function jsonError(error: string, status: number, extra?: Record<string, unknown
   return Response.json({ error, ...extra }, { status });
 }
 
+// Trust model (security review, SA-02): `x-forwarded-for` is only as
+// trustworthy as whatever sits in front of Node. On Vercel, the edge
+// network sets/overwrites this header itself, so a client cannot spoof it.
+// Self-hosting (docs/06-vercel.md's Fly.io alternative) must have its own
+// reverse proxy strip any inbound `X-Forwarded-For` before appending the
+// real peer address — left to SECURITY's deployment hardening, out of this
+// route's Périmètre.
 function clientIp(requestHeaders: Headers): string {
   const forwardedFor = requestHeaders.get("x-forwarded-for");
   if (forwardedFor) {
@@ -82,28 +84,47 @@ export async function POST(request: Request, { params }: RouteContext<"/[app]/ap
   const ipHash = hashIp(clientIp(requestHeaders));
 
   const cookieStore = await cookies();
-  const existingCookie = cookieStore.get(ANONYMOUS_COOKIE)?.value ?? null;
-  const anonymousId = userId ? null : (existingCookie ?? randomUUID());
-  const isNewAnonymousCookie = !userId && !existingCookie;
+  // Shared with TRACKING (api/events): same cookie name and shape, so a
+  // visit and a generation from the same visitor agree on one anonymous id.
+  const existingAnonymousId = userId ? null : readAnonymousId(cookieStore.get(ANONYMOUS_ID_COOKIE)?.value);
 
+  let generationId: string;
+  let anonymousId: string | null = null;
   let freeGenerationsLeft: number | null = null;
-  const priorCount = await countPriorGenerations({ productId: product.id, userId, anonymousId, ipHash });
-  const isFirstGeneration = priorCount === 0;
+  let isFirstGeneration: boolean;
 
-  if (!userId) {
-    if (priorCount >= product.pricing.anonymousFreeGenerations) return jsonError("signup_required", 401);
-    freeGenerationsLeft = product.pricing.anonymousFreeGenerations - priorCount - 1;
+  if (userId) {
+    const priorCount = await countPriorGenerations({ productId: product.id, userId, anonymousId: null, ipHash: null });
+    isFirstGeneration = priorCount === 0;
+    const recorded = await recordGeneration({
+      productId: product.id,
+      productVersion: product.version,
+      userId,
+      anonymousId: null,
+      ipHash,
+      input: fields.data,
+      idempotencyKey,
+    });
+    generationId = recorded.id;
+  } else {
+    // recordAnonymousGeneration counts and inserts atomically (security
+    // review, MEDIUM): the separate count-then-insert this route used to do
+    // let concurrent requests all pass the "under the limit" check.
+    anonymousId = existingAnonymousId ?? randomUUID();
+    const recorded = await recordAnonymousGeneration({
+      productId: product.id,
+      productVersion: product.version,
+      anonymousId,
+      ipHash,
+      input: fields.data,
+      idempotencyKey,
+      limit: product.pricing.anonymousFreeGenerations,
+    });
+    if (!recorded.ok) return jsonError("signup_required", 401);
+    generationId = recorded.id;
+    freeGenerationsLeft = recorded.freeGenerationsLeft;
+    isFirstGeneration = recorded.isFirst;
   }
-
-  const { id: generationId } = await recordGeneration({
-    productId: product.id,
-    productVersion: product.version,
-    userId,
-    anonymousId,
-    ipHash,
-    input: fields.data,
-    idempotencyKey,
-  });
 
   if (userId) {
     const debitResult = await debit({
@@ -153,9 +174,15 @@ export async function POST(request: Request, { params }: RouteContext<"/[app]/ap
       },
     });
 
-    // Not awaited: keeps onFinish/onError running (and the credit either
-    // saved or refunded) even if the client disconnects mid-stream.
-    void result.consumeStream();
+    // Registered with after() (security review, HIGH), not just fired and
+    // forgotten: after() extends the invocation's lifetime until this
+    // promise settles, so onFinish/onError (and the save or the refund they
+    // trigger) still run even if the client disconnects before the stream
+    // ends — a bare `void result.consumeStream()` gave the platform no
+    // signal to keep the invocation alive for that long. `Promise.resolve`
+    // narrows `consumeStream()`'s `PromiseLike<void>` to the `Promise<void>`
+    // `after()`'s `AfterTask` type requires.
+    after(Promise.resolve(result.consumeStream()));
 
     const response = result.toUIMessageStreamResponse({
       onError: () => "generation_failed",
@@ -165,14 +192,9 @@ export async function POST(request: Request, { params }: RouteContext<"/[app]/ap
       },
     });
 
-    if (isNewAnonymousCookie && anonymousId) {
-      cookieStore.set(ANONYMOUS_COOKIE, anonymousId, {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        maxAge: ANONYMOUS_COOKIE_MAX_AGE,
-        secure: new URL(request.url).protocol === "https:",
-      });
+    if (!userId && !existingAnonymousId && anonymousId) {
+      const secure = new URL(request.url).protocol === "https:";
+      cookieStore.set(anonymousIdCookie(anonymousId, secure));
     }
 
     return response;

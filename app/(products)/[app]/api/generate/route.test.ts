@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { MockLanguageModelV4, simulateReadableStream } from "ai/test";
 import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
@@ -18,11 +19,19 @@ vi.mock("next/headers", () => ({
 
 // next/server's `after()` needs a request context this test never sets up
 // (real Next.js server only): keep the rest of the module real, and just
-// collect callbacks to run (and await) manually once the response is drained.
+// collect callbacks to run (and await) manually once the response is
+// drained. after() accepts either a callback or a promise directly (the
+// route passes `result.consumeStream()`, a promise): normalize both to a
+// zero-arg function so flushAfterCallbacks can call every entry the same way.
 const afterCallbacks: Array<() => unknown> = [];
 vi.mock("next/server", async () => {
   const actual = await vi.importActual<typeof import("next/server")>("next/server");
-  return { ...actual, after: (callback: () => unknown) => afterCallbacks.push(callback) };
+  return {
+    ...actual,
+    after: (task: unknown) => {
+      afterCallbacks.push(typeof task === "function" ? (task as () => unknown) : () => task);
+    },
+  };
 });
 
 // LEDGER (credits) and TRACKING (events) run in parallel with this spec:
@@ -233,6 +242,77 @@ describe("POST [app]/api/generate — logged-in happy path", () => {
   });
 });
 
+describe("POST [app]/api/generate — logged-in AI failure", () => {
+  it("a mid-stream error: markGenerationFailed then refund once, row failed, no generation event, error chunk in the stream", async () => {
+    const user = await db.query.users.findFirst();
+    getSession.mockResolvedValue({ user: { id: user!.id } });
+    const failingModel = await import("@/lib/ai/model");
+    // mockImplementationOnce (not mockReturnValue, which would leak into
+    // every later test's resolveModel call): this spy is never restored
+    // explicitly, so a persistent implementation would bleed across tests.
+    vi.spyOn(failingModel, "resolveModel").mockImplementationOnce(
+      () =>
+        new MockLanguageModelV4({
+          doStream: async () => ({
+            stream: simulateReadableStream({
+              chunkDelayInMs: 0,
+              chunks: [
+                { type: "text-start", id: "1" },
+                { type: "text-delta", id: "1", delta: "partiel" },
+                { type: "error", error: new Error("provider unavailable") },
+              ],
+            }),
+          }),
+        }),
+    );
+    const idempotencyKey = randomUUID();
+
+    const { POST } = await import("./route");
+    const response = await POST(postRequest({ input: validInput, idempotencyKey }), ctx());
+    expect(response.status).toBe(200);
+    const raw = await response.text();
+    expect(raw).toContain('"type":"error"');
+    expect(raw).toContain("generation_failed");
+    await flushAfterCallbacks();
+
+    await vi.waitFor(() => expect(refund).toHaveBeenCalledTimes(1));
+    expect(refund).toHaveBeenCalledWith(response.headers.get("x-generation-id"));
+    // markGenerationFailed ran before refund (LEDGER's refund() only
+    // refunds a `failed` generation): asserting the row is `failed` proves
+    // markGenerationFailed committed, and it can only have committed before
+    // refund resolved since onError awaits it first.
+    const row = await db.query.generations.findFirst({ where: eq(generations.idempotencyKey, idempotencyKey) });
+    expect(row?.status).toBe("failed");
+    expect(track).not.toHaveBeenCalledWith(expect.objectContaining({ type: "generation" }));
+    expect(track).not.toHaveBeenCalledWith(expect.objectContaining({ type: "first_generation" }));
+
+    await cleanupGeneration(idempotencyKey);
+  });
+
+  it("a synchronous failure: 502 with refunded: true, markGenerationFailed then refund once, row failed", async () => {
+    const user = await db.query.users.findFirst();
+    getSession.mockResolvedValue({ user: { id: user!.id } });
+    const failingModel = await import("@/lib/ai/model");
+    vi.spyOn(failingModel, "resolveModel").mockImplementationOnce(() => {
+      throw new Error("boom");
+    });
+    const idempotencyKey = randomUUID();
+
+    const { POST } = await import("./route");
+    const response = await POST(postRequest({ input: validInput, idempotencyKey }), ctx());
+    expect(response.status).toBe(502);
+    const body = await response.json();
+    expect(body).toEqual({ error: "generation_failed", refunded: true });
+
+    expect(refund).toHaveBeenCalledTimes(1);
+    const row = await db.query.generations.findFirst({ where: eq(generations.idempotencyKey, idempotencyKey) });
+    expect(row?.status).toBe("failed");
+    expect(track).not.toHaveBeenCalledWith(expect.objectContaining({ type: "generation" }));
+
+    await cleanupGeneration(idempotencyKey);
+  });
+});
+
 describe("POST [app]/api/generate — insufficient balance", () => {
   it("402s, records credits_exhausted and leaves the row failed, without refund", async () => {
     const user = await db.query.users.findFirst();
@@ -309,9 +389,7 @@ describe("POST [app]/api/generate — anonymous", () => {
     await readTextDeltas(response);
 
     expect(cookieStore.set).toHaveBeenCalledWith(
-      "anonymous_id",
-      expect.any(String),
-      expect.objectContaining({ httpOnly: true, sameSite: "lax", path: "/" }),
+      expect.objectContaining({ name: "anonymous_id", httpOnly: true, sameSite: "lax", path: "/" }),
     );
     expect(response.headers.get("x-free-generations-left")).toBe("0");
     expect(debit).not.toHaveBeenCalled();

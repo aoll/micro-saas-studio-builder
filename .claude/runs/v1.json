@@ -293,9 +293,9 @@
       "dependsOn": [
         "BO-07-themes"
       ],
-      "status": "dispatched",
-      "worktree": "bo-08-editeur-theme",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 26
     },
     "E2E-demo": {
       "dependsOn": [
@@ -421,6 +421,10 @@
     {
       "for": "CONTRACT follow-up",
       "note": "generations has no index covering anonymous_id: the anonymous /history list and count do full scans at volume (SA-06 security review); add (product_id, anonymous_id, created_at). Also consider rate-limiting public history page views (SECURITY)."
+    },
+    {
+      "for": "human (open question)",
+      "note": "themeTokensSchema lacks typography scale, shadows and density listed in docs/01; a contract PR would be needed. DEMO-mode will make BO-08 read-only for seeded themes on the public demo."
     }
   ]
 }

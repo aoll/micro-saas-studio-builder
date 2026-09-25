@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render } from "@testing-library/react";
-import { screen } from "@testing-library/dom";
+import { screen, waitFor } from "@testing-library/dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Theme } from "@/lib/dal/themes";
 import type { ThemeTokens } from "@/lib/schemas/theme-tokens";
@@ -11,27 +11,48 @@ vi.mock("next/font/google", () => {
   return { Fraunces: loader, Space_Grotesk: loader, Inter: loader, Nunito: loader };
 });
 
-const { saveProduct, checkSlug, uploadLogo, replace, toastSuccess, toastError } = vi.hoisted(() => ({
+const {
+  saveProduct,
+  checkSlug,
+  uploadLogo,
+  testPrompt,
+  estimateGenerationCost,
+  publish,
+  replace,
+  refresh,
+  toastSuccess,
+  toastError,
+} = vi.hoisted(() => ({
   saveProduct: vi.fn(),
   checkSlug: vi.fn(),
   uploadLogo: vi.fn(),
+  testPrompt: vi.fn(),
+  estimateGenerationCost: vi.fn(),
+  publish: vi.fn(),
   replace: vi.fn(),
+  refresh: vi.fn(),
   toastSuccess: vi.fn(),
   toastError: vi.fn(),
 }));
 
-vi.mock("../../_actions", () => ({ saveProduct, checkSlug, uploadLogo }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
+// BO-05b (specs/BO-05b-generation-publication.md): extends BO-05a's
+// committed mock with the three new actions its steps 5-7 call, without
+// touching a single assertion below (CLAUDE.md: a committed test is never
+// weakened silently — this commit only adds mock entries).
+vi.mock("../../_actions", () => ({ saveProduct, checkSlug, uploadLogo, testPrompt, estimateGenerationCost, publish }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, refresh }) }));
 vi.mock("sonner", () => ({ toast: { success: toastSuccess, error: toastError } }));
 
 const { ProductForm } = await import("./product-form");
 
 // checkSlug is called imperatively (not through useActionState) whenever
-// the slug field changes in create mode: give it a resolved default so a
-// test that only cares about another behaviour does not leave a dangling,
-// unhandled rejection/`.then()` on `undefined`.
+// the slug field changes in create mode, and estimateGenerationCost runs
+// on mount to feed step 6's margin panel (BO-05b): give both a resolved
+// default so a test that only cares about another behaviour does not leave
+// a dangling, unhandled rejection/`.then()` on `undefined`.
 beforeEach(() => {
   checkSlug.mockResolvedValue({ available: true });
+  estimateGenerationCost.mockResolvedValue({ costMicros: 4_000 });
 });
 
 afterEach(() => {
@@ -39,7 +60,11 @@ afterEach(() => {
   saveProduct.mockReset();
   checkSlug.mockReset();
   uploadLogo.mockReset();
+  testPrompt.mockReset();
+  estimateGenerationCost.mockReset();
+  publish.mockReset();
   replace.mockClear();
+  refresh.mockClear();
   toastSuccess.mockClear();
   toastError.mockClear();
 });
@@ -192,5 +217,83 @@ describe("ProductForm", () => {
     );
     goToStep(4);
     expect((screen.getByRole("button", { name: "Enregistrer" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+});
+
+// BO-05b (specs/BO-05b-generation-publication.md): steps 5-7.
+describe("ProductForm · generation, pricing, publication", () => {
+  it("lists all 7 steps, including Génération, Pricing and Récapitulatif", () => {
+    render(
+      <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
+    );
+    expect(screen.getByText(/5\. Génération/)).toBeTruthy();
+    expect(screen.getByText(/6\. Pricing/)).toBeTruthy();
+    expect(screen.getByText(/7\. Récapitulatif/)).toBeTruthy();
+  });
+
+  it("keeps Enregistrer available on step 1 already, not only on the last step", () => {
+    render(
+      <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
+    );
+    expect(screen.getByRole("button", { name: "Enregistrer" })).toBeTruthy();
+  });
+
+  it("Enregistrer comes before Publier in DOM order (Enter submits a draft save, never a publish)", () => {
+    render(
+      <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
+    );
+    goToStep(7);
+    const buttons = screen.getAllByRole("button").map((button) => button.textContent);
+    expect(buttons.indexOf("Enregistrer")).toBeLessThan(buttons.indexOf("Publier"));
+  });
+
+  it("step 5 blocks Suivant on a {{variable}} without a matching field", () => {
+    render(
+      <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
+    );
+    goToStep(5);
+    fireEvent.change(screen.getByLabelText("Template de prompt"), { target: { value: "Pour {{inconnu}}" } });
+    fireEvent.click(screen.getByRole("button", { name: "Suivant" }));
+    expect(screen.getByRole("button", { name: /5\. Génération/ }).getAttribute("aria-current")).toBe("step");
+  });
+
+  it("a server error on step 6 (from Enregistrer) switches to the Pricing step", async () => {
+    saveProduct.mockResolvedValue({ errors: { "pricing.costPerGeneration": "1 minimum" }, step: 6 });
+    render(
+      <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await screen.findByLabelText("Coût par génération (crédits)");
+  });
+
+  it("disables Publier when read-only", () => {
+    render(
+      <ProductForm
+        mode="edit"
+        slug="lettre-pro"
+        initialDraft={{ ...newProductDraft("theme-editorial"), slug: "lettre-pro" }}
+        themes={themeOptions}
+        readOnly
+      />,
+    );
+    goToStep(7);
+    expect((screen.getByRole("button", { name: "Publier" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("a create-mode publish captures the created slug, so a second publish takes the edit path", async () => {
+    publish.mockResolvedValueOnce({ ok: true, slug: "bio-instagram", version: 1, url: "/bio-instagram" });
+    render(
+      <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
+    );
+    goToStep(7);
+    fireEvent.click(screen.getByRole("button", { name: "Publier" }));
+    await waitFor(() => expect(publish).toHaveBeenCalledTimes(1));
+    expect(publish.mock.calls[0]![0]).toBeNull();
+
+    publish.mockResolvedValueOnce({ ok: true, slug: "bio-instagram", version: 2, url: "/bio-instagram" });
+    await waitFor(() => screen.getByText(/Produit publié/));
+    fireEvent.click(screen.getByRole("button", { name: "Publier" }));
+    await waitFor(() => expect(publish).toHaveBeenCalledTimes(2));
+    expect(publish.mock.calls[1]![0]).toBe("bio-instagram");
   });
 });

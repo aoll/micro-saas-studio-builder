@@ -2,14 +2,15 @@
 
 import { cn } from "@/components/utils";
 
-// BO-05's 7 steps (docs/02-ecrans.md › BO-05 en détail). BO-05a only builds
-// steps 1-4; BO-05b appends "Génération", "Pricing" and "Récapitulatif"
-// here once it lands (the plan's PR handoff note).
+// BO-05's 7 steps (docs/02-ecrans.md › BO-05 en détail).
 export const STEPS: { step: number; title: string }[] = [
   { step: 1, title: "Identité" },
   { step: 2, title: "Thème" },
   { step: 3, title: "Landing & SEO" },
   { step: 4, title: "Champs de l'outil" },
+  { step: 5, title: "Génération" },
+  { step: 6, title: "Pricing" },
+  { step: 7, title: "Récapitulatif" },
 ];
 
 export function StepNav({

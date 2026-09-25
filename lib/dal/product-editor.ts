@@ -1,5 +1,5 @@
 import "server-only";
-import { asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { productVersions, products, themes } from "@/lib/db/schema";
 import { productConfigSchema, type ProductConfig } from "@/lib/schemas/product-config";
@@ -72,6 +72,39 @@ export async function saveVersion(
       config: { ...parsed, slug: row.slug, status: row.status },
       createdBy: session.user.id,
     });
+    return { id: row.id, slug: row.slug, version };
+  });
+}
+
+// BO-05b (specs/BO-05b-generation-publication.md): publishes an existing
+// version — "what you see goes live" (the plan's orchestrator decision 1).
+// Additive next to `saveVersion`: draft saves never move `current_version`
+// (docs/07-modele-de-donnees.md), only this does. `themeId` and `locale`
+// are synced from the published version's own config, since the product
+// row (not just `product_versions`) also carries them (docs/07 › `products`
+// table). Any existing version can be republished, including an earlier
+// one (a rollback), since `product_versions` is append-only.
+export async function publishProduct(
+  slug: string,
+  version: number,
+): Promise<{ id: string; slug: string; version: number } | null> {
+  await requireAdmin();
+  return db.transaction(async (tx) => {
+    const [row] = await tx.select().from(products).where(eq(products.slug, slug)).for("update");
+    if (!row) return null;
+    assertEditable(row);
+
+    const versionRow = await tx.query.productVersions.findFirst({
+      where: and(eq(productVersions.productId, row.id), eq(productVersions.version, version)),
+    });
+    if (!versionRow) return null;
+
+    const config = productConfigSchema.parse(versionRow.config);
+    await tx
+      .update(products)
+      .set({ currentVersion: version, themeId: config.themeId, locale: config.locale, updatedAt: new Date() })
+      .where(eq(products.id, row.id));
+
     return { id: row.id, slug: row.slug, version };
   });
 }

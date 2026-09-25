@@ -127,12 +127,19 @@ export const countPriorGenerations: (who: {
     if (who.userId !== session?.user.id) {
       throw new Error("countPriorGenerations: userId does not match the caller's session");
     }
+    // QA1-P1-B5: the caller's own rows, plus any anonymous row (no
+    // user_id) this same visitor made before signing in — identified by
+    // the anonymous cookie still in their browser (`who.anonymousId`).
+    // `ipHash` is never used to link here (docs/01: a shared IP must not
+    // hide another person's first generation).
+    const ownOrLinked = who.anonymousId
+      ? or(
+          eq(generations.userId, who.userId),
+          and(isNull(generations.userId), eq(generations.anonymousId, who.anonymousId)),
+        )
+      : eq(generations.userId, who.userId);
     const rows = await db.query.generations.findMany({
-      where: and(
-        eq(generations.productId, who.productId),
-        eq(generations.userId, who.userId),
-        ne(generations.status, "failed"),
-      ),
+      where: and(eq(generations.productId, who.productId), ne(generations.status, "failed"), ownOrLinked),
       columns: { id: true },
     });
     return rows.length;

@@ -391,6 +391,152 @@ describe("countPriorGenerations", () => {
       ).rejects.toThrow();
     });
   });
+
+  // QA1-P1-B5: a signed-in caller's count must also see the anonymous
+  // generation(s) made by the same visitor (same cookie, before signup),
+  // otherwise the route re-fires first_generation at the first signed-in
+  // generation (docs/01 › funnel, specs/SA-02-outil.md › Acceptation 6).
+  describe("by userId: linking the caller's anonymous generations (QA1-P1-B5)", () => {
+    it("also counts an anonymous generation made with the given anonymousId on this product", async () => {
+      await withTestTransaction(async () => {
+        const userId = await freshUserId();
+        const productId = await lettreProId();
+        const anonymousId = randomUUID();
+
+        getSession.mockResolvedValue(null);
+        const { recordGeneration, countPriorGenerations } = await import("./generations");
+        await recordGeneration({
+          productId,
+          productVersion: 1,
+          userId: null,
+          anonymousId,
+          ipHash: "hash",
+          input: {},
+          idempotencyKey: randomUUID(),
+        });
+
+        getSession.mockResolvedValue({ user: { id: userId } });
+        expect(await countPriorGenerations({ productId, userId, anonymousId, ipHash: null })).toBe(1);
+      });
+    });
+
+    it("does not count an anonymous generation made with a different anonymousId", async () => {
+      await withTestTransaction(async () => {
+        const userId = await freshUserId();
+        const productId = await lettreProId();
+
+        getSession.mockResolvedValue(null);
+        const { recordGeneration, countPriorGenerations } = await import("./generations");
+        await recordGeneration({
+          productId,
+          productVersion: 1,
+          userId: null,
+          anonymousId: randomUUID(),
+          ipHash: "hash",
+          input: {},
+          idempotencyKey: randomUUID(),
+        });
+
+        getSession.mockResolvedValue({ user: { id: userId } });
+        expect(await countPriorGenerations({ productId, userId, anonymousId: randomUUID(), ipHash: null })).toBe(0);
+      });
+    });
+
+    it("does not count the same anonymousId's generation on another product", async () => {
+      await withTestTransaction(async () => {
+        const userId = await freshUserId();
+        const productId = await lettreProId();
+        const otherId = await otherProductId();
+        const anonymousId = randomUUID();
+
+        getSession.mockResolvedValue(null);
+        const { recordGeneration, countPriorGenerations } = await import("./generations");
+        await recordGeneration({
+          productId: otherId,
+          productVersion: 1,
+          userId: null,
+          anonymousId,
+          ipHash: "hash",
+          input: {},
+          idempotencyKey: randomUUID(),
+        });
+
+        getSession.mockResolvedValue({ user: { id: userId } });
+        expect(await countPriorGenerations({ productId, userId, anonymousId, ipHash: null })).toBe(0);
+      });
+    });
+
+    it("does not count a failed anonymous generation with the given anonymousId", async () => {
+      await withTestTransaction(async () => {
+        const userId = await freshUserId();
+        const productId = await lettreProId();
+        const anonymousId = randomUUID();
+
+        getSession.mockResolvedValue(null);
+        const { recordGeneration, markGenerationFailed, countPriorGenerations } = await import("./generations");
+        const { id } = await recordGeneration({
+          productId,
+          productVersion: 1,
+          userId: null,
+          anonymousId,
+          ipHash: "hash",
+          input: {},
+          idempotencyKey: randomUUID(),
+        });
+        await markGenerationFailed(id);
+
+        getSession.mockResolvedValue({ user: { id: userId } });
+        expect(await countPriorGenerations({ productId, userId, anonymousId, ipHash: null })).toBe(0);
+      });
+    });
+
+    it("ignores ipHash for a signed-in caller: a shared IP alone does not link another visitor's row", async () => {
+      await withTestTransaction(async () => {
+        const userId = await freshUserId();
+        const productId = await lettreProId();
+        const sharedIpHash = `ip-${randomUUID()}`;
+
+        getSession.mockResolvedValue(null);
+        const { recordGeneration, countPriorGenerations } = await import("./generations");
+        await recordGeneration({
+          productId,
+          productVersion: 1,
+          userId: null,
+          anonymousId: randomUUID(),
+          ipHash: sharedIpHash,
+          input: {},
+          idempotencyKey: randomUUID(),
+        });
+
+        getSession.mockResolvedValue({ user: { id: userId } });
+        expect(
+          await countPriorGenerations({ productId, userId, anonymousId: randomUUID(), ipHash: sharedIpHash }),
+        ).toBe(0);
+      });
+    });
+
+    it("with anonymousId null, only counts the user's own rows", async () => {
+      await withTestTransaction(async () => {
+        const userId = await freshUserId();
+        const productId = await lettreProId();
+
+        getSession.mockResolvedValue(null);
+        const { recordGeneration, countPriorGenerations } = await import("./generations");
+        await recordGeneration({
+          productId,
+          productVersion: 1,
+          userId: null,
+          anonymousId: randomUUID(),
+          ipHash: "hash",
+          input: {},
+          idempotencyKey: randomUUID(),
+        });
+
+        getSession.mockResolvedValue({ user: { id: userId } });
+        expect(await countPriorGenerations({ productId, userId, anonymousId: null, ipHash: null })).toBe(0);
+      });
+    });
+  });
 });
 
 describe("recordAnonymousGeneration", () => {

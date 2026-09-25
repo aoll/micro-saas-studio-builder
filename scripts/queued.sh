@@ -6,7 +6,8 @@
 #
 # Usage: scripts/queued.sh <test|typecheck|e2e> <command...>
 #   e.g. scripts/queued.sh test vitest run (what `pnpm test` runs; never wrap a pnpm script that already queues)
-# Slots: QUEUE_SLOTS_TEST (default 4), QUEUE_SLOTS_TYPECHECK (4), QUEUE_SLOTS_E2E (1),
+# Slots: QUEUE_SLOTS_TEST (default 4), QUEUE_SLOTS_TYPECHECK (4), QUEUE_SLOTS_E2E (1; slot n
+# of the e2e queue runs on E2E_PORT + n - 1, so two Playwright servers never collide),
 # overridden by <lock dir>/<queue>.slots, which scripts/monitor.ts tunes to the
 # machine's load. Lock dir: QUEUE_LOCK_DIR (default /tmp/msb-queue).
 # Each job leaves a <queue>.wait.<pid> then <queue>.run.<pid> marker for the monitor.
@@ -62,6 +63,11 @@ trap 'rm -f "$lock_dir/$queue.wait.$$" "$lock_dir/$queue.run.$$"' EXIT
 # The command runs with fd 9 closed so a daemon it spawns cannot keep the slot.
 run_locked() {
 	echo "[queue:$queue] slot $1 acquired: ${cmd[*]}" >&2
+	if [ "$queue" = e2e ]; then
+		# Each Playwright run starts its own server on $E2E_PORT: slot 1 keeps
+		# E2E_PORT (default 3100), slot n takes the port n - 1 above it.
+		export E2E_PORT=$((${E2E_PORT:-3100} + ${1%%/*} - 1))
+	fi
 	rm -f "$lock_dir/$queue.wait.$$"
 	: >"$lock_dir/$queue.run.$$" # fresh mtime: the monitor shows time since start
 	"${cmd[@]}" 9>&-

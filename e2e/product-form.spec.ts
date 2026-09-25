@@ -42,18 +42,27 @@ test("creates a product through steps 1-4, then saves a second draft version", a
     await page.getByLabel("Slug").fill(uniqueSlug);
     await page.getByRole("button", { name: "Suivant" }).click();
 
-    // Step 2: pick the Neon theme.
-    await page.getByRole("radio", { name: /Neon/ }).click();
+    // Step 2: pick the Neon theme. ThemeThumbnail's content is aria-hidden
+    // (docs/04's "vrais mini-rendus React", not text meant to be read by a
+    // screen reader), so the radio carries no accessible name: locate it by
+    // its (aria-hidden) text instead of `getByRole(..., { name })`, same as
+    // the other test below.
+    await page.locator('[role="radio"]', { hasText: "Neon" }).click();
     await page.getByRole("button", { name: "Suivant" }).click();
 
-    // Step 3: landing, then a duplicate FAQ answer error fixed.
-    await page.getByLabel("Titre").fill("Une bio qui donne envie de suivre");
+    // Step 3: landing, then a duplicate FAQ answer error fixed. `exact`
+    // disambiguates from "Sous-titre" and "Titre SEO", which otherwise also
+    // match `getByLabel`'s default substring search.
+    await page.getByLabel("Titre", { exact: true }).fill("Une bio qui donne envie de suivre");
     await page.getByLabel("Sous-titre").fill("Générée en 10 secondes");
     await page.getByLabel("Titre SEO").fill(name);
     await page.getByLabel("Description SEO").fill("Un générateur de bio Instagram qui capte l'attention en une ligne.");
     await page.getByRole("button", { name: "Ajouter une question" }).click();
     await page.getByRole("button", { name: "Suivant" }).click();
-    await expect(page.getByText("Ce champ est requis")).toBeVisible();
+    // The empty FAQ entry has two required fields (Question, Réponse), so
+    // both show the same message: assert on the first rather than picking
+    // one field to name, since either confirms Suivant was blocked.
+    await expect(page.getByText("Ce champ est requis").first()).toBeVisible();
     await page.getByLabel("Question").fill("Combien de temps ça prend ?");
     await page.getByLabel("Réponse").fill("Moins de 10 secondes.");
     await page.getByRole("button", { name: "Suivant" }).click();

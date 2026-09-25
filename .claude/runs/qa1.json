@@ -118,9 +118,9 @@
     },
     "QA1-P2-S1-slug-pris": {
       "dependsOn": [],
-      "status": "dispatched",
-      "worktree": "qa1-p2-s1-slug-pris",
-      "pr": null,
+      "status": "merged",
+      "worktree": null,
+      "pr": 68,
       "mode": "plan dans la spec (constat mineur)"
     }
   },

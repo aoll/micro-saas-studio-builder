@@ -86,3 +86,11 @@ BioInsta (créé deux fois pendant la passe : d'abord en saisie manuelle enregis
 - `curl` : statuts HTTP et contenu HTML (`<title>`, headline) de `/bio-instagram` avant/après publication et édition
 - Lecture de code : `product-form.tsx`, `step-nav.tsx`, `validation.ts`, `generation-step.tsx`, `prompt-tester.tsx` pour confirmer les deux corrections (B-N1, B-N2) et documenter la cause de B-P4-1
 - `pnpm tsx scripts/reset-demo.ts`, `pnpm db:migrate`
+
+## Décision
+
+Validée par l'humain le 2026-09-25 (« Corriger »).
+
+| Constat | Décision | Spec de correction |
+|---|---|---|
+| B-P4-1 | corriger | `specs/qa/QA1-P4-E1-erreurs-perimees.md` |

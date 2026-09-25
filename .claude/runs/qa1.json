@@ -21,6 +21,13 @@
       "findings": 2,
       "retained": 2,
       "scope": "focused: BO-05a, BO-05b, DEMO-mode"
+    },
+    {
+      "n": 4,
+      "report": ".claude/qa/reports/2026-09-25-creation-produit.md",
+      "findings": 1,
+      "retained": 1,
+      "scope": "scenario creation-produit"
     }
   ],
   "setAside": [
@@ -135,6 +142,13 @@
       "status": "merged",
       "worktree": null,
       "pr": 70,
+      "mode": "plan dans la spec"
+    },
+    "QA1-P4-E1-erreurs-perimees": {
+      "dependsOn": [],
+      "status": "dispatched",
+      "worktree": "qa1-p4-e1-erreurs-perimees",
+      "pr": null,
       "mode": "plan dans la spec"
     }
   },

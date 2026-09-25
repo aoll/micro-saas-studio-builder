@@ -281,18 +281,17 @@
       "dependsOn": [
         "BO-03-fiche"
       ],
-      "status": "dispatched",
-      "worktree": "bo-06-statut",
-      "pr": null,
-      "step": "tdd"
+      "status": "merged",
+      "worktree": null,
+      "pr": 37
     },
     "BO-09-seuils": {
       "dependsOn": [
         "BO-02-portefeuille"
       ],
-      "status": "dispatched",
-      "worktree": "bo-09-seuils",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 36
     },
     "BO-08-editeur-theme": {
       "dependsOn": [
@@ -456,7 +455,7 @@
     {
       "spec": "BO-03-fiche",
       "blockedOn": "BO-06-statut",
-      "what": "after BO-06: mount StatusChange also in decision-panel.tsx and move the header trigger next to « Modifier la config » (mockup BO-06), in BO-03 files",
+      "what": "after BO-06: mount StatusChange also in decision-panel.tsx and move the header trigger next to « Modifier la config » (mockup BO-06), in BO-03 files; also mock the DAL boundary (@/lib/dal/products and the session/product-status chain) in sheet-header.test.tsx and product-sheet-view.test.tsx, then replace the dynamic import() of setProductStatus in status-change.tsx by a plain static import + .bind(null, slug) (BO-06 Next review MEDIUM)",
       "resolved": false
     },
     {

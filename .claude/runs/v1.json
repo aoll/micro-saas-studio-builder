@@ -407,6 +407,18 @@
       "blockedOn": "SA-07-compte",
       "what": "header entry point to /[app]/account (components/product/header-balance.tsx: link the balance badge to /${slug}/account)",
       "resolved": false
+    },
+    {
+      "spec": "SA-03-inscription",
+      "blockedOn": "SA-03-inscription",
+      "what": "after SA-03 merges: drop the /${slug}/signup as Route casts in [app]/tool/_components/tool-form.tsx and components/product/header-balance.tsx; update e2e/tool.spec.ts notes; SA-07 account signup cast + un-fixme its anonymous journey",
+      "resolved": false
+    },
+    {
+      "spec": "TRACKING",
+      "blockedOn": "SA-03-inscription",
+      "what": "dedupe signup events per (product, user) in the body of track() (signature unchanged), like visit, so a returning user re-login does not inflate the funnel",
+      "resolved": false
     }
   ],
   "notes": [
@@ -455,6 +467,10 @@
     {
       "for": "CONTRACT follow-up",
       "note": "purchases has no (user_id, product_id, created_at) index (SA-07 plan)."
+    },
+    {
+      "for": "SECURITY",
+      "note": "the raw Better Auth /api/auth/sign-in/magic-link endpoint is not behind guardRequest(\"signup\") (outbox only, Better Auth built-in 5/60 s limit)."
     }
   ]
 }

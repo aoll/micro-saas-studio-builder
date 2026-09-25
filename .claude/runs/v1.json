@@ -356,7 +356,8 @@
       "spec": "BO-07-themes",
       "blockedOn": "BO-08-editeur-theme",
       "what": "wrap ThemeCard (admin/themes/_components/theme-card.tsx) in a <Link> to /admin/themes/[id] once the editor route exists",
-      "resolved": false
+      "resolved": true,
+      "pr": 29
     },
     {
       "spec": "CONTRACT-ui",

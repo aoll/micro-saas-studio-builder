@@ -140,6 +140,60 @@ describe("saveProduct · create path", () => {
   });
 });
 
+describe("saveProduct · slug race", () => {
+  afterEach(() => {
+    vi.doUnmock("@/lib/dal/product-editor");
+    vi.resetModules();
+  });
+
+  it("returns a step 1 slug error when createProduct hits a unique constraint violation", async () => {
+    await currentAdmin();
+    vi.resetModules();
+    vi.doMock("@/lib/dal/product-editor", async () => {
+      const actual = await vi.importActual<typeof import("@/lib/dal/product-editor")>("@/lib/dal/product-editor");
+      return {
+        ...actual,
+        // isSlugAvailable said yes, but another request won the race and
+        // inserted first: the database's own unique constraint on
+        // products.slug is the real guarantee (docs/07-modele-de-donnees.md).
+        isSlugAvailable: async () => true,
+        createProduct: async () => {
+          const err = new Error('duplicate key value violates unique constraint "products_slug_unique"') as Error & {
+            code: string;
+          };
+          err.code = "23505";
+          throw err;
+        },
+      };
+    });
+    const { saveProduct } = await import("./_actions");
+    const config = await buildConfig();
+    const result = await saveProduct(null, {}, configForm(config));
+    expect(result).toEqual({ errors: { slug: "Ce slug est déjà utilisé" }, step: 1 });
+  });
+
+  it("rethrows an unrelated database error instead of reporting a slug conflict", async () => {
+    await currentAdmin();
+    vi.resetModules();
+    vi.doMock("@/lib/dal/product-editor", async () => {
+      const actual = await vi.importActual<typeof import("@/lib/dal/product-editor")>("@/lib/dal/product-editor");
+      return {
+        ...actual,
+        isSlugAvailable: async () => true,
+        createProduct: async () => {
+          throw new Error("connection reset by peer");
+        },
+      };
+    });
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { saveProduct } = await import("./_actions");
+    const config = await buildConfig();
+    await expect(saveProduct(null, {}, configForm(config))).rejects.toThrow("connection reset by peer");
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+});
+
 describe("saveProduct · edit path", () => {
   it("returns a form error for an invalid bound slug", async () => {
     await currentAdmin();

@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -94,4 +96,61 @@ test("editing an unknown slug 404s", async ({ page }) => {
   await signIn(page);
   await page.goto(`/admin/products/does-not-exist-${randomUUID().slice(0, 8)}/edit`);
   await expect(page.getByText(/introuvable|404/i)).toBeVisible();
+});
+
+// QA1-P1-M1 (specs/qa/QA1-P1-M1-config-complete.md): pasting
+// fixtures/bio-instagram.config.json fills every step, and the published
+// product's landing shows the example output and a "how it works" step —
+// the two-minute demo moment (docs/01-produit.md) this fixture exists for.
+test("QA1-P1-M1: pasting the bio-instagram fixture fills every step, and the published landing shows the example and how-it-works", async ({
+  page,
+}) => {
+  const sql = postgres(requireDatabaseUrl(), { max: 1, onnotice: () => {} });
+  const db = drizzle(sql, { schema: { products, productVersions } });
+  const uniqueSlug = `bio-instagram-${randomUUID().slice(0, 8)}`;
+  let createdProductId: string | undefined;
+
+  try {
+    const rawFixture = readFileSync(join(process.cwd(), "fixtures/bio-instagram.config.json"), "utf-8");
+    const fixture = { ...JSON.parse(rawFixture), slug: uniqueSlug };
+
+    await signIn(page);
+    await page.goto("/admin/products/new");
+
+    await page.getByLabel("Coller une configuration JSON").fill(JSON.stringify(fixture));
+    await page.getByRole("button", { name: "Importer" }).click();
+    await expect(page.getByText("Configuration importée")).toBeVisible();
+
+    // Step 3: exampleOutput and a "how it works" step are populated.
+    await page.getByRole("button", { name: /^3\./ }).click();
+    await expect(page.getByLabel("Exemple de résultat")).toHaveValue(fixture.landing.exampleOutput);
+    await expect(page.getByLabel("Titre de l'étape 1")).toHaveValue(fixture.landing.steps[0].title);
+
+    // Step 5: systemPrompt is populated.
+    await page.getByRole("button", { name: /^5\./ }).click();
+    await expect(page.getByLabel("Prompt système")).toHaveValue(fixture.generation.systemPrompt);
+
+    // Step 2: still a deliberate action (plan decision 2) — pick a theme.
+    await page.getByRole("button", { name: /^2\./ }).click();
+    await page.getByRole("radio", { name: /Neon/ }).click();
+
+    // Walk to the recap and publish.
+    await page.getByRole("button", { name: /^7\./ }).click();
+    await page.getByRole("button", { name: "Publier" }).click();
+    await expect(page.getByText(/Produit publié/)).toBeVisible();
+
+    const productRow = await db.query.products.findFirst({ where: eq(products.slug, uniqueSlug) });
+    createdProductId = productRow?.id;
+    expect(productRow).toBeTruthy();
+
+    await page.goto(`/${uniqueSlug}`);
+    await expect(page.getByText(fixture.landing.exampleOutput)).toBeVisible();
+    await expect(page.getByText(fixture.landing.steps[0].title)).toBeVisible();
+  } finally {
+    if (createdProductId) {
+      await db.delete(productVersions).where(eq(productVersions.productId, createdProductId));
+      await db.delete(products).where(eq(products.id, createdProductId));
+    }
+    await sql.end({ timeout: 5 });
+  }
 });

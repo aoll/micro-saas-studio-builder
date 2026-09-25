@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/auth-schema";
 import { events, productVersions, products, themes } from "@/lib/db/schema";
 import { eventTypeSchema } from "@/lib/schemas/event-type";
 import type { ProductConfig } from "@/lib/schemas/product-config";

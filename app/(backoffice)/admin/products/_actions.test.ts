@@ -197,6 +197,35 @@ describe("saveProduct · slug race", () => {
     expect(consoleSpy).toHaveBeenCalled();
     consoleSpy.mockRestore();
   });
+
+  it("returns a step 1 slug error for a REAL unique constraint violation, not a mocked one", async () => {
+    await currentAdmin();
+    // A real row already sits on this slug (created directly through the
+    // unmocked DAL, ahead of any mock below): `createProduct`'s own insert
+    // will hit Postgres's real unique constraint, and drizzle wraps that
+    // error instead of exposing `.code` directly on it (lib/db/schema.test.ts
+    // › expectViolation) — unlike the mocked `{ code: "23505" }` above.
+    const { createProduct: realCreateProduct } = await import("@/lib/dal/product-editor");
+    const config = await buildConfig();
+    const winner = await realCreateProduct(config);
+
+    vi.resetModules();
+    vi.doMock("@/lib/dal/product-editor", async () => {
+      const actual = await vi.importActual<typeof import("@/lib/dal/product-editor")>("@/lib/dal/product-editor");
+      return {
+        ...actual,
+        // isSlugAvailable said yes (the race), but createProduct itself is
+        // the real implementation this time: it really inserts and really
+        // collides on products.slug.
+        isSlugAvailable: async () => true,
+      };
+    });
+    const { saveProduct } = await import("./_actions");
+    const result = await saveProduct(null, {}, configForm(config));
+    expect(result).toEqual({ errors: { slug: "Ce slug est déjà utilisé" }, step: 1 });
+
+    await cleanupProduct(winner.id);
+  });
 });
 
 describe("saveProduct · edit path", () => {
@@ -671,6 +700,29 @@ describe("publish · slug race", () => {
     await expect(publish(null, {}, configForm(config))).rejects.toThrow("connection reset by peer");
     expect(consoleSpy).toHaveBeenCalled();
     consoleSpy.mockRestore();
+  });
+
+  it("returns a step 1 slug error for a REAL unique constraint violation, not a mocked one", async () => {
+    await currentAdmin();
+    // Same real-collision setup as saveProduct's own test above: the loser
+    // of the race must see a slug field error, not an unhandled 500.
+    const { createProduct: realCreateProduct } = await import("@/lib/dal/product-editor");
+    const config = await buildConfig();
+    const winner = await realCreateProduct(config);
+
+    vi.resetModules();
+    vi.doMock("@/lib/dal/product-editor", async () => {
+      const actual = await vi.importActual<typeof import("@/lib/dal/product-editor")>("@/lib/dal/product-editor");
+      return {
+        ...actual,
+        isSlugAvailable: async () => true,
+      };
+    });
+    const { publish } = await import("./_actions");
+    const result = await publish(null, {}, configForm(config));
+    expect(result).toEqual({ errors: { slug: "Ce slug est déjà utilisé" }, step: 1 });
+
+    await cleanupProduct(winner.id);
   });
 });
 

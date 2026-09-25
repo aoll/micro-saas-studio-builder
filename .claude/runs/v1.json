@@ -1,0 +1,603 @@
+{
+  "integration": "integration/v1",
+  "specs": {
+    "SETUP-skeleton": {
+      "dependsOn": [],
+      "status": "merged",
+      "worktree": null,
+      "pr": 10
+    },
+    "CONTRACT-types": {
+      "dependsOn": [
+        "SETUP-skeleton"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 11
+    },
+    "CONTRACT-data": {
+      "dependsOn": [
+        "CONTRACT-types"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 12
+    },
+    "CONTRACT-ui": {
+      "dependsOn": [
+        "CONTRACT-types"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 13
+    },
+    "SA-01-landing": {
+      "dependsOn": [
+        "CONTRACT-types",
+        "CONTRACT-data",
+        "CONTRACT-ui"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 16
+    },
+    "SA-08-introuvable": {
+      "dependsOn": [
+        "CONTRACT-types",
+        "CONTRACT-data",
+        "CONTRACT-ui"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 32,
+      "humanDecision": "2026-09-25: human approved (OK SA-08) extending Périmètre to app/(products)/not-found.tsx (full <html> document) + a shared SA-08 content component used by both not-found files."
+    },
+    "SA-02-outil": {
+      "dependsOn": [
+        "CONTRACT-types",
+        "CONTRACT-data",
+        "CONTRACT-ui"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 19
+    },
+    "SA-06-historique": {
+      "dependsOn": [
+        "SA-02-outil"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 24
+    },
+    "LEDGER": {
+      "dependsOn": [
+        "CONTRACT-types",
+        "CONTRACT-data",
+        "CONTRACT-ui"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 28
+    },
+    "SA-03-inscription": {
+      "dependsOn": [
+        "LEDGER"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 35
+    },
+    "SA-04-tarifs": {
+      "dependsOn": [
+        "CONTRACT-types",
+        "CONTRACT-data",
+        "CONTRACT-ui"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 15
+    },
+    "SA-05-paiement": {
+      "dependsOn": [
+        "LEDGER",
+        "SA-04-tarifs"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 34
+    },
+    "SA-07-compte": {
+      "dependsOn": [
+        "LEDGER"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 38,
+      "mergeAfter": [
+        "SA-03-inscription"
+      ],
+      "humanDecision": "2026-09-25: human approved (OK SA-07) extending Périmètre to lib/dal/account.ts + lib/dal/account.test.ts (additive user-scoped reads listCreditMovements, listPurchases)."
+    },
+    "BO-01-connexion": {
+      "dependsOn": [
+        "CONTRACT-types",
+        "CONTRACT-data",
+        "CONTRACT-ui"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 14
+    },
+    "TRACKING": {
+      "dependsOn": [
+        "CONTRACT-types",
+        "CONTRACT-data",
+        "CONTRACT-ui"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 17
+    },
+    "BO-02-portefeuille": {
+      "dependsOn": [
+        "TRACKING"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 25
+    },
+    "BO-03-fiche": {
+      "dependsOn": [
+        "BO-02-portefeuille"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 33
+    },
+    "BO-05a-formulaire": {
+      "dependsOn": [
+        "CONTRACT-types",
+        "CONTRACT-data",
+        "CONTRACT-ui"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 18
+    },
+    "BO-05b-generation-publication": {
+      "dependsOn": [
+        "BO-05a-formulaire",
+        "SA-02-outil"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 27
+    },
+    "BO-07-themes": {
+      "dependsOn": [
+        "CONTRACT-types",
+        "CONTRACT-data",
+        "CONTRACT-ui",
+        "BO-05a-formulaire"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 21
+    },
+    "DEMO-mode": {
+      "dependsOn": [
+        "SA-01-landing",
+        "SA-08-introuvable",
+        "SA-02-outil",
+        "SA-06-historique",
+        "LEDGER",
+        "SA-03-inscription",
+        "SA-04-tarifs",
+        "SA-05-paiement",
+        "SA-07-compte",
+        "BO-01-connexion",
+        "TRACKING",
+        "BO-02-portefeuille",
+        "BO-03-fiche",
+        "BO-05a-formulaire",
+        "BO-05b-generation-publication",
+        "BO-07-themes"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 45,
+      "humanDecision": {
+        "pending": false,
+        "question": "Périmètre extension: (a) visitor limit 10: lib/dal/product-editor.ts(+test), admin/products/_actions.ts(+test), additive guards export; (b) BO-06 trigger disabled on seeded products: admin/products/[slug]/page.tsx, sheet.ts, product-sheet-view.tsx, sheet-header.tsx, status/status-change.tsx(+tests); (c) lib/ai/model.ts mock fixtures for descri-pro, nom-de-marque, bio-instagram; (d) .env.example SEED_* credential vars",
+        "round2": "No seeded-row lock (guards stay no-op; acceptance lock bullet waived; BO-06 trigger item moot); .env.example allowed. Pending: (a) 10 visitor limit, (c) lib/ai/model.ts mock fixtures",
+        "round3": "(a) visitor limit dropped (bullet waived); (c) lib/ai/model.ts(+test) mock fixtures approved"
+      }
+    },
+    "SECURITY": {
+      "dependsOn": [
+        "SA-01-landing",
+        "SA-08-introuvable",
+        "SA-02-outil",
+        "SA-06-historique",
+        "LEDGER",
+        "SA-03-inscription",
+        "SA-04-tarifs",
+        "SA-05-paiement",
+        "SA-07-compte",
+        "BO-01-connexion",
+        "TRACKING",
+        "BO-02-portefeuille",
+        "BO-03-fiche",
+        "BO-05a-formulaire",
+        "BO-05b-generation-publication",
+        "BO-07-themes"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 43,
+      "humanDecision": {
+        "pending": false,
+        "answer": "OK SECURITY (2026-09-25)",
+        "extension": "package.json, pnpm-lock.yaml, lib/env.ts(+test), .env.example, lib/dal/generations.ts(+test) additive countRecentGenerations, README.md, lib/dal/contract-shape.test.ts mocks only"
+      }
+    },
+    "I18N-SEO": {
+      "dependsOn": [
+        "SA-01-landing",
+        "SA-08-introuvable",
+        "SA-02-outil",
+        "SA-06-historique",
+        "LEDGER",
+        "SA-03-inscription",
+        "SA-04-tarifs",
+        "SA-05-paiement",
+        "SA-07-compte",
+        "BO-01-connexion",
+        "TRACKING",
+        "BO-02-portefeuille",
+        "BO-03-fiche",
+        "BO-05a-formulaire",
+        "BO-05b-generation-publication",
+        "BO-07-themes"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 41,
+      "humanDecision": {
+        "pending": false,
+        "answer": "go fichier partagé (2026-09-25)",
+        "extension": "app/(products)/[app]/_lib/og-colors.ts(+test)"
+      }
+    },
+    "BO-04-activite": {
+      "dependsOn": [
+        "SA-01-landing",
+        "SA-08-introuvable",
+        "SA-02-outil",
+        "SA-06-historique",
+        "LEDGER",
+        "SA-03-inscription",
+        "SA-04-tarifs",
+        "SA-05-paiement",
+        "SA-07-compte",
+        "BO-01-connexion",
+        "TRACKING",
+        "BO-02-portefeuille",
+        "BO-03-fiche",
+        "BO-05a-formulaire",
+        "BO-05b-generation-publication",
+        "BO-07-themes"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 42
+    },
+    "BO-06-statut": {
+      "dependsOn": [
+        "BO-03-fiche"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 37
+    },
+    "BO-09-seuils": {
+      "dependsOn": [
+        "BO-02-portefeuille"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 36
+    },
+    "BO-08-editeur-theme": {
+      "dependsOn": [
+        "BO-07-themes"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 26
+    },
+    "E2E-demo": {
+      "dependsOn": [
+        "SETUP-skeleton",
+        "CONTRACT-types",
+        "CONTRACT-data",
+        "CONTRACT-ui",
+        "SA-01-landing",
+        "SA-08-introuvable",
+        "SA-02-outil",
+        "SA-06-historique",
+        "LEDGER",
+        "SA-03-inscription",
+        "SA-04-tarifs",
+        "SA-05-paiement",
+        "SA-07-compte",
+        "BO-01-connexion",
+        "TRACKING",
+        "BO-02-portefeuille",
+        "BO-03-fiche",
+        "BO-05a-formulaire",
+        "BO-05b-generation-publication",
+        "BO-07-themes",
+        "DEMO-mode",
+        "SECURITY",
+        "I18N-SEO",
+        "BO-04-activite",
+        "BO-06-statut",
+        "BO-09-seuils",
+        "BO-08-editeur-theme"
+      ],
+      "status": "deferred",
+      "worktree": null,
+      "pr": null
+    },
+    "CONTRACT-remove-demo-lock": {
+      "dependsOn": [],
+      "status": "merged",
+      "worktree": null,
+      "pr": 44,
+      "humanDecision": {
+        "pending": false,
+        "answer": "« Le verrouillage doit être nettoyé, pas de code mort » (2026-09-25): remove assertEditable/isEditable/Lockable and the read-only UI; residual contract spec written by the orchestrator"
+      }
+    }
+  },
+  "pendingIntegrations": [
+    {
+      "spec": "SA-02-outil",
+      "blockedOn": "TRACKING",
+      "what": "api/generate: use TRACKING anonymous-id helper (ANONYMOUS_ID_COOKIE, readAnonymousId, anonymousIdCookie) instead of inline cookie code",
+      "resolved": true
+    },
+    {
+      "spec": "SA-01-landing",
+      "blockedOn": "SA-02-outil",
+      "what": "drop the `/${slug}/tool` as Route casts in [app]/_components/landing/hero.tsx and landing-pricing.tsx once [app]/tool/page.tsx exists",
+      "resolved": true,
+      "pr": 20
+    },
+    {
+      "spec": "SA-04-tarifs",
+      "blockedOn": "SA-05-paiement",
+      "what": "drop the `/${slug}/checkout/${packId}` as Route cast in [app]/pricing/_components/pricing-content.tsx once the checkout route exists; un-fixme e2e/pricing.spec.ts journey 3 once SA-02 and LEDGER are merged",
+      "resolved": true,
+      "pr": 40,
+      "resolution": "cast dropped; pricing e2e journey 3 un-fixme deferred to the E2E phase (noted)"
+    },
+    {
+      "spec": "BO-07-themes",
+      "blockedOn": "BO-08-editeur-theme",
+      "what": "wrap ThemeCard (admin/themes/_components/theme-card.tsx) in a <Link> to /admin/themes/[id] once the editor route exists",
+      "resolved": true,
+      "pr": 29
+    },
+    {
+      "spec": "CONTRACT-ui",
+      "blockedOn": "BO-07-themes",
+      "what": "drop the \"/admin/themes\" as Route cast (and comment) in components/backoffice/admin-sidebar.tsx once /admin/themes exists",
+      "resolved": true,
+      "pr": 22
+    },
+    {
+      "spec": "SA-06-historique",
+      "blockedOn": "SA-07-compte",
+      "what": "entry point to /[app]/history: SA-07 account page links to it (inside [app]/account/**); a header/tool link would need a CONTRACT-ui/SA-02 follow-up",
+      "resolved": true,
+      "note": "handled inside SA-07 (history link in the account page)",
+      "resolution": "SA-07 account page links to /history (#38)"
+    },
+    {
+      "spec": "CONTRACT-ui",
+      "blockedOn": "BO-09-seuils",
+      "what": "drop the \"/admin/settings\" as Route cast in components/backoffice/admin-sidebar.tsx once BO-09 ships /admin/settings",
+      "resolved": true,
+      "pr": 40
+    },
+    {
+      "spec": "TRACKING",
+      "blockedOn": "TRACKING",
+      "what": "flaky: lib/dal/events.test.ts createTempProduct inserts product_versions with config {} which breaks concurrent listProducts() tests (Zod parse); give it a schema-valid config",
+      "resolved": true,
+      "pr": 23
+    },
+    {
+      "spec": "SETUP-skeleton",
+      "blockedOn": "SETUP-skeleton",
+      "what": "intermittent: lib/dal/session.test.ts \"redirects to /admin/login for a role=user session\" failed once (session!.id undefined at line 80) under full-suite parallelism; find the concurrent file that mutates admin sessions and isolate it",
+      "resolved": true,
+      "pr": 47
+    },
+    {
+      "spec": "BO-05a-formulaire",
+      "blockedOn": "BO-05b-generation-publication",
+      "what": "admin/products/_actions.ts isUniqueSlugViolation reads err.code but drizzle puts the PG code on err.cause (lib/db/schema.test.ts:24-31): the slug race throws instead of returning a slug error; fix + a test with a real duplicate insert",
+      "resolved": true,
+      "pr": 30
+    },
+    {
+      "spec": "CONTRACT-ui",
+      "blockedOn": "SA-07-compte",
+      "what": "header entry point to /[app]/account (components/product/header-balance.tsx: link the balance badge to /${slug}/account)",
+      "resolved": true,
+      "pr": 40
+    },
+    {
+      "spec": "SA-03-inscription",
+      "blockedOn": "SA-03-inscription",
+      "what": "after SA-03 merges: drop the /${slug}/signup as Route casts in [app]/tool/_components/tool-form.tsx and components/product/header-balance.tsx; update e2e/tool.spec.ts notes; SA-07 account signup cast + un-fixme its anonymous journey",
+      "resolved": true,
+      "pr": 40
+    },
+    {
+      "spec": "TRACKING",
+      "blockedOn": "SA-03-inscription",
+      "what": "dedupe signup events per (product, user) in the body of track() (signature unchanged), like visit, so a returning user re-login does not inflate the funnel; also dedupe purchase events by metadata.purchaseKey (SA-05 puts the idempotency key there)",
+      "resolved": true,
+      "pr": 40
+    },
+    {
+      "spec": "CONTRACT-ui",
+      "blockedOn": "SA-05-paiement",
+      "what": "optional onClose prop on components/product/route-modal.tsx so the confirmed checkout closes to /tool instead of router.back() into the pricing modal",
+      "resolved": true,
+      "pr": 40,
+      "resolution": "cast dropped; pricing e2e journey 3 un-fixme deferred to the E2E phase (noted)"
+    },
+    {
+      "spec": "BO-05b-generation-publication",
+      "blockedOn": "BO-05b-generation-publication",
+      "what": "intermittent: product-form.test.tsx \"a create-mode publish captures the created slug, so a second publish takes the edit path\" failed once under load (expected null to be bio-instagram); root-cause (timing of createdSlug capture) and fix the component or the test without weakening it",
+      "resolved": true,
+      "pr": 31
+    },
+    {
+      "spec": "SA-02-outil",
+      "blockedOn": "SA-02-outil",
+      "what": "intermittent: lib/dal/generations.test.ts failed once under shared DB load during SA-07 full run (green isolated and on re-run); root-cause like the other DAL test races",
+      "resolved": true,
+      "pr": 47
+    },
+    {
+      "spec": "BO-05a-formulaire",
+      "blockedOn": "BO-05a-formulaire",
+      "what": "product-form.test.tsx create-mode publish test failed once in a full pnpm test run (SA-05 TDD, after the #31 act() fix); root-cause before the end of the run",
+      "resolved": true,
+      "pr": 47
+    },
+    {
+      "spec": "BO-02-portefeuille",
+      "blockedOn": "BO-03-fiche",
+      "what": "drop the /admin/products/[slug] as Route cast in portfolio-table.tsx; make e2e/portfolio.spec.ts:50 temp product config schema-valid",
+      "resolved": true,
+      "pr": 40,
+      "resolution": "e2e config fixed; cast kept with reason (typedRoutes, string outside JSX href)"
+    },
+    {
+      "spec": "BO-03-fiche",
+      "blockedOn": "BO-06-statut",
+      "what": "after BO-06: mount StatusChange also in decision-panel.tsx and move the header trigger next to « Modifier la config » (mockup BO-06), in BO-03 files; also mock the DAL boundary (@/lib/dal/products and the session/product-status chain) in sheet-header.test.tsx and product-sheet-view.test.tsx, then replace the dynamic import() of setProductStatus in status-change.tsx by a plain static import + .bind(null, slug) (BO-06 Next review MEDIUM)",
+      "resolved": true,
+      "pr": 39
+    },
+    {
+      "spec": "CONTRACT-data",
+      "blockedOn": "CONTRACT-data",
+      "what": "lib/dal/contract.test.ts « debit takes a single Debit argument » hit the 5000 ms timeout once under heavy load (sa-03 coverage run); root-cause before end of run",
+      "resolved": true,
+      "pr": 47
+    },
+    {
+      "spec": "SA-01-landing",
+      "blockedOn": "I18N-SEO",
+      "what": "docs/04 SEO par produit: metadataBase, canonical, Open Graph title/description in [app]/page.tsx generateMetadata, generateViewport themeColor in [app]/layout.tsx (outside I18N-SEO Périmètre; SA-01 plan deferred it)",
+      "resolved": true,
+      "pr": 48
+    },
+    {
+      "spec": "BO-03-fiche",
+      "blockedOn": "BO-04-activite",
+      "what": "link the BO-03 product sheet to /admin/products/[slug]/activity (reuse BO-04 ProductTabs in sheet-header or a [slug]/layout.tsx)",
+      "resolved": true,
+      "pr": 46
+    },
+    {
+      "spec": "SA-02-outil",
+      "blockedOn": "SECURITY",
+      "what": "api/generate/route.ts should import clientIp from lib/rate-limit.ts instead of its private copy (parity test meanwhile)",
+      "resolved": true,
+      "pr": 47
+    }
+  ],
+  "notes": [
+    "SECURITY: lib/auth.ts before-hook rejects unknown/non-admin emails without hashing (timing side-channel to enumerate the admin email); pad the fast path with a dummy hash (BO-01 security review).",
+    "SECURITY: public login and events beacon have no rate limit yet; hashIp from lib/dal/generations.ts (SA-02) is the shared IP key.",
+    {
+      "for": "CONTRACT follow-up",
+      "note": "events: index covering (product_id, anonymous_id, type, created_at) for the visit dedupe (TRACKING database review)"
+    },
+    {
+      "for": "SECURITY",
+      "note": "api/generate trusts the first X-Forwarded-For entry for the anonymous free-try key: fine behind Vercel (edge overwrites XFF), self-hosting must strip inbound XFF at its proxy (SA-02 security review)."
+    },
+    {
+      "for": "DEMO-mode",
+      "note": "seed must give each demo product >= 1000 visits in the last 30 UTC days; LettrePro >= 5% distinct-buyer signup->purchase conversion and positive margin, NomDeMarque < 2%, DescriPro in between (BO-02 bullet 4, checked by E2E-demo)."
+    },
+    {
+      "for": "BO-03, BO-09",
+      "note": "lib/decision.ts (BO-02): evaluate(metrics: DecisionMetrics, thresholds: Thresholds): \"kill\"|\"scale\"|null; metric definitions in lib/dal/metrics.ts header; admin/loading.tsx wraps nested admin routes."
+    },
+    {
+      "for": "BO-05b",
+      "note": "publishProduct must updateTag(\"products\") (and product:<slug>) when theme_id/locale change, else BO-07 counts and layouts stay stale; sync products.theme_id/locale from the published config (BO-05a)."
+    },
+    {
+      "for": "CONTRACT follow-up",
+      "note": "no index serves created_at >= since range filters on events/purchases/generations in getPortfolioMetrics (full scans at volume, measured by the BO-02 database review); consider covering (created_at, product_id) indexes or pruning/archival."
+    },
+    {
+      "for": "CONTRACT follow-up",
+      "note": "generations has no index covering anonymous_id: the anonymous /history list and count do full scans at volume (SA-06 security review); add (product_id, anonymous_id, created_at). Also consider rate-limiting public history page views (SECURITY)."
+    },
+    {
+      "for": "human (open question)",
+      "note": "themeTokensSchema lacks typography scale, shadows and density listed in docs/01; a contract PR would be needed. DEMO-mode will make BO-08 read-only for seeded themes on the public demo."
+    },
+    {
+      "for": "E2E-demo",
+      "note": "instant() portfolio -> fiche: name and status cannot be in the static shell while each boundary calls requireAdmin() (BO-03)."
+    },
+    {
+      "for": "CONTRACT follow-up",
+      "note": "purchases has no (user_id, product_id, created_at) index (SA-07 plan)."
+    },
+    {
+      "for": "SECURITY",
+      "note": "the raw Better Auth /api/auth/sign-in/magic-link endpoint is not behind guardRequest(\"signup\") (outbox only, Better Auth built-in 5/60 s limit)."
+    },
+    {
+      "for": "CONTRACT follow-up (human)",
+      "note": "purchases has no index at all: add (product_id, created_at) and (user_id, product_id, created_at); used by getPortfolioMetrics, getFunnel daily, SA-07 listPurchases. Flagged HIGH by the BO-03 database review as a pre-existing frozen-schema gap, not fixable in BO-03."
+    },
+    {
+      "for": "E2E-demo",
+      "note": "SA-05: e2e/checkout.spec.ts journey « opens as a nested modal from the tool paywall » is test.fixme; finish it in the E2E phase with SA-04 pricing journey 3"
+    },
+    {
+      "for": "CONTRACT (human)",
+      "note": "events: track() dedupe (follow-up SA-03/SA-05) filters signup by user_id and purchase by metadata->>purchaseKey on top of the (product_id, type, created_at) index; add (product_id, type, user_id) and a purchase_key column or expression index on metadata->>purchaseKey when volume grows"
+    },
+    {
+      "for": "CONTRACT (human)",
+      "note": "SECURITY follow-ups: raw Better Auth /api/auth/sign-in/magic-link not behind guardRequest; login timing side-channel in lib/auth.ts (dummy verifyPassword on reject path); a shared Postgres limiter (rate_limit_hits table or Better Auth rateLimit storage database) for test-prompt, signup, login and events"
+    },
+    {
+      "for": "CONTRACT (human)",
+      "note": "BO-04 activity: add indexes purchases(product_id, created_at) and credit_transactions(product_id, created_at) for the product-wide activity lists (seq scans today, fine at demo volume)"
+    },
+    {
+      "for": "human (docs)",
+      "note": "docs/ still describes the demo lock and the 10 visitor-product limit (01-produit, 02-ecrans BO-09, 07-modele-de-donnees is_seed columns, 09-arborescence guards.ts, 11-implementation); update after the run"
+    }
+  ]
+}

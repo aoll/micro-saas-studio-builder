@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790285058333,
+      "tag": "0000_petite_tarantula",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790288723981,
+      "tag": "0001_drop_skeleton_product",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790288739756,
+      "tag": "0002_full_data_model",
+      "breakpoints": true
+    }
+  ]
+}

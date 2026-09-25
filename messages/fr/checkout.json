@@ -1,0 +1,42 @@
+{
+  "modal": {
+    "title": "Paiement",
+    "titleConfirmed": "Paiement confirmé"
+  },
+  "page": {
+    "title": "Paiement"
+  },
+  "loading": "Chargement du paiement…",
+  "packLine": "{name} · pack",
+  "notice": "Paiement simulé pour la démo · aucun montant n'est débité",
+  "card": {
+    "number": "Carte",
+    "numberValue": "4242 4242 4242 4242",
+    "expiration": "Expiration",
+    "expirationValue": "12 / 30",
+    "cvc": "CVC",
+    "cvcValue": "123",
+    "holder": "Nom sur la carte",
+    "holderValue": "Léa Martin"
+  },
+  "pay": "Payer {price} (simulé)",
+  "paying": "Paiement en cours…",
+  "stayNotice": "Vous restez sur l'outil après le paiement",
+  "confirmation": {
+    "added": "{count, plural, one {+# crédit} other {+# crédits}}",
+    "addedNote": "Ajoutés à votre compte",
+    "pack": "Pack",
+    "amount": "Montant",
+    "newBalance": "Nouveau solde",
+    "resume": "Reprendre ma génération →"
+  },
+  "errors": {
+    "unauthenticated": "Connectez-vous pour acheter des crédits",
+    "invalid_request": "Cette page n'est plus disponible",
+    "unknown_pack": "Ce pack n'existe plus",
+    "bot": "Requête bloquée",
+    "rate_limited": "Trop de tentatives, réessayez dans un instant",
+    "failed": "Le paiement a échoué, réessayez"
+  },
+  "signIn": "Se connecter"
+}

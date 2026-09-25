@@ -1,0 +1,20 @@
+{
+  "hero": {
+    "cta": "Essayer gratuitement",
+    "freeHint": "{count, plural, one {1re génération offerte} other {# générations offertes}} · sans inscription"
+  },
+  "example": {
+    "title": "Exemple de résultat"
+  },
+  "steps": {
+    "title": "Comment ça marche"
+  },
+  "pricing": {
+    "title": "Tarifs",
+    "signupBonus": "{count, plural, one {# crédit offert} other {# crédits offerts}} à l'inscription",
+    "cta": "Commencer"
+  },
+  "faq": {
+    "title": "Questions fréquentes"
+  }
+}

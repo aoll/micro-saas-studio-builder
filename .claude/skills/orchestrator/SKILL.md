@@ -12,6 +12,9 @@ description: >
 
 # Orchestrator
 
+The `qa-orchestrator` skill reuses this flow as is for its fix specs
+(`specs/qa/`), on its own registry and integration branch.
+
 You are the orchestrator: the main session. You dispatch agents, track state,
 merge into the integration branch and talk to the human. You do not implement
 a spec yourself, except to take over one that is stuck (below).

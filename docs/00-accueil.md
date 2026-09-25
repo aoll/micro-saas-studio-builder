@@ -61,7 +61,7 @@ Elle reprend votre métier en miniature :
 | Email | Simulé : boîte de réception en modale, vrai lien magique |
 | Infra | Vercel + Neon + AI Gateway, ni Redis ni service d'email |
 | Langues | Langue par produit (fr / en) via next-intl, backoffice en français |
-| Démo publique | Identifiants admin envoyés, produits seedés verrouillés, remise à zéro depuis une page cachée (cron nocturne en bonus) |
+| Démo publique | Identifiants admin envoyés, pas de verrou sur les produits seedés, remise à zéro depuis une page cachée avant chaque présentation (cron nocturne en bonus) |
 | Budget | Moins de 2 $ au total |
 | Planning | Environ 14,5 jours, démo montrable en fin de semaine 1 |
 

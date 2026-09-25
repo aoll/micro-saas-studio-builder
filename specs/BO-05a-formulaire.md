@@ -3,6 +3,8 @@ Réf         : Écrans › BO-05 (étapes 1 à 4) · Produit › Configuration d
               · Modèle de données › product_versions · specs/mockups/BO-05.png
 Contrat     : productConfig (Zod) ; implémente createProduct, saveVersion dans
               lib/dal/product-editor.ts ; appelle assertEditable avant toute écriture
+              Note (run v1, 2026-09-25) : exigence retirée par décision humaine, pas
+              de verrou démo ; assertEditable n'existe plus (#44).
 Acceptation :
 - /admin/products/new et /admin/products/[slug]/edit, formulaire en étapes
 - Étape 1 : nom, slug dérivé du nom et modifiable, unicité vérifiée, statut initial

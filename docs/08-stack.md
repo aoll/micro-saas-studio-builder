@@ -90,11 +90,11 @@ Les mocks IA (`MockLanguageModelV4`, `simulateReadableStream`) viennent du packa
 
 | Service | Usage | Variables |
 | --- | --- | --- |
-| Vercel (projet) | Hébergement, BotID, Blob, cron de remise à zéro (bonus) | `BLOB_READ_WRITE_TOKEN`, `CRON_SECRET` |
+| Vercel (projet) | Hébergement, BotID, Blob, cron de remise à zéro (bonus) | `BLOB_READ_WRITE_TOKEN`, `CRON_SECRET` ; `VERCEL` (posée par la plateforme, jamais à la main : BotID n'est appliqué que si elle vaut `1`) |
 | Postgres managé (Neon ou autre, via la Marketplace Vercel) | Base de données, rate limit | `DATABASE_URL` |
 | AI Gateway | Appels LLM, budget plafonné | `AI_GATEWAY_API_KEY` (ou OIDC sur Vercel) |
 | Better Auth | Sessions, lien magique | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` |
-| Application | Mode IA, mode démo public | `AI_MODE` = `mock` ou `live` ; `DEMO_MODE` = `true` ou `false` |
+| Application | Mode IA, mode démo public, rate limit | `AI_MODE` = `mock` ou `live` ; `DEMO_MODE` = `true` ou `false` ; `GENERATION_RATE_LIMIT_PER_MINUTE` (optionnelle, 10 par défaut) ; `SEED_ADMIN_*`, `SEED_OWNER_*` (identifiants du seed, exigés quand `DEMO_MODE=true`) |
 
 Trois services seulement : Vercel, Postgres, AI Gateway. Ni Redis ni service d'email en v1.
 
@@ -106,11 +106,13 @@ Le parcours reste fidèle (vrai token, vraie expiration, vraie session), il ne m
 
 ### Rate limit dans Postgres
 
-Le rate limit n'a pas besoin de Redis à l'échelle de la démo. Avant chaque génération, le DAL compte les lignes de `generations` des 60 dernières secondes pour l'utilisateur (ou l'IP en anonyme) et refuse au-delà d'un seuil. La table existe déjà : une requête indexée, aucun service ni variable en plus.
+Le rate limit n'a pas besoin de Redis à l'échelle de la démo. Avant chaque génération, `guardRequest('generate')` compte les lignes de `generations` des 60 dernières secondes pour l'utilisateur connecté et pour l'`ip_hash`, et répond 429 dès que l'un des deux atteint `GENERATION_RATE_LIMIT_PER_MINUTE` (10 par défaut). La table existe déjà : une requête indexée, aucun service en plus. L'inscription, l'achat et « Tester le prompt » passent par BotID seulement.
 
 D'autres garde-fous limitent déjà l'abus : les crédits eux-mêmes (un utilisateur inscrit ne peut pas générer plus que son solde), une génération anonyme par cookie et par IP, BotID, et le budget plafonné de l'AI Gateway.
 
 Upstash resterait gratuit ici (500 000 commandes par mois sur le palier gratuit). Il ne devient utile qu'avec du trafic réel, quand la base ne doit plus porter ce comptage.
+
+**Suivis relevés pendant le run v1** (PR de contrat à décider) : un limiteur Postgres partagé (table `rate_limit_hits` ou stockage `database` du rate limit de Better Auth) pour « Tester le prompt », l'inscription, la connexion et le beacon d'events ; l'endpoint brut `/api/auth/sign-in/magic-link` de Better Auth, hors `guardRequest` ; un faux `verifyPassword` sur le chemin de refus de la connexion admin (`lib/auth.ts`), contre la mesure du temps de réponse.
 
 ### i18n : next-intl, langue portée par le produit
 

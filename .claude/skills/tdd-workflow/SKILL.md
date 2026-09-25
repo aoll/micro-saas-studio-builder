@@ -62,8 +62,31 @@ pnpm test:e2e                             # Playwright, E2E phase only, queued (
   After pulling a new migration, run `pnpm db:migrate`.
 - DAL tests hit the real database. Do not mock `db`, Drizzle or the `postgres` driver: constraints,
   transactions and unique indexes are what these tests verify.
-- Isolate tests by data, not by global cleanup: create a fresh user or product per test with a unique
-  id, so tests can run in any order.
+- Isolate tests with `withTestTransaction(fn)` (`lib/db/test-transaction.ts`), not by global cleanup:
+  wrap a test's body in it and everything `fn` writes through `db` — DAL calls, Route Handlers and
+  Server Actions called directly by the test — is rolled back once `fn` settles, success or failure, no
+  manual `afterEach`/`afterAll` deletes needed. Still use fixtures of your own (a fresh user or product
+  per test with a unique id): rows never leak *out* of the transaction, but two tests running inside the
+  same one (or the seeded rows every test shares) can still collide with each other. Never lock a seeded
+  row (`SELECT ... FOR UPDATE`, an `UPDATE` without a fresh id) for the same reason.
+  - `now()` is frozen for the whole transaction: two writes microseconds apart in wall-clock time get
+    the same `created_at`. A test that asserts ordering across equal timestamps needs explicit,
+    distinct `Date`s, not `setTimeout` between two writes.
+  - A failed statement aborts the transaction (Postgres `25P02`) unless it runs inside its own
+    savepoint: a nested `db.transaction()` becomes one automatically (drizzle-orm/postgres-js), so code
+    under test that already wraps its writes in `db.transaction()` needs no change; raw multi-statement
+    setup that expects one statement to fail and the rest to continue does.
+  - `await` everything, including a Route Handler or Server Action's `after()` tasks: a dangling
+    background write started inside the scope and awaited only later throws ("db used after
+    withTestTransaction ended") once the transaction has rolled back.
+  - Keep the old pattern (real inserts, explicit cleanup, no `withTestTransaction`) for tests that prove
+    real concurrent access from several distinct connections (`Promise.all` over independent
+    `db.transaction()` calls, a lock or an idempotency race): postgres.js never releases a savepoint and
+    concurrent savepoints on one connection are unsafe, so those tests need connections of their own.
+    Keep their concurrency width at or below `TEST_POOL_MAX` (`lib/db/index.ts`): the test pool is
+    capped low on purpose.
+  - A test that spies on `db` to prove *no* query ran (`vi.spyOn(db.query.x, "findMany")`,
+    `vi.spyOn(db, "select")`) is simplest outside a scope, alongside the tests above.
 - After every ledger scenario, assert that `balances.balance` equals the sum of that user's
   `credit_transactions`.
 

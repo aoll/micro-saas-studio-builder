@@ -1,0 +1,52 @@
+[
+  {
+    "input": {
+      "poste": "Développeur Frontend",
+      "entreprise": "Dotworld",
+      "experience": "3 ans en React et TypeScript, spécialisé UI/UX",
+      "ton": "dynamique"
+    },
+    "text": "Bonjour,\n\nVotre offre de Développeur Frontend chez Dotworld a immédiatement retenu mon attention. Depuis trois ans, je construis des interfaces React et TypeScript en gardant un œil attentif sur l'expérience utilisateur, exactement l'exigence que je retrouve dans votre culture produit.\n\nJ'aime particulièrement transformer une maquette exigeante en composants réutilisables et accessibles, tout en gardant le code lisible pour l'équipe. Rejoindre Dotworld serait l'occasion de mettre cette énergie au service de produits qui comptent vraiment pour vos utilisateurs.\n\nAu plaisir d'échanger avec vous,\nCandidat",
+    "usage": { "inputTokens": 210, "outputTokens": 140, "cachedInputTokens": 0 }
+  },
+  {
+    "input": {
+      "poste": "Product Manager",
+      "entreprise": "Studio Nova",
+      "experience": "5 ans en gestion produit SaaS B2B, méthodes agiles",
+      "ton": "formel"
+    },
+    "text": "Madame, Monsieur,\n\nJe vous adresse ma candidature pour le poste de Product Manager au sein de Studio Nova. Fort de cinq années d'expérience dans la gestion de produits SaaS B2B, j'ai piloté des roadmaps en méthode agile, de la découverte utilisateur jusqu'au lancement.\n\nMa rigueur d'analyse et ma capacité à arbitrer entre besoins clients et contraintes techniques m'ont permis d'accompagner la croissance de plusieurs produits. Je souhaite aujourd'hui mettre cette expérience au service de vos ambitions.\n\nJe reste à votre disposition pour un entretien.\n\nCordialement,\nCandidate",
+    "usage": { "inputTokens": 205, "outputTokens": 150, "cachedInputTokens": 0 }
+  },
+  {
+    "input": {
+      "poste": "Data Analyst",
+      "entreprise": "GreenMetrics",
+      "experience": "2 ans en analyse de données environnementales, SQL et Python",
+      "ton": "formel"
+    },
+    "text": "Madame, Monsieur,\n\nVotre poste de Data Analyst chez GreenMetrics correspond précisément à mon projet professionnel. Depuis deux ans, j'analyse des données environnementales avec SQL et Python, en transformant des jeux de données complexes en indicateurs clairs pour la décision.\n\nJe suis convaincue que la donnée peut accélérer la transition écologique quand elle est mise entre de bonnes mains, et je serais ravie de mettre cette conviction au service de vos équipes.\n\nDans l'attente de votre retour, je vous prie d'agréer mes salutations distinguées.\n\nCandidate",
+    "usage": { "inputTokens": 215, "outputTokens": 135, "cachedInputTokens": 0 }
+  },
+  {
+    "input": {
+      "poste": "Chargé de communication",
+      "entreprise": "Atelier Lumen",
+      "experience": "1 an en alternance, réseaux sociaux et rédaction",
+      "ton": "dynamique"
+    },
+    "text": "Bonjour,\n\nL'énergie créative d'Atelier Lumen se ressent jusque dans votre annonce, et c'est exactement l'univers dans lequel je veux évoluer comme Chargé de communication. Mon alternance m'a permis de gérer des réseaux sociaux au quotidien et de rédiger des contenus qui trouvent leur public.\n\nJ'apprends vite, je propose beaucoup d'idées, et j'aime autant écrire un post que mesurer ce qui fonctionne ensuite. Je serais heureux de mettre cette curiosité au service de votre atelier.\n\nÀ très bientôt j'espère,\nCandidat",
+    "usage": { "inputTokens": 200, "outputTokens": 130, "cachedInputTokens": 0 }
+  },
+  {
+    "input": {
+      "poste": "Ingénieur DevOps",
+      "entreprise": "CloudForge",
+      "experience": "4 ans en infrastructure cloud, Kubernetes et CI/CD",
+      "ton": "formel"
+    },
+    "text": "Madame, Monsieur,\n\nC'est avec grand intérêt que je postule au poste d'Ingénieur DevOps chez CloudForge. Depuis quatre ans, je conçois et j'exploite des infrastructures cloud fiables, avec Kubernetes et des pipelines CI/CD pensés pour fiabiliser chaque mise en production.\n\nJe recherche aujourd'hui une équipe exigeante sur la qualité d'infrastructure, à la hauteur de la réputation de CloudForge sur ce sujet. Je serais heureux de vous exposer plus en détail mes réalisations lors d'un entretien.\n\nCordialement,\nCandidat",
+    "usage": { "inputTokens": 220, "outputTokens": 145, "cachedInputTokens": 0 }
+  }
+]

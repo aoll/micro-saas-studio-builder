@@ -84,7 +84,7 @@ Un recruteur ne clonera pas le repo et n'aura peut-être que deux minutes. Le pa
 
 | Risque | Probabilité | Parade |
 | --- | --- | --- |
-| Un visiteur modifie ou « tue » les produits seedés avant l'entretien | Haute | Produits seedés verrouillés, remise à zéro nocturne et bouton « Réinitialiser » (mode démo, onglet principal) |
+| Un visiteur modifie ou « tue » les produits seedés avant l'entretien | Haute | Bouton « Réinitialiser » de `/admin/ops` juste avant chaque présentation (pas de verrou, décision du run v1), remise à zéro nocturne en bonus (mode démo, onglet principal) |
 | API IA lente ou indisponible pendant la démo live | Faible | Fallback de modèle via le Gateway ; bascule `AI_MODE=mock` |
 | Sortie IA déplacée générée en direct | Faible | Consignes de sûreté dans le prompt système, limites sur les entrées (onglet IA) |
 | Base en veille au moment de la démo | Moyenne | Ouvrir l'app une minute avant, ou désactiver la mise en veille le jour J |

@@ -1,0 +1,54 @@
+{
+  "slug": "lettre-pro",
+  "name": "LettrePro",
+  "status": "scale",
+  "locale": "fr",
+  "branding": {},
+  "landing": {
+    "headline": "Générez votre lettre de motivation en 30 secondes",
+    "subheadline": "Un outil IA qui rédige une lettre de motivation percutante à partir de votre poste, votre expérience et le ton souhaité.",
+    "faq": [
+      {
+        "question": "Combien coûte une génération ?",
+        "answer": "1 crédit par lettre générée. Vous recevez 3 crédits gratuits à l'inscription, et la première génération est gratuite même sans compte."
+      },
+      {
+        "question": "Puis-je modifier le résultat ?",
+        "answer": "Oui : copiez le texte généré et adaptez-le librement avant de l'envoyer à votre recruteur."
+      },
+      {
+        "question": "Quelles langues sont supportées ?",
+        "answer": "Le français pour le moment ; chaque produit du studio a sa propre langue de configuration."
+      }
+    ],
+    "seoTitle": "Générateur de lettre de motivation IA",
+    "seoDescription": "Créez une lettre de motivation professionnelle en 30 secondes grâce à l'IA. Gratuit à l'essai, sans carte bancaire.",
+    "exampleOutput": "Madame, Monsieur,\n\nFort de plusieurs années d'expérience en développement web, je souhaite rejoindre votre équipe...",
+    "steps": [
+      { "title": "Décrivez le poste", "description": "Indiquez le poste visé, l'entreprise et votre expérience." },
+      { "title": "Choisissez le ton", "description": "Formel ou dynamique, selon la culture de l'entreprise." },
+      { "title": "Recevez votre lettre", "description": "Une lettre prête à l'emploi, générée en quelques secondes." }
+    ]
+  },
+  "inputs": [
+    { "key": "poste", "label": "Poste visé", "type": "text", "required": true },
+    { "key": "entreprise", "label": "Entreprise", "type": "text", "required": true },
+    { "key": "experience", "label": "Votre expérience", "type": "textarea", "required": true },
+    { "key": "ton", "label": "Ton", "type": "select", "required": true, "options": ["formel", "dynamique"] }
+  ],
+  "generation": {
+    "model": "anthropic/claude-haiku-4.5",
+    "systemPrompt": "Tu es un conseiller en recrutement. Tu rédiges des lettres de motivation concrètes, ancrées dans l'expérience réellement fournie par le candidat, sans formule creuse ni promesse invérifiable.",
+    "promptTemplate": "Rédige une lettre de motivation pour le poste de {{poste}} chez {{entreprise}}. Expérience du candidat : {{experience}}. Ton : {{ton}}.",
+    "outputType": "markdown"
+  },
+  "pricing": {
+    "freeCreditsOnSignup": 3,
+    "anonymousFreeGenerations": 1,
+    "costPerGeneration": 1,
+    "packs": [
+      { "id": "pack-10", "credits": 10, "priceCents": 490 },
+      { "id": "pack-50", "credits": 50, "priceCents": 1490, "recommended": true }
+    ]
+  }
+}

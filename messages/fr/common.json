@@ -1,0 +1,29 @@
+{
+  "header": {
+    "signIn": "Connexion",
+    "credits": "{count, plural, =0 {0 crédit} one {# crédit} other {# crédits}}"
+  },
+  "demo": {
+    "banner": "Démo : paiement et email simulés"
+  },
+  "result": {
+    "copy": "Copier",
+    "copied": "Copié",
+    "copyError": "Impossible de copier",
+    "download": "Télécharger",
+    "downloadError": "Impossible de télécharger",
+    "regenerate": "Régénérer"
+  },
+  "pack": {
+    "credits": "{count, plural, one {# crédit} other {# crédits}}",
+    "perGeneration": "{price} / génération",
+    "recommended": "Recommandé"
+  },
+  "modal": {
+    "close": "Fermer"
+  },
+  "states": {
+    "loading": "Chargement…",
+    "empty": "Rien à afficher pour le moment"
+  }
+}

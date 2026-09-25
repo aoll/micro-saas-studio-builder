@@ -78,7 +78,9 @@ const integrationBranch = (): string | null => {
  * from origin/main (unless it already exists on origin), push it and record it. */
 const cmdIntegration = (branch: string | undefined): void => {
   if (!branch) {
-    console.log(integrationBranch() ?? fail("no integration branch; create one with: worktree.ts integration <branch>"));
+    console.log(
+      integrationBranch() ?? fail("no integration branch; create one with: worktree.ts integration <branch>"),
+    );
     return;
   }
   const root = mainRoot();
@@ -87,7 +89,8 @@ const cmdIntegration = (branch: string | undefined): void => {
   } catch {
     fail(`invalid branch name: ${branch}`);
   }
-  if (["main", "master"].includes(branch) || branch.startsWith("feat/")) fail(`${branch} cannot be an integration branch`);
+  if (["main", "master"].includes(branch) || branch.startsWith("feat/"))
+    fail(`${branch} cannot be an integration branch`);
   run("git", ["fetch", "origin"], root);
   let onOrigin = true;
   try {
@@ -108,7 +111,8 @@ const cmdNew = (slug: string, from: string): void => {
   const existing = worktrees().find((w) => resolve(w.path) === path);
 
   if (existing) {
-    if (existing.branch !== branch) fail(`${path} exists on branch ${existing.branch ?? "(detached)"}, expected ${branch}`);
+    if (existing.branch !== branch)
+      fail(`${path} exists on branch ${existing.branch ?? "(detached)"}, expected ${branch}`);
     console.log(`Worktree ${path} already exists, re-running setup`);
   } else {
     if (existsSync(path)) fail(`${path} exists but is not a git worktree; move it away first`);
@@ -144,14 +148,9 @@ const cmdNew = (slug: string, from: string): void => {
   }
 
   console.log(
-    [
-      "",
-      `Worktree ready`,
-      `  path    ${path}`,
-      `  branch  ${branch}`,
-      `  db      ${dbName}`,
-      `Next: cd ${path}`,
-    ].join("\n"),
+    ["", `Worktree ready`, `  path    ${path}`, `  branch  ${branch}`, `  db      ${dbName}`, `Next: cd ${path}`].join(
+      "\n",
+    ),
   );
 };
 
@@ -170,7 +169,9 @@ const cmdRm = (slug: string, keepBranch: boolean): void => {
     try {
       run("pnpm", ["tsx", "scripts/worktree-db.ts", "drop"], path);
     } catch {
-      console.warn(`Could not drop the database of ${branch}; clean up later with: pnpm tsx scripts/worktree-db.ts prune`);
+      console.warn(
+        `Could not drop the database of ${branch}; clean up later with: pnpm tsx scripts/worktree-db.ts prune`,
+      );
     }
     try {
       // No --force: a dirty worktree must be committed or discarded by a human.

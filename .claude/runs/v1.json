@@ -362,6 +362,14 @@
     {
       "for": "SECURITY",
       "note": "api/generate trusts the first X-Forwarded-For entry for the anonymous free-try key: fine behind Vercel (edge overwrites XFF), self-hosting must strip inbound XFF at its proxy (SA-02 security review)."
+    },
+    {
+      "for": "DEMO-mode",
+      "note": "seed must give each demo product >= 1000 visits in the last 30 UTC days; LettrePro >= 5% distinct-buyer signup->purchase conversion and positive margin, NomDeMarque < 2%, DescriPro in between (BO-02 bullet 4, checked by E2E-demo)."
+    },
+    {
+      "for": "BO-03, BO-09",
+      "note": "lib/decision.ts (BO-02): evaluate(metrics: DecisionMetrics, thresholds: Thresholds): \"kill\"|\"scale\"|null; metric definitions in lib/dal/metrics.ts header; admin/loading.tsx wraps nested admin routes."
     }
   ]
 }

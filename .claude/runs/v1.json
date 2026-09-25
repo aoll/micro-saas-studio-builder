@@ -117,7 +117,7 @@
       "mergeAfter": [
         "SA-03-inscription"
       ],
-      "openQuestion": "human: allow lib/dal/account.ts (+test), an additive admin-free read module for the user ledger movements and purchases, outside SA-07 Périmètre? Phases 1 and 3 proceed meanwhile."
+      "humanDecision": "2026-09-25: human approved (OK SA-07) extending Périmètre to lib/dal/account.ts + lib/dal/account.test.ts (additive user-scoped reads listCreditMovements, listPurchases)."
     },
     "BO-01-connexion": {
       "dependsOn": [

@@ -1,0 +1,47 @@
+[
+  {
+    "input": {
+      "niche": "freelance brand designer",
+      "highlights": "based in Lisbon, works with DTC brands, portfolio link in bio",
+      "tone": "playful"
+    },
+    "text": "- ✨ Brand designer for DTC labels\n- 📍 Lisbon, remote-friendly\n- 🎨 Making your brand impossible to scroll past\n- 👇 Portfolio below",
+    "usage": { "inputTokens": 95, "outputTokens": 40, "cachedInputTokens": 0 }
+  },
+  {
+    "input": {
+      "niche": "career coach for engineers",
+      "highlights": "10 years in big tech, 200+ clients coached, free resume audit",
+      "tone": "professional"
+    },
+    "text": "- Career coach for software engineers\n- 10 years in big tech, 200+ clients coached\n- Free resume audit — link below\n- Booking now for Q4",
+    "usage": { "inputTokens": 98, "outputTokens": 42, "cachedInputTokens": 0 }
+  },
+  {
+    "input": {
+      "niche": "home baker specializing in sourdough",
+      "highlights": "weekend pop-up in Brooklyn, custom orders, gluten-free options",
+      "tone": "playful"
+    },
+    "text": "- 🍞 Sourdough, baked slow, sold fast\n- 📍 Brooklyn weekend pop-up\n- 🌾 Gluten-free options available\n- 📩 DM for custom orders",
+    "usage": { "inputTokens": 93, "outputTokens": 38, "cachedInputTokens": 0 }
+  },
+  {
+    "input": {
+      "niche": "personal trainer focused on strength training",
+      "highlights": "certified NASM trainer, online and in-person coaching, beginner friendly",
+      "tone": "professional"
+    },
+    "text": "- Certified strength coach (NASM)\n- Online & in-person coaching\n- Beginner friendly, no judgment\n- Book your first session below",
+    "usage": { "inputTokens": 96, "outputTokens": 41, "cachedInputTokens": 0 }
+  },
+  {
+    "input": {
+      "niche": "travel photographer",
+      "highlights": "shoots in 30+ countries, print shop open, available for bookings",
+      "tone": "playful"
+    },
+    "text": "- 📸 Chasing light in 30+ countries\n- 🖼️ Prints available in my shop\n- ✈️ Currently open for bookings\n- 👇 See the latest series",
+    "usage": { "inputTokens": 94, "outputTokens": 39, "cachedInputTokens": 0 }
+  }
+]

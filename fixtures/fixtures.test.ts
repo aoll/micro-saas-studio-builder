@@ -6,10 +6,12 @@ import { productConfigSchema } from "../lib/schemas/product-config";
 // product (lettre-pro, descri-pro, nom-de-marque), plus BioInsta's config
 // as a fixture only — pasted live into the BO-05 form during the demo
 // script, never seeded as a product row (docs/01 › Contenu des produits
-// seedés). `bio-instagram.json` deliberately does not exist: no product
-// row means no history to seed for it.
+// seedés). `bio-instagram.json` exists too (human decision, round 3,
+// 2026-09-25): lib/ai/model.ts's mock registry needs it so the live demo
+// (paste the config, then generate) streams BioInsta's own fixture in
+// AI_MODE=mock instead of falling back to LettrePro's.
 const CONFIG_SLUGS = ["lettre-pro", "descri-pro", "nom-de-marque", "bio-instagram"] as const;
-const GENERATION_SLUGS = ["lettre-pro", "descri-pro", "nom-de-marque"] as const;
+const GENERATION_SLUGS = ["lettre-pro", "descri-pro", "nom-de-marque", "bio-instagram"] as const;
 
 // The real themeId is only known once the seed inserts the theme row
 // (scripts/seed.ts merges it in before parsing); a fixture's own JSON
@@ -53,10 +55,6 @@ describe("product config fixtures", () => {
   it("bio-instagram.config.json is locale en (docs/01: the demo creates it live, in English)", () => {
     const raw = readConfig("bio-instagram") as { locale: string };
     expect(raw.locale).toBe("en");
-  });
-
-  it("bio-instagram has no seeded generation fixture (never inserted as a product row)", () => {
-    expect(() => readGenerations("bio-instagram")).toThrow();
   });
 });
 

@@ -132,9 +132,9 @@
     },
     "QA1-P3-F1-formulaire-etapes-5-4": {
       "dependsOn": [],
-      "status": "dispatched",
-      "worktree": "qa1-p3-f1-formulaire-etapes-5-4",
-      "pr": null,
+      "status": "merged",
+      "worktree": null,
+      "pr": 70,
       "mode": "plan dans la spec"
     }
   },

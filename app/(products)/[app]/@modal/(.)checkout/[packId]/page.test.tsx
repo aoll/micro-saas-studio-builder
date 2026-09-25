@@ -76,6 +76,16 @@ describe("@modal/(.)checkout/[packId] page", () => {
     expect(dialog.textContent).toContain("BioInsta · pack");
   });
 
+  it("fills the viewport on mobile and becomes a centered dialog from the sm breakpoint", async () => {
+    getProduct.mockResolvedValue(product);
+    const { default: CheckoutModal } = await import("./page");
+    const ui = await CheckoutModal(ctx("pack-50"));
+    renderUi(ui);
+    const classes = screen.getByRole("dialog").className.split(/\s+/);
+    expect(classes).toEqual(expect.arrayContaining(["h-dvh", "max-h-dvh", "w-dvw", "max-w-dvw"]));
+    expect(classes).toEqual(expect.arrayContaining(["sm:h-auto", "sm:w-full", "sm:max-w-lg"]));
+  });
+
   it("navigates back when closed", async () => {
     getProduct.mockResolvedValue(product);
     const { default: CheckoutModal } = await import("./page");

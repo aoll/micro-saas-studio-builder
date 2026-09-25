@@ -8,11 +8,22 @@ import type { DebitResult, Purchase } from "./credits";
 // file stays valid once a real implementation replaces a stub's body.
 
 describe("credits", () => {
+  // This is the first dynamic import in the file, so it alone pays for
+  // transforming and initializing the whole shared foundation this module
+  // pulls in (drizzle-orm, the postgres driver, lib/db, lib/db/schema,
+  // lib/env, better-auth via lib/dal/session) — every later `await
+  // import(...)` in this file hits Vite's transform cache and takes single
+  // digit milliseconds. Measured standalone: ~1.3s; with the machine's 4
+  // cores saturated by other work, ~1.4-1.5s. Under real full-suite
+  // parallelism (up to 10 worktrees, 4 test slots each cold-starting the
+  // same kind of import), this legitimately crossed the default 5000ms
+  // once. Raised for this test only, not the suite default, since no other
+  // test here does comparable first-import work.
   it("debit takes a single Debit argument and returns a DebitResult", async () => {
     const { debit } = await import("./credits");
     expectTypeOf(debit).parameters.toEqualTypeOf<[import("./credits").Debit]>();
     expectTypeOf(debit).returns.resolves.toEqualTypeOf<DebitResult>();
-  });
+  }, 20_000);
 
   it("DebitResult's refusal is a value, never an exception", () => {
     expectTypeOf<Extract<DebitResult, { ok: false }>>().toEqualTypeOf<{

@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-// Fixtures shared with the parity test below: `clientIp` here must behave
-// exactly like the private `clientIp` in api/generate/route.ts (SECURITY
-// plan, decision D4). The route keeps its own copy for now (route.ts is
-// outside this spec's Périmètre); an orchestrator follow-up makes it import
-// this one instead.
+// SECURITY plan, decision D4. api/generate/route.ts used to keep its own
+// byte-for-byte copy of `clientIp`, proven identical to this one by a parity
+// test below; the orchestrator follow-up that made the route import this
+// function instead removed that copy, so the fixtures now just pin this
+// single implementation's behavior directly.
 const fixtures: Array<{ name: string; headers: Record<string, string>; expected: string }> = [
   { name: "a single x-forwarded-for", headers: { "x-forwarded-for": "203.0.113.42" }, expected: "203.0.113.42" },
   {
@@ -36,27 +36,10 @@ const fixtures: Array<{ name: string; headers: Record<string, string>; expected:
   { name: "'unknown' when neither header is present", headers: {}, expected: "unknown" },
 ];
 
-// A byte-for-byte copy (decision D4) of the route's private `clientIp`,
-// used to prove the two stay in parity without importing route.ts (a
-// Route Handler module, awkward to import from a plain unit test).
-function routeClientIp(requestHeaders: Headers): string {
-  const forwardedFor = requestHeaders.get("x-forwarded-for");
-  if (forwardedFor) {
-    const [first] = forwardedFor.split(",");
-    if (first?.trim()) return first.trim();
-  }
-  return requestHeaders.get("x-real-ip") ?? "unknown";
-}
-
 describe("clientIp", () => {
   it.each(fixtures)("returns $expected for $name", async ({ headers, expected }) => {
     const { clientIp } = await import("./rate-limit");
     expect(clientIp(new Headers(headers))).toBe(expected);
-  });
-
-  it.each(fixtures)("matches the route's private clientIp for $name", async ({ headers }) => {
-    const { clientIp } = await import("./rate-limit");
-    expect(clientIp(new Headers(headers))).toBe(routeClientIp(new Headers(headers)));
   });
 });
 

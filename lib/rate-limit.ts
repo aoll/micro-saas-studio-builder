@@ -2,12 +2,17 @@ import "server-only";
 import { env } from "@/lib/env";
 import { countRecentGenerations } from "@/lib/dal/generations";
 
-// A byte-for-byte copy (SECURITY plan, decision D4) of the private
-// `clientIp` in api/generate/route.ts: `X-Forwarded-For` is only as
-// trustworthy as whatever sits in front of Node (see that file's comment).
-// The route keeps its own copy for now (route.ts is outside this spec's
-// Périmètre); making it import this one instead is an orchestrator
-// follow-up. A parity test (rate-limit.test.ts) proves the two agree.
+// The single source of client IP resolution (SECURITY plan, decision D4),
+// imported by api/generate/route.ts (orchestrator follow-up: it used to keep
+// its own byte-for-byte copy, proven identical by a parity test in
+// rate-limit.test.ts) and by lib/security.ts.
+//
+// Trust model (security review, SA-02): `X-Forwarded-For` is only as
+// trustworthy as whatever sits in front of Node. On Vercel, the edge
+// network sets/overwrites this header itself, so a client cannot spoof it.
+// Self-hosting (docs/06-vercel.md's Fly.io alternative) must have its own
+// reverse proxy strip any inbound `X-Forwarded-For` before appending the
+// real peer address — left to SECURITY's deployment hardening.
 export function clientIp(requestHeaders: Headers): string {
   const forwardedFor = requestHeaders.get("x-forwarded-for");
   if (forwardedFor) {

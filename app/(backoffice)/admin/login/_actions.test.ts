@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { hashPassword } from "better-auth/crypto";
-import { eq, inArray } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { afterAll, describe, expect, it, vi } from "vitest";
@@ -34,14 +34,21 @@ const uniqueEmail = (label: string) => {
   return email;
 };
 
+// Session tokens created by this file for SEED_ADMIN, tracked precisely so
+// afterAll deletes only the rows this file created. lib/dal/session.test.ts
+// and lib/auth.test.ts sign the same seeded admin in concurrently (separate
+// worker threads, shared worktree DB): a blanket
+// `delete(sessions).where(eq(sessions.userId, admin.id))` here would also
+// remove sessions those files are mid-assertion on, and vice versa (a real
+// observed flake in lib/dal/session.test.ts).
+const createdAdminSessionTokens: string[] = [];
+
 afterAll(async () => {
   // Deleting a user cascades its accounts and sessions (onDelete: "cascade").
   if (createdEmails.length) await db.delete(users).where(inArray(users.email, createdEmails));
-  // A successful login() for SEED_ADMIN leaves a real session row: seed.ts
-  // never inserts a session, so every row here is a test artifact, safe to
-  // clear without touching the SEED_ADMIN user/account row itself.
-  const admin = await db.query.users.findFirst({ where: eq(users.email, SEED_ADMIN.email) });
-  if (admin) await db.delete(sessions).where(eq(sessions.userId, admin.id));
+  if (createdAdminSessionTokens.length) {
+    await db.delete(sessions).where(inArray(sessions.token, createdAdminSessionTokens));
+  }
   await sql.end({ timeout: 5 });
 });
 
@@ -99,10 +106,23 @@ describe("login action", () => {
   });
 
   it("redirects to /admin for the seeded admin", async () => {
+    const { auth } = await import("@/lib/auth");
+    // Wrap (not mock) signInEmail so the real session gets created as
+    // before, and its token captured for a precise afterAll cleanup instead
+    // of a blanket delete of every session for this admin.
+    const original = auth.api.signInEmail.bind(auth.api);
+    const spy = vi.spyOn(auth.api, "signInEmail").mockImplementation(async (...args) => {
+      const result = await original(...args);
+      createdAdminSessionTokens.push((result as { token: string }).token);
+      return result;
+    });
     const { login } = await import("./_actions");
+
     await expect(login({}, formData({ email: SEED_ADMIN.email, password: SEED_ADMIN.password }))).rejects.toThrow(
       "redirect:/admin",
     );
+
+    spy.mockRestore();
   });
 
   it("logs and still returns the generic error for a non-auth (infrastructure) failure", async () => {

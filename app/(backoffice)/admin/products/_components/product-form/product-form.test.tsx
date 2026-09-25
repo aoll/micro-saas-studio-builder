@@ -263,28 +263,38 @@ describe("ProductForm · generation, pricing, publication", () => {
     expect(publish.mock.calls[0]![0]).toBeNull();
 
     publish.mockResolvedValueOnce({ ok: true, slug: "bio-instagram", version: 2, url: "/bio-instagram" });
-    // Root cause of the flake this test once hit under machine load: React
-    // 19's `useActionState` only rebinds its internal action (here
-    // `publish.bind(null, publishSlug)`, see product-form.tsx) through a
-    // *passive effect* (`actionStateActionEffect` in react-dom), scheduled
-    // by the render that derives `createdSlug` — not synchronously during
-    // that render. The confirmation text below becomes true as soon as that
-    // render *commits*, which is strictly before the passive effect that
-    // does the rebind has necessarily run. Plain `waitFor` (from
-    // `@testing-library/dom`, imported below) polls with
-    // `IS_REACT_ACT_ENVIRONMENT` turned off and, once its condition passes,
-    // only drains with a bare `setTimeout(fn, 0)` (see
-    // `@testing-library/react`'s `asyncWrapper`) before returning control to
-    // the test — a best-effort race against React's own Scheduler-driven
-    // effect flush, not a guarantee, and the two can complete in either
-    // order under load. `act()` makes React itself flush every pending
-    // effect (the rebind included) before resolving, which is exactly what
-    // a real browser guarantees happens before any next user click reaches
-    // this component. Same observable assertion as before (the confirmation
-    // text) — only the synchronization around it is now deterministic.
+    // Root cause of the flake this test hit under machine load, twice now
+    // (once bare, once still after wrapping the confirmation-text `waitFor`
+    // in `act()`): React 19's `useActionState` only rebinds its internal
+    // action (here `publish.bind(null, publishSlug)`, see product-form.tsx)
+    // through a *passive effect* (`actionStateActionEffect` in react-dom),
+    // scheduled by the render that derives `createdSlug` — not
+    // synchronously during that render. The confirmation text becomes true
+    // as soon as that render *commits*, strictly before the passive effect
+    // that does the rebind has necessarily run. The previous fix wrapped
+    // `waitFor(() => screen.getByText(...))` in `act()`, but `waitFor`
+    // (`@testing-library/dom`, same global config as `@testing-library/react`)
+    // itself sets `IS_REACT_ACT_ENVIRONMENT` to `false` for the duration of
+    // its own poll (its `asyncWrapper`, restored only in a `finally`) —
+    // *even while already inside an outer `act()` scope*. Under enough
+    // load, the rebinding passive effect can still be pending when that
+    // inner poll's brief environment-restoring window closes, leaving its
+    // completion unsynchronized with the outer `act()`'s own flush.
+    //
+    // Fix: never call an act-disabling API (`waitFor`, `findBy*`) inside the
+    // `act()` scope. Instead, await the exact promise React itself is
+    // awaiting — the one `publish`'s mock returned for this call, captured
+    // from `mock.results` — directly inside `act()`. This is the pattern
+    // React's own docs use for async actions: `act()` keeps flushing every
+    // render and passive effect this resolution triggers (the rebind
+    // included) until nothing is pending, with the act environment left
+    // untouched throughout.
+    const firstPublishCall = publish.mock.results[0]!.value as Promise<unknown>;
     await act(async () => {
-      await waitFor(() => screen.getByText(/Produit publié/));
+      await firstPublishCall;
     });
+    expect(screen.getByText(/Produit publié/)).toBeTruthy();
+
     fireEvent.click(screen.getByRole("button", { name: "Publier" }));
     await waitFor(() => expect(publish).toHaveBeenCalledTimes(2));
     expect(publish.mock.calls[1]![0]).toBe("bio-instagram");

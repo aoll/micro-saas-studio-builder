@@ -93,9 +93,9 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "dispatched",
-      "worktree": "sa-04-tarifs",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 15
     },
     "SA-05-paiement": {
       "dependsOn": [
@@ -342,6 +342,12 @@
       "spec": "SA-01-landing",
       "blockedOn": "SA-02-outil",
       "what": "drop the `/${slug}/tool` as Route casts in [app]/_components/landing/hero.tsx and landing-pricing.tsx once [app]/tool/page.tsx exists",
+      "resolved": false
+    },
+    {
+      "spec": "SA-04-tarifs",
+      "blockedOn": "SA-05-paiement",
+      "what": "drop the `/${slug}/checkout/${packId}` as Route cast in [app]/pricing/_components/pricing-content.tsx once the checkout route exists; un-fixme e2e/pricing.spec.ts journey 3 once SA-02 and LEDGER are merged",
       "resolved": false
     }
   ],

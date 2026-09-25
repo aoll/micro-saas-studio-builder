@@ -30,7 +30,7 @@ const TOKENS: ThemeTokens = {
 
 describe("previewCssVars", () => {
   it("maps every camelCase color key of the chosen mode to a kebab-case shadcn variable", () => {
-    const vars = previewCssVars(TOKENS, "light");
+    const vars = previewCssVars(TOKENS, "light") as Record<string, string>;
     expect(vars["--background"]).toBe("#111111");
     expect(vars["--card-foreground"]).toBe("#444444");
     expect(vars["--primary-foreground"]).toBe("#666666");
@@ -39,13 +39,13 @@ describe("previewCssVars", () => {
   });
 
   it("switches mode to dark's own tokens", () => {
-    const vars = previewCssVars(TOKENS, "dark");
+    const vars = previewCssVars(TOKENS, "dark") as Record<string, string>;
     expect(vars["--background"]).toBe("#000000");
     expect(vars["--foreground"]).toBe("#ffffff");
   });
 
   it("includes --radius from the tokens, not the per-mode colors", () => {
-    const vars = previewCssVars(TOKENS, "light");
+    const vars = previewCssVars(TOKENS, "light") as Record<string, string>;
     expect(vars["--radius"]).toBe("0.75rem");
   });
 

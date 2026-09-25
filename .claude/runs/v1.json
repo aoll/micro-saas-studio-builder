@@ -103,10 +103,9 @@
         "LEDGER",
         "SA-04-tarifs"
       ],
-      "status": "dispatched",
-      "worktree": "sa-05-paiement",
-      "pr": null,
-      "step": "review"
+      "status": "merged",
+      "worktree": null,
+      "pr": 34
     },
     "SA-07-compte": {
       "dependsOn": [
@@ -525,6 +524,10 @@
     {
       "for": "DEMO-mode",
       "note": "BO-06: StatusChange trigger is not disabled for locked seeded products (needs isEditable passed from sheet.ts → sheet-header.tsx); the DAL guard + in-modal formError cover it meanwhile"
+    },
+    {
+      "for": "E2E-demo",
+      "note": "SA-05: e2e/checkout.spec.ts journey « opens as a nested modal from the tool paywall » is test.fixme; finish it in the E2E phase with SA-04 pricing journey 3"
     }
   ]
 }

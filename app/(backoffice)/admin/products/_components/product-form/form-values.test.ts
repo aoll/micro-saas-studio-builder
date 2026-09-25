@@ -103,4 +103,13 @@ describe("moveItem", () => {
     expect(moved).not.toBe(items);
     expect(items).toEqual(["a", "b", "c"]);
   });
+
+  it("is a no-op for an out-of-range index whose target still lands in bounds", () => {
+    // index 3 is out of range on a 3-item array, but target (2, "up") is a
+    // valid position: splice(3, 1) removes nothing, so the item picked up
+    // is undefined. Without a guard, splicing it back in grows the array
+    // with a hole instead of leaving it untouched.
+    const items = ["a", "b", "c"];
+    expect(moveItem(items, 3, "up")).toEqual(items);
+  });
 });

@@ -95,6 +95,11 @@ export function moveItem<T>(items: T[], index: number, direction: "up" | "down")
   if (target < 0 || target >= items.length) return items;
   const next = [...items];
   const [item] = next.splice(index, 1);
-  next.splice(target, 0, item as T);
+  // `index` itself may be out of range (e.g. beyond the array's length)
+  // even when `target` lands in bounds: splice(index, 1) then removes
+  // nothing and `item` is undefined. Splicing it back in would grow the
+  // array with a hole instead of leaving it untouched.
+  if (item === undefined) return items;
+  next.splice(target, 0, item);
   return next;
 }

@@ -134,6 +134,66 @@ test.describe("Checkout (simulated payment)", () => {
     }
   });
 
+  // QA1-P1-B3 (.claude/qa/reports/2026-09-25-full.md › B3, repro 5.7,
+  // s57b.out.txt): paying from the modal opened over the full /pricing page
+  // used to trigger a server refresh() that re-fetched the intercepted
+  // /pricing background, mismatched the tree and forced a hard reload back
+  // to the payment form (root cause detailed in
+  // .claude/plans/QA1-P1-B3.plan.md). This journey reproduces it: the
+  // confirmation must stay on screen, with zero `load` events, and Resume
+  // must return to /pricing without a reload.
+  test("QA1-P1-B3: pays from the pricing page, the confirmation stays, no reload, Reprendre returns to /pricing", async ({
+    page,
+  }) => {
+    await resetAdminLedgerOnLettrePro();
+    try {
+      await signInAsAdmin(page);
+      await page.goto("/lettre-pro/pricing");
+
+      let loadCount = 0;
+      page.on("load", () => {
+        loadCount++;
+      });
+
+      await page.getByRole("link", { name: /Acheter 10 crédits/ }).click();
+      await expect(page).toHaveURL("/lettre-pro/checkout/pack-10");
+      const dialog = page.getByRole("dialog");
+      await expect(dialog).toBeVisible();
+
+      await page.getByRole("button", { name: /Payer/ }).click();
+      await expect(dialog.getByText("+10 crédits")).toBeVisible();
+
+      await page.waitForTimeout(2000);
+      await expect(dialog.getByText("+10 crédits")).toBeVisible();
+      await expect(dialog.getByText("Nouveau solde")).toBeVisible();
+      await expect(page.getByRole("button", { name: /Payer/ })).toHaveCount(0);
+      await expect(dialog).toBeVisible();
+      await expect(page).toHaveURL("/lettre-pro/checkout/pack-10");
+      expect(loadCount).toBe(0);
+
+      await page.getByRole("button", { name: "Reprendre ma génération →" }).click();
+      await expect(page).toHaveURL("/lettre-pro/pricing");
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      expect(loadCount).toBe(0);
+      await expect(page.getByText("10 crédits")).toBeVisible();
+
+      const sql = postgres(requireDatabaseUrl(), { max: 1, onnotice: () => {} });
+      const db = drizzle(sql, { schema: { products, users, purchases } });
+      try {
+        const product = await db.query.products.findFirst({ where: eq(products.slug, "lettre-pro") });
+        const admin = await db.query.users.findFirst({ where: eq(users.email, SEED_ADMIN.email) });
+        const rows = await db.query.purchases.findMany({
+          where: and(eq(purchases.productId, product!.id), eq(purchases.userId, admin!.id)),
+        });
+        expect(rows).toHaveLength(1);
+      } finally {
+        await sql.end();
+      }
+    } finally {
+      await resetAdminLedgerOnLettrePro();
+    }
+  });
+
   // Needs SA-02 (the outil, to reach a 0 balance) and LEDGER's real debit()
   // to actually exhaust the balance and trigger the paywall from the tool:
   // marked fixme so the file compiles and lists the journey without failing

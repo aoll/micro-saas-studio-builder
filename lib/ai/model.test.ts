@@ -1,8 +1,13 @@
 import { generateText, streamText } from "ai";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import bioInstagramFixture from "@/fixtures/bio-instagram.json";
+import descriProFixture from "@/fixtures/descri-pro.json";
 import fixture from "@/fixtures/lettre-pro.json";
+import nomDeMarqueFixture from "@/fixtures/nom-de-marque.json";
 
-const [firstFixture] = fixture as { input: Record<string, string>; text: string; usage: Record<string, number> }[];
+type ProductFixture = { input: Record<string, string>; text: string; usage: Record<string, number> };
+
+const [firstFixture] = fixture as ProductFixture[];
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -36,6 +41,22 @@ describe("resolveModel", () => {
       prompt: "x",
     });
     expect(result.text).toBe(firstFixture!.text);
+  });
+
+  // DEMO-mode (human decision, round 3, 2026-09-25): every seeded product's
+  // own fixture is served, not only LettrePro's — DescriPro and
+  // NomDeMarque (seeded), and BioInsta (never seeded, but pasted live into
+  // BO-05 during the demo script, so its generations must resolve too).
+  it.each([
+    { slug: "descri-pro", fixtures: descriProFixture },
+    { slug: "nom-de-marque", fixtures: nomDeMarqueFixture },
+    { slug: "bio-instagram", fixtures: bioInstagramFixture },
+  ])("serves $slug's own fixture, not LettrePro's", async ({ slug, fixtures }) => {
+    const [expected] = fixtures as ProductFixture[];
+    const { resolveModel } = await import("./model");
+    const result = await generateText({ model: resolveModel("anthropic/claude-haiku-4.5", slug), prompt: "x" });
+    expect(result.text).toBe(expected!.text);
+    expect(result.text).not.toBe(firstFixture!.text);
   });
 
   it("in AI_MODE=live, returns the model id unchanged", async () => {

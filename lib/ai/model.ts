@@ -2,7 +2,10 @@ import "server-only";
 import type { LanguageModel } from "ai";
 import { MockLanguageModelV4, simulateReadableStream } from "ai/test";
 import { z } from "zod";
+import bioInstagramFixtures from "@/fixtures/bio-instagram.json";
+import descriProFixtures from "@/fixtures/descri-pro.json";
 import lettreProFixtures from "@/fixtures/lettre-pro.json";
+import nomDeMarqueFixtures from "@/fixtures/nom-de-marque.json";
 import { env } from "@/lib/env";
 
 // docs/05-ia.md › Stratégie de mock: one entry point decides which model is
@@ -21,12 +24,17 @@ const fixtureSchema = z.object({
 const fixturesFileSchema = z.array(fixtureSchema).min(1);
 type Fixture = z.infer<typeof fixtureSchema>;
 
-// Fixtures registry (orchestrator decision 5): only LettrePro's fixture is
-// recorded in this spec; DEMO-mode adds the other seeded products' and
-// keeps the same fallback-to-LettrePro behaviour for any slug still
-// missing its own file.
+// Fixtures registry (orchestrator decision 5, extended by DEMO-mode): one
+// entry per product with a recorded fixture — the 3 seeded products, plus
+// BioInsta (never seeded, but pasted live into BO-05 during the demo
+// script: its generations still need to resolve in AI_MODE=mock). Any
+// other slug (a product created live from scratch, an unseeded test slug)
+// falls back to LettrePro's.
 const FIXTURES: Record<string, Fixture[]> = {
   "lettre-pro": fixturesFileSchema.parse(lettreProFixtures),
+  "descri-pro": fixturesFileSchema.parse(descriProFixtures),
+  "nom-de-marque": fixturesFileSchema.parse(nomDeMarqueFixtures),
+  "bio-instagram": fixturesFileSchema.parse(bioInstagramFixtures),
 };
 const FALLBACK_SLUG = "lettre-pro";
 

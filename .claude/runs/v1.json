@@ -113,7 +113,11 @@
       ],
       "status": "dispatched",
       "worktree": "sa-07-compte",
-      "pr": null
+      "pr": null,
+      "mergeAfter": [
+        "SA-03-inscription"
+      ],
+      "humanDecision": "2026-09-25: human approved (OK SA-07) extending Périmètre to lib/dal/account.ts + lib/dal/account.test.ts (additive user-scoped reads listCreditMovements, listPurchases)."
     },
     "BO-01-connexion": {
       "dependsOn": [
@@ -356,7 +360,8 @@
       "spec": "BO-07-themes",
       "blockedOn": "BO-08-editeur-theme",
       "what": "wrap ThemeCard (admin/themes/_components/theme-card.tsx) in a <Link> to /admin/themes/[id] once the editor route exists",
-      "resolved": false
+      "resolved": true,
+      "pr": 29
     },
     {
       "spec": "CONTRACT-ui",
@@ -369,7 +374,8 @@
       "spec": "SA-06-historique",
       "blockedOn": "SA-07-compte",
       "what": "entry point to /[app]/history: SA-07 account page links to it (inside [app]/account/**); a header/tool link would need a CONTRACT-ui/SA-02 follow-up",
-      "resolved": false
+      "resolved": false,
+      "note": "handled inside SA-07 (history link in the account page)"
     },
     {
       "spec": "CONTRACT-ui",
@@ -394,6 +400,37 @@
       "spec": "BO-05a-formulaire",
       "blockedOn": "BO-05b-generation-publication",
       "what": "admin/products/_actions.ts isUniqueSlugViolation reads err.code but drizzle puts the PG code on err.cause (lib/db/schema.test.ts:24-31): the slug race throws instead of returning a slug error; fix + a test with a real duplicate insert",
+      "resolved": true,
+      "pr": 30
+    },
+    {
+      "spec": "CONTRACT-ui",
+      "blockedOn": "SA-07-compte",
+      "what": "header entry point to /[app]/account (components/product/header-balance.tsx: link the balance badge to /${slug}/account)",
+      "resolved": false
+    },
+    {
+      "spec": "SA-03-inscription",
+      "blockedOn": "SA-03-inscription",
+      "what": "after SA-03 merges: drop the /${slug}/signup as Route casts in [app]/tool/_components/tool-form.tsx and components/product/header-balance.tsx; update e2e/tool.spec.ts notes; SA-07 account signup cast + un-fixme its anonymous journey",
+      "resolved": false
+    },
+    {
+      "spec": "TRACKING",
+      "blockedOn": "SA-03-inscription",
+      "what": "dedupe signup events per (product, user) in the body of track() (signature unchanged), like visit, so a returning user re-login does not inflate the funnel; also dedupe purchase events by metadata.purchaseKey (SA-05 puts the idempotency key there)",
+      "resolved": false
+    },
+    {
+      "spec": "CONTRACT-ui",
+      "blockedOn": "SA-05-paiement",
+      "what": "optional onClose prop on components/product/route-modal.tsx so the confirmed checkout closes to /tool instead of router.back() into the pricing modal",
+      "resolved": false
+    },
+    {
+      "spec": "BO-05b-generation-publication",
+      "blockedOn": "BO-05b-generation-publication",
+      "what": "intermittent: product-form.test.tsx \"a create-mode publish captures the created slug, so a second publish takes the edit path\" failed once under load (expected null to be bio-instagram); root-cause (timing of createdSlug capture) and fix the component or the test without weakening it",
       "resolved": false
     }
   ],
@@ -439,6 +476,14 @@
     {
       "for": "E2E-demo",
       "note": "instant() portfolio -> fiche: name and status cannot be in the static shell while each boundary calls requireAdmin() (BO-03)."
+    },
+    {
+      "for": "CONTRACT follow-up",
+      "note": "purchases has no (user_id, product_id, created_at) index (SA-07 plan)."
+    },
+    {
+      "for": "SECURITY",
+      "note": "the raw Better Auth /api/auth/sign-in/magic-link endpoint is not behind guardRequest(\"signup\") (outbox only, Better Auth built-in 5/60 s limit)."
     }
   ]
 }

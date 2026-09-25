@@ -11,24 +11,17 @@ const cacheLife = vi.fn();
 const cacheTag = vi.fn();
 vi.mock("next/cache", () => ({ cacheLife, cacheTag }));
 
-// BO-09 (specs/BO-09-seuils.md): the write side's own admin session and
-// demo-mode lock, spied the same way as lib/dal/product-editor.test.ts
-// (mirrored by the plan's "Patterns to Mirror"). `getThresholds`'s own
-// tests above never call either, so mocking them here is a no-op for those.
+// BO-09 (specs/BO-09-seuils.md): the write side's own admin session, spied
+// the same way as lib/dal/product-editor.test.ts (mirrored by the plan's
+// "Patterns to Mirror"). `getThresholds`'s own tests above never call it,
+// so mocking it here is a no-op for those.
 const requireAdmin = vi.fn();
 vi.mock("./session", () => ({ requireAdmin: () => requireAdmin() }));
-
-const mockAssertEditable = vi.fn();
-vi.mock("./guards", async () => {
-  const actual = await vi.importActual<typeof import("./guards")>("./guards");
-  return { ...actual, assertEditable: (row: unknown) => mockAssertEditable(row) };
-});
 
 afterEach(() => {
   cacheLife.mockClear();
   cacheTag.mockClear();
   requireAdmin.mockReset();
-  mockAssertEditable.mockReset();
 });
 
 let lettreProId: string;
@@ -235,7 +228,7 @@ describe("saveThresholds(null, …) — studio defaults", () => {
     ).rejects.toThrow("redirect:/admin/login");
   });
 
-  it("re-saves the seeded values, stamping updatedBy and calling assertEditable with the seed lock", async () => {
+  it("re-saves the seeded values, stamping updatedBy", async () => {
     await currentAdmin();
     const { saveThresholds } = await import("./thresholds");
     const result = await saveThresholds(null, {
@@ -245,7 +238,6 @@ describe("saveThresholds(null, …) — studio defaults", () => {
       scaleRequiresPositiveMargin: true,
     });
     expect(result).toEqual({ ok: true });
-    expect(mockAssertEditable).toHaveBeenCalledWith(expect.objectContaining({ isSeed: true, productId: null }));
     const row = await db.query.decisionThresholds.findFirst({ where: isNull(decisionThresholds.productId) });
     expect(row?.updatedBy).toBe(ownerId);
     expect(row?.minVisits).toBe(1000);
@@ -329,7 +321,7 @@ describe("saveThresholds(productId, …) — per-product override", () => {
     expect(row).toBeUndefined();
   });
 
-  it("returns product_not_found for an unknown product, without calling assertEditable", async () => {
+  it("returns product_not_found for an unknown product", async () => {
     await currentAdmin();
     const { saveThresholds } = await import("./thresholds");
     const result = await saveThresholds(randomUUID(), {
@@ -339,20 +331,6 @@ describe("saveThresholds(productId, …) — per-product override", () => {
       scaleRequiresPositiveMargin: true,
     });
     expect(result).toEqual({ ok: false, reason: "product_not_found" });
-    expect(mockAssertEditable).not.toHaveBeenCalled();
-  });
-
-  it("calls assertEditable with the product's own lock", async () => {
-    await currentAdmin();
-    const productId = await createTestProduct({ isSeed: true });
-    const { saveThresholds } = await import("./thresholds");
-    await saveThresholds(productId, {
-      minVisits: 500,
-      killMaxConversion: 0.02,
-      scaleMinConversion: 0.05,
-      scaleRequiresPositiveMargin: true,
-    });
-    expect(mockAssertEditable).toHaveBeenCalledWith(expect.objectContaining({ isSeed: true, id: productId }));
   });
 
   // Review round (DB MEDIUM): the default row is now locked with

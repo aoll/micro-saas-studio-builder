@@ -13,7 +13,6 @@ function setup(overrides: Partial<React.ComponentProps<typeof SummaryStep>> = {}
   const props: React.ComponentProps<typeof SummaryStep> = {
     draft,
     themeName: "Neon",
-    readOnly: false,
     pending: false,
     state: {},
     formAction,
@@ -36,11 +35,6 @@ describe("SummaryStep", () => {
     expect(screen.getByText("bio-instagram")).toBeTruthy();
     expect(screen.getByText("Neon")).toBeTruthy();
     expect(screen.getAllByText("2")).toHaveLength(2);
-  });
-
-  it("disables Publier when read-only", () => {
-    setup({ readOnly: true });
-    expect((screen.getByRole("button", { name: "Publier" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("disables Publier while pending", () => {

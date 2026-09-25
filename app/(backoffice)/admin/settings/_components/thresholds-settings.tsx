@@ -54,7 +54,6 @@ function ProductOverrideForm({
     if (resetState.formError) toast.error(resetState.formError);
   }, [resetState]);
 
-  const editable = product.editable;
   const errors = saveState.errors ?? {};
 
   const candidate = useMemo(() => {
@@ -89,7 +88,6 @@ function ProductOverrideForm({
           name="minVisits"
           type="number"
           value={minVisits}
-          disabled={!editable}
           onChange={(event) => setMinVisits(event.target.value)}
           aria-invalid={errors.minVisits ? "true" : undefined}
         />
@@ -104,7 +102,6 @@ function ProductOverrideForm({
           type="number"
           step="0.01"
           value={killPercent}
-          disabled={!editable}
           onChange={(event) => setKillPercent(event.target.value)}
           aria-invalid={errors.killMaxConversion ? "true" : undefined}
         />
@@ -119,7 +116,6 @@ function ProductOverrideForm({
           type="number"
           step="0.01"
           value={scalePercent}
-          disabled={!editable}
           onChange={(event) => setScalePercent(event.target.value)}
           aria-invalid={errors.scaleMinConversion ? "true" : undefined}
         />
@@ -132,7 +128,6 @@ function ProductOverrideForm({
           type="checkbox"
           name="scaleRequiresPositiveMargin"
           checked={requiresMargin}
-          disabled={!editable}
           onChange={(event) => setRequiresMargin(event.target.checked)}
         />
         <Label htmlFor="product-margin">Marge positive exigée pour scaler (produit)</Label>
@@ -152,15 +147,10 @@ function ProductOverrideForm({
       ) : null}
 
       <div className="flex gap-2">
-        <Button type="submit" disabled={savePending || !editable}>
+        <Button type="submit" disabled={savePending}>
           Enregistrer la surcharge
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={resetPending || !editable}
-          onClick={() => resetAction(new FormData())}
-        >
+        <Button type="button" variant="outline" disabled={resetPending} onClick={() => resetAction(new FormData())}>
           Réinitialiser
         </Button>
       </div>
@@ -178,7 +168,7 @@ export function ThresholdsSettings({ view }: { view: SettingsView }) {
 
   return (
     <div className="grid gap-6">
-      <ThresholdsForm defaults={view.defaults.values} products={view.products} editable={view.defaults.editable} />
+      <ThresholdsForm defaults={view.defaults.values} products={view.products} />
 
       <div className="grid gap-4 rounded-md border p-4">
         <h2 className="text-lg font-semibold">Surcharge par produit</h2>

@@ -241,3 +241,45 @@ export const recordAnonymousGeneration: (
     };
   });
 };
+
+// Additive export (SECURITY plan, decision 1): the Postgres rate limiter
+// (lib/rate-limit.ts) counts generations of the last `windowSeconds`, by
+// user and by ip_hash, using the existing `(user_id, created_at)` and
+// `(ip_hash, created_at)` indexes. The window is anchored on the database
+// clock (`now()`), not Node's, so it is correct even if the two clocks
+// drift. Every status counts, unlike `countPriorGenerations`'s free-trial
+// count: a failed generation still used up IA time and is still an attempt
+// to rate-limit. For a signed-in caller, `userId` must match the session
+// (CLAUDE.md: every DAL module checks the session) — never trusted from
+// client input.
+export const countRecentGenerations: (who: {
+  userId: string | null;
+  ipHash: string;
+  windowSeconds: number;
+}) => Promise<{ byUser: number; byIp: number }> = async (who) => {
+  if (who.userId) {
+    const session = await getSession();
+    if (who.userId !== session?.user.id) {
+      throw new Error("countRecentGenerations: userId does not match the caller's session");
+    }
+  }
+
+  const withinWindow = sql`${generations.createdAt} > now() - make_interval(secs => ${who.windowSeconds})`;
+
+  // A SQL count(*) aggregate (security/DB review, LOW note 1), not
+  // findMany + .length: only a count crosses the wire, not one row per
+  // generation, and the query plan can use the covering index directly.
+  const countOf = (condition: ReturnType<typeof and>) =>
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(generations)
+      .where(condition)
+      .then((rows) => rows[0]?.n ?? 0);
+
+  const [byIp, byUser] = await Promise.all([
+    countOf(and(eq(generations.ipHash, who.ipHash), withinWindow)),
+    who.userId ? countOf(and(eq(generations.userId, who.userId), withinWindow)) : Promise.resolve(0),
+  ]);
+
+  return { byUser, byIp };
+};

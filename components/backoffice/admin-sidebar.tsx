@@ -1,4 +1,3 @@
-import type { Route } from "next";
 import { getSession } from "@/lib/dal/session";
 import { NavLink } from "./nav-link";
 import { SignOutButton } from "./sign-out-button";
@@ -10,7 +9,6 @@ import { SignOutButton } from "./sign-out-button";
 // when there is no admin session.
 const ADMIN_ROLES = new Set(["admin", "owner"]);
 
-// BO-09 (settings) has not landed yet: cast dropped once it does.
 export async function AdminSidebar() {
   const session = await getSession();
   if (!session || !ADMIN_ROLES.has(session.user.role)) return null;
@@ -25,7 +23,7 @@ export async function AdminSidebar() {
           <NavLink href="/admin/themes">Thèmes</NavLink>
         </li>
         <li>
-          <NavLink href={"/admin/settings" as Route}>Réglages</NavLink>
+          <NavLink href="/admin/settings">Réglages</NavLink>
         </li>
       </ul>
       <SignOutButton />

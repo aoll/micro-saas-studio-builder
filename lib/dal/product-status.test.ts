@@ -56,4 +56,45 @@ describe("updateStatus", () => {
       await db.delete(products).where(eq(products.id, productId));
     }
   });
+
+  it("clears status_note when the note is set to null after being set", async () => {
+    requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+    const productId = await createTestProduct();
+    try {
+      const { updateStatus } = await import("./product-status");
+      await updateStatus(productId, "learn", "First decision note");
+      const withNote = await db.query.products.findFirst({ where: eq(products.id, productId) });
+      expect(withNote?.statusNote).toBe("First decision note");
+
+      await updateStatus(productId, "learn", null);
+      const cleared = await db.query.products.findFirst({ where: eq(products.id, productId) });
+      expect(cleared?.statusNote).toBeNull();
+    } finally {
+      await db.delete(products).where(eq(products.id, productId));
+    }
+  });
+
+  it("writes killed and moves updatedAt forward", async () => {
+    requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+    const productId = await createTestProduct();
+    try {
+      const before = await db.query.products.findFirst({ where: eq(products.id, productId) });
+      await new Promise((resolve) => setTimeout(resolve, 5));
+
+      const { updateStatus } = await import("./product-status");
+      await updateStatus(productId, "killed", "Below the kill threshold");
+
+      const after = await db.query.products.findFirst({ where: eq(products.id, productId) });
+      expect(after?.status).toBe("killed");
+      expect(after?.updatedAt.getTime()).toBeGreaterThan(before!.updatedAt.getTime());
+    } finally {
+      await db.delete(products).where(eq(products.id, productId));
+    }
+  });
+
+  it("rejects an unknown product id", async () => {
+    requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+    const { updateStatus } = await import("./product-status");
+    await expect(updateStatus(randomUUID(), "scale", null)).rejects.toThrow();
+  });
 });

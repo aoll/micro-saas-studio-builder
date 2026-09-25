@@ -41,4 +41,14 @@ describe("HeaderBalance", () => {
     expect(getBalance).toHaveBeenCalledWith("user-1", "product-1");
     expect(screen.getByText("5 crédits")).toBeTruthy();
   });
+
+  it("links the balance badge to the account page (SA-07)", async () => {
+    getSession.mockResolvedValue({ user: { id: "user-1" } });
+    getBalance.mockResolvedValue(5);
+    const { HeaderBalance } = await import("./header-balance");
+    const ui = await HeaderBalance({ productId: "product-1", slug: "lettre-pro" });
+    renderUi(ui);
+    const link = screen.getByRole("link", { name: "5 crédits" }) as HTMLAnchorElement;
+    expect(link.getAttribute("href")).toBe("/lettre-pro/account");
+  });
 });

@@ -220,7 +220,7 @@ describe("GET [app]/signup/complete: real ledger and events (GET twice)", () => 
     return { id: product!.id, slug };
   }
 
-  it("granting the bonus twice only credits +3 once, writes one signup_bonus row, and tracks a signup event on each completed sign-in (2)", async () => {
+  it("granting the bonus twice only credits +3 once, writes one signup_bonus row, and tracks the signup event only once", async () => {
     vi.doUnmock("@/lib/dal/credits");
     vi.doUnmock("@/lib/dal/events");
     vi.resetModules();
@@ -256,11 +256,14 @@ describe("GET [app]/signup/complete: real ledger and events (GET twice)", () => 
       .where(and(eq(creditTransactions.userId, userId), eq(creditTransactions.reason, "signup_bonus")));
     expect(bonusRows).toHaveLength(1);
 
+    // after() ran twice, but track()'s own signup dedupe (TRACKING dedupe
+    // follow-up, lib/dal/events.ts) keeps the funnel honest: a returning
+    // user's re-login writes no second signup event.
     const signupEvents = await db
       .select()
       .from(events)
       .where(and(eq(events.userId, userId), eq(events.type, "signup")));
-    expect(signupEvents).toHaveLength(2); // after() ran twice; grantSignupBonus is what's idempotent
+    expect(signupEvents).toHaveLength(1);
     expect(signupEvents[0]?.anonymousId).toBe(anonymousId);
   });
 });

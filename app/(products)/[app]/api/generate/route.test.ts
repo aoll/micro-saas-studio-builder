@@ -284,9 +284,19 @@ describe("POST [app]/api/generate — replay", () => {
   });
 });
 
+// A random, distinct IP per test (run rule: tests use random IPs and clean
+// up): the route falls back to "unknown" without an x-forwarded-for
+// header, which would otherwise let two anonymous tests collide on the
+// same ipHash and see each other's prior generations.
+function randomIp(): string {
+  const octet = () => Math.floor(Math.random() * 254) + 1;
+  return `203.0.${octet()}.${octet()}`;
+}
+
 describe("POST [app]/api/generate — anonymous", () => {
   it("sets a new anonymous_id cookie and never debits", async () => {
     getSession.mockResolvedValue(null);
+    testHeaders = new Headers({ "x-forwarded-for": randomIp() });
     cookieStore.get.mockReturnValue(undefined);
     const idempotencyKey = randomUUID();
 
@@ -311,6 +321,7 @@ describe("POST [app]/api/generate — anonymous", () => {
 
   it("401s a second anonymous generation from the same cookie", async () => {
     getSession.mockResolvedValue(null);
+    testHeaders = new Headers({ "x-forwarded-for": randomIp() });
     const anonymousId = randomUUID();
     cookieStore.get.mockReturnValue({ value: anonymousId });
     const firstKey = randomUUID();
@@ -328,7 +339,7 @@ describe("POST [app]/api/generate — anonymous", () => {
 
   it("401s a new cookie from the same IP as a prior anonymous generation", async () => {
     getSession.mockResolvedValue(null);
-    testHeaders = new Headers({ "x-forwarded-for": "203.0.113.77" });
+    testHeaders = new Headers({ "x-forwarded-for": randomIp() });
     cookieStore.get.mockReturnValue(undefined);
     const firstKey = randomUUID();
 
@@ -345,6 +356,7 @@ describe("POST [app]/api/generate — anonymous", () => {
 
   it("a failed anonymous generation does not use up the free try", async () => {
     getSession.mockResolvedValue(null);
+    testHeaders = new Headers({ "x-forwarded-for": randomIp() });
     cookieStore.get.mockReturnValue(undefined);
     const failingModel = await import("@/lib/ai/model");
     vi.spyOn(failingModel, "resolveModel").mockImplementationOnce(() => {

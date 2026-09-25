@@ -38,5 +38,14 @@ export async function generateMetadata(): Promise<Metadata> {
   const product = slug ? await getProduct(slug) : null;
   if (!product) return {};
   cacheTag(`product:${product.slug}`);
-  return { title: product.landing.seoTitle, description: product.landing.seoDescription };
+  return {
+    title: product.landing.seoTitle,
+    description: product.landing.seoDescription,
+    // docs/04-nextjs.md > SEO par produit: one canonical URL per landing,
+    // resolved against [app]/layout.tsx's metadataBase.
+    alternates: { canonical: `/${product.slug}` },
+    // The OG image itself already comes from [app]/opengraph-image.tsx
+    // (I18N-SEO); only the text fields are set here, never duplicated.
+    openGraph: { title: product.landing.seoTitle, description: product.landing.seoDescription },
+  };
 }

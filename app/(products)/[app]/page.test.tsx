@@ -120,7 +120,12 @@ describe("generateMetadata", () => {
     getProduct.mockResolvedValue(product);
     const { generateMetadata } = await import("./page");
     const metadata = await generateMetadata();
-    expect(metadata).toEqual({ title: product.landing.seoTitle, description: product.landing.seoDescription });
+    expect(metadata).toEqual({
+      title: product.landing.seoTitle,
+      description: product.landing.seoDescription,
+      alternates: { canonical: `/${product.slug}` },
+      openGraph: { title: product.landing.seoTitle, description: product.landing.seoDescription },
+    });
     expect(cacheLife).toHaveBeenCalledWith("max");
     expect(cacheTag).toHaveBeenCalledWith("product:lettre-pro");
   });

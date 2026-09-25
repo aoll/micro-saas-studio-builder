@@ -80,10 +80,11 @@ describe("ToolForm — rendering and client-side validation", () => {
     fireEvent.change(screen.getByLabelText("Entreprise"), { target: { value: "Dotworld" } });
     fireEvent.change(screen.getByLabelText("Votre expérience"), { target: { value: "3 ans" } });
     fireEvent.change(screen.getByLabelText("Ton"), { target: { value: "dynamique" } });
-    // fireEvent.submit bypasses jsdom's native HTML5 `required` constraint
-    // validation, which would otherwise silently block the click before
-    // ToolForm's own (translatable) validation ever runs.
-    fireEvent.submit(container.querySelector("form")!);
+    // A real click on the button (not fireEvent.submit, which skips native
+    // constraint validation): with `noValidate`, the browser's own tooltip
+    // never pre-empts ToolForm's translated message (QA1 B9).
+    expect(container.querySelector("form")!.noValidate).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Générer · 1 crédit" }));
 
     expect(screen.getByText("Ce champ est obligatoire.")).toBeTruthy();
     const posteInput = screen.getByLabelText("Poste visé") as HTMLInputElement;

@@ -36,23 +36,35 @@ async function callPost(request: NextRequest, app = "lettre-pro") {
 }
 
 describe("POST /[app]/api/events", () => {
-  it("sets a fresh anonymous_id cookie and tracks a visit when there is no cookie", async () => {
+  it("two concurrent cookieless visit beacons never create two visitors (B4)", async () => {
+    // Reproduces QA1-P1-B4: two beacons of the same page load, each with its
+    // own client-minted id, race in before any cookie exists. The route must
+    // never let a body-supplied anonymousId reach track(): at most one
+    // identity (from a cookie) is ever tracked, and neither client id is it.
+    const bodyIdA = randomUUID();
+    const bodyIdB = randomUUID();
+
+    await Promise.all([
+      callPost(post({ body: { type: "visit", anonymousId: bodyIdA } })),
+      callPost(post({ body: { type: "visit", anonymousId: bodyIdB } })),
+    ]);
+
+    const trackedIds = track.mock.calls.map(([event]) => (event as { anonymousId: string }).anonymousId);
+    expect(new Set(trackedIds).size).toBeLessThanOrEqual(1);
+    expect(trackedIds).not.toContain(bodyIdA);
+    expect(trackedIds).not.toContain(bodyIdB);
+  });
+
+  it("without a cookie: 204, no track, no Set-Cookie", async () => {
     const bodyId = randomUUID();
     const response = await callPost(post({ body: { type: "visit", anonymousId: bodyId } }));
 
     expect(response.status).toBe(204);
-    expect(track).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "visit", productId: "product-1", anonymousId: bodyId }),
-    );
-    const setCookie = response.headers.get("set-cookie");
-    expect(setCookie).toContain(`${ANONYMOUS_ID_COOKIE}=${bodyId}`);
-    expect(setCookie).toContain("HttpOnly");
-    expect(setCookie).toContain("Path=/");
-    expect(setCookie?.toLowerCase()).toContain("samesite=lax");
-    expect(setCookie).toContain("Max-Age=31536000");
+    expect(track).not.toHaveBeenCalled();
+    expect(response.headers.get("set-cookie")).toBeNull();
   });
 
-  it("uses the existing cookie and sets no new one when it is a valid uuid", async () => {
+  it("uses the existing cookie to track the visit", async () => {
     const cookieId = randomUUID();
     const bodyId = randomUUID();
     const response = await callPost(
@@ -64,28 +76,26 @@ describe("POST /[app]/api/events", () => {
     expect(response.headers.get("set-cookie")).toBeNull();
   });
 
-  it("resets to the body id when the cookie is not a valid uuid", async () => {
+  it("an invalid cookie reads as no cookie: 204, no track, no Set-Cookie", async () => {
     const bodyId = randomUUID();
     const response = await callPost(
       post({ body: { type: "visit", anonymousId: bodyId }, cookie: `${ANONYMOUS_ID_COOKIE}=not-a-uuid` }),
     );
 
     expect(response.status).toBe(204);
-    expect(track).toHaveBeenCalledWith(expect.objectContaining({ anonymousId: bodyId }));
-    expect(response.headers.get("set-cookie")).toContain(`${ANONYMOUS_ID_COOKIE}=${bodyId}`);
-  });
-
-  it("marks the cookie Secure on an https request", async () => {
-    const bodyId = randomUUID();
-    const response = await callPost(
-      post({ body: { type: "visit", anonymousId: bodyId }, url: "https://demo.example/lettre-pro/api/events" }),
-    );
-    expect(response.headers.get("set-cookie")).toContain("Secure");
+    expect(track).not.toHaveBeenCalled();
+    expect(response.headers.get("set-cookie")).toBeNull();
   });
 
   it("forwards metadata to track", async () => {
+    const cookieId = randomUUID();
     const bodyId = randomUUID();
-    await callPost(post({ body: { type: "visit", anonymousId: bodyId, metadata: { referrer: "seo" } } }));
+    await callPost(
+      post({
+        body: { type: "visit", anonymousId: bodyId, metadata: { referrer: "seo" } },
+        cookie: `${ANONYMOUS_ID_COOKIE}=${cookieId}`,
+      }),
+    );
     expect(track).toHaveBeenCalledWith(expect.objectContaining({ metadata: { referrer: "seo" } }));
   });
 
@@ -250,7 +260,14 @@ describe("POST /[app]/api/events", () => {
   describe("failures are not swallowed", () => {
     it("propagates a track() rejection", async () => {
       track.mockRejectedValue(new Error("db down"));
-      await expect(callPost(post({ body: { type: "visit", anonymousId: randomUUID() } }))).rejects.toThrow("db down");
+      await expect(
+        callPost(
+          post({
+            body: { type: "visit", anonymousId: randomUUID() },
+            cookie: `${ANONYMOUS_ID_COOKIE}=${randomUUID()}`,
+          }),
+        ),
+      ).rejects.toThrow("db down");
     });
   });
 });

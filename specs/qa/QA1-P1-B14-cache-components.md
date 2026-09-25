@@ -9,5 +9,7 @@ Acceptation :
 - Le shell reste statique (docs/04) : les données de session restent sous
   <Suspense>, jamais mises en cache
 Périmètre   : lib/dal/session.ts (implémentation), components/product/header-balance.tsx,
-              [app]/checkout/[packId]/page.tsx, [app]/tool/page.tsx, leurs tests
+              [app]/checkout/[packId]/page.tsx (+ _components/**),
+              [app]/@modal/(.)checkout/[packId]/page.tsx (après B3), [app]/tool/page.tsx,
+              leurs tests
 Hors périmètre : B3

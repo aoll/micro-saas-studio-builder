@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import lettreProConfig from "@/fixtures/lettre-pro.config.json";
 import lettreProFixtures from "@/fixtures/lettre-pro.json";
 import type { ProductConfig } from "@/lib/schemas/product-config";
-import { costMicros, streamGeneration } from "./generate";
+import { costMicros, PLATFORM_MAX_OUTPUT_TOKENS, streamGeneration } from "./generate";
 
 const resolveModel = vi.fn();
 vi.mock("@/lib/ai/model", () => ({ resolveModel: (...args: unknown[]) => resolveModel(...args) }));
@@ -141,6 +141,14 @@ describe("streamGeneration", () => {
       costMicros: 910,
     });
     expect(onError).not.toHaveBeenCalled();
+  });
+
+  it("caps output tokens with the platform's maxOutputTokens", async () => {
+    let captured: { maxOutputTokens?: unknown } = {};
+    resolveModel.mockReturnValue(fixtureModel((options) => (captured = options as typeof captured)));
+    const result = streamGeneration({ product, inputs: fixture!.input, onSuccess: vi.fn(), onError: vi.fn() });
+    await result.consumeStream();
+    expect(captured.maxOutputTokens).toBe(PLATFORM_MAX_OUTPUT_TOKENS);
   });
 
   it("resolves the model from the product's slug and model id", async () => {

@@ -1,5 +1,4 @@
 import { useTranslations } from "next-intl";
-import type { Route } from "next";
 import Link from "next/link";
 import type { Pack } from "@/lib/schemas/pack";
 import { Button } from "@/components/ui/button";
@@ -35,8 +34,7 @@ export function LandingPricing({
             costPerGeneration={costPerGeneration}
             action={
               <Button asChild variant="outline" className="w-full">
-                {/* /{slug}/tool does not exist yet (SA-02); drop the cast once it ships. */}
-                <Link href={`/${slug}/tool` as Route}>{t("pricing.cta")}</Link>
+                <Link href={`/${slug}/tool`}>{t("pricing.cta")}</Link>
               </Button>
             }
           />

@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+import { withBotId } from "botid/next/config";
 // Fails the build (and this import) if any of the 8 required variables is
 // missing or invalid (docs/10-tooling-dev.md).
 import "./lib/env";
@@ -24,4 +25,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+// withBotId adds the rewrites and headers BotID's client challenge needs
+// (docs/06-vercel.md); it must wrap the innermost config so next-intl's own
+// plugin composition sees the result (SECURITY plan, task 9).
+export default withNextIntl(withBotId(nextConfig));

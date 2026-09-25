@@ -161,7 +161,7 @@ describe("saveTheme", () => {
     expect(updateTag).not.toHaveBeenCalled();
   });
 
-  it("rethrows a DAL error without tagging (e.g. assertEditable's lock)", async () => {
+  it("rethrows a DAL error without tagging", async () => {
     currentAdmin();
     updateTheme.mockRejectedValue(new Error("locked"));
     const { saveTheme } = await import("./_actions");

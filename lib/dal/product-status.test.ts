@@ -14,15 +14,8 @@ class RedirectMarker extends Error {
 const requireAdmin = vi.fn();
 vi.mock("./session", () => ({ requireAdmin: () => requireAdmin() }));
 
-const mockAssertEditable = vi.fn();
-vi.mock("./guards", async () => {
-  const actual = await vi.importActual<typeof import("./guards")>("./guards");
-  return { ...actual, assertEditable: (row: unknown) => mockAssertEditable(row) };
-});
-
 afterEach(() => {
   requireAdmin.mockReset();
-  mockAssertEditable.mockReset();
 });
 
 async function createTestProduct(): Promise<string> {
@@ -99,32 +92,9 @@ describe("updateStatus", () => {
     }
   });
 
-  it("rejects an unknown product id, without calling assertEditable", async () => {
+  it("rejects an unknown product id", async () => {
     requireAdmin.mockResolvedValue({ user: { role: "admin" } });
     const { updateStatus } = await import("./product-status");
     await expect(updateStatus(randomUUID(), "scale", null)).rejects.toThrow();
-    expect(mockAssertEditable).not.toHaveBeenCalled();
-  });
-
-  it("calls assertEditable with the row and rejects without writing when it throws", async () => {
-    requireAdmin.mockResolvedValue({ user: { role: "admin" } });
-    const productId = await createTestProduct();
-    try {
-      const before = await db.query.products.findFirst({ where: eq(products.id, productId) });
-      mockAssertEditable.mockImplementation(() => {
-        throw new Error("locked");
-      });
-
-      const { updateStatus } = await import("./product-status");
-      await expect(updateStatus(productId, "killed", "note")).rejects.toThrow("locked");
-      expect(mockAssertEditable).toHaveBeenCalledWith(expect.objectContaining({ id: productId, isSeed: false }));
-
-      const after = await db.query.products.findFirst({ where: eq(products.id, productId) });
-      expect(after?.status).toBe(before?.status);
-      expect(after?.statusNote).toBe(before?.statusNote);
-      expect(after?.updatedAt).toEqual(before?.updatedAt);
-    } finally {
-      await db.delete(products).where(eq(products.id, productId));
-    }
   });
 });

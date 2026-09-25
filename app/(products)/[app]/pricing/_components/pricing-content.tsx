@@ -1,5 +1,4 @@
 import { useFormatter, useTranslations } from "next-intl";
-import type { Route } from "next";
 import Link from "next/link";
 import type { Product } from "@/lib/dal/products";
 import { Button } from "@/components/ui/button";
@@ -25,9 +24,8 @@ export function PricingContent({ slug, pricing }: { slug: string; pricing: Produ
             costPerGeneration={pricing.costPerGeneration}
             action={
               <Button asChild variant={pack.recommended ? "default" : "outline"} className="w-full">
-                {/* SA-05 (checkout) has not landed yet: cast dropped once it does. */}
                 <Link
-                  href={`/${slug}/checkout/${pack.id}` as Route}
+                  href={`/${slug}/checkout/${pack.id}`}
                   aria-label={t("buyLabel", {
                     count: pack.credits,
                     price: format.number(pack.priceCents / 100, { style: "currency", currency: "EUR" }),

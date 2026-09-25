@@ -16,12 +16,6 @@ class RedirectMarker extends Error {
 const requireAdmin = vi.fn();
 vi.mock("./session", () => ({ requireAdmin: () => requireAdmin() }));
 
-const mockAssertEditable = vi.fn();
-vi.mock("./guards", async () => {
-  const actual = await vi.importActual<typeof import("./guards")>("./guards");
-  return { ...actual, assertEditable: (row: unknown) => mockAssertEditable(row) };
-});
-
 async function currentAdmin() {
   const owner = await db.query.users.findFirst({ where: eq(users.email, SEED_OWNER.email) });
   requireAdmin.mockResolvedValue({ user: { id: owner!.id, role: "admin" } });
@@ -29,7 +23,6 @@ async function currentAdmin() {
 
 afterEach(() => {
   requireAdmin.mockReset();
-  mockAssertEditable.mockReset();
 });
 
 async function buildConfig(): Promise<ProductConfig> {
@@ -128,7 +121,7 @@ describe("saveVersion", () => {
     expect(await saveVersion(`missing-${randomUUID()}`, await buildConfig())).toBeNull();
   });
 
-  it("inserts a new version without moving current_version, calling assertEditable first", async () => {
+  it("inserts a new version without moving current_version", async () => {
     await currentAdmin();
     const { createProduct, saveVersion } = await import("./product-editor");
     const config = await buildConfig();
@@ -138,7 +131,6 @@ describe("saveVersion", () => {
 
     const v2 = await saveVersion(created.slug, { ...config, name: "Renamed v2" });
     expect(v2).toMatchObject({ id: created.id, slug: created.slug, version: 2 });
-    expect(mockAssertEditable).toHaveBeenCalledWith(expect.objectContaining({ isSeed: false }));
 
     const v3 = await saveVersion(created.slug, { ...config, name: "Renamed v3" });
     expect(v3).toMatchObject({ version: 3 });
@@ -151,24 +143,6 @@ describe("saveVersion", () => {
       where: and(eq(productVersions.productId, created.id), eq(productVersions.version, 1)),
     });
     expect((v1?.config as ProductConfig).name).toBe(config.name);
-
-    await db.delete(productVersions).where(eq(productVersions.productId, created.id));
-    await db.delete(products).where(eq(products.id, created.id));
-  });
-
-  it("rejects when assertEditable throws, without inserting a version", async () => {
-    await currentAdmin();
-    const { createProduct, saveVersion } = await import("./product-editor");
-    const config = await buildConfig();
-    const created = await createProduct(config);
-
-    mockAssertEditable.mockImplementation(() => {
-      throw new Error("locked");
-    });
-    await expect(saveVersion(created.slug, config)).rejects.toThrow("locked");
-
-    const versions = await db.query.productVersions.findMany({ where: eq(productVersions.productId, created.id) });
-    expect(versions).toHaveLength(1);
 
     await db.delete(productVersions).where(eq(productVersions.productId, created.id));
     await db.delete(products).where(eq(products.id, created.id));
@@ -311,26 +285,6 @@ describe("publishProduct", () => {
     expect(rolledBack).toMatchObject({ version: 1 });
     const rolledBackRow = await db.query.products.findFirst({ where: eq(products.id, created.id) });
     expect(rolledBackRow).toMatchObject({ currentVersion: 1, themeId: editorial!.id, locale: "fr" });
-
-    await db.delete(productVersions).where(eq(productVersions.productId, created.id));
-    await db.delete(products).where(eq(products.id, created.id));
-  });
-
-  it("calls assertEditable with the row and rejects without changing it when it throws", async () => {
-    await currentAdmin();
-    const { createProduct, publishProduct } = await import("./product-editor");
-    const config = await buildConfig();
-    const created = await createProduct(config);
-    const before = await db.query.products.findFirst({ where: eq(products.id, created.id) });
-
-    mockAssertEditable.mockImplementation(() => {
-      throw new Error("locked");
-    });
-    await expect(publishProduct(created.slug, 1)).rejects.toThrow("locked");
-    expect(mockAssertEditable).toHaveBeenCalledWith(expect.objectContaining({ isSeed: false }));
-
-    const after = await db.query.products.findFirst({ where: eq(products.id, created.id) });
-    expect(after?.updatedAt).toEqual(before?.updatedAt);
 
     await db.delete(productVersions).where(eq(productVersions.productId, created.id));
     await db.delete(products).where(eq(products.id, created.id));

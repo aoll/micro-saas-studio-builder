@@ -15,6 +15,18 @@ import { SEED_OWNER } from "@/scripts/seed";
 
 vi.mock("next/cache", () => ({ cacheLife: vi.fn(), cacheTag: vi.fn() }));
 
+// SECURITY (plan, decision 1): guardRequest("generate") now calls
+// next/headers's headers() (to derive ip_hash) and botid/server's
+// checkBotId(), neither of which works outside a real Next.js request —
+// `headers()` throws "called outside a request scope" in a plain Vitest
+// run. These two mocks let the "security" describe block below keep
+// exercising the real guardRequest and the real, unmocked rate-limit DAL
+// call; the assertions themselves are unchanged.
+vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
+vi.mock("botid/server", () => ({
+  checkBotId: async () => ({ isBot: false, isHuman: true, isVerifiedBot: false, bypassed: true }),
+}));
+
 let ownerId: string;
 let lettreProId: string;
 let editorialThemeId: string;
@@ -252,18 +264,6 @@ describe("thresholds", () => {
     expect(thresholds.scaleMinConversion).toBeGreaterThanOrEqual(0);
     expect(thresholds.scaleMinConversion).toBeLessThanOrEqual(1);
     expect(thresholds.killMaxConversion).toBeLessThan(thresholds.scaleMinConversion);
-  });
-});
-
-describe("guards", () => {
-  it("isEditable matches boolean", async () => {
-    const { isEditable } = await import("./guards");
-    expect(typeof isEditable({ isSeed: true })).toBe("boolean");
-  });
-
-  it("assertEditable is undefined for a non-seed row", async () => {
-    const { assertEditable } = await import("./guards");
-    expect(assertEditable({ isSeed: false })).toBeUndefined();
   });
 });
 

@@ -36,7 +36,7 @@ function payloadOf(formData: FormData) {
 
 describe("ThresholdsForm", () => {
   it("shows the seeded defaults as percents", () => {
-    render(<ThresholdsForm defaults={DEFAULTS} products={[]} editable={true} />);
+    render(<ThresholdsForm defaults={DEFAULTS} products={[]} />);
     expect((screen.getByLabelText(/visites minimales/i) as HTMLInputElement).value).toBe("1000");
     expect((screen.getByLabelText(/à couper/i) as HTMLInputElement).value).toBe("2");
     expect((screen.getByLabelText(/à scaler/i) as HTMLInputElement).value).toBe("5");
@@ -44,7 +44,7 @@ describe("ThresholdsForm", () => {
 
   it("submits the form's own values, converting percent back to a rate", async () => {
     saveThresholdSettings.mockResolvedValue({ ok: true });
-    render(<ThresholdsForm defaults={DEFAULTS} products={[]} editable={true} />);
+    render(<ThresholdsForm defaults={DEFAULTS} products={[]} />);
     fireEvent.change(screen.getByLabelText(/à couper/i), { target: { value: "3" } });
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
 
@@ -56,7 +56,7 @@ describe("ThresholdsForm", () => {
 
   it("shows a toast on success", async () => {
     saveThresholdSettings.mockResolvedValue({ ok: true });
-    render(<ThresholdsForm defaults={DEFAULTS} products={[]} editable={true} />);
+    render(<ThresholdsForm defaults={DEFAULTS} products={[]} />);
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
     await vi.waitFor(() => expect(toastSuccess).toHaveBeenCalled());
   });
@@ -65,15 +65,9 @@ describe("ThresholdsForm", () => {
     saveThresholdSettings.mockResolvedValue({
       errors: { scaleMinConversion: "Le seuil « à scaler » doit être supérieur au seuil « à couper »" },
     });
-    render(<ThresholdsForm defaults={DEFAULTS} products={[]} editable={true} />);
+    render(<ThresholdsForm defaults={DEFAULTS} products={[]} />);
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
     await screen.findByText("Le seuil « à scaler » doit être supérieur au seuil « à couper »");
-  });
-
-  it("disables every field and the submit button when not editable", () => {
-    render(<ThresholdsForm defaults={DEFAULTS} products={[]} editable={false} />);
-    expect((screen.getByLabelText(/visites minimales/i) as HTMLInputElement).disabled).toBe(true);
-    expect((screen.getByRole("button", { name: "Enregistrer" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("previews a product whose badge would change before saving", () => {
@@ -87,7 +81,7 @@ describe("ThresholdsForm", () => {
         override: null,
       },
     ];
-    render(<ThresholdsForm defaults={DEFAULTS} products={products} editable={true} />);
+    render(<ThresholdsForm defaults={DEFAULTS} products={products} />);
     fireEvent.change(screen.getByLabelText(/à couper/i), { target: { value: "0.5" } });
     expect(screen.getByText(/Produit Un/)).toBeTruthy();
   });

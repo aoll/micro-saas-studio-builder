@@ -17,12 +17,6 @@ vi.mock("@/lib/dal/product-editor", () => ({ listThemeOptions: () => listThemeOp
 const listProducts = vi.fn();
 vi.mock("@/lib/dal/products", () => ({ listProducts: () => listProducts() }));
 
-const isEditable = vi.fn();
-vi.mock("@/lib/dal/guards", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/dal/guards")>("@/lib/dal/guards");
-  return { ...actual, isEditable: (row: unknown) => isEditable(row) };
-});
-
 const notFound = vi.fn(() => {
   throw new Error("NEXT_NOT_FOUND");
 });
@@ -30,19 +24,11 @@ vi.mock("next/navigation", () => ({ notFound: () => notFound() }));
 
 // The editor itself has its own full test suite (theme-editor.test.tsx):
 // stubbed here so this loader's tests only assert what *it* is
-// responsible for (finding the row, notFound, the h1, read-only, the
-// sample name), not the editor's internals.
+// responsible for (finding the row, notFound, the h1, the sample name),
+// not the editor's internals.
 vi.mock("./theme-editor", () => ({
-  ThemeEditor: ({
-    theme,
-    readOnly,
-    sampleProductName,
-  }: {
-    theme: Theme;
-    readOnly: boolean;
-    sampleProductName?: string;
-  }) => (
-    <div data-testid="theme-editor-stub" data-readonly={readOnly} data-sample={sampleProductName ?? ""}>
+  ThemeEditor: ({ theme, sampleProductName }: { theme: Theme; sampleProductName?: string }) => (
+    <div data-testid="theme-editor-stub" data-sample={sampleProductName ?? ""}>
       {theme.name}
     </div>
   ),
@@ -118,7 +104,6 @@ describe("ThemeEditorLoader", () => {
   it("shows the theme's name in an h1", async () => {
     listThemeOptions.mockResolvedValue([theme({ id: EDITORIAL, name: "Editorial" })]);
     listProducts.mockResolvedValue([]);
-    isEditable.mockReturnValue(true);
 
     const { ThemeEditorLoader } = await import("./theme-editor-loader");
     render(await ThemeEditorLoader({ id: EDITORIAL }));
@@ -129,7 +114,6 @@ describe("ThemeEditorLoader", () => {
   it("counts killed products toward the usage warning", async () => {
     listThemeOptions.mockResolvedValue([theme({ id: EDITORIAL, name: "Editorial" })]);
     listProducts.mockResolvedValue([product({ id: "1", name: "LettrePro", themeId: EDITORIAL, status: "killed" })]);
-    isEditable.mockReturnValue(true);
 
     const { ThemeEditorLoader } = await import("./theme-editor-loader");
     render(await ThemeEditorLoader({ id: EDITORIAL }));
@@ -145,24 +129,11 @@ describe("ThemeEditorLoader", () => {
       product({ id: "1", name: "Zeta", themeId: EDITORIAL }),
       product({ id: "2", name: "Alpha", themeId: EDITORIAL }),
     ]);
-    isEditable.mockReturnValue(true);
 
     const { ThemeEditorLoader } = await import("./theme-editor-loader");
     render(await ThemeEditorLoader({ id: EDITORIAL }));
 
     expect(screen.getByTestId("theme-editor-stub").dataset.sample).toBe("Alpha");
-  });
-
-  it("passes readOnly=true when isEditable(theme) is false", async () => {
-    listThemeOptions.mockResolvedValue([theme({ id: EDITORIAL, name: "Editorial", isSeed: true })]);
-    listProducts.mockResolvedValue([]);
-    isEditable.mockReturnValue(false);
-
-    const { ThemeEditorLoader } = await import("./theme-editor-loader");
-    render(await ThemeEditorLoader({ id: EDITORIAL }));
-
-    expect(isEditable).toHaveBeenCalledWith(expect.objectContaining({ isSeed: true }));
-    expect(screen.getByTestId("theme-editor-stub").dataset.readonly).toBe("true");
   });
 
   it("propagates a DAL rejection instead of swallowing it", async () => {

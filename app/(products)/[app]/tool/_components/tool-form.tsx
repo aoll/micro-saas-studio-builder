@@ -76,6 +76,9 @@ export function ToolForm({
           return;
         }
         if (response.status === 401) {
+          // typedRoutes only accepts a template literal directly in a JSX
+          // href; router.push() is outside JSX, hence the cast (the route
+          // itself exists, SA-03).
           router.push(`/${slug}/signup` as Route);
           return;
         }
@@ -101,6 +104,7 @@ export function ToolForm({
           }
           setStatus("idle");
           if (response.headers.get("x-free-generations-left") === "0") {
+            // Same as above: router.push() is outside JSX, so the cast stays.
             router.push(`/${slug}/signup` as Route);
           }
         } catch (streamError) {

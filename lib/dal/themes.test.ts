@@ -20,17 +20,10 @@ vi.mock("next/cache", () => ({ cacheLife, cacheTag }));
 const requireAdmin = vi.fn();
 vi.mock("./session", () => ({ requireAdmin: () => requireAdmin() }));
 
-const mockAssertEditable = vi.fn();
-vi.mock("./guards", async () => {
-  const actual = await vi.importActual<typeof import("./guards")>("./guards");
-  return { ...actual, assertEditable: (row: unknown) => mockAssertEditable(row) };
-});
-
 afterEach(() => {
   cacheLife.mockClear();
   cacheTag.mockClear();
   requireAdmin.mockReset();
-  mockAssertEditable.mockReset();
 });
 
 async function currentAdmin() {
@@ -116,9 +109,7 @@ describe("updateTheme", () => {
   it("returns null for a non-uuid id without hitting the database", async () => {
     await currentAdmin();
     const { updateTheme } = await import("./themes");
-    expect(mockAssertEditable).not.toHaveBeenCalled();
     expect(await updateTheme("not-a-uuid", { tokens: buildTokens(), landingVariant: "centered" })).toBeNull();
-    expect(mockAssertEditable).not.toHaveBeenCalled();
   });
 
   it("returns null for an unknown (valid) uuid", async () => {
@@ -144,7 +135,7 @@ describe("updateTheme", () => {
     await db.delete(themes).where(eq(themes.id, themeId));
   });
 
-  it("persists tokens, landing variant and updatedAt, calling assertEditable first", async () => {
+  it("persists tokens, landing variant and updatedAt", async () => {
     await currentAdmin();
     const themeId = await createTempTheme();
     const before = await db.query.themes.findFirst({ where: eq(themes.id, themeId) });
@@ -154,7 +145,6 @@ describe("updateTheme", () => {
     const result = await updateTheme(themeId, { tokens: nextTokens, landingVariant: "split" });
 
     expect(result).toMatchObject({ id: themeId, productSlugs: [] });
-    expect(mockAssertEditable).toHaveBeenCalledWith(expect.objectContaining({ isSeed: false }));
 
     const after = await db.query.themes.findFirst({ where: eq(themes.id, themeId) });
     expect(after?.landingVariant).toBe("split");
@@ -164,22 +154,6 @@ describe("updateTheme", () => {
     // getTheme's own contract stays untouched: the same row still parses.
     expect(themeTokensSchema.safeParse(after?.tokens).success).toBe(true);
     expect(landingVariantSchema.safeParse(after?.landingVariant).success).toBe(true);
-
-    await db.delete(themes).where(eq(themes.id, themeId));
-  });
-
-  it("rejects when assertEditable throws, without writing", async () => {
-    await currentAdmin();
-    const themeId = await createTempTheme({ isSeed: true });
-    mockAssertEditable.mockImplementation(() => {
-      throw new Error("locked");
-    });
-
-    const { updateTheme } = await import("./themes");
-    await expect(updateTheme(themeId, { tokens: buildTokens(), landingVariant: "split" })).rejects.toThrow("locked");
-
-    const row = await db.query.themes.findFirst({ where: eq(themes.id, themeId) });
-    expect(row?.landingVariant).toBe("centered");
 
     await db.delete(themes).where(eq(themes.id, themeId));
   });

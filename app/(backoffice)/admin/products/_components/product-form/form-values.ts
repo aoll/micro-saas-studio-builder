@@ -26,7 +26,15 @@ export const DEFAULT_PRICING: ProductConfig["pricing"] = {
 // `toConfig` strips this id back out before validation and save.
 export type FieldDraft = ProductConfig["inputs"][number] & { id: string };
 
-export type ProductDraft = Omit<ProductConfig, "inputs"> & { inputs: FieldDraft[] };
+// A "how it works" step of step 3, same reasoning as `FieldDraft`: reordered
+// rows (`moveItem`) cannot use their array index as a React key, and the
+// step has no other stable identifier of its own. `toConfig` strips this id
+// back out before validation and save (review QA1-P1-M1, MEDIUM #1).
+export type LandingStepDraft = NonNullable<ProductConfig["landing"]["steps"]>[number] & { id: string };
+
+export type LandingDraft = Omit<ProductConfig["landing"], "steps"> & { steps?: LandingStepDraft[] };
+
+export type ProductDraft = Omit<ProductConfig, "inputs" | "landing"> & { inputs: FieldDraft[]; landing: LandingDraft };
 
 // The in-progress form state for a brand-new product (BO-05's "new"
 // route). An edited product's draft comes from `getProductDraft` instead,
@@ -48,11 +56,16 @@ export function newProductDraft(themeId: string): ProductDraft {
 
 // The inverse of `toConfig`, for a config that already validated (import
 // panel, QA1-P1-M1): adds a fresh client-only `id` per input row (needed by
-// FieldsStep's `key`-based list), everything else passes through unchanged.
+// FieldsStep's `key`-based list) and per "how it works" step (LandingStep's
+// list, same reasoning), everything else passes through unchanged.
 export function fromConfig(config: ProductConfig): ProductDraft {
   return {
     ...config,
     inputs: config.inputs.map((input) => ({ ...input, id: crypto.randomUUID() })),
+    landing: {
+      ...config.landing,
+      steps: config.landing.steps?.map((step) => ({ ...step, id: crypto.randomUUID() })),
+    },
   };
 }
 
@@ -91,6 +104,7 @@ export function toConfig(draft: ProductDraft): ProductConfig {
       subheadline: draft.landing.subheadline.trim(),
       seoTitle: draft.landing.seoTitle.trim(),
       seoDescription: draft.landing.seoDescription.trim(),
+      steps: draft.landing.steps?.map(({ id: _id, ...rest }) => rest),
     },
     inputs: draft.inputs.map(cleanField),
   };

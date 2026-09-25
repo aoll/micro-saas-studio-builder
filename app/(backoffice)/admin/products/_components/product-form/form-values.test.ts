@@ -98,6 +98,17 @@ describe("fromConfig", () => {
     const config = result.data;
     expect(toConfig(fromConfig(config))).toEqual(config);
   });
+
+  it("adds a non-empty client-only id to every 'how it works' step", () => {
+    const raw = readFileSync(join(process.cwd(), "fixtures/bio-instagram.config.json"), "utf-8");
+    const parsed = { ...JSON.parse(raw), themeId };
+    const result = productConfigSchema.safeParse(parsed);
+    if (!result.success) throw new Error("fixture must already validate");
+    const config = result.data;
+    const draft = fromConfig(config);
+    expect(draft.landing.steps).toHaveLength(config.landing.steps?.length ?? 0);
+    for (const step of draft.landing.steps ?? []) expect(step.id).toBeTruthy();
+  });
 });
 
 describe("moveItem", () => {

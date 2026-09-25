@@ -31,7 +31,7 @@ describe("CrossProductSignupBonus", () => {
     expect(ui).toBeNull();
   });
 
-  it("renders ClaimCrossProductBonus with the slug when a session exists", async () => {
+  it("renders ClaimCrossProductBonus with the slug when a session with role 'user' exists", async () => {
     getSession.mockResolvedValue({ user: { id: "user-1", role: "user" } });
     const { CrossProductSignupBonus } = await import("./cross-product-signup-bonus");
     const { ClaimCrossProductBonus } = await import("./claim-cross-product-bonus");
@@ -39,5 +39,30 @@ describe("CrossProductSignupBonus", () => {
     const ui = await CrossProductSignupBonus({ slug: "lettre-pro" });
     expect(ui?.type).toBe(ClaimCrossProductBonus);
     expect(ui?.props).toEqual({ slug: "lettre-pro" });
+  });
+
+  // Security review follow-up (MEDIUM): the backoffice's admin and owner
+  // roles share Better Auth's session with the sub-apps (docs/07's
+  // `users.role`). Without this guard, browsing a product's pages while
+  // signed into /admin would silently grant a signup bonus and a signup
+  // event on every product visited -- polluting the funnel and crediting
+  // accounts that were never meant to buy anything (especially risky
+  // during a public demo, docs/01's "Mode démo public"). The explicit
+  // /{slug}/signup/complete path (magic-link redirect target) is
+  // unaffected: route.test.ts is unchanged.
+  it("returns null for an admin session, without rendering the claim leaf", async () => {
+    getSession.mockResolvedValue({ user: { id: "admin-1", role: "admin" } });
+    const { CrossProductSignupBonus } = await import("./cross-product-signup-bonus");
+
+    const ui = await CrossProductSignupBonus({ slug: "lettre-pro" });
+    expect(ui).toBeNull();
+  });
+
+  it("returns null for an owner session, without rendering the claim leaf", async () => {
+    getSession.mockResolvedValue({ user: { id: "owner-1", role: "owner" } });
+    const { CrossProductSignupBonus } = await import("./cross-product-signup-bonus");
+
+    const ui = await CrossProductSignupBonus({ slug: "lettre-pro" });
+    expect(ui).toBeNull();
   });
 });

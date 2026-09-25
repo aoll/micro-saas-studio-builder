@@ -194,33 +194,47 @@ test.describe("Checkout (simulated payment)", () => {
     }
   });
 
-  // Needs SA-02 (the outil, to reach a 0 balance) and LEDGER's real debit()
-  // to actually exhaust the balance and trigger the paywall from the tool:
-  // marked fixme so the file compiles and lists the journey without failing
-  // the run, mirroring e2e/pricing.spec.ts's own fixme for the same reason.
-  test.fixme("opens as a nested modal from the tool's paywall, through the pricing modal", async ({ page }) => {
+  // QA1-P1-B3 (.claude/plans/QA1-P1-B3.plan.md, step 7, A2): un-fixmed now
+  // that resetAdminLedgerOnLettrePro leaves the admin at a 0 balance on
+  // lettre-pro (no `balances` row: debit() refuses, docs/07-modele-de-
+  // donnees.md), so a single "Générer" reaches the paywall directly — no
+  // need to exhaust several paid generations first.
+  test("opens as a nested modal from the tool's paywall, through the pricing modal", async ({ page }) => {
     await resetAdminLedgerOnLettrePro();
     try {
       await signInAsAdmin(page);
       await page.goto("/lettre-pro/tool");
-      // … exhaust the balance down to 0 here once SA-02 and LEDGER exist,
-      // then trigger the paywall (e.g. attempting one more generation).
+      await page.getByLabel("Poste visé").fill("Développeur Frontend");
+      await page.getByLabel("Entreprise").fill("Dotworld");
+      await page.getByLabel("Votre expérience").fill("3 ans en React et TypeScript");
+      await page.getByLabel("Ton").selectOption("dynamique");
+      await page.getByRole("button", { name: /Générer/ }).click();
 
       await expect(page).toHaveURL("/lettre-pro/pricing");
-      await page
-        .getByRole("link", { name: /Acheter/ })
-        .first()
-        .click();
+      const pricingDialog = page.getByRole("dialog");
+      await expect(pricingDialog).toBeVisible();
 
-      await expect(page).toHaveURL(/\/lettre-pro\/checkout\/pack-\d+$/);
-      const dialog = page.getByRole("dialog");
-      await expect(dialog).toBeVisible();
-      await expect(dialog.getByText(/Paiement/)).toBeVisible();
+      let loadCount = 0;
+      page.on("load", () => {
+        loadCount++;
+      });
 
-      await dialog.getByRole("button", { name: /Payer/ }).click();
-      await expect(dialog.getByText(/crédits/)).toBeVisible();
-      await dialog.getByRole("button", { name: "Reprendre ma génération →" }).click();
+      await pricingDialog.getByRole("link", { name: /Acheter 10 crédits/ }).click();
+
+      await expect(page).toHaveURL("/lettre-pro/checkout/pack-10");
+      const checkoutDialog = page.getByRole("dialog");
+      await expect(checkoutDialog).toBeVisible();
+      await expect(checkoutDialog.getByText(/Paiement/)).toBeVisible();
+
+      await checkoutDialog.getByRole("button", { name: /Payer/ }).click();
+      await expect(checkoutDialog.getByText("+10 crédits")).toBeVisible();
+      await expect(page.getByText("10 crédits")).toBeVisible();
+      expect(loadCount).toBe(0);
+
+      await checkoutDialog.getByRole("button", { name: "Reprendre ma génération →" }).click();
       await expect(page).toHaveURL(/\/lettre-pro\/tool$/);
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      expect(loadCount).toBe(0);
     } finally {
       await resetAdminLedgerOnLettrePro();
     }

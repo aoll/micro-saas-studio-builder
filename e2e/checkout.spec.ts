@@ -175,7 +175,10 @@ test.describe("Checkout (simulated payment)", () => {
       await expect(page).toHaveURL("/lettre-pro/pricing");
       await expect(page.getByRole("dialog")).toHaveCount(0);
       expect(loadCount).toBe(0);
-      await expect(page.getByText("10 crédits")).toBeVisible();
+      // Scoped to the header (role "banner", docs/02-ecrans.md › Header
+      // produit): /pricing's own pack-10 card also reads "10 crédits"
+      // (PackCard), so an unscoped query is ambiguous regardless of timing.
+      await expect(page.getByRole("banner").getByText("10 crédits")).toBeVisible();
 
       const sql = postgres(requireDatabaseUrl(), { max: 1, onnotice: () => {} });
       const db = drizzle(sql, { schema: { products, users, purchases } });

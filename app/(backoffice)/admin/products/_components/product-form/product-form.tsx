@@ -83,6 +83,11 @@ export function ProductForm({
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [banner, setBanner] = useState<string | undefined>(undefined);
+  // QA1-P2-S1 review (MEDIUM): true only while `handleNext`'s own
+  // `checkSlug` call (step 1, create mode) is in flight, so Suivant can be
+  // disabled for that one round trip and a second click during it is a
+  // no-op.
+  const [checkingSlug, setCheckingSlug] = useState(false);
   const [state, formAction, pending] = useActionState(saveProduct.bind(null, slug), initialState);
 
   // A create-mode publish creates the product on its first success: every
@@ -213,10 +218,16 @@ export function ProductForm({
 
     if (mode === "create" && draftPatch.slug !== undefined) {
       const candidate = draftPatch.slug;
-      checkSlug(candidate).then((result) => {
-        if (result.available) clearError("slug");
-        else setErrors((current) => ({ ...current, slug: result.error ?? "Slug indisponible" }));
-      });
+      // Best-effort, live feedback while typing: a rejection here (network,
+      // expired session) is silently ignored rather than left unhandled —
+      // `handleNext`'s own, guarded check is the authoritative one that
+      // blocks Suivant and surfaces an error.
+      checkSlug(candidate)
+        .then((result) => {
+          if (result.available) clearError("slug");
+          else setErrors((current) => ({ ...current, slug: result.error ?? "Slug indisponible" }));
+        })
+        .catch(() => {});
     }
   }
 
@@ -234,11 +245,44 @@ export function ProductForm({
     return testPrompt(publishSlug, {}, data);
   }
 
-  function handleNext() {
+  // QA1-P2-S1 (specs/qa/QA1-P2-S1-slug-pris.md): `validateStep` only checks
+  // the slug's local format (`slugSchema`: kebab-case, not reserved) — a
+  // taken slug like "lettre-pro" is perfectly valid there, since only the
+  // database knows it's unavailable. `handleIdentityChange`'s own
+  // `checkSlug` call (fired on every keystroke) races this click: it may
+  // still be in flight, or its result may already be stale by the time the
+  // admin clicks. So leaving step 1 in create mode re-checks (and awaits)
+  // the slug's availability itself, instead of trusting whatever `errors`
+  // happens to hold at click time.
+  async function handleNext() {
+    if (checkingSlug) return; // a check is already in flight; the button is disabled too
     const stepErrors = validateStep(currentStep, stepPatch(currentStep, draft));
     if (Object.keys(stepErrors).length > 0) {
       setErrors((current) => ({ ...current, ...stepErrors }));
       return;
+    }
+    if (currentStep === 1 && mode === "create") {
+      setCheckingSlug(true);
+      try {
+        const result = await checkSlug(draft.slug);
+        if (!result.available) {
+          setErrors((current) => ({ ...current, slug: result.error ?? "Slug indisponible" }));
+          return;
+        }
+        clearError("slug");
+      } catch {
+        // `checkSlug` is a Server Action (a public POST endpoint): it can
+        // reject (network, an expired session inside `requireAdmin()`, a
+        // DB error). Never advance on an unknown availability, and leave an
+        // actionable message where the other slug errors show.
+        setErrors((current) => ({
+          ...current,
+          slug: "Impossible de vérifier la disponibilité du slug, réessayez.",
+        }));
+        return;
+      } finally {
+        setCheckingSlug(false);
+      }
     }
     setCurrentStep((step) => Math.min(step + 1, STEPS.length));
   }
@@ -291,8 +335,8 @@ export function ProductForm({
               Enregistrer
             </Button>
             {!isLastStep ? (
-              <Button type="button" onClick={handleNext}>
-                Suivant
+              <Button type="button" onClick={handleNext} disabled={checkingSlug}>
+                {checkingSlug ? "Vérification…" : "Suivant"}
               </Button>
             ) : null}
           </div>

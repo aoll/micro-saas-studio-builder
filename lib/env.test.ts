@@ -62,3 +62,19 @@ describe("createAppEnv › GENERATION_RATE_LIMIT_PER_MINUTE", () => {
     expect(() => createAppEnv({ ...validSource, GENERATION_RATE_LIMIT_PER_MINUTE: "abc" })).toThrow();
   });
 });
+
+// VERCEL (SECURITY follow-up): Vercel sets this to "1" automatically at
+// build time and at runtime; absent everywhere else (local, self-hosted).
+// Optional, kept out of `validSource` for the same reason as
+// GENERATION_RATE_LIMIT_PER_MINUTE above.
+describe("createAppEnv › VERCEL", () => {
+  it("is undefined when absent", () => {
+    const env = createAppEnv(validSource);
+    expect(env.VERCEL).toBeUndefined();
+  });
+
+  it('accepts "1"', () => {
+    const env = createAppEnv({ ...validSource, VERCEL: "1" });
+    expect(env.VERCEL).toBe("1");
+  });
+});

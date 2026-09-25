@@ -23,31 +23,32 @@ through `guardRequest(kind)` (`lib/security.ts`): a BotID check first, then
 (`instrumentation-client.ts`, run on every page). BotID is a Vercel product
 (docs/06-vercel.md): the Basic tier is free on every plan, no extra setup
 beyond `withBotId` in `next.config.ts` and the protect list in
-`instrumentation-client.ts`. **Off Vercel** — a self-hosted deployment, or
-`next build && next start` run locally (as `pnpm test:e2e`'s `webServer`
-does) — `checkBotId()` behaves differently depending on `NODE_ENV`:
+`instrumentation-client.ts`.
 
-- `next dev` sets `NODE_ENV=development`: BotID's own dev-mode bypass kicks
-  in (`developmentOptions.isDevelopment` defaults to
-  `NODE_ENV !== 'production'`), logs a `[Dev Only]` warning, and returns
-  "human" without calling any network endpoint. Local development is
-  unaffected.
-- `next build` / `next start` set `NODE_ENV=production` (Next.js enforces
-  this unless `NODE_ENV` is already set): BotID then takes its real path,
-  which calls Vercel's bot-protection API and requires a
-  `VERCEL_OIDC_TOKEN` — only present when actually deployed on Vercel (or
-  linked locally via `vercel dev`/`vercel env pull`). Without it,
-  `checkBotId()` throws. `guardRequest` has no try/catch by design (it
-  neither fails open nor fails closed — see `lib/security.ts`), so that
-  error propagates.
+`checkBotId()`'s real path calls Vercel's bot-protection API and requires a
+`VERCEL_OIDC_TOKEN`, which only exists on an actual Vercel deployment. Off
+Vercel it cannot work at all — not even under `next build && next start` run
+locally (as `pnpm test:e2e`'s `webServer` does), since that still isn't a
+Vercel deployment. `guardRequest` (`lib/security.ts`) tells the two cases
+apart with `env.VERCEL` (`lib/env.ts`), which Vercel sets to `"1"`
+automatically at build time and at runtime, and which is absent everywhere
+else — never by reading `process.env` directly, and never by branching on
+`NODE_ENV`:
 
-This is a known gap for a fully local, production-mode run (notably
-`pnpm test:e2e`, which builds and starts the app on `localhost` without a
-Vercel OIDC token): a real BotID check cannot succeed there. Fixing it (for
-example, always forcing `developmentOptions.isDevelopment` for that one
-local scenario) needs a decision on where that flag comes from without
-`lib/security.ts` branching on `process.env` itself, left as a follow-up.
-Deployed previews and production, and local `next dev`, are not affected.
+- **`env.VERCEL === "1"` (a real Vercel deployment, preview or production):
+  BotID is enforced.** `checkBotId()` takes its real path; a flagged bot
+  gets `{ ok: false, reason: "bot" }`.
+- **`env.VERCEL` unset (local `next dev`, local `next build && next start`,
+  a self-hosted deployment):** `guardRequest` forces BotID's own dev bypass
+  (`developmentOptions.isDevelopment: true`), which logs a `[Dev Only]`
+  warning and always returns "human", without calling any network endpoint.
+
+This fails open, but only for BotID, and only where BotID cannot work at
+all — never for the Postgres rate limit below, which applies unconditionally
+regardless of `env.VERCEL`. `guardRequest` still has no try/catch (it
+neither fails open nor fails closed on an unexpected error — see
+`lib/security.ts`): a genuine failure from BotID's real path, on Vercel,
+still propagates.
 
 **Postgres rate limit.** `GENERATION_RATE_LIMIT_PER_MINUTE` (`lib/env.ts`,
 default `10`) caps `generate` requests per signed-in user and per hashed IP

@@ -539,10 +539,12 @@ describe("getPortfolioMetrics", () => {
   });
 });
 
-// getFunnel (BO-03's product sheet) is untouched by BO-02 — still the V1 stub over the seeded
-// LettrePro (docs/11's contract table) — so these 3 tests stay exactly as they were before
-// BO-02 touched this file. Restored here after commit 93da227 deleted this block by mistake
-// while replacing the getPortfolioMetrics stub test.
+// BO-03 (specs/BO-03-fiche.md): getFunnel moves from the V1 fixture stub to real SQL reusing
+// getPortfolioMetrics's aggregation, filtered to one product, plus its own day-bucketed query.
+// The 2 tests that asserted the fixture's shape (a hardcoded productId echo, an always-nonzero
+// rateFromPrevious, a `days` cap with no real day-bucketing) are replaced below by tests against
+// real, freshly-seeded data — this commit's explained removal (plan Task 0). The admin-session
+// test is untouched.
 describe("getFunnel", () => {
   it("requires an admin session", async () => {
     requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
@@ -550,34 +552,241 @@ describe("getFunnel", () => {
     await expect(getFunnel("p1", { days: 30 })).rejects.toThrow("redirect:/admin/login");
   });
 
-  it("echoes the productId and returns the 5 ordered funnel steps", async () => {
-    requireAdmin.mockResolvedValue({ user: { role: "admin" } });
-    const product = await db.query.products.findFirst({ where: eq(products.slug, "lettre-pro") });
-    const { getFunnel } = await import("./metrics");
-    const funnel = await getFunnel(product!.id, { days: 30 });
+  // Task 1 — guards
+  describe("guards", () => {
+    it("checks the admin session before validating the range", async () => {
+      requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
+      const { getFunnel } = await import("./metrics");
+      await expect(getFunnel("p1", { days: 0 })).rejects.toThrow("redirect:/admin/login");
+    });
 
-    expect(funnel.metrics.productId).toBe(product!.id);
-    expect(funnel.steps.map((step) => step.type)).toEqual([
-      "visit",
-      "first_generation",
-      "signup",
-      "credits_exhausted",
-      "purchase",
-    ]);
-    expect(funnel.steps[0]!.rateFromPrevious).toBeNull();
-    for (const step of funnel.steps.slice(1)) {
-      expect(step.rateFromPrevious).not.toBeNull();
-      expect(step.rateFromPrevious).toBeGreaterThan(0);
-      expect(step.rateFromPrevious).toBeLessThanOrEqual(1);
-    }
+    it.each([0, 1.5, 400])("rejects an invalid range of %s days with a RangeError", async (days) => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const product = await db.query.products.findFirst({ where: eq(products.slug, "lettre-pro") });
+      const { getFunnel } = await import("./metrics");
+      await expect(getFunnel(product!.id, { days })).rejects.toThrow(RangeError);
+    });
+
+    it("throws on a well-formed but unknown productId", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const unknownId = randomUUID();
+      const { getFunnel } = await import("./metrics");
+      await expect(getFunnel(unknownId, { days: 30 })).rejects.toThrow(`getFunnel: unknown product ${unknownId}`);
+    });
+
+    it("throws on a non-uuid productId", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { getFunnel } = await import("./metrics");
+      await expect(getFunnel("not-a-uuid", { days: 30 })).rejects.toThrow("getFunnel: unknown product not-a-uuid");
+    });
   });
 
-  it("caps daily points to the requested range, at most 30", async () => {
-    requireAdmin.mockResolvedValue({ user: { role: "admin" } });
-    const { getFunnel } = await import("./metrics");
-    const funnel = await getFunnel("any-product-id", { days: 7 });
-    expect(funnel.daily.length).toBeLessThanOrEqual(7);
-    expect(funnel.daily.length).toBeGreaterThan(0);
+  // Task 2 — metrics equals the portfolio row for the same product
+  describe("metrics", () => {
+    it("equals the row getPortfolioMetrics returns for the same product", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id } = await createTempProduct({ name: "Funnel Metrics P", costPerGeneration: 1 });
+      const { buyerIds } = await seedFunnelStory(id, { visits: 12, signups: 4, buyers: 2, succeededGenerations: 3 });
+
+      const { getFunnel, getPortfolioMetrics } = await import("./metrics");
+      const funnel = await getFunnel(id, { days: 30 });
+      const portfolio = await getPortfolioMetrics({ days: 30 });
+      const portfolioRow = portfolio.products.find((row) => row.productId === id);
+
+      expect(funnel.metrics).toEqual(portfolioRow);
+
+      await cleanupProduct(id);
+      if (buyerIds.length) await db.delete(users).where(inArray(users.id, buyerIds));
+    });
+  });
+
+  // Task 3 — steps
+  describe("steps", () => {
+    it("builds counts and pass rates from 12/5/4/2/1 funnel-step events, step 1's rate null", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id } = await createTempProduct({ name: "Steps P" });
+      await db.insert(events).values([
+        ...Array.from({ length: 12 }, () => ({ productId: id, type: "visit" as const, anonymousId: randomUUID() })),
+        ...Array.from({ length: 5 }, () => ({
+          productId: id,
+          type: "first_generation" as const,
+          anonymousId: randomUUID(),
+        })),
+        ...Array.from({ length: 4 }, () => ({ productId: id, type: "signup" as const, anonymousId: randomUUID() })),
+        ...Array.from({ length: 2 }, () => ({
+          productId: id,
+          type: "credits_exhausted" as const,
+          anonymousId: randomUUID(),
+        })),
+        { productId: id, type: "purchase" as const, anonymousId: randomUUID() },
+      ]);
+
+      const { getFunnel } = await import("./metrics");
+      const funnel = await getFunnel(id, { days: 30 });
+      expect(funnel.steps).toEqual([
+        { type: "visit", count: 12, rateFromPrevious: null },
+        { type: "first_generation", count: 5, rateFromPrevious: 5 / 12 },
+        { type: "signup", count: 4, rateFromPrevious: 4 / 5 },
+        { type: "credits_exhausted", count: 2, rateFromPrevious: 2 / 4 },
+        { type: "purchase", count: 1, rateFromPrevious: 1 / 2 },
+      ]);
+
+      await cleanupProduct(id);
+    });
+
+    it("returns zero counts and null rates for an idle product", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id } = await createTempProduct({ name: "Idle steps P" });
+
+      const { getFunnel } = await import("./metrics");
+      const funnel = await getFunnel(id, { days: 30 });
+      expect(funnel.steps).toEqual([
+        { type: "visit", count: 0, rateFromPrevious: null },
+        { type: "first_generation", count: 0, rateFromPrevious: null },
+        { type: "signup", count: 0, rateFromPrevious: null },
+        { type: "credits_exhausted", count: 0, rateFromPrevious: null },
+        { type: "purchase", count: 0, rateFromPrevious: null },
+      ]);
+
+      await cleanupProduct(id);
+    });
+
+    it("leaves the signup step's rate null when there are 0 first generations", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id } = await createTempProduct({ name: "No first-gen P" });
+      await db
+        .insert(events)
+        .values(
+          Array.from({ length: 3 }, () => ({ productId: id, type: "signup" as const, anonymousId: randomUUID() })),
+        );
+
+      const { getFunnel } = await import("./metrics");
+      const funnel = await getFunnel(id, { days: 30 });
+      const signupStep = funnel.steps.find((step) => step.type === "signup");
+      expect(signupStep!.count).toBe(3);
+      expect(signupStep!.rateFromPrevious).toBeNull();
+
+      await cleanupProduct(id);
+    });
+  });
+
+  // Task 4 — daily
+  describe("daily", () => {
+    it("returns 30 zero-filled points, ascending, ending today (UTC), for an idle product", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id } = await createTempProduct({ name: "Idle daily P" });
+
+      const { getFunnel } = await import("./metrics");
+      const funnel = await getFunnel(id, { days: 30 });
+      expect(funnel.daily).toHaveLength(30);
+      const dates = funnel.daily.map((point) => point.date);
+      expect(dates).toEqual([...dates].sort());
+      const today = new Date().toISOString().slice(0, 10);
+      expect(dates[dates.length - 1]).toBe(today);
+      for (const point of funnel.daily) {
+        expect(point.visits).toBe(0);
+        expect(point.signups).toBe(0);
+        expect(point.purchases).toBe(0);
+        expect(point.revenueCents).toBe(0);
+        expect(point.aiCostMicros).toBe(0);
+      }
+
+      await cleanupProduct(id);
+    });
+
+    it("buckets an event just after midnight UTC into today, and one just before into yesterday", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id } = await createTempProduct({ name: "Boundary daily P" });
+      const now = new Date();
+      const startOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      const justInside = new Date(startOfToday.getTime() + 60_000);
+      const justBeforeMidnight = new Date(startOfToday.getTime() - 60_000);
+
+      await db.insert(events).values([
+        { productId: id, type: "visit", anonymousId: randomUUID(), createdAt: justInside },
+        { productId: id, type: "visit", anonymousId: randomUUID(), createdAt: justBeforeMidnight },
+      ]);
+
+      // Both events fall within the 30-day range: `since` is truncated to a whole UTC day, so a
+      // "just before midnight" timestamp still passes the `created_at >= since` filter — it is
+      // the bucketing itself, not the range, that this test exercises.
+      const { getFunnel } = await import("./metrics");
+      const funnel = await getFunnel(id, { days: 30 });
+      const today = startOfToday.toISOString().slice(0, 10);
+      const yesterday = new Date(startOfToday.getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const todayPoint = funnel.daily.find((point) => point.date === today);
+      const yesterdayPoint = funnel.daily.find((point) => point.date === yesterday);
+      expect(todayPoint!.visits).toBe(1);
+      expect(yesterdayPoint!.visits).toBe(1);
+
+      await cleanupProduct(id);
+    });
+
+    it("sums to the same totals as `metrics`, over the same range", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id } = await createTempProduct({ name: "Daily sums P", costPerGeneration: 1 });
+      const { buyerIds } = await seedFunnelStory(id, { visits: 9, signups: 3, buyers: 2, succeededGenerations: 4 });
+
+      const { getFunnel } = await import("./metrics");
+      const funnel = await getFunnel(id, { days: 30 });
+      const dailyVisits = funnel.daily.reduce((sum, point) => sum + point.visits, 0);
+      const dailySignups = funnel.daily.reduce((sum, point) => sum + point.signups, 0);
+      const dailyPurchases = funnel.daily.reduce((sum, point) => sum + point.purchases, 0);
+      const dailyRevenue = funnel.daily.reduce((sum, point) => sum + point.revenueCents, 0);
+      const dailyAiCost = funnel.daily.reduce((sum, point) => sum + point.aiCostMicros, 0);
+      expect(dailyVisits).toBe(funnel.metrics.visits);
+      expect(dailySignups).toBe(funnel.metrics.signups);
+      expect(dailyPurchases).toBe(funnel.metrics.purchases);
+      expect(dailyRevenue).toBe(funnel.metrics.revenueCents);
+      expect(dailyAiCost).toBe(funnel.metrics.aiCostMicros);
+
+      await cleanupProduct(id);
+      if (buyerIds.length) await db.delete(users).where(inArray(users.id, buyerIds));
+    });
+
+    it("excludes another product's events, purchases and generations", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id: idA } = await createTempProduct({ name: "Daily A" });
+      const { id: idB } = await createTempProduct({ name: "Daily B" });
+      await db.insert(events).values({ productId: idB, type: "visit", anonymousId: randomUUID() });
+
+      const { getFunnel } = await import("./metrics");
+      const funnel = await getFunnel(idA, { days: 30 });
+      const totalVisits = funnel.daily.reduce((sum, point) => sum + point.visits, 0);
+      expect(totalVisits).toBe(0);
+
+      await cleanupProduct(idA);
+      await cleanupProduct(idB);
+    });
+
+    it("caps daily points to the requested range", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id } = await createTempProduct({ name: "Range daily P" });
+
+      const { getFunnel } = await import("./metrics");
+      const funnel = await getFunnel(id, { days: 7 });
+      expect(funnel.daily).toHaveLength(7);
+
+      await cleanupProduct(id);
+    });
+  });
+
+  // Task 5 — killed product: still returns its data (BO-03 bullet 4, "produit killed")
+  describe("killed product", () => {
+    it("returns status killed and its historical data, not an error", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id } = await createTempProduct({ name: "Killed P", costPerGeneration: 1 }, { status: "killed" });
+      const { buyerIds } = await seedFunnelStory(id, { visits: 5, signups: 2, buyers: 1, succeededGenerations: 1 });
+
+      const { getFunnel } = await import("./metrics");
+      const funnel = await getFunnel(id, { days: 30 });
+      expect(funnel.metrics.status).toBe("killed");
+      expect(funnel.metrics.visits).toBe(5);
+      expect(funnel.steps[0]).toEqual({ type: "visit", count: 5, rateFromPrevious: null });
+
+      await cleanupProduct(id);
+      if (buyerIds.length) await db.delete(users).where(inArray(users.id, buyerIds));
+    });
   });
 });
 

@@ -3,6 +3,7 @@ import { MockLanguageModelV4, simulateReadableStream } from "ai/test";
 import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
+import { withTestTransaction } from "@/lib/db/test-transaction";
 import { users } from "@/lib/db/auth-schema";
 import { generations, products } from "@/lib/db/schema";
 
@@ -530,5 +531,53 @@ describe("POST [app]/api/generate — anonymous", () => {
     expect(rows[0]?.status).toBe("failed");
     await cleanupGeneration(idempotencyKey);
     await cleanupGeneration(secondKey);
+  });
+});
+
+// A dedicated, never-shared user (same reason as lib/dal/generations.test.ts's
+// freshUserId): countPriorGenerations counts *all* of the caller's rows on
+// this product, so a shared db.query.users.findFirst() row would pick up
+// generations written by other tests or other files running concurrently.
+async function freshUserId(): Promise<string> {
+  const id = randomUUID();
+  await db.insert(users).values({ id, name: "Route test user", email: `${id}@example.test`, role: "user" });
+  return id;
+}
+
+describe("POST [app]/api/generate — first_generation across signup (QA1-P1-B5)", () => {
+  it("tracks a single first_generation when an anonymous visitor signs up then generates signed in", async () => {
+    await withTestTransaction(async () => {
+      const userId = await freshUserId();
+      const anonymousId = randomUUID();
+      testHeaders = new Headers({ "x-forwarded-for": randomIp() });
+      cookieStore.get.mockReturnValue({ value: anonymousId });
+
+      const { POST } = await import("./route");
+
+      // Act 1: anonymous free generation, same cookie throughout.
+      getSession.mockResolvedValue(null);
+      const anonymousKey = randomUUID();
+      const anonymousResponse = await POST(postRequest({ input: validInput, idempotencyKey: anonymousKey }), ctx());
+      expect(anonymousResponse.status).toBe(200);
+      await readTextDeltas(anonymousResponse);
+      await vi.waitFor(() => expect(afterCallbacks.length).toBeGreaterThanOrEqual(1));
+      await flushAfterCallbacks();
+      expect(track).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "first_generation", userId: null, anonymousId }),
+      );
+      track.mockClear();
+
+      // Act 2: same visitor, now signed in, same cookie still in the browser.
+      getSession.mockResolvedValue({ user: { id: userId } });
+      const signedInKey = randomUUID();
+      const signedInResponse = await POST(postRequest({ input: validInput, idempotencyKey: signedInKey }), ctx());
+      expect(signedInResponse.status).toBe(200);
+      await readTextDeltas(signedInResponse);
+      await vi.waitFor(() => expect(afterCallbacks.length).toBeGreaterThanOrEqual(1));
+      await flushAfterCallbacks();
+
+      expect(track).toHaveBeenCalledWith(expect.objectContaining({ type: "generation" }));
+      expect(track).not.toHaveBeenCalledWith(expect.objectContaining({ type: "first_generation" }));
+    });
   });
 });

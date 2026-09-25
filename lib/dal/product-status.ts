@@ -3,19 +3,31 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { products } from "@/lib/db/schema";
 import type { ProductStatus } from "@/lib/schemas/product-config";
+import { assertEditable } from "./guards";
 import { requireAdmin } from "./session";
 
-// Frozen contract (specs/CONTRACT-types.md): V1 stub, a plain update with
-// no transition rules (docs/11's contract table). BO-06 replaces it with
-// the real transition logic. Called only from the
-// `admin/products/[slug]/_actions.ts` Server Action, after `requireAdmin()`
-// (also checked here, CLAUDE.md); `note` records the decision (BO-06
-// mockup).
+// specs/BO-06-statut.md: the real body, replacing the CONTRACT-types V1
+// stub. No transition matrix (plan's orchestrator decision 2 — any status
+// to any other, including the frozen contract's scale → scale call): the
+// UI alone disables the current status. `requireAdmin` first, then a
+// locking transaction so a concurrent edit (or the demo-mode lock) never
+// races the write: `select … for update`, a missing row throws,
+// `assertEditable` guards seeded/locked products before anything is
+// written.
 export const updateStatus: (productId: string, status: ProductStatus, note: string | null) => Promise<void> = async (
   productId,
   status,
   note,
 ) => {
   await requireAdmin();
-  await db.update(products).set({ status, statusNote: note, updatedAt: new Date() }).where(eq(products.id, productId));
+  await db.transaction(async (tx) => {
+    const [row] = await tx.select().from(products).where(eq(products.id, productId)).for("update");
+    if (!row) throw new Error(`updateStatus: product ${productId} not found`);
+    assertEditable(row);
+
+    await tx
+      .update(products)
+      .set({ status, statusNote: note, updatedAt: new Date() })
+      .where(eq(products.id, productId));
+  });
 };

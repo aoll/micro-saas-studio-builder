@@ -1,5 +1,14 @@
+"use client";
+
+import { useActionState, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import type { Decision } from "@/lib/decision";
 import type { ProductStatus } from "@/lib/schemas/product-config";
+import type { SetProductStatusState } from "../../_actions";
 
 export type StatusChangeProps = {
   productId: string;
@@ -10,10 +19,162 @@ export type StatusChangeProps = {
   justification: { visits: string; conversion: string; margin: string };
 };
 
-// BO-06 slot (docs/02-ecrans.md › "Changement de statut", specs/BO-06-changement-statut.md,
-// not yet a spec of this run): the plan's orchestrator decision 6 hands BO-06 this component's
-// props — everything its modal needs (the metrics that justify the decision, docs/02) — already
-// wired into the header and the decision panel. Renders nothing until BO-06 lands.
-export function StatusChange(_props: StatusChangeProps) {
-  return null;
+const STATUS_LABELS: Record<ProductStatus, string> = {
+  test: "Test",
+  learn: "Learn",
+  scale: "Scale",
+  killed: "Killed",
+};
+
+const STATUSES: ProductStatus[] = ["test", "learn", "scale", "killed"];
+
+const initialState: SetProductStatusState = {};
+
+// docs/02-ecrans.md › BO-06: the modal opens preselected on the suggested
+// status when there is one and it differs from the current status; a
+// `null` decision (or a suggestion equal to the current status) leaves
+// the current status selected.
+function suggestedStatus(decision: Decision, current: ProductStatus): ProductStatus | null {
+  const suggested = decision === "kill" ? "killed" : decision === "scale" ? "scale" : null;
+  return suggested !== null && suggested !== current ? suggested : null;
+}
+
+// `_actions.ts` transitively imports the DAL (lib/dal/session.ts →
+// lib/auth.ts → lib/db), which eagerly touches `env.DATABASE_URL` at
+// module load — a static top-level import of `setProductStatus` here
+// would drag that into every test that merely renders `SheetHeader`
+// (sheet-header.test.tsx, product-sheet-view.test.tsx, neither of which
+// mocks it, and both are outside this spec's Périmètre). A dynamic
+// `import()`, called only once the form actually submits, defers that
+// load past render; `status-change.test.tsx`'s `vi.mock("../../_actions")`
+// still intercepts it.
+async function callSetProductStatus(
+  slug: string,
+  prevState: SetProductStatusState,
+  formData: FormData,
+): Promise<SetProductStatusState> {
+  const { setProductStatus } = await import("../../_actions");
+  return setProductStatus(slug, prevState, formData);
+}
+
+// Its own component so it unmounts (and its useActionState resets) every
+// time the dialog closes (plan's design: "The form lives in an inner
+// component inside DialogContent, so its state resets on each open").
+function StatusChangeForm({
+  slug,
+  name,
+  status,
+  decision,
+  justification,
+  onDone,
+}: Omit<StatusChangeProps, "productId"> & { onDone: () => void }) {
+  const [state, formAction, pending] = useActionState(callSetProductStatus.bind(null, slug), initialState);
+  const [selected, setSelected] = useState<ProductStatus>(() => suggestedStatus(decision, status) ?? status);
+
+  useEffect(() => {
+    if (state.ok) {
+      toast.success("Statut mis à jour");
+      onDone();
+    }
+  }, [state, onDone]);
+
+  const isKilled = selected === "killed";
+
+  return (
+    <form action={formAction} className="grid gap-4">
+      <input type="hidden" name="status" value={selected} />
+
+      {state.formError ? (
+        <p role="alert" className="text-sm text-destructive">
+          {state.formError}
+        </p>
+      ) : null}
+
+      <div className="flex items-center gap-2 text-sm">
+        <span className="font-medium">{STATUS_LABELS[status]}</span>
+        <span aria-hidden="true">→</span>
+        <span className="font-medium">{STATUS_LABELS[selected]}</span>
+      </div>
+
+      <fieldset className="grid gap-2">
+        <legend className="text-sm font-medium">Nouveau statut</legend>
+        {STATUSES.map((candidate) => (
+          <label key={candidate} className="flex items-center gap-2 text-sm">
+            <input
+              type="radio"
+              name="status-choice"
+              value={candidate}
+              checked={selected === candidate}
+              disabled={candidate === status}
+              onChange={() => setSelected(candidate)}
+            />
+            {STATUS_LABELS[candidate]}
+          </label>
+        ))}
+      </fieldset>
+
+      <div className="rounded-md border bg-muted/50 p-3 text-sm">
+        <p className="font-medium">Ce que disent les chiffres</p>
+        <dl className="mt-2 grid grid-cols-3 gap-2">
+          <div>
+            <dt className="text-muted-foreground">Visites</dt>
+            <dd>{justification.visits}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Conversion</dt>
+            <dd>{justification.conversion}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Marge / génération</dt>
+            <dd>{justification.margin}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div className="grid gap-1.5">
+        <Label htmlFor="status-change-note">Note de décision</Label>
+        <Textarea id="status-change-note" name="note" maxLength={500} rows={3} />
+      </div>
+
+      {isKilled ? (
+        <p
+          role="alert"
+          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+        >
+          Passer {name} en Killed ferme le produit : /{slug} affichera « produit introuvable » aux visiteurs.
+        </p>
+      ) : null}
+
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onDone}>
+          Annuler
+        </Button>
+        <Button type="submit" variant={isKilled ? "destructive" : "default"} disabled={pending}>
+          {isKilled ? "Passer en Killed" : `Passer en ${STATUS_LABELS[selected]}`}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+}
+
+// BO-06 (specs/BO-06-statut.md, docs/02-ecrans.md › "Changement de statut", specs/mockups/BO-06.png):
+// a trigger that opens a modal with the current → new status, the 3 metrics that justify the
+// decision, and a decision note. Killed needs an explicit destructive confirmation
+// (docs/01-produit.md).
+export function StatusChange(props: StatusChangeProps) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline">Changer de statut</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Changer le statut de {props.name}</DialogTitle>
+        </DialogHeader>
+        {open ? <StatusChangeForm {...props} onDone={() => setOpen(false)} /> : null}
+      </DialogContent>
+    </Dialog>
+  );
 }

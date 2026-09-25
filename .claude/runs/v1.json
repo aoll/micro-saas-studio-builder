@@ -58,16 +58,16 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "dispatched",
-      "worktree": "sa-02-outil",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 19
     },
     "SA-06-historique": {
       "dependsOn": [
         "SA-02-outil"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "sa-06-historique",
       "pr": null
     },
     "LEDGER": {
@@ -166,8 +166,8 @@
         "BO-05a-formulaire",
         "SA-02-outil"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "bo-05b-generation-publication",
       "pr": null
     },
     "BO-07-themes": {
@@ -337,7 +337,7 @@
       "spec": "SA-02-outil",
       "blockedOn": "TRACKING",
       "what": "api/generate: use TRACKING anonymous-id helper (ANONYMOUS_ID_COOKIE, readAnonymousId, anonymousIdCookie) instead of inline cookie code",
-      "resolved": false
+      "resolved": true
     },
     {
       "spec": "SA-01-landing",

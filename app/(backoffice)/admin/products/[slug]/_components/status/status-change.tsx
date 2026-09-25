@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { Decision } from "@/lib/decision";
 import type { ProductStatus } from "@/lib/schemas/product-config";
-import type { SetProductStatusState } from "../../_actions";
+import { setProductStatus, type SetProductStatusState } from "../../_actions";
 
 export type StatusChangeProps = {
   productId: string;
@@ -39,24 +39,6 @@ function suggestedStatus(decision: Decision, current: ProductStatus): ProductSta
   return suggested !== null && suggested !== current ? suggested : null;
 }
 
-// `_actions.ts` transitively imports the DAL (lib/dal/session.ts →
-// lib/auth.ts → lib/db), which eagerly touches `env.DATABASE_URL` at
-// module load — a static top-level import of `setProductStatus` here
-// would drag that into every test that merely renders `SheetHeader`
-// (sheet-header.test.tsx, product-sheet-view.test.tsx, neither of which
-// mocks it, and both are outside this spec's Périmètre). A dynamic
-// `import()`, called only once the form actually submits, defers that
-// load past render; `status-change.test.tsx`'s `vi.mock("../../_actions")`
-// still intercepts it.
-async function callSetProductStatus(
-  slug: string,
-  prevState: SetProductStatusState,
-  formData: FormData,
-): Promise<SetProductStatusState> {
-  const { setProductStatus } = await import("../../_actions");
-  return setProductStatus(slug, prevState, formData);
-}
-
 // Its own component so it unmounts (and its useActionState resets) every
 // time the dialog closes (plan's design: "The form lives in an inner
 // component inside DialogContent, so its state resets on each open").
@@ -68,7 +50,7 @@ function StatusChangeForm({
   justification,
   onDone,
 }: Omit<StatusChangeProps, "productId"> & { onDone: () => void }) {
-  const [state, formAction, pending] = useActionState(callSetProductStatus.bind(null, slug), initialState);
+  const [state, formAction, pending] = useActionState(setProductStatus.bind(null, slug), initialState);
   const [selected, setSelected] = useState<ProductStatus>(() => suggestedStatus(decision, status) ?? status);
 
   useEffect(() => {

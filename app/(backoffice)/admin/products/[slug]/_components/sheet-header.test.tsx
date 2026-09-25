@@ -1,9 +1,20 @@
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/react";
-import { screen } from "@testing-library/dom";
-import { afterEach, describe, expect, it } from "vitest";
+import { screen, within } from "@testing-library/dom";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ProductSheetViewModel } from "./sheet";
 import { SheetHeader } from "./sheet-header";
+
+// `SheetHeader` statically imports `StatusChange`, which statically imports
+// `setProductStatus` from `../../_actions` (CLAUDE.md: every other
+// `_actions.ts` consumer does the same). `_actions.ts` transitively imports
+// the DAL (session → lib/auth → lib/db, products, product-status), which
+// eagerly touches `env.DATABASE_URL` at module load: mocked at this
+// boundary so this render-only test never needs a real database, without
+// weakening anything it asserts.
+vi.mock("@/lib/dal/session", () => ({ requireAdmin: vi.fn() }));
+vi.mock("@/lib/dal/products", () => ({ getProduct: vi.fn() }));
+vi.mock("@/lib/dal/product-status", () => ({ updateStatus: vi.fn() }));
 
 afterEach(cleanup);
 
@@ -77,5 +88,15 @@ describe("SheetHeader", () => {
     render(<SheetHeader sheet={sheet({ status: "killed", slug: "gone" })} />);
     const subAppLink = screen.getByRole("link", { name: /gone/i });
     expect(subAppLink.getAttribute("href")).toBe("/gone");
+  });
+
+  // specs/mockups/BO-06.png: "Changer de statut" sits top-right, alongside
+  // "Voir /{slug}" and "Modifier la config", not below the header row.
+  it("puts the status-change trigger in the top-right action group, next to the sub-app link and Modifier la config", () => {
+    render(<SheetHeader sheet={sheet()} />);
+    const actions = screen.getByTestId("sheet-actions");
+    expect(within(actions).getByRole("link", { name: /my-product/i })).toBeTruthy();
+    expect(within(actions).getByRole("link", { name: /modifier/i })).toBeTruthy();
+    expect(within(actions).getByRole("button", { name: "Changer de statut" })).toBeTruthy();
   });
 });

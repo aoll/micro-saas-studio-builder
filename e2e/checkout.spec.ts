@@ -84,167 +84,188 @@ test.describe("Checkout (simulated payment)", () => {
     await expect(page).toHaveURL("/lettre-pro/pricing");
   });
 
-  test("a signed-in buyer completes a purchase and resumes to the tool", async ({ page }) => {
-    await resetAdminLedgerOnLettrePro();
-    try {
-      await signInAsAdmin(page);
-      await page.goto("/lettre-pro/checkout/pack-10");
+  // Found running the suite with fullyParallel + 2 workers (orchestrator
+  // report): these four tests all reset and reuse the same
+  // SEED_ADMIN/lettre-pro balance (resetAdminLedgerOnLettrePro), so two
+  // running at once race on the same rows — one worker's purchase or reset
+  // lands mid another's assertions (observed: a purchase test reading a
+  // stale "20 crédits" header, the sum of two concurrent +10 purchases).
+  // Grouped and serialized so each test's before/after reset stays
+  // exclusive, without slowing down the tests above that don't touch this
+  // shared state (an unauthenticated visitor, the /pricing → Escape modal).
+  test.describe("admin-ledger purchases on lettre-pro", () => {
+    test.describe.configure({ mode: "serial" });
 
-      await page.getByRole("button", { name: /Payer/ }).click();
-
-      await expect(page.getByText("+10 crédits")).toBeVisible();
-      await expect(page.getByText("Ajoutés à votre compte")).toBeVisible();
-      await expect(page.getByText("Nouveau solde")).toBeVisible();
-
-      await page.getByRole("button", { name: "Reprendre ma génération →" }).click();
-      await expect(page).toHaveURL(/\/lettre-pro\/tool$/);
-    } finally {
+    test("a signed-in buyer completes a purchase and resumes to the tool", async ({ page }) => {
       await resetAdminLedgerOnLettrePro();
-    }
-  });
-
-  test("a double click on Payer credits only one pack", async ({ page }) => {
-    await resetAdminLedgerOnLettrePro();
-    try {
-      await signInAsAdmin(page);
-      await page.goto("/lettre-pro/checkout/pack-10");
-
-      const payButton = page.getByRole("button", { name: /Payer/ });
-      // Two rapid clicks, not awaited between them: the button disables
-      // itself synchronously (single dispatch, CheckoutFlow's own guard),
-      // so the second click either hits nothing or a disabled button.
-      await Promise.all([payButton.click(), payButton.click({ force: true }).catch(() => undefined)]);
-
-      await expect(page.getByText("+10 crédits")).toBeVisible();
-
-      const sql = postgres(requireDatabaseUrl(), { max: 1, onnotice: () => {} });
-      const db = drizzle(sql, { schema: { products, users, purchases } });
       try {
-        const product = await db.query.products.findFirst({ where: eq(products.slug, "lettre-pro") });
-        const admin = await db.query.users.findFirst({ where: eq(users.email, SEED_ADMIN.email) });
-        const rows = await db.query.purchases.findMany({
-          where: and(eq(purchases.productId, product!.id), eq(purchases.userId, admin!.id)),
-        });
-        expect(rows).toHaveLength(1);
+        await signInAsAdmin(page);
+        await page.goto("/lettre-pro/checkout/pack-10");
+
+        await page.getByRole("button", { name: /Payer/ }).click();
+
+        await expect(page.getByText("+10 crédits")).toBeVisible();
+        await expect(page.getByText("Ajoutés à votre compte")).toBeVisible();
+        await expect(page.getByText("Nouveau solde")).toBeVisible();
+
+        await page.getByRole("button", { name: "Reprendre ma génération →" }).click();
+        await expect(page).toHaveURL(/\/lettre-pro\/tool$/);
       } finally {
-        await sql.end();
+        await resetAdminLedgerOnLettrePro();
       }
-    } finally {
+    });
+
+    test("a double click on Payer credits only one pack", async ({ page }) => {
       await resetAdminLedgerOnLettrePro();
-    }
-  });
-
-  // QA1-P1-B3 (.claude/qa/reports/2026-09-25-full.md › B3, repro 5.7,
-  // s57b.out.txt): paying from the modal opened over the full /pricing page
-  // used to trigger a server refresh() that re-fetched the intercepted
-  // /pricing background, mismatched the tree and forced a hard reload back
-  // to the payment form (root cause detailed in
-  // .claude/plans/QA1-P1-B3.plan.md). This journey reproduces it: the
-  // confirmation must stay on screen, with zero `load` events, and Resume
-  // must return to /pricing without a reload.
-  test("QA1-P1-B3: pays from the pricing page, the confirmation stays, no reload, Reprendre returns to /pricing", async ({
-    page,
-  }) => {
-    await resetAdminLedgerOnLettrePro();
-    try {
-      await signInAsAdmin(page);
-      await page.goto("/lettre-pro/pricing");
-
-      let loadCount = 0;
-      page.on("load", () => {
-        loadCount++;
-      });
-
-      await page.getByRole("link", { name: /Acheter 10 crédits/ }).click();
-      await expect(page).toHaveURL("/lettre-pro/checkout/pack-10");
-      const dialog = page.getByRole("dialog");
-      await expect(dialog).toBeVisible();
-
-      await page.getByRole("button", { name: /Payer/ }).click();
-      await expect(dialog.getByText("+10 crédits")).toBeVisible();
-
-      await page.waitForTimeout(2000);
-      await expect(dialog.getByText("+10 crédits")).toBeVisible();
-      await expect(dialog.getByText("Nouveau solde")).toBeVisible();
-      await expect(page.getByRole("button", { name: /Payer/ })).toHaveCount(0);
-      await expect(dialog).toBeVisible();
-      await expect(page).toHaveURL("/lettre-pro/checkout/pack-10");
-      expect(loadCount).toBe(0);
-
-      await page.getByRole("button", { name: "Reprendre ma génération →" }).click();
-      await expect(page).toHaveURL("/lettre-pro/pricing");
-      await expect(page.getByRole("dialog")).toHaveCount(0);
-      expect(loadCount).toBe(0);
-      // Scoped to the header (role "banner", docs/02-ecrans.md › Header
-      // produit): /pricing's own pack-10 card also reads "10 crédits"
-      // (PackCard), so an unscoped query is ambiguous regardless of timing.
-      await expect(page.getByRole("banner").getByText("10 crédits")).toBeVisible();
-
-      const sql = postgres(requireDatabaseUrl(), { max: 1, onnotice: () => {} });
-      const db = drizzle(sql, { schema: { products, users, purchases } });
       try {
-        const product = await db.query.products.findFirst({ where: eq(products.slug, "lettre-pro") });
-        const admin = await db.query.users.findFirst({ where: eq(users.email, SEED_ADMIN.email) });
-        const rows = await db.query.purchases.findMany({
-          where: and(eq(purchases.productId, product!.id), eq(purchases.userId, admin!.id)),
-        });
-        expect(rows).toHaveLength(1);
+        await signInAsAdmin(page);
+        await page.goto("/lettre-pro/checkout/pack-10");
+
+        const payButton = page.getByRole("button", { name: /Payer/ });
+        // Two rapid clicks, not awaited between them: the button disables
+        // itself synchronously (single dispatch, CheckoutFlow's own guard),
+        // so the second click either hits nothing or a disabled button.
+        await Promise.all([payButton.click(), payButton.click({ force: true }).catch(() => undefined)]);
+
+        await expect(page.getByText("+10 crédits")).toBeVisible();
+
+        const sql = postgres(requireDatabaseUrl(), { max: 1, onnotice: () => {} });
+        const db = drizzle(sql, { schema: { products, users, purchases } });
+        try {
+          const product = await db.query.products.findFirst({ where: eq(products.slug, "lettre-pro") });
+          const admin = await db.query.users.findFirst({ where: eq(users.email, SEED_ADMIN.email) });
+          const rows = await db.query.purchases.findMany({
+            where: and(eq(purchases.productId, product!.id), eq(purchases.userId, admin!.id)),
+          });
+          expect(rows).toHaveLength(1);
+        } finally {
+          await sql.end();
+        }
       } finally {
-        await sql.end();
+        await resetAdminLedgerOnLettrePro();
       }
-    } finally {
+    });
+
+    // QA1-P1-B3 (.claude/qa/reports/2026-09-25-full.md › B3, repro 5.7,
+    // s57b.out.txt): paying from the modal opened over the full /pricing page
+    // used to trigger a server refresh() that re-fetched the intercepted
+    // /pricing background, mismatched the tree and forced a hard reload back
+    // to the payment form (root cause detailed in
+    // .claude/plans/QA1-P1-B3.plan.md). This journey reproduces it: the
+    // confirmation must stay on screen, with zero `load` events, and Resume
+    // must return to /pricing without a reload.
+    test("QA1-P1-B3: pays from the pricing page, the confirmation stays, no reload, Reprendre returns to /pricing", async ({
+      page,
+    }) => {
       await resetAdminLedgerOnLettrePro();
-    }
-  });
+      try {
+        await signInAsAdmin(page);
+        await page.goto("/lettre-pro/pricing");
 
-  // QA1-P1-B3 (.claude/plans/QA1-P1-B3.plan.md, step 7, A2): un-fixmed now
-  // that resetAdminLedgerOnLettrePro leaves the admin at a 0 balance on
-  // lettre-pro (no `balances` row: debit() refuses, docs/07-modele-de-
-  // donnees.md), so a single "Générer" reaches the paywall directly — no
-  // need to exhaust several paid generations first.
-  test("opens as a nested modal from the tool's paywall, through the pricing modal", async ({ page }) => {
-    await resetAdminLedgerOnLettrePro();
-    try {
-      await signInAsAdmin(page);
-      await page.goto("/lettre-pro/tool");
-      await page.getByLabel("Poste visé").fill("Développeur Frontend");
-      await page.getByLabel("Entreprise").fill("Dotworld");
-      await page.getByLabel("Votre expérience").fill("3 ans en React et TypeScript");
-      await page.getByLabel("Ton").selectOption("dynamique");
-      await page.getByRole("button", { name: /Générer/ }).click();
+        let loadCount = 0;
+        page.on("load", () => {
+          loadCount++;
+        });
 
-      await expect(page).toHaveURL("/lettre-pro/pricing");
-      const pricingDialog = page.getByRole("dialog");
-      await expect(pricingDialog).toBeVisible();
+        await page.getByRole("link", { name: /Acheter 10 crédits/ }).click();
+        await expect(page).toHaveURL("/lettre-pro/checkout/pack-10");
+        const dialog = page.getByRole("dialog");
+        await expect(dialog).toBeVisible();
 
-      let loadCount = 0;
-      page.on("load", () => {
-        loadCount++;
-      });
+        await page.getByRole("button", { name: /Payer/ }).click();
+        await expect(dialog.getByText("+10 crédits")).toBeVisible();
 
-      await pricingDialog.getByRole("link", { name: /Acheter 10 crédits/ }).click();
+        await page.waitForTimeout(2000);
+        await expect(dialog.getByText("+10 crédits")).toBeVisible();
+        await expect(dialog.getByText("Nouveau solde")).toBeVisible();
+        await expect(page.getByRole("button", { name: /Payer/ })).toHaveCount(0);
+        await expect(dialog).toBeVisible();
+        await expect(page).toHaveURL("/lettre-pro/checkout/pack-10");
+        expect(loadCount).toBe(0);
 
-      await expect(page).toHaveURL("/lettre-pro/checkout/pack-10");
-      const checkoutDialog = page.getByRole("dialog");
-      await expect(checkoutDialog).toBeVisible();
-      // The dialog's own notice ("Paiement simulé pour la démo…") also
-      // matches a broad /Paiement/ text query, alongside the title; the
-      // title (RouteModal's DialogTitle) is what this line means to check.
-      await expect(checkoutDialog.getByRole("heading", { name: "Paiement" })).toBeVisible();
+        await page.getByRole("button", { name: "Reprendre ma génération →" }).click();
+        await expect(page).toHaveURL("/lettre-pro/pricing");
+        await expect(page.getByRole("dialog")).toHaveCount(0);
+        expect(loadCount).toBe(0);
+        // Scoped to the <header> tag (docs/02-ecrans.md › Header produit):
+        // /pricing's own pack-10 card also reads "10 crédits" (PackCard), so
+        // an unscoped query is ambiguous regardless of timing. A CSS/tag
+        // locator, not getByRole("banner"): Radix's Dialog marks background
+        // content aria-hidden while open (here it already isn't, but the A2
+        // test below hits this while its dialog is still open), which would
+        // drop <header> from the accessibility tree despite it staying
+        // visible in the DOM.
+        await expect(page.locator("header").getByText("10 crédits")).toBeVisible();
 
-      await checkoutDialog.getByRole("button", { name: /Payer/ }).click();
-      await expect(checkoutDialog.getByText("+10 crédits")).toBeVisible();
-      // Scoped to the header (role "banner"): see the A1 test above for why
-      // an unscoped "10 crédits" query is ambiguous.
-      await expect(page.getByRole("banner").getByText("10 crédits")).toBeVisible();
-      expect(loadCount).toBe(0);
+        const sql = postgres(requireDatabaseUrl(), { max: 1, onnotice: () => {} });
+        const db = drizzle(sql, { schema: { products, users, purchases } });
+        try {
+          const product = await db.query.products.findFirst({ where: eq(products.slug, "lettre-pro") });
+          const admin = await db.query.users.findFirst({ where: eq(users.email, SEED_ADMIN.email) });
+          const rows = await db.query.purchases.findMany({
+            where: and(eq(purchases.productId, product!.id), eq(purchases.userId, admin!.id)),
+          });
+          expect(rows).toHaveLength(1);
+        } finally {
+          await sql.end();
+        }
+      } finally {
+        await resetAdminLedgerOnLettrePro();
+      }
+    });
 
-      await checkoutDialog.getByRole("button", { name: "Reprendre ma génération →" }).click();
-      await expect(page).toHaveURL(/\/lettre-pro\/tool$/);
-      await expect(page.getByRole("dialog")).toHaveCount(0);
-      expect(loadCount).toBe(0);
-    } finally {
+    // QA1-P1-B3 (.claude/plans/QA1-P1-B3.plan.md, step 7, A2): un-fixmed now
+    // that resetAdminLedgerOnLettrePro leaves the admin at a 0 balance on
+    // lettre-pro (no `balances` row: debit() refuses, docs/07-modele-de-
+    // donnees.md), so a single "Générer" reaches the paywall directly — no
+    // need to exhaust several paid generations first.
+    test("opens as a nested modal from the tool's paywall, through the pricing modal", async ({ page }) => {
       await resetAdminLedgerOnLettrePro();
-    }
+      try {
+        await signInAsAdmin(page);
+        await page.goto("/lettre-pro/tool");
+        await page.getByLabel("Poste visé").fill("Développeur Frontend");
+        await page.getByLabel("Entreprise").fill("Dotworld");
+        await page.getByLabel("Votre expérience").fill("3 ans en React et TypeScript");
+        await page.getByLabel("Ton").selectOption("dynamique");
+        await page.getByRole("button", { name: /Générer/ }).click();
+
+        await expect(page).toHaveURL("/lettre-pro/pricing");
+        const pricingDialog = page.getByRole("dialog");
+        await expect(pricingDialog).toBeVisible();
+
+        let loadCount = 0;
+        page.on("load", () => {
+          loadCount++;
+        });
+
+        await pricingDialog.getByRole("link", { name: /Acheter 10 crédits/ }).click();
+
+        await expect(page).toHaveURL("/lettre-pro/checkout/pack-10");
+        const checkoutDialog = page.getByRole("dialog");
+        await expect(checkoutDialog).toBeVisible();
+        // The dialog's own notice ("Paiement simulé pour la démo…") also
+        // matches a broad /Paiement/ text query, alongside the title; the
+        // title (RouteModal's DialogTitle) is what this line means to check.
+        await expect(checkoutDialog.getByRole("heading", { name: "Paiement" })).toBeVisible();
+
+        await checkoutDialog.getByRole("button", { name: /Payer/ }).click();
+        await expect(checkoutDialog.getByText("+10 crédits")).toBeVisible();
+        // Scoped to <header> (see the A1 test above for why an unscoped
+        // "10 crédits" query is ambiguous, and why this is a tag locator,
+        // not getByRole("banner")): the checkout dialog is still open here,
+        // and Radix marks the rest of the page aria-hidden while a Dialog
+        // is open, which a role query would honor and a tag locator won't.
+        await expect(page.locator("header").getByText("10 crédits")).toBeVisible();
+        expect(loadCount).toBe(0);
+
+        await checkoutDialog.getByRole("button", { name: "Reprendre ma génération →" }).click();
+        await expect(page).toHaveURL(/\/lettre-pro\/tool$/);
+        await expect(page.getByRole("dialog")).toHaveCount(0);
+        expect(loadCount).toBe(0);
+      } finally {
+        await resetAdminLedgerOnLettrePro();
+      }
+    });
   });
 });

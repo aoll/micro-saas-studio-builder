@@ -7,7 +7,7 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { events, products } from "@/lib/db/schema";
 import { ANONYMOUS_ID_COOKIE } from "./anonymous-id";

@@ -6,8 +6,11 @@ description: >
   next-dev-loop + agent-browser, repli Playwright) et le MCP next-devtools, et
   confronte l'app au dossier docs/ et aux specs/. Rejoue un scénario de
   scenarios/ (full par défaut : toute la plateforme) et consigne chaque écart
-  en BUG ou MANQUE dans .claude/qa/reports/<date>-<scénario>.md. Constat
-  seulement, aucune correction. Utiliser pour une passe QA complète, ou pour
+  en BUG ou MANQUE dans .claude/qa/reports/<date>-<scénario>.md. En mode
+  delta (défaut), approfondit ce qui a changé depuis la baseline
+  .claude/qa/route-baseline.json et ne fait qu'une régression légère ailleurs.
+  Constat seulement, aucune correction (c'est la skill qa-orchestrator qui
+  fait corriger). Utiliser pour une passe QA complète, ou pour
   la QA d'une feature après une implémentation ou un run d'orchestration.
 ---
 
@@ -28,6 +31,15 @@ commencer, ne le recopie pas de mémoire.
 - **`focus`** (optionnel) : routes ou specs (`SA-05`, `/admin/settings`) qui
   limitent la passe. Les étapes du scénario hors focus sont `NON TESTÉ (hors
   focus)` dans le rapport, jamais omises en silence.
+- **`mode`** : `delta` (défaut) ou `complet`. En `delta`, la profondeur de
+  chaque étape vient du diff contre la baseline (section 2 bis) ; sans
+  baseline (première passe), `delta` vaut `complet`. `complet` teste tout en
+  profondeur.
+- **`recheck`** (optionnel) : le chemin d'un rapport précédent. Chaque constat
+  de ce rapport est rejoué d'après sa repro, et reçoit un verdict dans la
+  section « Recheck » du nouveau rapport, quel que soit le mode.
+- **`commit`** : `oui` (défaut) ou `non`. `non` quand la skill
+  `qa-orchestrator` t'appelle : c'est elle qui commite le rapport.
 
 ## 1. Lire le contexte d'abord, et en entier
 
@@ -66,6 +78,33 @@ Toutes les commandes : `config.md` › Environnement. En résumé :
 5. **À la fin** (même si la passe échoue) : arrête le serveur par son groupe
    (`kill -TERM -- -<pgid>`, le groupe noté au lancement) et vérifie que le
    port est libéré.
+
+## 2 bis. Le delta contre la baseline
+
+`.claude/qa/route-baseline.json` garde le hash git de chaque fichier de
+l'app (`app/`, `lib/`, `messages/`, `fixtures/`, `proxy.ts`, hors tests) à la
+fin du dernier run QA dont tous les constats ont été traités. Seule la skill
+`qa-orchestrator` le réécrit ; toi, tu le lis :
+
+```bash
+pnpm tsx scripts/qa-baseline.ts diff   # A / M / D par fichier, puis le décompte
+```
+
+1. Traduis chaque fichier `A` (ajouté), `M` (modifié) ou `D` (supprimé) en
+   specs et en étapes du scénario avec la table `config.md` › Delta : ces
+   étapes sont en **profondeur** (tout le parcours, les variantes de la
+   section 6.5, les états).
+2. Les autres étapes sont en **régression légère** : la route charge (pas de
+   4xx/5xx inattendu), l'action principale de l'étape aboutit, et ni la
+   console, ni `get_errors`, ni le journal du serveur ne signalent d'erreur.
+   Pas de variantes.
+3. Un fichier partagé (`lib/**`, `messages/*/common.json`, `[app]/layout.tsx`,
+   `proxy.ts`) met en profondeur toutes les étapes que la table lui associe,
+   et elle lui en associe beaucoup : c'est voulu.
+4. En mode `complet`, ou sans baseline, tout est en profondeur.
+
+La colonne « Profondeur » du rapport dit, pour chaque étape, laquelle a été
+appliquée et pourquoi (le fichier `M` qui l'a déclenchée).
 
 ## 3. L'outillage Vercel / Next.js
 
@@ -168,16 +207,20 @@ constat est l'un de :
   Référence docs/spec, ce qui manque, où tu l'as cherché dans le code (chemins,
   `grep`).
 
-Plus : tableau par étape (PASS / BUG / MANQUE / NON TESTÉ, avec une raison),
-décompte par catégorie et par sévérité, outils réellement utilisés (MCP,
-agent-browser ou repli Playwright), environnement (SHA du commit, branche,
-base, port, seed).
+Plus : tableau par étape (PASS / BUG / MANQUE / NON TESTÉ, avec une raison et
+la profondeur appliquée), décompte par catégorie et par sévérité, outils
+réellement utilisés (MCP, agent-browser ou repli Playwright), environnement
+(SHA du commit, branche, base, port, seed, mode et baseline comparée), et,
+avec `recheck`, la section « Recheck » : chaque constat du rapport précédent
+en **CORRIGÉ**, **TOUJOURS PRÉSENT** (il redevient un constat de ce rapport,
+avec son ancien identifiant en référence) ou **NON TESTÉ** (avec la raison).
 
-Le rapport est commité, pour que l'humain suive les passes : un commit qui ne
-contient que lui (`docs(qa): add the <scénario> QA report of <date>`), poussé.
-Sur `main` ou sur la branche d'intégration (`git config msb.integration`), ne
-commite pas dessus : crée `qa/<date>-<scénario>` depuis elle et pousse-la.
+Avec `commit=oui` : le rapport est commité, pour que l'humain suive les
+passes, dans un commit qui ne contient que lui (`docs(qa): add the
+<scénario> QA report of <date>`), poussé. Sur `main` ou sur la branche
+d'intégration (`git config msb.integration`), ne commite pas dessus : crée
+`qa/<date>-<scénario>` depuis elle et pousse-la. Avec `commit=non` : laisse
+le fichier non commité.
 
-Termine par le chemin du rapport et le décompte. Ne propose un flux de
-correction (`/plan` puis `/tdd` sur une spec, ou une spec résiduelle) que si
-l'humain le demande.
+Termine par le chemin du rapport et le décompte. La correction des constats
+appartient à la skill `qa-orchestrator` : ne la lance pas d'ici.

@@ -10,7 +10,19 @@ la session : le rapport cite leurs chemins, il ne les embarque pas.
 
 Un rapport est un constat : il ne corrige rien et ne se modifie pas après coup,
 sauf pour ajouter le lien d'une correction (PR, spec résiduelle) sous le
-constat concerné.
+constat concerné. Quand la skill `qa-orchestrator` pilote la passe, c'est elle
+qui commite le rapport sur la branche d'intégration de son run QA, avec la
+décision de l'humain sur chaque constat (section « Décision »).
+
+## Décision (ajoutée par `qa-orchestrator`)
+
+Après la validation de l'humain, l'orchestrateur QA ajoute en fin de rapport :
+
+| Constat | Décision | Spec de correction |
+|---|---|---|
+| B1 | corriger | `specs/qa/QA1-B1-tester-prompt.md` |
+| M1 | corriger | `specs/qa/QA1-M1-pagination-achats.md` |
+| B2 | écarté : <raison de l'humain> | — |
 
 ## Catégories
 
@@ -38,6 +50,8 @@ en **À qualifier** (en fin de rapport), avec les deux lectures possibles.
 | Outils | MCP next-devtools : oui / non (repli `/_next/mcp`) · agent-browser <version> / repli Playwright · next-dev-loop : oui / non |
 | Personas | anonyme (IP simulées …), inscrits jetables (emails), admin, owner |
 | Focus | <routes ou specs, ou « aucun »> |
+| Mode | delta contre `<commitSha>` de la baseline (<A> ajoutés, <M> modifiés, <D> supprimés) · complet · delta sans baseline (= complet) |
+| Recheck | `<chemin du rapport précédent>`, ou « aucun » |
 | Artefacts | `<scratchpad>/qa/<date>-<scénario>/` |
 
 ## Synthèse
@@ -48,12 +62,21 @@ en **À qualifier** (en fin de rapport), avec les deux lectures possibles.
 
 ## Étapes
 
-| Étape | Verdict | Raison | Constat |
+| Étape | Profondeur | Verdict | Raison | Constat |
+|---|---|---|---|---|
+| 1.1 | légère | PASS | redirection vers /admin/login | — |
+| 3.7 | profondeur (M `admin/products/_actions.ts`) | BUG | « Tester le prompt » renvoie 500 | B1 |
+| 6.4 | profondeur (A `activity/_components/purchases.tsx`) | MANQUE | pas de pagination des achats | M1 |
+| 10.3 | légère | NON TESTÉ | pas assez de crédits pour dépasser N | — |
+
+## Recheck
+
+Seulement avec `recheck` : un verdict par constat du rapport précédent.
+
+| Constat précédent | Verdict | Preuve ou raison | Nouveau constat |
 |---|---|---|---|
-| 1.1 | PASS | redirection vers /admin/login | — |
-| 3.7 | BUG | « Tester le prompt » renvoie 500 | B1 |
-| 6.4 | MANQUE | pas de pagination des achats | M1 |
-| 10.3 | NON TESTÉ | pas assez de crédits pour dépasser N | — |
+| B1 (2026-09-25-full) | CORRIGÉ | `POST /admin/products/new` → 200, aperçu affiché | — |
+| M1 (2026-09-25-full) | TOUJOURS PRÉSENT | toujours 50 achats sans pagination | M1 |
 
 ## Constats
 

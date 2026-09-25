@@ -143,6 +143,40 @@ BioInsta n'est pas seedé : sa config (`fixtures/bio-instagram.config.json`,
 `locale: "en"`, thème Neon) sert à le créer pendant la passe, et c'est le
 produit anglais des vérifications fr/en.
 
+## Delta
+
+Table du mode `delta` (skill `qa` › 2 bis) : un fichier `A`, `M` ou `D` de
+`pnpm tsx scripts/qa-baseline.ts diff` met en profondeur les étapes du
+scénario dont la référence cite une spec de sa ligne. Chemins abrégés :
+`[app]/` = `app/(products)/[app]/`, `admin/` = `app/(backoffice)/admin/`. La
+ligne la plus précise gagne ; un fichier qu'aucune ligne ne couvre met tout le
+scénario en profondeur (et la table se complète dans une PR `docs(tooling)`).
+
+| Fichiers | Specs en profondeur |
+|---|---|
+| `[app]/page.tsx`, `[app]/_components/landing/**`, `messages/*/landing.json` | SA-01 |
+| `[app]/tool/**`, `[app]/api/generate/**`, `messages/*/tool.json`, `lib/ai/**`, `lib/dal/generations.ts`, `fixtures/**` | SA-02 |
+| `[app]/signup/**`, `[app]/@modal/(.)signup/**`, `messages/*/auth.json`, `lib/dal/magic-link.ts`, `lib/auth*.ts`, `app/api/auth/**` | SA-03, BO-01 |
+| `[app]/pricing/**`, `[app]/@modal/(.)pricing/**`, `messages/*/pricing.json` | SA-04 |
+| `[app]/checkout/**`, `[app]/@modal/(.)checkout/**`, `messages/*/checkout.json` | SA-05 |
+| `lib/dal/credits.ts` | SA-02, SA-03, SA-05, SA-07, LEDGER |
+| `[app]/history/**`, `messages/*/history.json`, `lib/dal/history.ts` | SA-06 |
+| `[app]/account/**`, `messages/*/account.json`, `lib/dal/account.ts` | SA-07 |
+| `[app]/not-found.tsx`, `app/(products)/_components/**`, `[app]/@modal/[...catchAll]/**`, `messages/*/not-found.json` | SA-08 |
+| `[app]/layout.tsx`, `[app]/_lib/**`, `[app]/icon.tsx`, `[app]/opengraph-image.tsx`, `app/robots.ts`, `app/sitemap.ts`, `messages/manifest.ts`, `messages/*/common.json` | toute la sub-app (SA-01 à SA-08), I18N-SEO |
+| `[app]/api/events/**`, `lib/dal/events.ts` | TRACKING, BO-03, BO-04 |
+| `admin/login/**`, `lib/dal/session.ts` | BO-01 |
+| `admin/page.tsx`, `admin/_components/portfolio/**`, `lib/dal/metrics.ts`, `lib/decision.ts` | BO-02, BO-03 |
+| `admin/products/[slug]/page.tsx`, `admin/products/[slug]/_components/**` hors `status/` | BO-03 |
+| `admin/products/[slug]/activity/**`, `lib/dal/activity.ts` | BO-04 |
+| `admin/products/new/**`, `admin/products/[slug]/edit/**`, `admin/products/_components/product-form/**`, `admin/products/_actions.ts`, `lib/dal/product-editor.ts`, `lib/dal/products.ts` | BO-05a, BO-05b |
+| `admin/products/[slug]/_components/status/**`, `admin/products/[slug]/_actions.ts`, `lib/dal/product-status.ts` | BO-06 |
+| `admin/themes/**`, `lib/dal/themes.ts`, `lib/fonts.ts` | BO-07, BO-08, CONTRACT-ui |
+| `admin/settings/**`, `lib/dal/thresholds.ts` | BO-09 |
+| `admin/ops/**` | DEMO-mode |
+| `lib/security.ts`, `lib/rate-limit.ts`, `proxy.ts` | SECURITY, SA-02, BO-01 |
+| `lib/db/**`, `lib/schemas/**`, `lib/env.ts`, `app/globals.css`, `admin/loading.tsx` | tout le scénario |
+
 ## Garde-fous (non négociables)
 
 - Local seulement ; jamais d'URL déployée.

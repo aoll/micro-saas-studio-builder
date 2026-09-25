@@ -83,10 +83,9 @@
       "dependsOn": [
         "QA1-P1-L1-lot-leger"
       ],
-      "status": "dispatched",
-      "worktree": "qa1-p1-m1-config-complete",
-      "pr": null,
-      "note": "planning early to use free worktree slots; TDD starts once dependsOn are merged"
+      "status": "merged",
+      "worktree": null,
+      "pr": 62
     },
     "QA1-P1-Q2-inscription-par-produit": {
       "dependsOn": [

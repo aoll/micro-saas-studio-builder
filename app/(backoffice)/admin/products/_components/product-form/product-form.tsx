@@ -65,7 +65,6 @@ export function ProductForm({
   slug,
   initialDraft,
   themes,
-  readOnly = false,
   draftVersion,
   publishedVersion,
 }: {
@@ -73,7 +72,6 @@ export function ProductForm({
   slug: string | null;
   initialDraft: ProductDraft;
   themes: Theme[];
-  readOnly?: boolean;
   draftVersion?: number;
   publishedVersion?: number;
 }) {
@@ -265,7 +263,7 @@ export function ProductForm({
             Précédent
           </Button>
           <div className="flex gap-2">
-            <Button type="submit" disabled={pending || readOnly}>
+            <Button type="submit" disabled={pending}>
               Enregistrer
             </Button>
             {!isLastStep ? (
@@ -341,7 +339,6 @@ export function ProductForm({
               packsCount: draft.pricing.packs.length,
             }}
             themeName={selectedTheme?.name ?? ""}
-            readOnly={readOnly}
             pending={publishPending}
             state={publishState}
             formAction={publishFormAction}

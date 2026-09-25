@@ -152,9 +152,9 @@
       "dependsOn": [
         "BO-02-portefeuille"
       ],
-      "status": "dispatched",
-      "worktree": "bo-03-fiche",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 33
     },
     "BO-05a-formulaire": {
       "dependsOn": [
@@ -282,9 +282,10 @@
       "dependsOn": [
         "BO-03-fiche"
       ],
-      "status": "pending",
-      "worktree": null,
-      "pr": null
+      "status": "dispatched",
+      "worktree": "bo-06-statut",
+      "pr": null,
+      "step": "plan"
     },
     "BO-09-seuils": {
       "dependsOn": [
@@ -445,6 +446,12 @@
       "spec": "BO-05a-formulaire",
       "blockedOn": "BO-05a-formulaire",
       "what": "product-form.test.tsx create-mode publish test failed once in a full pnpm test run (SA-05 TDD, after the #31 act() fix); root-cause before the end of the run",
+      "resolved": false
+    },
+    {
+      "spec": "BO-02-portefeuille",
+      "blockedOn": "BO-03-fiche",
+      "what": "drop the /admin/products/[slug] as Route cast in portfolio-table.tsx; make e2e/portfolio.spec.ts:50 temp product config schema-valid",
       "resolved": false
     }
   ],

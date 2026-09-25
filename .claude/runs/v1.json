@@ -290,9 +290,9 @@
       "dependsOn": [
         "BO-02-portefeuille"
       ],
-      "status": "dispatched",
-      "worktree": "bo-09-seuils",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 36
     },
     "BO-08-editeur-theme": {
       "dependsOn": [

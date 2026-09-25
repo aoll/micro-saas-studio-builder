@@ -410,6 +410,10 @@
     {
       "for": "CONTRACT follow-up",
       "note": "no index serves created_at >= since range filters on events/purchases/generations in getPortfolioMetrics (full scans at volume, measured by the BO-02 database review); consider covering (created_at, product_id) indexes or pruning/archival."
+    },
+    {
+      "for": "CONTRACT follow-up",
+      "note": "generations has no index covering anonymous_id: the anonymous /history list and count do full scans at volume (SA-06 security review); add (product_id, anonymous_id, created_at). Also consider rate-limiting public history page views (SECURITY)."
     }
   ]
 }

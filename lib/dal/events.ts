@@ -37,9 +37,6 @@ export const track: (event: TrackEvent) => Promise<void> = async (event) => {
   if (!event.userId && !event.anonymousId) {
     throw new Error("track: needs a userId or an anonymousId");
   }
-  if (event.type === "visit" && !event.anonymousId) {
-    throw new Error("track: visit needs an anonymousId");
-  }
   if (event.userId) {
     const session = await getSession();
     if (session?.user.id !== event.userId) {
@@ -60,20 +57,25 @@ export const track: (event: TrackEvent) => Promise<void> = async (event) => {
     return;
   }
 
-  const anonymousId = event.anonymousId!;
-  const now = new Date();
-  const dayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  // Narrows `anonymousId` from `string | null` to `string` right where it
+  // is used, instead of a non-null assertion on `event.anonymousId`.
+  const { anonymousId } = event;
+  if (!anonymousId) throw new Error("track: visit needs an anonymousId");
 
   await db.transaction(async (tx) => {
     const lockKey = `visit:${event.productId}:${anonymousId}`;
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`);
 
+    // The day boundary is computed in Postgres, not from the Node clock
+    // (plan's design decision 3): every connection agrees on the same
+    // `now()`, and a clock drift between app instances can never split or
+    // merge a day's dedupe window.
     const existing = await tx.query.events.findFirst({
       where: and(
         eq(events.productId, event.productId),
         eq(events.type, "visit"),
         eq(events.anonymousId, anonymousId),
-        gte(events.createdAt, dayStart),
+        gte(events.createdAt, sql`date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'`),
       ),
     });
     if (existing) return;

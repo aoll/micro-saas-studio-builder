@@ -92,9 +92,9 @@
         "QA1-P1-L1-lot-leger",
         "QA1-P1-B4-visite-double"
       ],
-      "status": "dispatched",
-      "worktree": "qa1-p1-q2-inscription-par-produit",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 64
     },
     "QA1-P1-Q5-funnel-personnes": {
       "dependsOn": [],

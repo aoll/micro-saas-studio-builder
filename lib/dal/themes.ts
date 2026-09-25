@@ -10,7 +10,6 @@ import {
   type LandingVariant,
   type ThemeTokens,
 } from "@/lib/schemas/theme-tokens";
-import { assertEditable } from "./guards";
 import { requireAdmin } from "./session";
 
 // † Frozen contract (specs/CONTRACT-types.md): not a row of the contract
@@ -51,10 +50,10 @@ export const getTheme: (id: string) => Promise<Theme | null> = async (id) => {
 // (a Server Action is a public POST endpoint, CLAUDE.md); a non-uuid `id`
 // returns null without a round trip, same convention as `getTheme`. Inside
 // the transaction: the row is locked with `SELECT … FOR UPDATE` so two
-// concurrent saves serialize instead of racing, `assertEditable` blocks a
-// demo-locked theme, then tokens / landingVariant / updatedAt are written
-// and every product on the theme (including `killed` ones: they still
-// reference it) is returned so the caller can invalidate their own tag too.
+// concurrent saves serialize instead of racing, then tokens /
+// landingVariant / updatedAt are written and every product on the theme
+// (including `killed` ones: they still reference it) is returned so the
+// caller can invalidate their own tag too.
 export async function updateTheme(
   id: string,
   input: { tokens: ThemeTokens; landingVariant: LandingVariant },
@@ -67,7 +66,6 @@ export async function updateTheme(
   return db.transaction(async (tx) => {
     const [row] = await tx.select().from(themes).where(eq(themes.id, id)).for("update");
     if (!row) return null;
-    assertEditable(row);
 
     await tx.update(themes).set({ tokens, landingVariant, updatedAt: new Date() }).where(eq(themes.id, id));
 

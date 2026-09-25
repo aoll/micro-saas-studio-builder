@@ -212,6 +212,24 @@ describe("getBalance", () => {
 });
 
 describe("grantSignupBonus", () => {
+  it("writes no ledger row for a zero bonus, returning the current (zero) balance", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct({ freeCreditsOnSignup: 0 })).id;
+    asUser(userId);
+
+    const { grantSignupBonus, getBalance } = await import("./credits");
+    const result = await grantSignupBonus({ userId, productId });
+    expect(result).toEqual({ balance: 0 });
+    expect(await getBalance(userId, productId)).toBe(0);
+
+    const rows = await db
+      .select()
+      .from(creditTransactions)
+      .where(and(eq(creditTransactions.userId, userId), eq(creditTransactions.productId, productId)));
+    expect(rows).toHaveLength(0);
+    await expectLedgerMatchesBalance(userId, productId);
+  });
+
   it("credits the signup bonus once for a fresh user, creating the balances row", async () => {
     const userId = await createUser();
     const productId = (await createProduct({ freeCreditsOnSignup: 3 })).id;

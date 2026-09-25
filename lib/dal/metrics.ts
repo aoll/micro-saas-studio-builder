@@ -1,5 +1,6 @@
 import "server-only";
 import { sql } from "drizzle-orm";
+import { z } from "zod";
 import { db } from "@/lib/db";
 import type { EventType } from "@/lib/schemas/event-type";
 import type { ProductStatus } from "@/lib/schemas/product-config";
@@ -52,49 +53,11 @@ export type DailyPoint = {
 
 export type Funnel = { metrics: ProductMetrics; steps: FunnelStep[]; daily: DailyPoint[] };
 
-// V1 stub numbers (docs/11 › Les contrats gelés en V1: "chiffres fixes
-// plausibles"): a funnel that tells LettrePro's "it works" story (scale
-// status, positive margin), replaced by TRACKING's real aggregation over
-// `events`. Internally consistent: each step is smaller than the last, the
-// margin is positive, and the totals below simply sum this one product
-// (there is only one seeded product with metrics in V1).
-const FIXTURE = {
-  visits: 4200,
-  firstGenerations: 1260,
-  signups: 520,
-  creditsExhausted: 180,
-  purchases: 36,
-  generations: 2900,
-  revenueCents: 29640,
-  costMicrosPerGeneration: 4000,
-};
-
 const FUNNEL_STEP_TYPES = ["visit", "first_generation", "signup", "credits_exhausted", "purchase"] as const;
 
-async function buildProductMetrics(productId: string): Promise<ProductMetrics> {
-  const aiCostMicros = FIXTURE.generations * FIXTURE.costMicrosPerGeneration;
-  const revenueMicros = FIXTURE.revenueCents * 10_000;
-  return {
-    productId,
-    slug: "lettre-pro",
-    name: "LettrePro",
-    status: "scale",
-    visits: FIXTURE.visits,
-    firstGenerations: FIXTURE.firstGenerations,
-    signups: FIXTURE.signups,
-    creditsExhausted: FIXTURE.creditsExhausted,
-    purchases: FIXTURE.purchases,
-    generations: FIXTURE.generations,
-    revenueCents: FIXTURE.revenueCents,
-    aiCostMicros,
-    // FIXTURE.signups and FIXTURE.generations are hardcoded positive
-    // constants (never 0): no `null` branch to guard here, unlike
-    // buildSteps' rateFromPrevious below, whose denominator does vary.
-    signupToPurchaseRate: FIXTURE.purchases / FIXTURE.signups,
-    marginPerGenerationMicros: Math.round(revenueMicros / FIXTURE.generations) - FIXTURE.costMicrosPerGeneration,
-  };
-}
-
+// The 5 funnel steps (BO-03) and their pass rate from the previous step, from one product's
+// ProductMetrics: `null` for the first step (no previous step) and whenever the previous step's
+// count is 0 (nothing to divide by).
 function buildSteps(metrics: ProductMetrics): FunnelStep[] {
   const counts: Record<(typeof FUNNEL_STEP_TYPES)[number], number> = {
     visit: metrics.visits,
@@ -114,24 +77,66 @@ function buildSteps(metrics: ProductMetrics): FunnelStep[] {
   });
 }
 
-// One private builder (docs/11), shared by getFunnel's `daily` and the
-// (bonus) 30-day chart: an even split of the fixed totals over the
-// requested range, capped to 30 points (docs/01: "courbes sur 30 jours").
-function buildDaily(range: MetricsRange, metrics: ProductMetrics): DailyPoint[] {
-  const days = Math.max(1, Math.min(range.days, 30));
-  const today = new Date();
-  return Array.from({ length: days }, (_, index) => {
-    const date = new Date(today);
-    date.setUTCDate(date.getUTCDate() - (days - 1 - index));
-    return {
-      date: date.toISOString().slice(0, 10),
-      visits: Math.round(metrics.visits / days),
-      signups: Math.round(metrics.signups / days),
-      purchases: Math.round(metrics.purchases / days),
-      revenueCents: Math.round(metrics.revenueCents / days),
-      aiCostMicros: Math.round(metrics.aiCostMicros / days),
-    };
-  });
+type DailyRow = {
+  date: string;
+  visits: number;
+  signups: number;
+  purchases: number;
+  revenue_cents: number | string;
+  ai_cost_micros: number | string;
+};
+
+function toDailyPoint(row: DailyRow): DailyPoint {
+  return {
+    date: row.date,
+    visits: row.visits,
+    signups: row.signups,
+    purchases: row.purchases,
+    revenueCents: Number(row.revenue_cents),
+    aiCostMicros: Number(row.ai_cost_micros),
+  };
+}
+
+// One point per UTC calendar day of the range, `since` (00:00 UTC) to today included, zero-filled
+// where nothing happened (docs/01: "courbes sur 30 jours"). Own query, filtered to one product:
+// `events` for visits/signups/purchases, `purchases` for revenue, `generations` for AI cost (every
+// status, like selectProductRows). Bucketed by `(created_at at time zone 'UTC')::date` so the
+// day boundary is UTC midnight regardless of the server's local time zone.
+async function selectDailyPoints(productId: string, since: string, days: number): Promise<DailyPoint[]> {
+  const result = await db.execute<DailyRow>(sql`
+    select
+      to_char(gs.day, 'YYYY-MM-DD') as date,
+      coalesce(ev.visits, 0)::int as visits,
+      coalesce(ev.signups, 0)::int as signups,
+      coalesce(ev.purchases, 0)::int as purchases,
+      coalesce(pu.revenue_cents, 0)::bigint as revenue_cents,
+      coalesce(gen.ai_cost_micros, 0)::bigint as ai_cost_micros
+    from generate_series(${since}::date, ${since}::date + (${days - 1} || ' days')::interval, interval '1 day') as gs(day)
+    left join (
+      select
+        (created_at at time zone 'UTC')::date as day,
+        count(*) filter (where type = 'visit') as visits,
+        count(*) filter (where type = 'signup') as signups,
+        count(*) filter (where type = 'purchase') as purchases
+      from events
+      where product_id = ${productId} and created_at >= ${since}
+      group by 1
+    ) ev on ev.day = gs.day
+    left join (
+      select (created_at at time zone 'UTC')::date as day, sum(amount_cents) as revenue_cents
+      from purchases
+      where product_id = ${productId} and created_at >= ${since}
+      group by 1
+    ) pu on pu.day = gs.day
+    left join (
+      select (created_at at time zone 'UTC')::date as day, coalesce(sum(cost_micros), 0) as ai_cost_micros
+      from generations
+      where product_id = ${productId} and created_at >= ${since}
+      group by 1
+    ) gen on gen.day = gs.day
+    order by gs.day asc
+  `);
+  return [...result].map(toDailyPoint);
 }
 
 const MIN_RANGE_DAYS = 1;
@@ -212,23 +217,14 @@ export function toProductMetrics(row: PortfolioRow): ProductMetrics {
   };
 }
 
-// Powers the portfolio (BO-02); calls `requireAdmin()` inside, before
-// validating the range. One own SQL statement rather than `listProducts()`
-// (specs/BO-02-portefeuille.md plan, design decision 2): `products` joined
-// to its current `product_versions` row (for `name` and
-// `pricing.costPerGeneration`), left-joined to three subqueries grouped by
-// `product_id` — `events` (the 5 funnel-step counts), `purchases`
-// (revenue, credits sold, distinct buyers) and `generations` (succeeded
-// count, AI cost over every status) — so no product fans out into
-// duplicate rows. Every product is returned, `killed` included, with
-// zeros and `null` rates when idle.
-export const getPortfolioMetrics: (range: MetricsRange) => Promise<PortfolioMetrics> = async (range) => {
-  await requireAdmin();
-  const days = validateRangeDays(range);
-  // `postgres` (the driver) refuses a bare `Date` as a bind parameter; an
-  // ISO string round-trips through `timestamptz` correctly.
-  const since = computeSince(days).toISOString();
-
+// The portfolio's aggregation SQL (BO-02), extracted so getFunnel (BO-03) can reuse it filtered
+// to one product instead of duplicating the 3 subqueries: `products` joined to its current
+// `product_versions` row (for `name` and `pricing.costPerGeneration`), left-joined to `events`
+// (the 5 funnel-step counts), `purchases` (revenue, credits sold, distinct buyers) and
+// `generations` (succeeded count, AI cost over every status), grouped by `product_id` so no
+// product fans out into duplicate rows. With no `productId`, every product is returned, `killed`
+// included; with one, at most one row (empty when the id doesn't exist).
+async function selectProductRows(since: string, productId?: string): Promise<PortfolioRow[]> {
   const result = await db.execute<PortfolioRow>(sql`
     select
       p.id as product_id,
@@ -280,8 +276,21 @@ export const getPortfolioMetrics: (range: MetricsRange) => Promise<PortfolioMetr
       where created_at >= ${since}
       group by product_id
     ) gen on gen.product_id = p.id
+    ${productId ? sql`where p.id = ${productId}` : sql``}
   `);
-  const productMetrics = [...result].map(toProductMetrics);
+  return [...result];
+}
+
+// Powers the portfolio (BO-02); calls `requireAdmin()` inside, before
+// validating the range (specs/BO-02-portefeuille.md plan, design decision 2).
+export const getPortfolioMetrics: (range: MetricsRange) => Promise<PortfolioMetrics> = async (range) => {
+  await requireAdmin();
+  const days = validateRangeDays(range);
+  // `postgres` (the driver) refuses a bare `Date` as a bind parameter; an
+  // ISO string round-trips through `timestamptz` correctly.
+  const since = computeSince(days).toISOString();
+
+  const productMetrics = (await selectProductRows(since)).map(toProductMetrics);
   return {
     totals: {
       visits: productMetrics.reduce((sum, product) => sum + product.visits, 0),
@@ -296,9 +305,22 @@ export const getPortfolioMetrics: (range: MetricsRange) => Promise<PortfolioMetr
   };
 };
 
-// Powers the product sheet (BO-03); calls `requireAdmin()` inside.
+// Powers the product sheet (BO-03); calls `requireAdmin()` inside, before validating the range
+// (mirrors getPortfolioMetrics). A malformed or unknown productId throws before any SQL runs
+// (`z.uuid()`, cheaper and clearer than a Postgres "invalid input syntax for type uuid" error):
+// there is no "empty funnel" to render for a product that doesn't exist, unlike an idle product,
+// whose row exists with zero counts.
 export const getFunnel: (productId: string, range: MetricsRange) => Promise<Funnel> = async (productId, range) => {
   await requireAdmin();
-  const metrics = await buildProductMetrics(productId);
-  return { metrics, steps: buildSteps(metrics), daily: buildDaily(range, metrics) };
+  const days = validateRangeDays(range);
+  if (!z.uuid().safeParse(productId).success) {
+    throw new Error(`getFunnel: unknown product ${productId}`);
+  }
+  const since = computeSince(days).toISOString();
+
+  const [row] = await selectProductRows(since, productId);
+  if (!row) throw new Error(`getFunnel: unknown product ${productId}`);
+  const metrics = toProductMetrics(row);
+  const daily = await selectDailyPoints(productId, since, days);
+  return { metrics, steps: buildSteps(metrics), daily };
 };

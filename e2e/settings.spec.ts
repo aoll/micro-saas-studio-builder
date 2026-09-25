@@ -130,7 +130,7 @@ test.describe("BO-09 · Réglages des seuils", () => {
       await expect(page.getByText("Surcharge enregistrée")).toBeVisible();
 
       await page.reload();
-      await page.getByLabel("Produit à surcharger").selectOption({ label: /E2E Settings Override \(surchargé\)/ });
+      await page.getByLabel("Produit à surcharger").selectOption({ label: "E2E Settings Override (surchargé)" });
       await expect(page.getByLabel("Visites minimales (produit)")).toHaveValue("1");
 
       await page.getByRole("button", { name: "Réinitialiser" }).click();

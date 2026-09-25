@@ -24,10 +24,6 @@ afterEach(() => {
   toastError.mockClear();
 });
 
-function payloadOf(formData: FormData) {
-  return Object.fromEntries(formData.entries());
-}
-
 const VIEW: SettingsView = {
   defaults: {
     values: { minVisits: 1000, killMaxConversion: 0.02, scaleMinConversion: 0.05, scaleRequiresPositiveMargin: true },

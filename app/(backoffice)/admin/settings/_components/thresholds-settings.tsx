@@ -155,7 +155,12 @@ function ProductOverrideForm({
         <Button type="submit" disabled={savePending || !editable}>
           Enregistrer la surcharge
         </Button>
-        <Button type="button" variant="outline" disabled={resetPending || !editable} onClick={() => resetAction()}>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={resetPending || !editable}
+          onClick={() => resetAction(new FormData())}
+        >
           Réinitialiser
         </Button>
       </div>

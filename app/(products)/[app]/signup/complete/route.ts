@@ -1,50 +1,24 @@
 import "server-only";
 import type { Route } from "next";
-import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import { after } from "next/server";
-import { grantSignupBonus } from "@/lib/dal/credits";
-import { track } from "@/lib/dal/events";
-import { getProduct } from "@/lib/dal/products";
-import { getSession } from "@/lib/dal/session";
-import { ANONYMOUS_ID_COOKIE, readAnonymousId } from "../../api/events/anonymous-id";
+import { claimSignupBonus } from "./_lib/claim";
 
 // SA-03 (specs/SA-03-inscription.md), plan step 3: Better Auth's magic-link
 // `callbackURL` for this flow. It verifies the token, sets the session
 // cookie itself (nextCookies plugin, lib/auth.ts), then redirects here
-// (plain GET, no user-supplied body to validate). This handler only reads
-// the now-established session, grants the signup bonus once
-// (grantSignupBonus's own idempotency key, lib/dal/credits.ts) and tracks
-// the event — both only after a session exists (plan's design decision 1:
-// "Bonus and event only in complete/route.ts, after getSession()").
+// (plain GET, no user-supplied body to validate).
+//
+// Refactored by QA1-P1-Q2 (specs/qa/QA1-P1-Q2-inscription-par-produit.md,
+// plan step 2, behavior-preserving) to delegate the "resolve product ->
+// resolve session -> grant bonus -> track signup" logic to the shared
+// claimSignupBonus helper (_lib/claim.ts), now also used by the new
+// cross-product Server Action. The three branches below are unchanged.
 export async function GET(_request: Request, { params }: RouteContext<"/[app]/signup/complete">) {
   const { app: slug } = await params;
-  const product = await getProduct(slug);
-  if (!product || product.status === "killed") notFound();
+  const result = await claimSignupBonus(slug);
 
-  const session = await getSession();
-  if (!session) redirect(`/${slug}/signup` as Route);
-
-  // Credits are per (user, product) — every SaaS is independent for the
-  // user (docs/01-produit.md, docs/07-modele-de-donnees.md) — and
-  // grantSignupBonus is idempotent (its own key, lib/dal/credits.ts): any
-  // signed-in user reaching this URL gets at most the same once-per-product
-  // bonus that filling out this product's own signup form would grant, no
-  // more. Reviewed and accepted (orchestrator decision, SA-03 review round).
-  await grantSignupBonus({ userId: session.user.id, productId: product.id });
-
-  // The anonymous cookie set by a prior anonymous generation or visit
-  // (docs/04-nextjs.md, shared with api/generate and api/events): a
-  // tampered or missing cookie reads as null (readAnonymousId), never
-  // thrown — signup still succeeds without it, just unlinked from an
-  // anonymous_id (design decision 1).
-  const cookieStore = await cookies();
-  const anonymousId = readAnonymousId(cookieStore.get(ANONYMOUS_ID_COOKIE)?.value);
-  const userId = session.user.id;
-
-  after(async () => {
-    await track({ type: "signup", productId: product.id, userId, anonymousId });
-  });
+  if (result.status === "not_found") notFound();
+  if (result.status === "no_session") redirect(`/${slug}/signup` as Route);
 
   redirect(`/${slug}/tool` as Route);
 }

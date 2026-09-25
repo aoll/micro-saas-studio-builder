@@ -156,10 +156,10 @@ function validateRangeDays(range: MetricsRange): number {
   return days;
 }
 
-type PortfolioRow = {
+export type PortfolioRow = {
   product_id: string;
   slug: string;
-  name: string;
+  name: string | null;
   status: ProductStatus;
   visits: number;
   first_generations: number;
@@ -174,14 +174,18 @@ type PortfolioRow = {
   cost_per_generation: number | null;
 };
 
-// A price per credit (in micros, from the pack revenue actually collected
-// in range) times the product's `costPerGeneration`, minus the average AI
-// cost of a succeeded generation: the margin the studio pockets on one
-// generation today, given the packs it currently sells (specs/
-// BO-02-portefeuille.md plan, design decision 2). `null` when there is
-// nothing to divide by: no credits sold, no succeeded generation, or no
-// `costPerGeneration` in the product's config.
-function toProductMetrics(row: PortfolioRow): ProductMetrics {
+// The pure row → ProductMetrics mapping (exported for lib/dal/metrics.test.ts to exercise
+// directly with a fabricated row, instead of inserting a schema-invalid product_versions row
+// into the shared test DB — specs/BO-02-portefeuille.md review round). Two defensive
+// fallbacks, both driven by data SQL alone cannot guarantee (a product's config could, in
+// theory, be missing `name` or `pricing.costPerGeneration`):
+// - `name`: `null` (config has no `name`) falls back to `slug`.
+// - `marginPerGenerationMicros`: a price per credit (in micros, from the pack revenue
+//   actually collected in range) times the product's `costPerGeneration`, minus the average
+//   AI cost of a succeeded generation (specs/BO-02-portefeuille.md plan, design decision 2).
+//   `null` when there is nothing to divide by: no credits sold, no succeeded generation, or no
+//   `costPerGeneration` in the product's config.
+export function toProductMetrics(row: PortfolioRow): ProductMetrics {
   const revenueCents = Number(row.revenue_cents);
   const aiCostMicros = Number(row.ai_cost_micros);
   const signupToPurchaseRate = row.signups > 0 ? row.buyers / row.signups : null;
@@ -193,7 +197,7 @@ function toProductMetrics(row: PortfolioRow): ProductMetrics {
   return {
     productId: row.product_id,
     slug: row.slug,
-    name: row.name,
+    name: row.name ?? row.slug,
     status: row.status,
     visits: row.visits,
     firstGenerations: row.first_generations,
@@ -225,11 +229,11 @@ export const getPortfolioMetrics: (range: MetricsRange) => Promise<PortfolioMetr
   // ISO string round-trips through `timestamptz` correctly.
   const since = computeSince(days).toISOString();
 
-  const result = await db.execute(sql`
+  const result = await db.execute<PortfolioRow>(sql`
     select
       p.id as product_id,
       p.slug as slug,
-      coalesce(pv.config ->> 'name', p.slug) as name,
+      pv.config ->> 'name' as name,
       p.status as status,
       coalesce(ev.visits, 0)::int as visits,
       coalesce(ev.first_generations, 0)::int as first_generations,
@@ -277,9 +281,7 @@ export const getPortfolioMetrics: (range: MetricsRange) => Promise<PortfolioMetr
       group by product_id
     ) gen on gen.product_id = p.id
   `);
-  const rows = [...result] as unknown as PortfolioRow[];
-
-  const productMetrics = rows.map(toProductMetrics);
+  const productMetrics = [...result].map(toProductMetrics);
   return {
     totals: {
       visits: productMetrics.reduce((sum, product) => sum + product.visits, 0),

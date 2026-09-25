@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { events, generations, productVersions, products, purchases, themes } from "@/lib/db/schema";
 import { users } from "@/lib/db/auth-schema";
 import type { ProductConfig } from "@/lib/schemas/product-config";
+import { toProductMetrics, type PortfolioRow } from "./metrics";
 
 class RedirectMarker extends Error {
   constructor(public url: string) {
@@ -103,6 +104,77 @@ async function cleanupProduct(id: string): Promise<void> {
   await db.delete(productVersions).where(eq(productVersions.productId, id));
   await db.delete(products).where(eq(products.id, id));
 }
+
+// Pure mapping (no DB, no session mock): restores the coverage commit
+// 62927a3 dropped when it removed the "empty config" DB test (specs/
+// BO-02-portefeuille.md review round). That commit's claim that the
+// coalesce-to-slug and null-costPerGeneration branches "stay covered
+// indirectly" was wrong — neither was exercised by any other test.
+function baseRow(overrides: Partial<PortfolioRow> = {}): PortfolioRow {
+  return {
+    product_id: "p1",
+    slug: "my-slug",
+    name: "My Product",
+    status: "test",
+    visits: 100,
+    first_generations: 10,
+    signups: 10,
+    credits_exhausted: 2,
+    purchases: 1,
+    generations: 5,
+    revenue_cents: 1000,
+    ai_cost_micros: 2000,
+    buyers: 2,
+    credits_sold: 20,
+    cost_per_generation: 1,
+    ...overrides,
+  };
+}
+
+describe("toProductMetrics (pure row mapping)", () => {
+  it("falls back to slug when the config has no name", () => {
+    const metrics = toProductMetrics(baseRow({ name: null, slug: "my-slug" }));
+    expect(metrics.name).toBe("my-slug");
+  });
+
+  it("keeps the config's name when it is present", () => {
+    const metrics = toProductMetrics(baseRow({ name: "Real Name", slug: "my-slug" }));
+    expect(metrics.name).toBe("Real Name");
+  });
+
+  it("returns a null margin when the config has no costPerGeneration, even with credits sold and generations", () => {
+    const metrics = toProductMetrics(baseRow({ cost_per_generation: null, credits_sold: 20, generations: 5 }));
+    expect(metrics.marginPerGenerationMicros).toBeNull();
+  });
+
+  it("returns a null margin when no credits were sold", () => {
+    const metrics = toProductMetrics(baseRow({ credits_sold: 0 }));
+    expect(metrics.marginPerGenerationMicros).toBeNull();
+  });
+
+  it("returns a null margin when there is no succeeded generation", () => {
+    const metrics = toProductMetrics(baseRow({ generations: 0 }));
+    expect(metrics.marginPerGenerationMicros).toBeNull();
+  });
+
+  it("computes a margin when credits sold, generations and costPerGeneration are all present", () => {
+    const metrics = toProductMetrics(
+      baseRow({ revenue_cents: 2470, credits_sold: 70, cost_per_generation: 1, ai_cost_micros: 12000, generations: 3 }),
+    );
+    expect(metrics.marginPerGenerationMicros).toBe(Math.round((2470 * 10_000) / 70) - 4000);
+  });
+
+  it("returns a null conversion rate when there are no signups", () => {
+    const metrics = toProductMetrics(baseRow({ signups: 0, buyers: 0 }));
+    expect(metrics.signupToPurchaseRate).toBeNull();
+  });
+
+  it("converts string bigint results (revenue_cents, ai_cost_micros) to numbers", () => {
+    const metrics = toProductMetrics(baseRow({ revenue_cents: "1000", ai_cost_micros: "2000" }));
+    expect(metrics.revenueCents).toBe(1000);
+    expect(metrics.aiCostMicros).toBe(2000);
+  });
+});
 
 describe("getPortfolioMetrics", () => {
   it("requires an admin session", async () => {

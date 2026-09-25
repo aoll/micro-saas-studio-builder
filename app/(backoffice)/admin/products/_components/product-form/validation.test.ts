@@ -59,11 +59,11 @@ describe("validateStep", () => {
   });
 
   it("step 5: an unknown {{variable}} reports generation.promptTemplate, even with a step-4 issue in the same patch", () => {
-    // Zod 4 skips `.superRefine` entirely when the base object already has
-    // an issue (product-config.ts's comment): the duplicate inputs key
-    // below makes that happen, so this only passes if validateStep checks
-    // the template's variables directly instead of relying on the schema's
-    // cross-field refinement.
+    // productConfigSchema's single `.superRefine` reports both the
+    // duplicate-key issue (inputs.1.key, step 4) and the unknown-variable
+    // issue (generation.promptTemplate, step 5) from the same parse: this
+    // pins that validateStep's step filtering keeps only the step-5 issue,
+    // rather than dropping it or leaking the step-4 one onto step 5.
     const errors = validateStep(5, {
       inputs: [
         { key: "sujet", label: "Sujet", type: "text", required: true },

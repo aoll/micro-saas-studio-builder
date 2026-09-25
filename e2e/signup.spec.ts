@@ -50,7 +50,6 @@ test.describe("Signup (/lettre-pro/signup)", () => {
 
   test("entering an email opens the simulated inbox, and 'Me connecter' signs in, grants +3 credits and returns to the tool", async ({
     page,
-    baseURL,
   }) => {
     const sql = postgres(requireDatabaseUrl(), { max: 1, onnotice: () => {} });
     const db = drizzle(sql, { schema: { users, magicLinkOutbox } });
@@ -79,9 +78,8 @@ test.describe("Signup (/lettre-pro/signup)", () => {
     }
   });
 
-  test("an expired or already-used link shows a message and a resend button", async ({ page, baseURL }) => {
+  test("an expired or already-used link shows a message and a resend button", async ({ page }) => {
     const sql = postgres(requireDatabaseUrl(), { max: 1, onnotice: () => {} });
-    const db = drizzle(sql, { schema: { users } });
 
     // A syntactically plausible but unknown token: Better Auth's verify
     // endpoint redirects to errorCallbackURL with ?error=INVALID_TOKEN for

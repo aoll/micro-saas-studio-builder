@@ -1,0 +1,35 @@
+{
+  "title": "Mon compte",
+  "loading": "Chargement du compte…",
+  "balance": {
+    "label": "Solde",
+    "credits": "{count, plural, one {# crédit} other {# crédits}}",
+    "recharge": "Recharger"
+  },
+  "movements": {
+    "title": "Mouvements de crédits",
+    "empty": "Aucun mouvement pour le moment"
+  },
+  "movement": {
+    "signup_bonus": "Bonus d'inscription",
+    "purchase": "Achat pack {count, plural, one {# crédit} other {# crédits}}",
+    "generation": "Génération",
+    "refund": "Remboursement (échec)"
+  },
+  "purchases": {
+    "title": "Achats",
+    "empty": "Aucun achat pour le moment",
+    "pack": "Pack {count, plural, one {# crédit} other {# crédits}}"
+  },
+  "history": {
+    "link": "Voir mes générations"
+  },
+  "signOut": {
+    "button": "Se déconnecter",
+    "error": "Impossible de se déconnecter"
+  },
+  "signup": {
+    "title": "Créez un compte pour voir vos crédits",
+    "cta": "Créer un compte"
+  }
+}

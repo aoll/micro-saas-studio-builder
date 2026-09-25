@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PortfolioMetrics } from "@/lib/dal/metrics";
 import type { ThresholdSettings } from "@/lib/dal/thresholds";
+import type { Lockable } from "@/lib/dal/guards";
 import { toSettingsView } from "./settings-view";
 
 function metrics(overrides: Partial<PortfolioMetrics["products"][number]> = {}): PortfolioMetrics {
@@ -36,14 +37,16 @@ const SETTINGS: ThresholdSettings = {
   products: [{ productId: "p1", isSeed: false, override: null }],
 };
 
+const everythingEditable = () => true;
+
 describe("toSettingsView", () => {
   it("carries the studio defaults through unchanged", () => {
-    const view = toSettingsView(metrics(), SETTINGS);
-    expect(view.defaults).toEqual(SETTINGS.defaults);
+    const view = toSettingsView(metrics(), SETTINGS, everythingEditable);
+    expect(view.defaults).toEqual({ ...SETTINGS.defaults, editable: true });
   });
 
   it("joins each threshold row with its product's name, status and metrics", () => {
-    const view = toSettingsView(metrics(), SETTINGS);
+    const view = toSettingsView(metrics(), SETTINGS, everythingEditable);
     expect(view.products).toEqual([
       {
         productId: "p1",
@@ -54,6 +57,7 @@ describe("toSettingsView", () => {
         signupToPurchaseRate: 0.01,
         marginPerGenerationMicros: 500,
         override: null,
+        editable: true,
       },
     ]);
   });
@@ -63,7 +67,7 @@ describe("toSettingsView", () => {
       ...SETTINGS,
       products: [...SETTINGS.products, { productId: "missing", isSeed: false, override: null }],
     };
-    const view = toSettingsView(metrics(), settingsWithExtraProduct);
+    const view = toSettingsView(metrics(), settingsWithExtraProduct, everythingEditable);
     const missing = view.products.find((product) => product.productId === "missing");
     expect(missing).toMatchObject({
       name: "missing",
@@ -71,5 +75,12 @@ describe("toSettingsView", () => {
       signupToPurchaseRate: null,
       marginPerGenerationMicros: null,
     });
+  });
+
+  it("applies the demo-mode lock: a seed row is read-only, a visitor product stays editable", () => {
+    const lockSeeds = ({ isSeed }: Lockable) => !isSeed;
+    const view = toSettingsView(metrics(), SETTINGS, lockSeeds);
+    expect(view.defaults.editable).toBe(false);
+    expect(view.products[0]?.editable).toBe(true);
   });
 });

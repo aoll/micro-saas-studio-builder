@@ -1,3 +1,4 @@
+import type { Lockable } from "@/lib/dal/guards";
 import type { PortfolioMetrics } from "@/lib/dal/metrics";
 import type { ThresholdOverride, Thresholds } from "@/lib/dal/thresholds";
 import type { ThresholdSettings } from "@/lib/dal/thresholds";
@@ -12,10 +13,11 @@ export type SettingsProductRow = {
   signupToPurchaseRate: number | null;
   marginPerGenerationMicros: number | null;
   override: ThresholdOverride | null;
+  editable: boolean;
 };
 
 export type SettingsView = {
-  defaults: { values: Thresholds; isSeed: boolean };
+  defaults: { values: Thresholds; isSeed: boolean; editable: boolean };
   products: SettingsProductRow[];
 };
 
@@ -26,11 +28,17 @@ export type SettingsView = {
 // with no metrics row (a data inconsistency `getPortfolioMetrics` cannot
 // produce for a product `getThresholdSettings` also lists, since both read
 // the same `products` table) falls back to its id and zeroed metrics
-// rather than throwing.
-export function toSettingsView(metrics: PortfolioMetrics, settings: ThresholdSettings): SettingsView {
+// rather than throwing. `isEditable` is the demo-mode lock (lib/dal/guards,
+// server-only), passed in by the page so this function stays pure: the
+// default row and each product row carry their own `editable` flag.
+export function toSettingsView(
+  metrics: PortfolioMetrics,
+  settings: ThresholdSettings,
+  isEditable: (row: Lockable) => boolean,
+): SettingsView {
   const metricsByProductId = new Map(metrics.products.map((product) => [product.productId, product]));
   return {
-    defaults: settings.defaults,
+    defaults: { ...settings.defaults, editable: isEditable(settings.defaults) },
     products: settings.products.map((row) => {
       const product = metricsByProductId.get(row.productId);
       return {
@@ -42,6 +50,7 @@ export function toSettingsView(metrics: PortfolioMetrics, settings: ThresholdSet
         signupToPurchaseRate: product?.signupToPurchaseRate ?? null,
         marginPerGenerationMicros: product?.marginPerGenerationMicros ?? null,
         override: row.override,
+        editable: isEditable(row),
       };
     }),
   };

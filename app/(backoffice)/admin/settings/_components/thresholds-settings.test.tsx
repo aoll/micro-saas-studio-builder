@@ -28,6 +28,7 @@ const VIEW: SettingsView = {
   defaults: {
     values: { minVisits: 1000, killMaxConversion: 0.02, scaleMinConversion: 0.05, scaleRequiresPositiveMargin: true },
     isSeed: true,
+    editable: true,
   },
   products: [
     {
@@ -39,6 +40,7 @@ const VIEW: SettingsView = {
       signupToPurchaseRate: 0.01,
       marginPerGenerationMicros: 500,
       override: null,
+      editable: true,
     },
     {
       productId: "p2",
@@ -54,6 +56,7 @@ const VIEW: SettingsView = {
         scaleMinConversion: null,
         scaleRequiresPositiveMargin: null,
       },
+      editable: true,
     },
   ],
 };
@@ -96,5 +99,26 @@ describe("ThresholdsSettings", () => {
     const previewed = screen.getAllByTestId("preview-change").map((node) => node.textContent);
     expect(previewed.some((text) => text?.includes("Produit Un"))).toBe(true);
     expect(previewed.some((text) => text?.includes("Produit Deux"))).toBe(false);
+  });
+
+  it("locks the defaults form but keeps a visitor product's override editable (demo mode)", () => {
+    const view: SettingsView = { ...VIEW, defaults: { ...VIEW.defaults, editable: false } };
+    render(<ThresholdsSettings view={view} />);
+    expect((screen.getByLabelText("Visites minimales") as HTMLInputElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "Enregistrer" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByLabelText("Visites minimales (produit)") as HTMLInputElement).disabled).toBe(false);
+    expect((screen.getByRole("button", { name: "Enregistrer la surcharge" }) as HTMLButtonElement).disabled).toBe(
+      false,
+    );
+  });
+
+  it("locks a seeded product's override form and its reset (demo mode)", () => {
+    const view: SettingsView = {
+      ...VIEW,
+      products: VIEW.products.map((product) => ({ ...product, isSeed: true, editable: false })),
+    };
+    render(<ThresholdsSettings view={view} />);
+    expect((screen.getByLabelText("Visites minimales (produit)") as HTMLInputElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "Réinitialiser" }) as HTMLButtonElement).disabled).toBe(true);
   });
 });

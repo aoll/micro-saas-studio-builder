@@ -54,7 +54,7 @@ function ProductOverrideForm({
     if (resetState.formError) toast.error(resetState.formError);
   }, [resetState]);
 
-  const editable = true; // demo-mode lock: `isEditable({ isSeed: product.isSeed })` (DEMO-mode wires the real check)
+  const editable = product.editable;
   const errors = saveState.errors ?? {};
 
   const candidate = useMemo(() => {
@@ -176,11 +176,9 @@ export function ThresholdsSettings({ view }: { view: SettingsView }) {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(view.products[0]?.productId ?? null);
   const selected = view.products.find((product) => product.productId === selectedProductId) ?? null;
 
-  const editable = true; // demo-mode lock: `isEditable({ isSeed: view.defaults.isSeed })` (DEMO-mode wires the real check)
-
   return (
     <div className="grid gap-6">
-      <ThresholdsForm defaults={view.defaults.values} products={view.products} editable={editable} />
+      <ThresholdsForm defaults={view.defaults.values} products={view.products} editable={view.defaults.editable} />
 
       <div className="grid gap-4 rounded-md border p-4">
         <h2 className="text-lg font-semibold">Surcharge par produit</h2>

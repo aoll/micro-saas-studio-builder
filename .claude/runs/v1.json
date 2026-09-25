@@ -120,9 +120,9 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "dispatched",
-      "worktree": "bo-01-connexion",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 14
     },
     "TRACKING": {
       "dependsOn": [
@@ -336,6 +336,12 @@
       "spec": "SA-02-outil",
       "blockedOn": "TRACKING",
       "what": "api/generate: use TRACKING anonymous-id helper (ANONYMOUS_ID_COOKIE, readAnonymousId, anonymousIdCookie) instead of inline cookie code",
+      "resolved": false
+    },
+    {
+      "spec": "SA-01-landing",
+      "blockedOn": "SA-02-outil",
+      "what": "drop the `/${slug}/tool` as Route casts in [app]/_components/landing/hero.tsx and landing-pricing.tsx once [app]/tool/page.tsx exists",
       "resolved": false
     }
   ],

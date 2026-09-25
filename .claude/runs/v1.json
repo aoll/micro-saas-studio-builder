@@ -210,7 +210,8 @@
       "step": "tdd (partial; human decision pending)",
       "humanDecision": {
         "pending": true,
-        "question": "Périmètre extension: (a) visitor limit 10: lib/dal/product-editor.ts(+test), admin/products/_actions.ts(+test), additive guards export; (b) BO-06 trigger disabled on seeded products: admin/products/[slug]/page.tsx, sheet.ts, product-sheet-view.tsx, sheet-header.tsx, status/status-change.tsx(+tests); (c) lib/ai/model.ts mock fixtures for descri-pro, nom-de-marque, bio-instagram; (d) .env.example SEED_* credential vars"
+        "question": "Périmètre extension: (a) visitor limit 10: lib/dal/product-editor.ts(+test), admin/products/_actions.ts(+test), additive guards export; (b) BO-06 trigger disabled on seeded products: admin/products/[slug]/page.tsx, sheet.ts, product-sheet-view.tsx, sheet-header.tsx, status/status-change.tsx(+tests); (c) lib/ai/model.ts mock fixtures for descri-pro, nom-de-marque, bio-instagram; (d) .env.example SEED_* credential vars",
+        "round2": "No seeded-row lock (guards stay no-op; acceptance lock bullet waived; BO-06 trigger item moot); .env.example allowed. Pending: (a) 10 visitor limit, (c) lib/ai/model.ts mock fixtures"
       }
     },
     "SECURITY": {
@@ -549,10 +550,6 @@
       "note": "themeTokensSchema lacks typography scale, shadows and density listed in docs/01; a contract PR would be needed. DEMO-mode will make BO-08 read-only for seeded themes on the public demo."
     },
     {
-      "for": "DEMO-mode",
-      "note": "verify end to end that /admin/settings shows the default thresholds locked and seeded products overrides locked when DEMO_MODE=true, visitor products editable (BO-09)."
-    },
-    {
       "for": "E2E-demo",
       "note": "instant() portfolio -> fiche: name and status cannot be in the static shell while each boundary calls requireAdmin() (BO-03)."
     },
@@ -567,10 +564,6 @@
     {
       "for": "CONTRACT follow-up (human)",
       "note": "purchases has no index at all: add (product_id, created_at) and (user_id, product_id, created_at); used by getPortfolioMetrics, getFunnel daily, SA-07 listPurchases. Flagged HIGH by the BO-03 database review as a pre-existing frozen-schema gap, not fixable in BO-03."
-    },
-    {
-      "for": "DEMO-mode",
-      "note": "BO-06: StatusChange trigger is not disabled for locked seeded products (needs isEditable passed from sheet.ts → sheet-header.tsx); the DAL guard + in-modal formError cover it meanwhile"
     },
     {
       "for": "E2E-demo",

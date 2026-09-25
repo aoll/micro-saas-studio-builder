@@ -4,10 +4,10 @@ import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { OpenSignupModal } from "./open-signup-modal";
 
-// Review fix (LOW, code-reviewer): `href` is `Route`, not `Route | string`
-// — `/nom-de-marque/signup` doesn't exist as a route yet (SA-03), so the
-// literal is cast here the same way signup-prompt.tsx casts it at the call
-// site.
+// Review fix (LOW, code-reviewer): `href` is `Route`, not `Route | string`.
+// typedRoutes only accepts a template literal without a cast inside a JSX
+// `href`; here the literal is assigned to a prop typed `Route`, so it still
+// needs the cast, the same way signup-prompt.tsx casts it at the call site.
 const SIGNUP_HREF = "/nom-de-marque/signup" as Route;
 
 const { replace } = vi.hoisted(() => ({ replace: vi.fn() }));

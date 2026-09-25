@@ -9,9 +9,11 @@ import { OpenSignupModal } from "./open-signup-modal";
 // balance/movements/purchases when there is no session, no DAL call made.
 // The link is the visible, no-JS-required fallback to the full /signup page
 // (SA-03); OpenSignupModal is the client leaf that auto-opens the
-// intercepted modal on top of this page. SA-03 has not landed yet: the
-// cast is dropped once it does (mirrors pricing-content.tsx's checkout
-// link).
+// intercepted modal on top of this page. The Link href is a template
+// literal inline in JSX, which typedRoutes accepts without a cast; passing
+// the same slug to OpenSignupModal's `href: Route` prop still needs one,
+// since typedRoutes cannot prove a plain string fits the route type outside
+// a JSX href (docs/04-nextjs.md: "typedRoutes… type les href").
 export async function SignupPrompt({ slug }: { slug: string }) {
   const t = await getTranslations("account");
   const href = `/${slug}/signup`;
@@ -22,7 +24,7 @@ export async function SignupPrompt({ slug }: { slug: string }) {
         title={t("signup.title")}
         action={
           <Button asChild>
-            <Link href={href as Route}>{t("signup.cta")}</Link>
+            <Link href={`/${slug}/signup`}>{t("signup.cta")}</Link>
           </Button>
         }
       />

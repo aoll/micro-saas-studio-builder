@@ -228,10 +228,14 @@
         "BO-05b-generation-publication",
         "BO-07-themes"
       ],
-      "status": "dispatched",
+      "status": "blocked",
       "worktree": "security",
       "pr": null,
-      "step": "plan"
+      "step": "plan",
+      "humanDecision": {
+        "pending": true,
+        "question": "Périmètre extension needed: package.json+pnpm-lock.yaml (pnpm add botid); lib/env.ts+lib/env.test.ts+.env.example (GENERATION_RATE_LIMIT_PER_MINUTE, bullet 2 says N in lib/env.ts); lib/dal/generations.ts+test (additive countRecentGenerations: lib/rate-limit.ts may not import lib/db); README.md (bullet 3); lib/dal/contract-shape.test.ts (add next/headers + botid/server mocks, separate explained commit)"
+      }
     },
     "I18N-SEO": {
       "dependsOn": [
@@ -279,7 +283,7 @@
       "status": "dispatched",
       "worktree": "bo-04-activite",
       "pr": null,
-      "step": "plan"
+      "step": "tdd"
     },
     "BO-06-statut": {
       "dependsOn": [

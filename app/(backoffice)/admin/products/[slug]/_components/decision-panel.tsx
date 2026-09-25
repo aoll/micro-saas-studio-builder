@@ -1,12 +1,21 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { ProductStatus } from "@/lib/schemas/product-config";
 import type { DecisionCopy } from "./decision-copy";
+import { StatusChange } from "./status/status-change";
+
+export type DecisionPanelProduct = { productId: string; slug: string; name: string; status: ProductStatus };
 
 // docs/01-produit.md › "les seuils de décision" (BO-03): the studio's 4 thresholds, this
 // product's current values, and — when there is one — the suggestion `toDecisionCopy` derived
 // from the same `evaluate()` as the header's DecisionBadge. `null` (a killed product, or a
 // product below the min-visits gate that still shows a "not enough data" line — decision-copy.ts
 // handles both) renders no suggestion block at all.
-export function DecisionPanel({ decision }: { decision: DecisionCopy }) {
+//
+// specs/mockups/BO-06.png: when the suggestion actually carries a decision (`badge` is `kill` or
+// `scale`, not the "not enough visits" or "no suggestion" copies), the box also mounts
+// `StatusChange`, preselected on that suggestion, so the admin can act right where the numbers
+// justify it — a second mount point next to the header's (BO-06 task item 2).
+export function DecisionPanel({ decision, product }: { decision: DecisionCopy; product: DecisionPanelProduct }) {
   return (
     <Card>
       <CardHeader>
@@ -39,6 +48,18 @@ export function DecisionPanel({ decision }: { decision: DecisionCopy }) {
           <div data-testid="decision-suggestion" className="rounded-md border bg-muted/50 px-3 py-2 text-sm">
             <p className="font-medium">{decision.suggestion.headline}</p>
             <p className="text-muted-foreground">{decision.suggestion.detail}</p>
+            {decision.badge ? (
+              <div className="mt-2">
+                <StatusChange
+                  productId={product.productId}
+                  slug={product.slug}
+                  name={product.name}
+                  status={product.status}
+                  decision={decision.badge}
+                  justification={decision.current}
+                />
+              </div>
+            ) : null}
           </div>
         ) : null}
       </CardContent>

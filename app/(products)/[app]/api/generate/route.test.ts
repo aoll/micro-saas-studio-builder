@@ -3,8 +3,10 @@ import { MockLanguageModelV4, simulateReadableStream } from "ai/test";
 import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
+import { withTestTransaction } from "@/lib/db/test-transaction";
 import { users } from "@/lib/db/auth-schema";
 import { generations, products } from "@/lib/db/schema";
+import { listProductGenerations } from "@/lib/dal/activity";
 
 vi.mock("next/cache", () => ({ cacheLife: vi.fn(), cacheTag: vi.fn() }));
 
@@ -39,7 +41,11 @@ vi.mock("next/server", async () => {
 // (guardRequest) is mocked too, so its stub ("laisse tout passer") can't
 // hide a guard-ordering bug.
 const getSession = vi.fn();
-vi.mock("@/lib/dal/session", () => ({ getSession: () => getSession() }));
+// requireAdmin, added for the QA1-P1-B7 activity-read test below: it lives
+// in the same module (lib/dal/session) that listProductGenerations
+// (lib/dal/activity.ts) calls, mocked the same way activity.test.ts does.
+const requireAdmin = vi.fn();
+vi.mock("@/lib/dal/session", () => ({ getSession: () => getSession(), requireAdmin: () => requireAdmin() }));
 const debit = vi.fn();
 const refund = vi.fn();
 vi.mock("@/lib/dal/credits", () => ({ debit: (args: unknown) => debit(args), refund: (id: string) => refund(id) }));
@@ -54,6 +60,7 @@ afterEach(() => {
   testHeaders = new Headers();
   afterCallbacks.length = 0;
   getSession.mockReset();
+  requireAdmin.mockReset();
   debit.mockReset().mockResolvedValue({ ok: true, balance: 9 });
   refund.mockReset();
   track.mockReset();
@@ -371,7 +378,12 @@ describe("POST [app]/api/generate — logged-in AI failure", () => {
 });
 
 describe("POST [app]/api/generate — insufficient balance", () => {
-  it("402s, records credits_exhausted and leaves the row failed, without refund", async () => {
+  // QA1-P1-B7: this test used to assert the bug (`row?.status).toBe("failed")`)
+  // — a 402 refusal left a `generations` row, indistinguishable in BO-04 from
+  // a real AI failure that was refunded (.claude/qa/reports/2026-09-25-full.md
+  // › B7). Fixed by deleting the still-`pending` row instead of marking it
+  // failed; asserting `undefined` below now encodes the correct behavior.
+  it("402s, records credits_exhausted and deletes the row, without refund", async () => {
     const user = await db.query.users.findFirst();
     getSession.mockResolvedValue({ user: { id: user!.id } });
     debit.mockResolvedValue({ ok: false, reason: "insufficient_balance" });
@@ -386,8 +398,55 @@ describe("POST [app]/api/generate — insufficient balance", () => {
     expect(refund).not.toHaveBeenCalled();
 
     const row = await db.query.generations.findFirst({ where: eq(generations.idempotencyKey, idempotencyKey) });
-    expect(row?.status).toBe("failed");
+    expect(row).toBeUndefined();
+  });
+
+  // QA1-P1-B7 (plan step 6, flagged for review): nothing was debited on the
+  // refused attempt (docs/01 › "un retry ne débite pas deux fois" still
+  // holds), so a retry with the same idempotency key is a first attempt, not
+  // a duplicate — 200, not 409, once the balance allows it.
+  it("a retry with the same key after a 402 succeeds once debit allows it (not a 409)", async () => {
+    const user = await db.query.users.findFirst();
+    getSession.mockResolvedValue({ user: { id: user!.id } });
+    const idempotencyKey = randomUUID();
+
+    debit.mockResolvedValue({ ok: false, reason: "insufficient_balance" });
+    const { POST } = await import("./route");
+    const first = await POST(postRequest({ input: validInput, idempotencyKey }), ctx());
+    expect(first.status).toBe(402);
+    await flushAfterCallbacks();
+
+    debit.mockResolvedValue({ ok: true, balance: 9 });
+    const second = await POST(postRequest({ input: validInput, idempotencyKey }), ctx());
+    expect(second.status).toBe(200);
+    await readTextDeltas(second);
+    await flushAfterCallbacks();
+
     await cleanupGeneration(idempotencyKey);
+  });
+
+  // QA1-P1-B7 Acceptation 2: BO-04's activity lists exactly the generations
+  // served or failed-then-refunded, not the refusals. requireAdmin mocked as
+  // activity.test.ts does (same lib/dal/session module the route mocks
+  // getSession on).
+  it("does not appear in listProductGenerations, and total does not grow", async () => {
+    requireAdmin.mockResolvedValue({ user: { id: "admin-id", role: "admin" } });
+    const productId = await lettreProId();
+    const before = await listProductGenerations(productId, 1);
+
+    const user = await db.query.users.findFirst();
+    getSession.mockResolvedValue({ user: { id: user!.id } });
+    debit.mockResolvedValue({ ok: false, reason: "insufficient_balance" });
+    const idempotencyKey = randomUUID();
+
+    const { POST } = await import("./route");
+    const response = await POST(postRequest({ input: validInput, idempotencyKey }), ctx());
+    expect(response.status).toBe(402);
+    await flushAfterCallbacks();
+
+    const after = await listProductGenerations(productId, 1);
+    expect(after.total).toBe(before.total);
+    expect(after.entries).toEqual(before.entries);
   });
 });
 
@@ -530,5 +589,138 @@ describe("POST [app]/api/generate — anonymous", () => {
     expect(rows[0]?.status).toBe("failed");
     await cleanupGeneration(idempotencyKey);
     await cleanupGeneration(secondKey);
+  });
+});
+
+// A dedicated, never-shared user (same reason as lib/dal/generations.test.ts's
+// freshUserId): countPriorGenerations counts *all* of the caller's rows on
+// this product, so a shared db.query.users.findFirst() row would pick up
+// generations written by other tests or other files running concurrently.
+async function freshUserId(): Promise<string> {
+  const id = randomUUID();
+  await db.insert(users).values({ id, name: "Route test user", email: `${id}@example.test`, role: "user" });
+  return id;
+}
+
+describe("POST [app]/api/generate — first_generation across signup (QA1-P1-B5)", () => {
+  it("tracks a single first_generation when an anonymous visitor signs up then generates signed in", async () => {
+    await withTestTransaction(async () => {
+      const userId = await freshUserId();
+      const anonymousId = randomUUID();
+      testHeaders = new Headers({ "x-forwarded-for": randomIp() });
+      cookieStore.get.mockReturnValue({ value: anonymousId });
+
+      const { POST } = await import("./route");
+
+      // Act 1: anonymous free generation, same cookie throughout.
+      getSession.mockResolvedValue(null);
+      const anonymousKey = randomUUID();
+      const anonymousResponse = await POST(postRequest({ input: validInput, idempotencyKey: anonymousKey }), ctx());
+      expect(anonymousResponse.status).toBe(200);
+      await readTextDeltas(anonymousResponse);
+      await vi.waitFor(() => expect(afterCallbacks.length).toBeGreaterThanOrEqual(1));
+      await flushAfterCallbacks();
+      expect(track).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "first_generation", userId: null, anonymousId }),
+      );
+      track.mockClear();
+
+      // Act 2: same visitor, now signed in, same cookie still in the browser.
+      getSession.mockResolvedValue({ user: { id: userId } });
+      const signedInKey = randomUUID();
+      const signedInResponse = await POST(postRequest({ input: validInput, idempotencyKey: signedInKey }), ctx());
+      expect(signedInResponse.status).toBe(200);
+      await readTextDeltas(signedInResponse);
+      await vi.waitFor(() => expect(afterCallbacks.length).toBeGreaterThanOrEqual(1));
+      await flushAfterCallbacks();
+
+      expect(track).toHaveBeenCalledWith(expect.objectContaining({ type: "generation" }));
+      expect(track).not.toHaveBeenCalledWith(expect.objectContaining({ type: "first_generation" }));
+    });
+  });
+
+  it("still tracks first_generation for a first signed-in generation with a cookie that never generated (only a visit)", async () => {
+    await withTestTransaction(async () => {
+      const userId = await freshUserId();
+      testHeaders = new Headers({ "x-forwarded-for": randomIp() });
+      // A cookie is present (the visitor was tracked via TRACKING's
+      // <TrackVisit>), but it never generated anonymously: no row links to
+      // it, so this must still be treated as the caller's first generation.
+      cookieStore.get.mockReturnValue({ value: randomUUID() });
+      getSession.mockResolvedValue({ user: { id: userId } });
+
+      const { POST } = await import("./route");
+      const response = await POST(postRequest({ input: validInput, idempotencyKey: randomUUID() }), ctx());
+      expect(response.status).toBe(200);
+      await readTextDeltas(response);
+      await flushAfterCallbacks();
+
+      expect(track).toHaveBeenCalledWith(expect.objectContaining({ type: "first_generation" }));
+    });
+  });
+
+  it("tracks first_generation once when the visitor's only anonymous generation failed before signing in", async () => {
+    await withTestTransaction(async () => {
+      const userId = await freshUserId();
+      const anonymousId = randomUUID();
+      testHeaders = new Headers({ "x-forwarded-for": randomIp() });
+      cookieStore.get.mockReturnValue({ value: anonymousId });
+
+      const failingModel = await import("@/lib/ai/model");
+      vi.spyOn(failingModel, "resolveModel").mockImplementationOnce(() => {
+        throw new Error("boom");
+      });
+
+      const { POST } = await import("./route");
+
+      getSession.mockResolvedValue(null);
+      const anonymousResponse = await POST(postRequest({ input: validInput, idempotencyKey: randomUUID() }), ctx());
+      expect(anonymousResponse.status).toBe(502);
+      track.mockClear();
+
+      getSession.mockResolvedValue({ user: { id: userId } });
+      const signedInResponse = await POST(postRequest({ input: validInput, idempotencyKey: randomUUID() }), ctx());
+      expect(signedInResponse.status).toBe(200);
+      await readTextDeltas(signedInResponse);
+      await flushAfterCallbacks();
+
+      expect(track).toHaveBeenCalledTimes(2);
+      expect(track).toHaveBeenCalledWith(expect.objectContaining({ type: "generation" }));
+      expect(track).toHaveBeenCalledWith(expect.objectContaining({ type: "first_generation" }));
+    });
+  });
+});
+
+describe("POST [app]/api/generate — signed-in generation events keep anonymousId null (QA1-P1-B5)", () => {
+  it("tracks the generation event with anonymousId: null even when a cookie linked a prior anonymous generation", async () => {
+    await withTestTransaction(async () => {
+      const userId = await freshUserId();
+      const productId = await lettreProId();
+      const anonymousId = randomUUID();
+      testHeaders = new Headers({ "x-forwarded-for": randomIp() });
+      cookieStore.get.mockReturnValue({ value: anonymousId });
+
+      const { POST } = await import("./route");
+
+      getSession.mockResolvedValue(null);
+      const anonymousResponse = await POST(postRequest({ input: validInput, idempotencyKey: randomUUID() }), ctx());
+      await readTextDeltas(anonymousResponse);
+      await flushAfterCallbacks();
+      track.mockClear();
+
+      getSession.mockResolvedValue({ user: { id: userId } });
+      const signedInKey = randomUUID();
+      const signedInResponse = await POST(postRequest({ input: validInput, idempotencyKey: signedInKey }), ctx());
+      await readTextDeltas(signedInResponse);
+      await flushAfterCallbacks();
+
+      expect(track).toHaveBeenCalledWith({
+        type: "generation",
+        productId,
+        userId,
+        anonymousId: null,
+        metadata: { generationId: signedInResponse.headers.get("x-generation-id") },
+      });
+    });
   });
 });

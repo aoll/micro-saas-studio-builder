@@ -57,7 +57,11 @@ const FUNNEL_STEP_TYPES = ["visit", "first_generation", "signup", "credits_exhau
 
 // The 5 funnel steps (BO-03) and their pass rate from the previous step, from one product's
 // ProductMetrics: `null` for the first step (no previous step) and whenever the previous step's
-// count is 0 (nothing to divide by).
+// count is 0 (nothing to divide by). Each step counts distinct persons (QA1-P1-Q5), independent
+// of whether that same person also has an event for the previous step (a person is never
+// required to "pass through" earlier steps to be counted at a later one): the rate can still
+// exceed 1 at the range boundary (e.g. a signup just before `since`, a credits_exhausted just
+// after), so it is clamped to `[0, 1]` — the count itself is left untouched, a true fact.
 function buildSteps(metrics: ProductMetrics): FunnelStep[] {
   const counts: Record<(typeof FUNNEL_STEP_TYPES)[number], number> = {
     visit: metrics.visits,
@@ -72,7 +76,7 @@ function buildSteps(metrics: ProductMetrics): FunnelStep[] {
     return {
       type,
       count: counts[type],
-      rateFromPrevious: previousCount && previousCount > 0 ? counts[type] / previousCount : null,
+      rateFromPrevious: previousCount && previousCount > 0 ? Math.min(1, counts[type] / previousCount) : null,
     };
   });
 }
@@ -224,6 +228,15 @@ export function toProductMetrics(row: PortfolioRow): ProductMetrics {
 // `generations` (succeeded count, AI cost over every status), grouped by `product_id` so no
 // product fans out into duplicate rows. With no `productId`, every product is returned, `killed`
 // included; with one, at most one row (empty when the id doesn't exist).
+//
+// Each of the 5 step counts is `count(distinct coalesce(user_id, anonymous_id))` (QA1-P1-Q5): one
+// identity for every type, not user_id for signup/credits_exhausted/purchase and anonymous_id for
+// visit separately. In production this is exactly D1's identity (every real signup/
+// credits_exhausted/purchase write always carries a userId, so coalesce resolves to user_id
+// there, and visit/first_generation never carry a userId of their own kind that would collide) —
+// the change only matters for scripts/seed.ts's synthetic story, which sets anonymous_id alone
+// for all 5 types and must still count as one person per anonymous_id, not 0 (orchestrator
+// decision: scripts/seed.ts itself stays untouched, out of this spec's Périmètre).
 async function selectProductRows(since: string, productId?: string): Promise<PortfolioRow[]> {
   const result = await db.execute<PortfolioRow>(sql`
     select
@@ -248,11 +261,11 @@ async function selectProductRows(since: string, productId?: string): Promise<Por
     left join (
       select
         product_id,
-        count(*) filter (where type = 'visit') as visits,
-        count(*) filter (where type = 'first_generation') as first_generations,
-        count(*) filter (where type = 'signup') as signups,
-        count(*) filter (where type = 'credits_exhausted') as credits_exhausted,
-        count(*) filter (where type = 'purchase') as purchases
+        count(distinct coalesce(user_id, anonymous_id)) filter (where type = 'visit') as visits,
+        count(distinct coalesce(user_id, anonymous_id)) filter (where type = 'first_generation') as first_generations,
+        count(distinct coalesce(user_id, anonymous_id)) filter (where type = 'signup') as signups,
+        count(distinct coalesce(user_id, anonymous_id)) filter (where type = 'credits_exhausted') as credits_exhausted,
+        count(distinct coalesce(user_id, anonymous_id)) filter (where type = 'purchase') as purchases
       from events
       where created_at >= ${since}
       group by product_id

@@ -4,8 +4,10 @@
 
 Rejouer le script de démo de bout en bout (docs/01 › Script de démo), puis
 tout ce que le dossier promet autour : chaque écran BO et SA, l'anglais, le
-SEO, la sécurité visible en local et la page cachée `/admin/ops`. C'est la
-passe à lancer après un run complet.
+SEO, la sécurité visible en local et la page cachée `/admin/ops`. Elle prouve
+aussi que les chiffres du backoffice sont justes : ceux de BioInsta, créé
+pendant la passe, doivent égaler le journal de ce que la passe y a fait. C'est
+la passe à lancer après un run complet.
 
 ## Specs et docs couvertes
 
@@ -25,6 +27,31 @@ parcours), utilisateur `role=user` au BO, owner.
 - Base seedée à neuf (`worktree-db.ts ensure --seed` ou `pnpm db:seed`),
   serveur lancé, `DEMO_MODE=false`.
 - Aucun produit `bio-instagram` en base (sinon, étape 3 : slug déjà pris).
+
+## Journal des actions sur BioInsta
+
+BioInsta naît pendant la passe : chaque chiffre que le backoffice affiche pour
+lui se déduit de ce que la passe a fait, donc l'étape 6 exige des chiffres
+**exacts**, pas « non nuls ». Tiens, de l'étape 3 à l'étape 6, un journal
+dans `$QA/journal-bio-instagram.md`, une ligne par action sur `/bio-instagram`
+(horodatage, persona, `anonymous_id` ou email, IP simulée, action, réponse
+réseau) et ces compteurs, calculés avec les règles de dédoublonnage de
+docs/07 › events :
+
+| Compteur | Règle (docs/07) |
+|---|---|
+| visites | une par `anonymous_id`, produit et jour UTC (un rechargement ne compte pas) |
+| 1res générations | une par visiteur qui a généré au moins une fois |
+| inscriptions | une par produit et `user_id` |
+| générations | toutes celles qui ont répondu 200 (gratuite comprise) ; une 402, 401 ou 429 ne compte pas |
+| crédits épuisés | les générations refusées faute de crédit (402) |
+| achats et revenu | un par clé d'idempotence : le double clic de 5.7 compte une fois ; revenu = somme des prix des packs achetés (config de BioInsta) |
+| coût IA | générations × coût par génération du mock (celui qu'affiche « Tester le prompt » à l'étape 3.7, et la colonne coût de l'activité) |
+
+Le « Tester le prompt » de l'étape 3 ne passe pas par la sub-app : il n'entre
+pas dans le funnel ; s'il apparaît dans l'activité ou le coût IA, note-le en
+« À qualifier ». Toute action sur `/bio-instagram` hors journal fausse
+l'étape 6 : n'en fais aucune qui n'y soit pas notée.
 
 ## Étapes
 
@@ -52,7 +79,7 @@ parcours), utilisateur `role=user` au BO, owner.
 3.6 Étape 4 : monter / descendre un champ ; deux clés identiques → erreur à l'étape 4. [BO-05a › 5-6]
 3.7 Étape 5 : variables `{{niche}}` `{{highlights}}` `{{tone}}` cliquables ; une `{{x}}` sans champ bloque l'étape ; « Tester le prompt » → résultat, tokens, coût. [BO-05b › 1-2]
 3.8 Étape 6 : marge estimée par génération affichée. [BO-05b › 3]
-3.9 « Enregistrer » → brouillon (nouvelle version, non publiée) ; « Publier » → lien vers `/bio-instagram`. [BO-05a › 7 · BO-05b › 4]
+3.9 « Enregistrer » → toast « Brouillon enregistré · version N » (nouvelle version, non publiée) ; avant « Publier », `/bio-instagram` ne sert aucune landing (s'il sert le brouillon : « À qualifier »). « Publier » → « Produit publié · version N », lien vers `/bio-instagram`. [BO-05a › 7 · BO-05b › 4 · docs/02 › BO-05]
 
 ### 4. Sub-app BioInsta, en anglais, mobile (SA-01, SA-02, I18N-SEO)
 
@@ -72,19 +99,37 @@ parcours), utilisateur `role=user` au BO, owner.
 5.7 Double clic sur Payer → un seul crédit (solde +50, pas +100). [SA-05 › 4]
 5.8 `/bio-instagram/checkout/pack-10` rechargé en direct → page complète, pas une modale. [SA-05 › 1 · docs/04 › Routing]
 5.9 `/bio-instagram/history` : générations de cet utilisateur, plus récente d'abord, rouvrir, copier. [SA-06 › 1-2]
-5.10 `/bio-instagram/account` : solde, mouvements (bonus, achat, générations), achats, déconnexion. [SA-07 · mockup SA-07]
+5.10 `/bio-instagram/account` : solde, mouvements (bonus, achat, générations), achats, « Se déconnecter ». [SA-07 · mockup SA-07]
+5.10.1 Après la déconnexion, `/bio-instagram/account` et `/bio-instagram/history` ne montrent plus rien de ce compte, et le header n'affiche plus son solde. [SA-07 › Acceptation · docs/02 › SA-07]
+5.10.2 Retour du même utilisateur : reconnexion par lien magique avec le même email, par le chemin que l'UI propose à un visiteur déjà inscrit (lis-le dans le code : la modale `/bio-instagram/signup`, le « Se connecter » de `messages/*/checkout.json`…). Attendu : même compte, même solde qu'avant la déconnexion, même historique, et **pas** de second bonus de +3 (bonus une fois par utilisateur et produit). Aucun chemin de reconnexion atteignable depuis l'UI : MANQUE, référence SA-03. [SA-03 › 2-3 · docs/01 › Mécanique des crédits · docs/07 › credit_transactions]
+5.10.3 Lien magique déjà utilisé, rouvert depuis la boîte simulée → « Lien expiré », « Recevoir un nouveau lien ». [SA-03 · `messages/*/auth.json` › expired]
+5.10.4 Crédits par produit : le même email se connecte sur `/lettre-pro` → compte reconnu, solde LettrePro indépendant (bonus LettrePro de +3 s'il n'y en a jamais eu), solde BioInsta inchangé quand on y revient. [docs/07 › Vue d'ensemble · docs/01 › Mécanique des crédits]
 5.11 Même parcours en fr, desktop, sur `/lettre-pro` jusqu'au paiement (autre compte, autre IP) : textes en français, thème Editorial. [I18N-SEO › 1 · docs/02 › Sub-app]
 
 ### 6. Retour au backoffice (BO-02, BO-03, BO-04)
 
-6.1 Portefeuille : BioInsta présent, Test, visites, revenu et coût IA non nuls. [E2E-demo › 1 · docs/01 › Script 6]
-6.2 Fiche `/admin/products/bio-instagram` : funnel en 5 étapes avec volumes et taux, KPIs (revenu, ARPU, coût IA, marge / génération), courbes 30 j, seuils, lien vers `/bio-instagram`. [BO-03 · mockup BO-03]
-6.3 Fiche LettrePro : encart de décision « à scaler » et ses chiffres. [BO-03 › 3]
-6.4 Activité `/admin/products/bio-instagram/activity` : générations (entrée, sortie, modèle, coût), achats, mouvements, pagination ; état vide sur un produit sans usage. [BO-04 · mockup BO-04]
+Chaque chiffre de ce bloc se compare au journal (section « Journal des actions
+sur BioInsta ») : un écart est un BUG majeur (la donnée de décision est fausse),
+avec la ligne du journal et la valeur affichée.
+
+6.1 Portefeuille : BioInsta présent, statut Test, et ses colonnes **égales au journal** : visites, conversion (achats / visites, arrondi de l'écran), revenu, coût IA, marge (revenu − coût IA). Les KPIs du studio ont augmenté exactement de ces montants (noter les KPIs avant l'étape 3). [BO-02 › 1-2 · E2E-demo › 1 · docs/01 › Script 6]
+6.2 Fiche `/admin/products/bio-instagram` : funnel en 5 étapes (visite → 1re génération → inscription → crédits épuisés → achat), chaque volume **égal au journal**, chaque taux de passage recalculé à la main ; KPIs revenu, ARPU (revenu / inscrits, docs/01 › Le funnel suivi par produit), coût IA, marge par génération recalculés depuis le journal ; courbes 30 j avec tout le volume sur le jour de la passe ; seuils ; lien vers `/bio-instagram`. [BO-03 › 1-3 · mockup BO-03 · docs/07 › events]
+6.3 Fiche LettrePro : encart de décision « à scaler » et ses chiffres ; les actions de 5.11 et 5.10.4 sur LettrePro s'ajoutent à ses volumes du seed (noter les volumes avant 5.11). [BO-03 › 3]
+6.4 Activité `/admin/products/bio-instagram/activity` : autant de générations que le journal (entrée, sortie, modèle, coût), l'achat (un seul malgré le double clic), les mouvements (bonus +3 une seule fois par inscrit, -1 par génération, achat, pas de second bonus à la reconnexion de 5.10.2) ; pagination ; état vide sur un produit sans usage. [BO-04 · mockup BO-04 · docs/07 › credit_transactions]
+6.5 Recharger la fiche et le portefeuille une seconde fois : mêmes chiffres (pas de visite comptée par le backoffice, pas de double comptage au rechargement). [docs/07 › events]
+
+### 6 bis. Modifier l'app publiée (BO-05a, BO-05b)
+
+6b.1 Depuis la fiche, ouvrir `/admin/products/bio-instagram/edit` (« Modifier le produit ») : le formulaire reprend la config publiée, toutes étapes remplies. [BO-05a · docs/02 › BO-05]
+6b.2 Changer le hero et un pack, « Enregistrer » → « Brouillon enregistré · version N+1 » ; `/bio-instagram` montre encore l'ancienne version (brouillon non publié). [BO-05a › 7]
+6b.3 « Publier » → « Produit publié · version N+1 » ; `/bio-instagram` et `/bio-instagram/pricing` montrent le nouveau hero et le nouveau pack à la requête suivante, sans redémarrage. [BO-05b › 4 · docs/04 › updateTag]
+6b.4 Le funnel et l'activité de 6.2 et 6.4 sont inchangés par la publication (une version n'efface pas l'usage). [docs/07 › product_versions]
+6b.5 Restaurer : remettre le hero et le pack d'origine, publier (version N+2).
 
 ### 7. Statut (BO-06, SA-08)
 
-7.1 « Changer de statut » sur BioInsta : actuel → nouveau, chiffres, « Note de décision ». [BO-06 › 1 · mockup BO-06]
+7.1 « Changer de statut » sur BioInsta : actuel → nouveau, chiffres qui justifient, « Note de décision ». [BO-06 › 1 · mockup BO-06]
+7.1.1 Cycle complet avec une note à chaque passage : Test → « Passer en Learn » → Learn → « Passer en Scale » → Scale. À chaque fois : toast « Statut mis à jour », le nouveau statut sur la fiche et dans le portefeuille à la requête suivante, la note enregistrée, et `/bio-instagram` toujours servi. [BO-06 › 1, 3 · docs/01 › Backoffice : piloter chaque produit]
 7.2 Killed avec confirmation explicite → `/bio-instagram` répond 404, écran SA-08 avec « Nos autres outils » sans BioInsta ; absent du sitemap. [BO-06 › 2 · SA-08 · I18N-SEO › 3]
 7.3 `/produit-inconnu` → 404 SA-08. [SA-08 › 1 · mockup SA-08]
 
@@ -115,7 +160,7 @@ parcours), utilisateur `role=user` au BO, owner.
 
 ## Nettoyage
 
-Thème Editorial et seuils restaurés aux étapes 8 et 9. Si 11.3 n'a pas été
+Thème Editorial et seuils restaurés aux étapes 8 et 9, hero et pack de BioInsta à l'étape 6b.5. Si 11.3 n'a pas été
 jouée : `pnpm db:seed` ne supprime pas BioInsta ; relancer
 `worktree-db.ts ensure --seed` n'y suffit pas non plus : la remise à zéro
 (11.3) ou une base recréée (`worktree-db.ts drop` puis `ensure --seed`) le fait.

@@ -65,9 +65,22 @@ async function giveCredits(
   productId: string,
   delta: number,
   reason: "signup_bonus" | "generation" | "refund" = "signup_bonus",
+  // Explicit, not `setTimeout` + `defaultNow()`: `now()` is frozen for the
+  // whole duration of a Postgres transaction (TOOLING-test-transaction), so
+  // two movements written a few milliseconds apart in real wall-clock time
+  // get the exact same `created_at` once this helper runs inside
+  // withTestTransaction. Ordering tests pass distinct Dates instead.
+  createdAt?: Date,
 ) {
   await db.transaction(async (tx) => {
-    await tx.insert(creditTransactions).values({ userId, productId, delta, reason, idempotencyKey: randomUUID() });
+    await tx.insert(creditTransactions).values({
+      userId,
+      productId,
+      delta,
+      reason,
+      idempotencyKey: randomUUID(),
+      ...(createdAt ? { createdAt } : {}),
+    });
     await tx
       .insert(balances)
       .values({ userId, productId, balance: 0 })
@@ -115,9 +128,8 @@ describe("listCreditMovements", () => {
   it("returns the caller's movements newest first, with only id/createdAt/delta/reason", async () => {
     const userId = await createUser();
     const productId = (await createProduct()).id;
-    await giveCredits(userId, productId, 3, "signup_bonus");
-    await new Promise((resolve) => setTimeout(resolve, 5));
-    await giveCredits(userId, productId, -1, "generation");
+    await giveCredits(userId, productId, 3, "signup_bonus", new Date("2026-01-01T00:00:00.000Z"));
+    await giveCredits(userId, productId, -1, "generation", new Date("2026-01-01T00:00:05.000Z"));
     asUser(userId);
 
     const { listCreditMovements } = await import("./account");
@@ -196,8 +208,18 @@ describe("listPurchases", () => {
     const productId = (await createProduct()).id;
     asUser(userId);
     const { purchase } = await import("./credits");
-    await purchase({ userId, productId, packId: "pack-10", idempotencyKey: randomUUID() });
-    await new Promise((resolve) => setTimeout(resolve, 5));
+    // purchase()'s signature is frozen (no createdAt override): call it
+    // twice, then backdate the older one directly. Two `now()` calls inside
+    // the same transaction return the same instant (now() is frozen for a
+    // whole Postgres transaction, TOOLING-test-transaction), so the
+    // `setTimeout` this test used to rely on no longer produces distinct
+    // timestamps once it runs inside withTestTransaction.
+    const olderKey = randomUUID();
+    await purchase({ userId, productId, packId: "pack-10", idempotencyKey: olderKey });
+    await db
+      .update(purchases)
+      .set({ createdAt: new Date("2026-01-01T00:00:00.000Z") })
+      .where(eq(purchases.idempotencyKey, olderKey));
     await purchase({ userId, productId, packId: "pack-50", idempotencyKey: randomUUID() });
 
     const { listPurchases } = await import("./account");

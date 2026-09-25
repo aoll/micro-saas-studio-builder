@@ -62,7 +62,9 @@ Toutes les commandes : `config.md` › Environnement. En résumé :
    `node .claude/hooks/session-start.mjs`.
 2. **Base** : dans un worktree, `pnpm tsx scripts/worktree-db.ts ensure --seed`
    (base propre au worktree, migrée et seedée) ; dans le checkout principal,
-   `pnpm db:migrate && pnpm db:seed`. Le seed est déterministe : LettrePro
+   la base de `.env.local`, remise à l'état du seed avec
+   `pnpm db:migrate && pnpm tsx scripts/reset-demo.ts` (efface l'usage des
+   passes précédentes : les chiffres exacts en dépendent). Le seed est déterministe : LettrePro
    (Scale, « à scaler »), DescriPro (Learn, sans badge), NomDeMarque (Test,
    « à couper »), comptes admin et owner, 30 jours d'usage.
 3. **Serveur** : `pnpm dev` pose déjà `AI_MODE=mock`. Port 3000 dans le

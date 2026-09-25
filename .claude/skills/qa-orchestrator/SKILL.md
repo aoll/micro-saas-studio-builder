@@ -97,7 +97,7 @@ démarre tant qu'une spec de correction n'est pas mergée.
 ## 2. Phase de passe
 
 Un seul agent, en arrière-plan (`general-purpose`), dans le **checkout
-principal** (sur `integration/<run>`, port 3000, base `msb` re-seedée par la
+principal** (sur `integration/<run>`, port 3000, base de `.env.local` remise à l'état du seed par la
 skill) :
 
 > Invoque la skill `qa` avec scenario=`<scenario>`, mode=`<mode>`,

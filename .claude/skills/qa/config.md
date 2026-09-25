@@ -28,8 +28,12 @@ node .claude/hooks/session-start.mjs
 
 # Base — worktree : base msb_<branche>, .env.local pointé dessus, migrate + seed
 pnpm tsx scripts/worktree-db.ts ensure --seed
-# Base — checkout principal (base msb)
-pnpm db:migrate && pnpm db:seed
+# Base — checkout principal : celle de DATABASE_URL dans .env.local (pas
+# forcément `msb`). Elle peut porter l'usage de passes ou de runs précédents :
+# reset-demo efface tout l'usage et les produits créés, puis rejoue le seed,
+# pour que les chiffres exacts du scénario partent de l'état du seed.
+grep DATABASE_URL .env.local
+pnpm db:migrate && pnpm tsx scripts/reset-demo.ts
 
 # Scratchpad de la passe (captures, scripts, journal du serveur)
 QA=<scratchpad>/qa/<YYYY-MM-DD>-<scénario> && mkdir -p "$QA"

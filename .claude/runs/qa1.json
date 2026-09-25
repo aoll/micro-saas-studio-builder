@@ -2,8 +2,106 @@
   "integration": "integration/qa1",
   "base": "integration/v1",
   "scenario": "full",
-  "passes": [],
-  "setAside": [],
-  "specs": {},
+  "passes": [
+    {
+      "n": 1,
+      "report": ".claude/qa/reports/2026-09-25-full.md",
+      "findings": 22,
+      "retained": 19
+    }
+  ],
+  "setAside": [
+    {
+      "finding": "Q1",
+      "report": ".claude/qa/reports/2026-09-25-full.md",
+      "reason": "première version d'un produit neuf = version en ligne ; la lecture brouillon toucherait le contrat de données"
+    },
+    {
+      "finding": "Q3",
+      "report": ".claude/qa/reports/2026-09-25-full.md",
+      "reason": "limite du mock : fixture par défaut pour un produit sans slug"
+    },
+    {
+      "finding": "Q4",
+      "report": ".claude/qa/reports/2026-09-25-full.md",
+      "reason": "pas un écart de l'app : scénario aligné sur BO-02 › 3"
+    }
+  ],
+  "specs": {
+    "QA1-P1-L1-lot-leger": {
+      "dependsOn": [],
+      "status": "ready",
+      "worktree": null,
+      "pr": null,
+      "mode": "léger"
+    },
+    "QA1-P1-B3-paiement-pricing": {
+      "dependsOn": [],
+      "status": "ready",
+      "worktree": null,
+      "pr": null
+    },
+    "QA1-P1-B4-visite-double": {
+      "dependsOn": [],
+      "status": "ready",
+      "worktree": null,
+      "pr": null
+    },
+    "QA1-P1-B5-premiere-generation": {
+      "dependsOn": [],
+      "status": "ready",
+      "worktree": null,
+      "pr": null
+    },
+    "QA1-P1-B12-statut-http": {
+      "dependsOn": [],
+      "status": "ready",
+      "worktree": null,
+      "pr": null
+    },
+    "QA1-P1-B7-refus-402-activite": {
+      "dependsOn": [
+        "QA1-P1-B5-premiere-generation",
+        "QA1-P1-L1-lot-leger"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "QA1-P1-B14-cache-components": {
+      "dependsOn": [
+        "QA1-P1-B3-paiement-pricing"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "QA1-P1-M1-config-complete": {
+      "dependsOn": [
+        "QA1-P1-L1-lot-leger"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "QA1-P1-Q2-inscription-par-produit": {
+      "dependsOn": [
+        "QA1-P1-L1-lot-leger",
+        "QA1-P1-B4-visite-double"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    },
+    "QA1-P1-Q5-funnel-personnes": {
+      "dependsOn": [
+        "QA1-P1-B4-visite-double",
+        "QA1-P1-B5-premiere-generation"
+      ],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    }
+  },
   "pendingIntegrations": []
 }

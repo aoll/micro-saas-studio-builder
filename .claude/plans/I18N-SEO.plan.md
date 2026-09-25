@@ -19,7 +19,7 @@ All 9 sub-app zones already exist in fr and en. This spec adds:
 ## Orchestrator decisions (binding)
 
 1. **Colocated tests are in scope** (B1): `app/robots.test.ts`, `app/sitemap.test.ts`, `app/(products)/[app]/icon.test.tsx` and `app/(products)/[app]/opengraph-image.test.tsx`. This follows the repo convention.
-2. **No shared `_lib/og-colors.ts`** (B2), because it is outside the Périmètre. Duplicate the small `drawable()` helper in `icon.tsx` and `opengraph-image.tsx`, with a comment naming the twin file.
+2. **Human decision (« go fichier partagé », 2026-09-25), replacing B2:** the Périmètre is extended to `app/(products)/[app]/_lib/og-colors.ts` + `og-colors.test.ts`. That file owns `drawable()` and the colour resolution (primary with branding override, onPrimary, background, foreground, mutedForeground from the light tokens). `icon.tsx` and `opengraph-image.tsx` import it, with no duplication.
 3. **`metadataBase`, canonical, Open Graph title/description in `generateMetadata`, and `generateViewport` themeColor are out of scope** (they are not acceptance bullets and need `[app]/layout.tsx` / `page.tsx`). The orchestrator records them as a follow-up. The E2E test fetches images by path.
 4. **Route Handlers.** Metadata image handlers read `{ params }`, never `next/root-params`, which does not work in Route Handlers. No `'use cache'` in the handler bodies: they read already-cached, tagged DAL functions. If the Phase 0 build needs it, add `generateStaticParams` inside the same files.
 5. **Missing or killed product:** 404. **Missing theme row:** throw, as `layout.tsx` does. **Colours:** only `#hex`, `rgb()`/`rgba()` and `hsl()`/`hsla()` are drawable; anything else falls back. Light tokens only. The branding primary overrides the theme primary.

@@ -5,7 +5,8 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { initialSignupState, requestMagicLink } from "../_actions";
+import { requestMagicLink } from "../_actions";
+import { initialSignupState } from "../_state";
 
 // SA-03 (specs/SA-03-inscription.md), plan step 2/6/7: shared by the full
 // page and the intercepted modal. Three renders driven by `useActionState`

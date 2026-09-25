@@ -11,10 +11,7 @@ import enCommon from "@/messages/en/common.json";
 afterEach(cleanup);
 
 const { requestMagicLink } = vi.hoisted(() => ({ requestMagicLink: vi.fn() }));
-vi.mock("../_actions", () => ({
-  requestMagicLink,
-  initialSignupState: { status: "idle" },
-}));
+vi.mock("../_actions", () => ({ requestMagicLink }));
 
 function renderUi(ui: React.ReactElement, locale: "fr" | "en" = "fr") {
   const messages = locale === "fr" ? { auth: frAuth, common: frCommon } : { auth: enAuth, common: enCommon };

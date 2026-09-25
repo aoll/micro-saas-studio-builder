@@ -363,6 +363,12 @@
       "blockedOn": "BO-07-themes",
       "what": "drop the \"/admin/themes\" as Route cast (and comment) in components/backoffice/admin-sidebar.tsx once /admin/themes exists",
       "resolved": false
+    },
+    {
+      "spec": "SA-06-historique",
+      "blockedOn": "SA-07-compte",
+      "what": "entry point to /[app]/history: SA-07 account page links to it (inside [app]/account/**); a header/tool link would need a CONTRACT-ui/SA-02 follow-up",
+      "resolved": false
     }
   ],
   "notes": [

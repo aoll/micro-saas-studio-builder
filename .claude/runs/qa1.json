@@ -57,9 +57,9 @@
       "dependsOn": [
         "QA1-P1-B4-visite-double"
       ],
-      "status": "dispatched",
-      "worktree": "qa1-p1-b12-statut-http",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 66
     },
     "QA1-P1-B7-refus-402-activite": {
       "dependsOn": [

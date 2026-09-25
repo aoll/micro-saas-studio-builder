@@ -21,9 +21,13 @@ export default async function OpsPage() {
   if (session?.user.role !== "owner") {
     notFound();
   }
-  // Kept even though the check above is already stricter (require-admin
-  // coverage test, app/(backoffice)/admin/require-admin-coverage.test.ts):
-  // every /admin page calls requireAdmin() itself.
+  // Not dead code: the owner check above already 404s anyone who isn't
+  // `owner`, but this still defends in depth on the owner path itself
+  // (an owner session that somehow fails requireAdmin's own check —
+  // e.g. expired between the two calls — is redirected to /admin/login
+  // instead of falling through). It's also what keeps every /admin page
+  // calling requireAdmin() itself true (require-admin coverage test,
+  // app/(backoffice)/admin/require-admin-coverage.test.ts).
   await requireAdmin();
 
   return (

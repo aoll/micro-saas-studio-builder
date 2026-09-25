@@ -96,6 +96,17 @@ async function createGeneration(userId: string | null, productId: string): Promi
   return row!.id;
 }
 
+// Test setup only: SA-02 marks a generation failed (markGenerationFailed)
+// before calling refund; bypasses the DAL to set that status directly.
+async function markFailed(generationId: string): Promise<void> {
+  await db.update(generations).set({ status: "failed" }).where(eq(generations.id, generationId));
+}
+
+// Test setup only: mirrors saveGeneration's "succeeded" outcome.
+async function markSucceeded(generationId: string): Promise<void> {
+  await db.update(generations).set({ status: "succeeded" }).where(eq(generations.id, generationId));
+}
+
 // Test setup only: writes a ledger row and upserts `balances` directly,
 // bypassing the DAL, to seed a starting balance before exercising debit /
 // refund / purchase.
@@ -470,6 +481,7 @@ describe("debit", () => {
       idempotencyKey: `refund:${generationId}`,
     });
     expect(debitAsRefundKey).toEqual({ ok: true, balance: 2 });
+    await markFailed(generationId);
     await refund(generationId);
     expect(await getBalance(userId, productId)).toBe(3);
 
@@ -500,6 +512,7 @@ describe("refund", () => {
     const { debit, refund, getBalance } = await import("./credits");
     await debit({ userId, productId, cost: 1, generationId, idempotencyKey: randomUUID() });
     expect(await getBalance(userId, productId)).toBe(2);
+    await markFailed(generationId);
 
     await refund(generationId);
     expect(await getBalance(userId, productId)).toBe(3);
@@ -524,6 +537,7 @@ describe("refund", () => {
 
     const { debit, refund, getBalance } = await import("./credits");
     await debit({ userId, productId, cost: 1, generationId, idempotencyKey: randomUUID() });
+    await markFailed(generationId);
 
     await Promise.all([refund(generationId), refund(generationId)]);
     expect(await getBalance(userId, productId)).toBe(3);
@@ -550,6 +564,49 @@ describe("refund", () => {
   it("resolves without effect for a non-uuid generationId", async () => {
     const { refund } = await import("./credits");
     expect(await refund("g1")).toBeUndefined();
+  });
+
+  it("is a no-op for a succeeded generation, writing no refund row", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct()).id;
+    await giveCredits(userId, productId, 3);
+    const generationId = await createGeneration(userId, productId);
+    asUser(userId);
+
+    const { debit, refund, getBalance } = await import("./credits");
+    await debit({ userId, productId, cost: 1, generationId, idempotencyKey: randomUUID() });
+    await markSucceeded(generationId);
+
+    await refund(generationId);
+    expect(await getBalance(userId, productId)).toBe(2);
+
+    const rows = await db
+      .select()
+      .from(creditTransactions)
+      .where(and(eq(creditTransactions.generationId, generationId), eq(creditTransactions.reason, "refund")));
+    expect(rows).toHaveLength(0);
+    await expectLedgerMatchesBalance(userId, productId);
+  });
+
+  it("is a no-op for a still-pending generation, writing no refund row", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct()).id;
+    await giveCredits(userId, productId, 3);
+    const generationId = await createGeneration(userId, productId);
+    asUser(userId);
+
+    const { debit, refund, getBalance } = await import("./credits");
+    await debit({ userId, productId, cost: 1, generationId, idempotencyKey: randomUUID() });
+
+    await refund(generationId);
+    expect(await getBalance(userId, productId)).toBe(2);
+
+    const rows = await db
+      .select()
+      .from(creditTransactions)
+      .where(and(eq(creditTransactions.generationId, generationId), eq(creditTransactions.reason, "refund")));
+    expect(rows).toHaveLength(0);
+    await expectLedgerMatchesBalance(userId, productId);
   });
 });
 

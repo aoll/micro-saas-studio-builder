@@ -177,18 +177,29 @@ export const debit: (args: Debit) => Promise<DebitResult> = async ({
 };
 
 // Idempotency key derived from `generationId` (docs/07): a failed
-// generation is refunded exactly once. No session check: the amount and the
-// target user come from the original ledger row, not from the caller, and
-// this runs from `onError`/`after()` (SA-02) where an expired session must
-// not lose a refund.
+// generation is refunded exactly once. No session check: the amount, the
+// target user/product and the failed status all come from the database, not
+// from the caller, and this runs from `onError`/`after()` (SA-02) where an
+// expired session must not lose a refund.
 export const refund: (generationId: string) => Promise<void> = async (generationId) => {
   // A non-uuid generationId (e.g. a stub id from an older caller) can't
   // match any ledger row: resolve with no effect instead of letting an
   // invalid uuid literal reach Postgres.
   if (!uuidSchema.safeParse(generationId).success) return;
 
+  // Only a generation SA-02 has actually marked failed (markGenerationFailed)
+  // is refundable: a succeeded or still-pending generation must never be
+  // refunded, however this function is called.
+  const generation = await db.query.generations.findFirst({ where: eq(generations.id, generationId) });
+  if (!generation || generation.status !== "failed") return;
+
   const original = await db.query.creditTransactions.findFirst({
-    where: and(eq(creditTransactions.generationId, generationId), eq(creditTransactions.reason, "generation")),
+    where: and(
+      eq(creditTransactions.generationId, generationId),
+      eq(creditTransactions.reason, "generation"),
+      eq(creditTransactions.userId, generation.userId ?? ""),
+      eq(creditTransactions.productId, generation.productId),
+    ),
   });
   if (!original) return;
 

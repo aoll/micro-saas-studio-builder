@@ -234,10 +234,9 @@
         "BO-05b-generation-publication",
         "BO-07-themes"
       ],
-      "status": "dispatched",
-      "worktree": "security",
-      "pr": null,
-      "step": "tdd",
+      "status": "merged",
+      "worktree": null,
+      "pr": 43,
       "humanDecision": {
         "pending": false,
         "answer": "OK SECURITY (2026-09-25)",

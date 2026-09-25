@@ -43,9 +43,9 @@
     },
     "QA1-P1-B4-visite-double": {
       "dependsOn": [],
-      "status": "dispatched",
-      "worktree": "qa1-p1-b4-visite-double",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 61
     },
     "QA1-P1-B5-premiere-generation": {
       "dependsOn": [],
@@ -59,8 +59,7 @@
       ],
       "status": "dispatched",
       "worktree": "qa1-p1-b12-statut-http",
-      "pr": null,
-      "note": "plan committed; TDD starts once B4 (proxy.ts) is merged"
+      "pr": null
     },
     "QA1-P1-B7-refus-402-activite": {
       "dependsOn": [
@@ -96,8 +95,7 @@
       ],
       "status": "dispatched",
       "worktree": "qa1-p1-q2-inscription-par-produit",
-      "pr": null,
-      "note": "planning early to use free worktree slots; TDD starts once dependsOn are merged"
+      "pr": null
     },
     "QA1-P1-Q5-funnel-personnes": {
       "dependsOn": [],

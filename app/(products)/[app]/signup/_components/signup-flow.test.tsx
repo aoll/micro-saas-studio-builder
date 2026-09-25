@@ -76,6 +76,53 @@ describe("SignupFlow: form (fr and en)", () => {
   });
 });
 
+describe("SignupFlow: expired link and resend", () => {
+  it("shows the expired message and a resend button instead of the normal submit label (fr)", async () => {
+    requestMagicLink.mockResolvedValue({ status: "idle" });
+    const { SignupFlow } = await import("./signup-flow");
+    renderUi(<SignupFlow slug="lettre-pro" freeCreditsOnSignup={3} expired />, "fr");
+
+    expect(screen.getByRole("alert").textContent).toBe("Ce lien a expiré ou a déjà été utilisé.");
+    expect(screen.getByRole("button", { name: "Recevoir un nouveau lien" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Recevoir mon lien de connexion" })).toBeNull();
+  });
+
+  it("shows the expired message and resend button in English", async () => {
+    requestMagicLink.mockResolvedValue({ status: "idle" });
+    const { SignupFlow } = await import("./signup-flow");
+    renderUi(<SignupFlow slug="lettre-pro" freeCreditsOnSignup={3} expired />, "en");
+
+    expect(screen.getByRole("alert").textContent).toBe("This link has expired or was already used.");
+    expect(screen.getByRole("button", { name: "Get a new link" })).toBeTruthy();
+  });
+
+  it("resending only needs the email again: no token or email is embedded in the form", async () => {
+    requestMagicLink.mockResolvedValue({ status: "idle" });
+    const { SignupFlow } = await import("./signup-flow");
+    renderUi(<SignupFlow slug="lettre-pro" freeCreditsOnSignup={3} expired />);
+
+    const form = screen.getByRole("button", { name: "Recevoir un nouveau lien" }).closest("form")!;
+    expect(form.querySelectorAll("input")).toHaveLength(1);
+    expect(screen.getByLabelText("Email")).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "lea@exemple.fr" } });
+    fireEvent.submit(form);
+
+    await vi.waitFor(() => expect(requestMagicLink).toHaveBeenCalled());
+    const [, , formData] = requestMagicLink.mock.calls[0] as [string, unknown, FormData];
+    expect(formData.get("email")).toBe("lea@exemple.fr");
+  });
+
+  it("does not show the expired message when expired is false", async () => {
+    requestMagicLink.mockResolvedValue({ status: "idle" });
+    const { SignupFlow } = await import("./signup-flow");
+    renderUi(<SignupFlow slug="lettre-pro" freeCreditsOnSignup={3} />);
+
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("button", { name: "Recevoir mon lien de connexion" })).toBeTruthy();
+  });
+});
+
 describe("SignupFlow: inbox after sending", () => {
   it("shows the simulated inbox with a 'Me connecter' link to the verify URL", async () => {
     requestMagicLink.mockResolvedValue({

@@ -36,18 +36,18 @@ function openModal() {
 describe("StatusChange", () => {
   it("shows a trigger button, closed by default", () => {
     render(<StatusChange {...baseProps} />);
-    expect(screen.getByRole("button", { name: "Changer de statut" })).toBeInTheDocument();
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Changer de statut" })).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("opens a modal with the product name, the current status, and the 3 justification numbers", () => {
     render(<StatusChange {...baseProps} />);
     openModal();
 
-    expect(screen.getByRole("dialog", { name: "Changer le statut de My Product" })).toBeInTheDocument();
-    expect(screen.getByText("1 200")).toBeInTheDocument();
-    expect(screen.getByText("7 %")).toBeInTheDocument();
-    expect(screen.getByText("0,50 €")).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Changer le statut de My Product" })).toBeTruthy();
+    expect(screen.getByText("1 200")).toBeTruthy();
+    expect(screen.getByText("7 %")).toBeTruthy();
+    expect(screen.getByText("0,50 €")).toBeTruthy();
   });
 
   it("lists the 4 statuses as radios, with the current one disabled", () => {
@@ -57,7 +57,7 @@ describe("StatusChange", () => {
     const radios = screen.getAllByRole("radio") as HTMLInputElement[];
     expect(radios).toHaveLength(4);
     const current = screen.getByRole("radio", { name: "Learn" }) as HTMLInputElement;
-    expect(current).toBeDisabled();
+    expect(current.disabled).toBe(true);
   });
 
   it("preselects the suggested status from decision when it differs from the current one", () => {
@@ -70,18 +70,18 @@ describe("StatusChange", () => {
     render(<StatusChange {...baseProps} status="test" />);
     openModal();
 
-    expect(screen.getByRole("button", { name: "Passer en Test" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Passer en Test" })).toBeTruthy();
     fireEvent.click(screen.getByRole("radio", { name: "Killed" }));
 
-    expect(screen.getByRole("button", { name: "Passer en Killed" })).toBeInTheDocument();
-    expect(screen.getByText(/ferme le produit/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Passer en Killed" })).toBeTruthy();
+    expect(screen.getByText(/ferme le produit/)).toBeTruthy();
   });
 
   it("closes the modal on Annuler", () => {
     render(<StatusChange {...baseProps} />);
     openModal();
     fireEvent.click(screen.getByRole("button", { name: "Annuler" }));
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("submits the chosen status and note, then toasts success and closes on ok", async () => {
@@ -94,7 +94,7 @@ describe("StatusChange", () => {
     fireEvent.click(screen.getByRole("button", { name: "Passer en Scale" }));
 
     await vi.waitFor(() => expect(toastSuccess).toHaveBeenCalled());
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("shows the form error as an alert on failure, without closing", async () => {
@@ -104,7 +104,7 @@ describe("StatusChange", () => {
     fireEvent.click(screen.getByRole("button", { name: "Passer en Test" }));
 
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent("Le statut n'a pas pu être changé");
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(alert.textContent).toBe("Le statut n'a pas pu être changé");
+    expect(screen.getByRole("dialog")).toBeTruthy();
   });
 });

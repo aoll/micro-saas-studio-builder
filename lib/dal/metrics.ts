@@ -248,11 +248,11 @@ async function selectProductRows(since: string, productId?: string): Promise<Por
     left join (
       select
         product_id,
-        count(*) filter (where type = 'visit') as visits,
-        count(*) filter (where type = 'first_generation') as first_generations,
-        count(*) filter (where type = 'signup') as signups,
-        count(*) filter (where type = 'credits_exhausted') as credits_exhausted,
-        count(*) filter (where type = 'purchase') as purchases
+        count(distinct anonymous_id) filter (where type = 'visit') as visits,
+        count(distinct coalesce(user_id, anonymous_id)) filter (where type = 'first_generation') as first_generations,
+        count(distinct user_id) filter (where type = 'signup') as signups,
+        count(distinct user_id) filter (where type = 'credits_exhausted') as credits_exhausted,
+        count(distinct user_id) filter (where type = 'purchase') as purchases
       from events
       where created_at >= ${since}
       group by product_id

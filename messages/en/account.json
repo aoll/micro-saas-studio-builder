@@ -1,0 +1,35 @@
+{
+  "title": "My account",
+  "loading": "Loading account…",
+  "balance": {
+    "label": "Balance",
+    "credits": "{count, plural, one {# credit} other {# credits}}",
+    "recharge": "Top up"
+  },
+  "movements": {
+    "title": "Credit movements",
+    "empty": "No movement yet"
+  },
+  "movement": {
+    "signup_bonus": "Signup bonus",
+    "purchase": "Pack purchase ({count, plural, one {# credit} other {# credits}})",
+    "generation": "Generation",
+    "refund": "Refund (failed)"
+  },
+  "purchases": {
+    "title": "Purchases",
+    "empty": "No purchase yet",
+    "pack": "{count, plural, one {# credit} other {# credits}} pack"
+  },
+  "history": {
+    "link": "View my generations"
+  },
+  "signOut": {
+    "button": "Sign out",
+    "error": "Could not sign out"
+  },
+  "signup": {
+    "title": "Create an account to see your credits",
+    "cta": "Create an account"
+  }
+}

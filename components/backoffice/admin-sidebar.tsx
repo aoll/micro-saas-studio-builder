@@ -10,8 +10,7 @@ import { SignOutButton } from "./sign-out-button";
 // when there is no admin session.
 const ADMIN_ROLES = new Set(["admin", "owner"]);
 
-// BO-07 (themes) and BO-09 (settings) have not landed yet: casts dropped
-// once they do.
+// BO-09 (settings) has not landed yet: cast dropped once it does.
 export async function AdminSidebar() {
   const session = await getSession();
   if (!session || !ADMIN_ROLES.has(session.user.role)) return null;
@@ -23,7 +22,7 @@ export async function AdminSidebar() {
           <NavLink href="/admin">Portefeuille</NavLink>
         </li>
         <li>
-          <NavLink href={"/admin/themes" as Route}>Thèmes</NavLink>
+          <NavLink href="/admin/themes">Thèmes</NavLink>
         </li>
         <li>
           <NavLink href={"/admin/settings" as Route}>Réglages</NavLink>

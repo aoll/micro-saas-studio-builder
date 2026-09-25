@@ -13,7 +13,7 @@ function row(overrides: Partial<PortfolioRow> = {}): PortfolioRow {
     signupToPurchaseRate: null,
     revenueCents: 0,
     aiCostMicros: 0,
-    marginPerGenerationMicros: null,
+    marginRate: null,
     display: { visits: "0", conversion: "—", revenue: "0,00 €", aiCost: "0,00 €", margin: "—" },
     ...overrides,
   };
@@ -68,12 +68,12 @@ describe("sortRows", () => {
 
   it("sorts by margin, nulls last regardless of direction", () => {
     const rows = [
-      row({ name: "a", marginPerGenerationMicros: 500 }),
-      row({ name: "b", marginPerGenerationMicros: null }),
-      row({ name: "c", marginPerGenerationMicros: -200 }),
+      row({ name: "a", marginRate: 0.5 }),
+      row({ name: "b", marginRate: null }),
+      row({ name: "c", marginRate: -0.2 }),
     ];
-    expect(sortRows(rows, "margin", "asc").map((r) => r.marginPerGenerationMicros)).toEqual([-200, 500, null]);
-    expect(sortRows(rows, "margin", "desc").map((r) => r.marginPerGenerationMicros)).toEqual([500, -200, null]);
+    expect(sortRows(rows, "margin", "asc").map((r) => r.marginRate)).toEqual([-0.2, 0.5, null]);
+    expect(sortRows(rows, "margin", "desc").map((r) => r.marginRate)).toEqual([0.5, -0.2, null]);
   });
 
   it("breaks ties by name", () => {

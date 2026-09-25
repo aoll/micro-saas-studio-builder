@@ -539,45 +539,17 @@ describe("getPortfolioMetrics", () => {
   });
 });
 
-// getFunnel (BO-03's product sheet) is untouched by BO-02 — still the V1 stub over the seeded
-// LettrePro (docs/11's contract table) — so these 3 tests stay exactly as they were before
-// BO-02 touched this file. Restored here after commit 93da227 deleted this block by mistake
-// while replacing the getPortfolioMetrics stub test.
+// BO-03 (specs/BO-03-fiche.md): getFunnel moves from the V1 fixture stub to real SQL reusing
+// getPortfolioMetrics's aggregation, filtered to one product, plus its own day-bucketed query.
+// The 2 tests that asserted the fixture's shape (a hardcoded productId echo, an always-nonzero
+// rateFromPrevious, a `days` cap with no real day-bucketing) are replaced below by tests against
+// real, freshly-seeded data — this commit's explained removal (plan Task 0). The admin-session
+// test is untouched.
 describe("getFunnel", () => {
   it("requires an admin session", async () => {
     requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
     const { getFunnel } = await import("./metrics");
     await expect(getFunnel("p1", { days: 30 })).rejects.toThrow("redirect:/admin/login");
-  });
-
-  it("echoes the productId and returns the 5 ordered funnel steps", async () => {
-    requireAdmin.mockResolvedValue({ user: { role: "admin" } });
-    const product = await db.query.products.findFirst({ where: eq(products.slug, "lettre-pro") });
-    const { getFunnel } = await import("./metrics");
-    const funnel = await getFunnel(product!.id, { days: 30 });
-
-    expect(funnel.metrics.productId).toBe(product!.id);
-    expect(funnel.steps.map((step) => step.type)).toEqual([
-      "visit",
-      "first_generation",
-      "signup",
-      "credits_exhausted",
-      "purchase",
-    ]);
-    expect(funnel.steps[0]!.rateFromPrevious).toBeNull();
-    for (const step of funnel.steps.slice(1)) {
-      expect(step.rateFromPrevious).not.toBeNull();
-      expect(step.rateFromPrevious).toBeGreaterThan(0);
-      expect(step.rateFromPrevious).toBeLessThanOrEqual(1);
-    }
-  });
-
-  it("caps daily points to the requested range, at most 30", async () => {
-    requireAdmin.mockResolvedValue({ user: { role: "admin" } });
-    const { getFunnel } = await import("./metrics");
-    const funnel = await getFunnel("any-product-id", { days: 7 });
-    expect(funnel.daily.length).toBeLessThanOrEqual(7);
-    expect(funnel.daily.length).toBeGreaterThan(0);
   });
 });
 

@@ -372,7 +372,12 @@ describe("POST [app]/api/generate — logged-in AI failure", () => {
 });
 
 describe("POST [app]/api/generate — insufficient balance", () => {
-  it("402s, records credits_exhausted and leaves the row failed, without refund", async () => {
+  // QA1-P1-B7: this test used to assert the bug (`row?.status).toBe("failed")`)
+  // — a 402 refusal left a `generations` row, indistinguishable in BO-04 from
+  // a real AI failure that was refunded (.claude/qa/reports/2026-09-25-full.md
+  // › B7). Fixed by deleting the still-`pending` row instead of marking it
+  // failed; asserting `undefined` below now encodes the correct behavior.
+  it("402s, records credits_exhausted and deletes the row, without refund", async () => {
     const user = await db.query.users.findFirst();
     getSession.mockResolvedValue({ user: { id: user!.id } });
     debit.mockResolvedValue({ ok: false, reason: "insufficient_balance" });
@@ -387,8 +392,7 @@ describe("POST [app]/api/generate — insufficient balance", () => {
     expect(refund).not.toHaveBeenCalled();
 
     const row = await db.query.generations.findFirst({ where: eq(generations.idempotencyKey, idempotencyKey) });
-    expect(row?.status).toBe("failed");
-    await cleanupGeneration(idempotencyKey);
+    expect(row).toBeUndefined();
   });
 });
 

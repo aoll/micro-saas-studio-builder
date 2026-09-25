@@ -19,13 +19,36 @@ async function lettreProId(): Promise<string> {
 }
 
 const createdProductIds: string[] = [];
+const createdUserIds: string[] = [];
 
 afterAll(async () => {
   for (const id of createdProductIds) {
     await db.delete(productVersions).where(eq(productVersions.productId, id));
     await db.delete(products).where(eq(products.id, id));
   }
+  for (const id of createdUserIds) {
+    // generations.user_id has no onDelete cascade: drop the rows this file
+    // wrote for that user first (tests already delete their own row after
+    // each assertion, this only covers a left-over on failure).
+    await db.delete(generations).where(eq(generations.userId, id));
+    await db.delete(users).where(eq(users.id, id));
+  }
 });
+
+// A dedicated, never-shared user for a test that counts *all* of a user's
+// generations (before/after). `db.query.users.findFirst()` (used elsewhere
+// in this file for tests that don't count) returns whichever row Postgres
+// happens to return first, the same row app/(products)/[app]/api/generate/route.test.ts
+// signs in as and writes real generations for: running both files together
+// reproduced `expect(after).toBe(before + 1)` failing (an extra concurrent
+// row landed on the same shared user between the two reads). A fresh user
+// per test removes any other suite from the count.
+async function freshUserId(): Promise<string> {
+  const id = randomUUID();
+  await db.insert(users).values({ id, name: "Generations test user", email: `${id}@example.test`, role: "user" });
+  createdUserIds.push(id);
+  return id;
+}
 
 // A second product, inserted directly (bypassing createProduct/requireAdmin,
 // which this file does not mock): used only to check that
@@ -320,14 +343,14 @@ describe("countPriorGenerations", () => {
   });
 
   it("by userId: counts the signed-in user's prior generations on this product", async () => {
-    const randomUser = await db.query.users.findFirst();
-    getSession.mockResolvedValue({ user: { id: randomUser!.id } });
+    const userId = await freshUserId();
+    getSession.mockResolvedValue({ user: { id: userId } });
     const { recordGeneration, countPriorGenerations } = await import("./generations");
     const productId = await lettreProId();
 
     const before = await countPriorGenerations({
       productId,
-      userId: randomUser!.id,
+      userId,
       anonymousId: null,
       ipHash: null,
     });
@@ -335,21 +358,21 @@ describe("countPriorGenerations", () => {
     const { id } = await recordGeneration({
       productId,
       productVersion: 1,
-      userId: randomUser!.id,
+      userId,
       anonymousId: null,
       ipHash: "hash",
       input: {},
       idempotencyKey: randomUUID(),
     });
 
-    const after = await countPriorGenerations({ productId, userId: randomUser!.id, anonymousId: null, ipHash: null });
+    const after = await countPriorGenerations({ productId, userId, anonymousId: null, ipHash: null });
     expect(after).toBe(before + 1);
     await db.delete(generations).where(eq(generations.id, id));
   });
 
   it("throws when the given userId does not match the session", async () => {
-    const randomUser = await db.query.users.findFirst();
-    getSession.mockResolvedValue({ user: { id: randomUser!.id } });
+    const userId = await freshUserId();
+    getSession.mockResolvedValue({ user: { id: userId } });
     const { countPriorGenerations } = await import("./generations");
     await expect(
       countPriorGenerations({

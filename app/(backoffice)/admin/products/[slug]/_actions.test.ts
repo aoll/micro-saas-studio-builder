@@ -118,7 +118,7 @@ describe("setProductStatus", () => {
     expect(updateTag).toHaveBeenCalledTimes(2);
   });
 
-  it("returns a form error and logs when the DAL rejects (e.g. assertEditable's lock), no tag update", async () => {
+  it("returns a form error and logs when the DAL rejects, no tag update", async () => {
     currentAdmin();
     const productId = randomUUID();
     getProduct.mockResolvedValue({ id: productId });
@@ -139,8 +139,8 @@ describe("setProductStatus", () => {
     getProduct.mockResolvedValue({ id: productId });
 
     // A real Next.js internal control-flow error (digest `NEXT_REDIRECT;...`), the kind
-    // `updateStatus`'s row lock or `assertEditable` could throw; `unstable_rethrow` must let it
-    // through unchanged, not treat it as a plain DAL failure (plan design "Errors").
+    // `updateStatus`'s row lock could throw; `unstable_rethrow` must let it through unchanged,
+    // not treat it as a plain DAL failure (plan design "Errors").
     let redirectError: unknown;
     try {
       redirect("/admin/login");

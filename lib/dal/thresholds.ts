@@ -5,7 +5,6 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { decisionThresholds, products } from "@/lib/db/schema";
 import { thresholdsInputSchema, type ThresholdsInput } from "@/lib/schemas/inputs";
-import { assertEditable } from "./guards";
 import { requireAdmin } from "./session";
 
 // The default row's 4 fields are `CHECK (product_id IS NOT NULL OR all 4
@@ -184,7 +183,6 @@ export async function saveThresholds(
         .where(isNull(decisionThresholds.productId))
         .for("update");
       if (!row) throw new Error("saveThresholds: default thresholds row missing");
-      assertEditable(row);
       await tx
         .update(decisionThresholds)
         .set({
@@ -201,9 +199,12 @@ export async function saveThresholds(
   }
 
   return db.transaction(async (tx) => {
-    const [productRow] = await tx.select().from(products).where(eq(products.id, productId)).for("update");
+    // Not `.for("update")`: this row is only read to check the product
+    // exists, never written by this transaction (the diff below writes
+    // `decisionThresholds`, not `products`), so there is nothing here to
+    // serialize against a concurrent write.
+    const [productRow] = await tx.select().from(products).where(eq(products.id, productId));
     if (!productRow) return { ok: false, reason: "product_not_found" as const };
-    assertEditable(productRow);
 
     // Locked too (review round, DB MEDIUM): without `.for("update")` here, a
     // concurrent default save (which does lock this row) could commit its
@@ -241,9 +242,10 @@ export async function saveThresholds(
 export async function resetThresholds(productId: string): Promise<ThresholdsWriteResult> {
   await requireAdmin();
   return db.transaction(async (tx) => {
-    const [productRow] = await tx.select().from(products).where(eq(products.id, productId)).for("update");
+    // Not `.for("update")`: only an existence check, this transaction never
+    // writes `products`.
+    const [productRow] = await tx.select().from(products).where(eq(products.id, productId));
     if (!productRow) return { ok: false, reason: "product_not_found" as const };
-    assertEditable(productRow);
     await tx.delete(decisionThresholds).where(eq(decisionThresholds.productId, productId));
     return { ok: true };
   });

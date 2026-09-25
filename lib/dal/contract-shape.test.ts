@@ -267,18 +267,6 @@ describe("thresholds", () => {
   });
 });
 
-describe("guards", () => {
-  it("isEditable matches boolean", async () => {
-    const { isEditable } = await import("./guards");
-    expect(typeof isEditable({ isSeed: true })).toBe("boolean");
-  });
-
-  it("assertEditable is undefined for a non-seed row", async () => {
-    const { assertEditable } = await import("./guards");
-    expect(assertEditable({ isSeed: false })).toBeUndefined();
-  });
-});
-
 describe("security", () => {
   it("guardRequest matches GuardResult", async () => {
     const { guardRequest } = await import("@/lib/security");

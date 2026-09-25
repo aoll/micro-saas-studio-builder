@@ -156,20 +156,6 @@ describe("thresholds", () => {
   });
 });
 
-describe("guards", () => {
-  it("assertEditable takes a Lockable and returns void", async () => {
-    const { assertEditable } = await import("./guards");
-    expectTypeOf(assertEditable).parameters.toEqualTypeOf<[row: import("./guards").Lockable]>();
-    expectTypeOf(assertEditable).returns.toEqualTypeOf<void>();
-  });
-
-  it("isEditable takes a Lockable and returns a boolean", async () => {
-    const { isEditable } = await import("./guards");
-    expectTypeOf(isEditable).parameters.toEqualTypeOf<[row: import("./guards").Lockable]>();
-    expectTypeOf(isEditable).returns.toEqualTypeOf<boolean>();
-  });
-});
-
 describe("security", () => {
   it("guardRequest takes a GuardKind and returns a GuardResult", async () => {
     const { guardRequest } = await import("@/lib/security");

@@ -4,7 +4,6 @@ import { db } from "@/lib/db";
 import { productVersions, products, themes } from "@/lib/db/schema";
 import { productConfigSchema, type ProductConfig } from "@/lib/schemas/product-config";
 import { themeTokensSchema } from "@/lib/schemas/theme-tokens";
-import { assertEditable } from "./guards";
 import { requireAdmin } from "./session";
 import type { Theme } from "./themes";
 
@@ -54,7 +53,6 @@ export async function saveVersion(
   return db.transaction(async (tx) => {
     const [row] = await tx.select().from(products).where(eq(products.slug, slug)).for("update");
     if (!row) return null;
-    assertEditable(row);
 
     const [nextVersionRow] = await tx
       .select({ next: sql<number>`coalesce(max(${productVersions.version}), 0) + 1` })
@@ -92,7 +90,6 @@ export async function publishProduct(
   return db.transaction(async (tx) => {
     const [row] = await tx.select().from(products).where(eq(products.slug, slug)).for("update");
     if (!row) return null;
-    assertEditable(row);
 
     const versionRow = await tx.query.productVersions.findFirst({
       where: and(eq(productVersions.productId, row.id), eq(productVersions.version, version)),

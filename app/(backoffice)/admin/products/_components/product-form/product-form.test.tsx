@@ -204,20 +204,6 @@ describe("ProductForm", () => {
     await screen.findByText("Ce slug est déjà utilisé");
     expect(screen.getByLabelText("Slug")).toBeTruthy(); // back on step 1
   });
-
-  it("disables the save button when read-only", () => {
-    render(
-      <ProductForm
-        mode="edit"
-        slug="lettre-pro"
-        initialDraft={{ ...newProductDraft("theme-editorial"), slug: "lettre-pro" }}
-        themes={themeOptions}
-        readOnly
-      />,
-    );
-    goToStep(4);
-    expect((screen.getByRole("button", { name: "Enregistrer" }) as HTMLButtonElement).disabled).toBe(true);
-  });
 });
 
 // BO-05b (specs/BO-05b-generation-publication.md): steps 5-7.
@@ -264,20 +250,6 @@ describe("ProductForm · generation, pricing, publication", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
     await screen.findByLabelText("Coût par génération (crédits)");
-  });
-
-  it("disables Publier when read-only", () => {
-    render(
-      <ProductForm
-        mode="edit"
-        slug="lettre-pro"
-        initialDraft={{ ...newProductDraft("theme-editorial"), slug: "lettre-pro" }}
-        themes={themeOptions}
-        readOnly
-      />,
-    );
-    goToStep(7);
-    expect((screen.getByRole("button", { name: "Publier" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("a create-mode publish captures the created slug, so a second publish takes the edit path", async () => {

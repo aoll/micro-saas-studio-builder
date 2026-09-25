@@ -15,14 +15,12 @@ export type SummaryDraft = { name: string; slug: string; inputsCount: number; pa
 export function SummaryStep({
   draft,
   themeName,
-  readOnly,
   pending,
   state,
   formAction,
 }: {
   draft: SummaryDraft;
   themeName: string;
-  readOnly: boolean;
   pending: boolean;
   state: PublishState;
   formAction: (formData: FormData) => void;
@@ -52,7 +50,7 @@ export function SummaryStep({
         </div>
       </dl>
 
-      <Button type="submit" formAction={formAction} disabled={readOnly || pending}>
+      <Button type="submit" formAction={formAction} disabled={pending}>
         Publier
       </Button>
 

@@ -15,15 +15,7 @@ const initialState: ThresholdsActionState = {};
 
 // BO-09 spec bullet 1: the studio's default seuils (`/admin/settings`),
 // with a live preview of the products whose badge would change (bullet 4).
-export function ThresholdsForm({
-  defaults,
-  products,
-  editable,
-}: {
-  defaults: Thresholds;
-  products: PreviewProduct[];
-  editable: boolean;
-}) {
+export function ThresholdsForm({ defaults, products }: { defaults: Thresholds; products: PreviewProduct[] }) {
   const [minVisits, setMinVisits] = useState(String(defaults.minVisits));
   const [killPercent, setKillPercent] = useState(String(rateToPercent(defaults.killMaxConversion)));
   const [scalePercent, setScalePercent] = useState(String(rateToPercent(defaults.scaleMinConversion)));
@@ -63,7 +55,6 @@ export function ThresholdsForm({
           name="minVisits"
           type="number"
           value={minVisits}
-          disabled={!editable}
           onChange={(event) => setMinVisits(event.target.value)}
           aria-invalid={errors.minVisits ? "true" : undefined}
         />
@@ -78,7 +69,6 @@ export function ThresholdsForm({
           type="number"
           step="0.01"
           value={killPercent}
-          disabled={!editable}
           onChange={(event) => setKillPercent(event.target.value)}
           aria-invalid={errors.killMaxConversion ? "true" : undefined}
         />
@@ -93,7 +83,6 @@ export function ThresholdsForm({
           type="number"
           step="0.01"
           value={scalePercent}
-          disabled={!editable}
           onChange={(event) => setScalePercent(event.target.value)}
           aria-invalid={errors.scaleMinConversion ? "true" : undefined}
         />
@@ -106,7 +95,6 @@ export function ThresholdsForm({
           type="checkbox"
           name="scaleRequiresPositiveMargin"
           checked={requiresMargin}
-          disabled={!editable}
           onChange={(event) => setRequiresMargin(event.target.checked)}
         />
         <Label htmlFor="default-margin">Marge positive exigée pour scaler</Label>
@@ -125,9 +113,7 @@ export function ThresholdsForm({
         </div>
       ) : null}
 
-      {!editable ? <p className="text-sm text-muted-foreground">Réglage par défaut verrouillé en mode démo.</p> : null}
-
-      <Button type="submit" disabled={pending || !editable}>
+      <Button type="submit" disabled={pending}>
         Enregistrer
       </Button>
     </form>

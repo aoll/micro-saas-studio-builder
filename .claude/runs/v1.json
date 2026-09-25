@@ -400,7 +400,8 @@
       "spec": "BO-05a-formulaire",
       "blockedOn": "BO-05b-generation-publication",
       "what": "admin/products/_actions.ts isUniqueSlugViolation reads err.code but drizzle puts the PG code on err.cause (lib/db/schema.test.ts:24-31): the slug race throws instead of returning a slug error; fix + a test with a real duplicate insert",
-      "resolved": false
+      "resolved": true,
+      "pr": 30
     },
     {
       "spec": "CONTRACT-ui",
@@ -424,6 +425,12 @@
       "spec": "CONTRACT-ui",
       "blockedOn": "SA-05-paiement",
       "what": "optional onClose prop on components/product/route-modal.tsx so the confirmed checkout closes to /tool instead of router.back() into the pricing modal",
+      "resolved": false
+    },
+    {
+      "spec": "BO-05b-generation-publication",
+      "blockedOn": "BO-05b-generation-publication",
+      "what": "intermittent: product-form.test.tsx \"a create-mode publish captures the created slug, so a second publish takes the edit path\" failed once under load (expected null to be bio-instagram); root-cause (timing of createdSlug capture) and fix the component or the test without weakening it",
       "resolved": false
     }
   ],

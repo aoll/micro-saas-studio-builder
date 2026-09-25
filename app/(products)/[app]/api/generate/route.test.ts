@@ -506,12 +506,29 @@ describe("POST [app]/api/generate — anonymous", () => {
     const first = await POST(postRequest({ input: validInput, idempotencyKey }), ctx());
     expect(first.status).toBe(502);
 
-    const second = await POST(postRequest({ input: validInput, idempotencyKey: randomUUID() }), ctx());
+    // Root cause of a one-off cross-test collision (reproduced by running
+    // this file in a loop: 15 runs left ~15 real, un-cleaned-up generation
+    // rows for lettre-pro behind): this second call's key used to be an
+    // inline `randomUUID()`, never captured, so `cleanupGeneration` below
+    // could only ever delete the *first* call's row. Every run of this test
+    // permanently leaked one real `hashIp(x-forwarded-for)`-derived row into
+    // this worktree's persistent Postgres DB (never reset between `pnpm
+    // test` invocations). `randomIp()`'s range is only 254*254 ≈ 64k
+    // combinations, so as leaked rows accumulated across many runs, another
+    // anonymous test's freshly random IP eventually collided with one of
+    // them by chance, and `recordAnonymousGeneration`'s prior-row lookup
+    // (matches on `anonymousId OR ipHash`) refused it with 401
+    // `signup_required` even though it was a brand-new visitor — exactly
+    // the observed flake in "sets a new anonymous_id cookie and never
+    // debits". Capture and clean up both keys.
+    const secondKey = randomUUID();
+    const second = await POST(postRequest({ input: validInput, idempotencyKey: secondKey }), ctx());
     expect(second.status).toBe(200);
     await readTextDeltas(second);
 
     const rows = await db.select().from(generations).where(eq(generations.idempotencyKey, idempotencyKey));
     expect(rows[0]?.status).toBe("failed");
     await cleanupGeneration(idempotencyKey);
+    await cleanupGeneration(secondKey);
   });
 });

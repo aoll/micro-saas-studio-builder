@@ -22,16 +22,22 @@ const uniqueEmail = (label: string) => {
   return email;
 };
 
+// Session tokens created by this file for SEED_ADMIN, tracked precisely so
+// afterAll deletes only the rows this file created. lib/dal/session.test.ts
+// and admin/login/_actions.test.ts sign the same seeded admin in
+// concurrently (separate worker threads, shared worktree DB): a blanket
+// `delete(sessions).where(eq(sessions.userId, admin.id))` here would also
+// remove sessions those files are mid-assertion on, and vice versa (a real
+// observed flake in lib/dal/session.test.ts).
+const createdAdminSessionTokens: string[] = [];
+
 afterAll(async () => {
   // Deleting a user cascades its accounts and sessions (onDelete: "cascade").
   if (createdEmails.length) await db.delete(users).where(inArray(users.email, createdEmails));
   await db.delete(magicLinkOutbox).where(inArray(magicLinkOutbox.email, createdEmails));
-  // Signing SEED_ADMIN in for real (not a role=user account we create and
-  // drop) leaves extra session rows for it: seed.ts never inserts a
-  // session, so every row is a test artifact, safe to clear without
-  // touching the SEED_ADMIN user/account row itself.
-  const admin = await db.query.users.findFirst({ where: eq(users.email, SEED_ADMIN.email) });
-  if (admin) await db.delete(sessions).where(eq(sessions.userId, admin.id));
+  if (createdAdminSessionTokens.length) {
+    await db.delete(sessions).where(inArray(sessions.token, createdAdminSessionTokens));
+  }
   await sql.end({ timeout: 5 });
 });
 
@@ -54,6 +60,7 @@ describe("password sign-in, admins only", () => {
       body: { email: SEED_ADMIN.email, password: SEED_ADMIN.password },
       headers: new Headers(),
     });
+    createdAdminSessionTokens.push(result.token);
     expect(result.user.role).toBe("admin");
   });
 

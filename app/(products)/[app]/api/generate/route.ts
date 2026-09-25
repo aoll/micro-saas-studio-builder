@@ -16,6 +16,11 @@ import {
 } from "@/lib/dal/generations";
 import { getProduct } from "@/lib/dal/products";
 import { getSession } from "@/lib/dal/session";
+// `clientIp` used to be a private byte-for-byte copy here (SECURITY plan,
+// decision D4): lib/rate-limit.ts is now the single source, and its own
+// comment carries the trust-model note (X-Forwarded-For only as trustworthy
+// as whatever sits in front of Node).
+import { clientIp } from "@/lib/rate-limit";
 import { generateInputSchema } from "@/lib/schemas/inputs";
 import { guardRequest } from "@/lib/security";
 import { ANONYMOUS_ID_COOKIE, anonymousIdCookie, readAnonymousId } from "../events/anonymous-id";
@@ -25,22 +30,6 @@ export const maxDuration = 60;
 
 function jsonError(error: string, status: number, extra?: Record<string, unknown>) {
   return Response.json({ error, ...extra }, { status });
-}
-
-// Trust model (security review, SA-02): `x-forwarded-for` is only as
-// trustworthy as whatever sits in front of Node. On Vercel, the edge
-// network sets/overwrites this header itself, so a client cannot spoof it.
-// Self-hosting (docs/06-vercel.md's Fly.io alternative) must have its own
-// reverse proxy strip any inbound `X-Forwarded-For` before appending the
-// real peer address — left to SECURITY's deployment hardening, out of this
-// route's Périmètre.
-function clientIp(requestHeaders: Headers): string {
-  const forwardedFor = requestHeaders.get("x-forwarded-for");
-  if (forwardedFor) {
-    const [first] = forwardedFor.split(",");
-    if (first?.trim()) return first.trim();
-  }
-  return requestHeaders.get("x-real-ip") ?? "unknown";
 }
 
 // POST [app]/api/generate (SA-02): Zod-validated input → guardRequest →

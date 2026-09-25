@@ -6,6 +6,7 @@ import postgres from "postgres";
 import { events, generations, productVersions, products, purchases, themes } from "../lib/db/schema";
 import { users } from "../lib/db/auth-schema";
 import { requireDatabaseUrl } from "../lib/require-database-url";
+import type { ProductConfig } from "../lib/schemas/product-config";
 import { SEED_ADMIN } from "../scripts/seed";
 
 // BO-02 · Portefeuille (specs/BO-02-portefeuille.md), written now, run in
@@ -24,6 +25,38 @@ async function signInAsAdmin(page: import("@playwright/test").Page): Promise<voi
   await page.getByLabel("Mot de passe").fill(SEED_ADMIN.password);
   await page.getByRole("button", { name: "Se connecter" }).click();
   await expect(page).toHaveURL(/\/admin$/);
+}
+
+// A schema-valid config: listProducts() Zod-parses every row, so an invalid
+// temp config would break concurrent readers of the shared database.
+function buildValidConfig(slug: string, name: string, themeId: string): ProductConfig {
+  return {
+    slug,
+    name,
+    status: "test",
+    themeId,
+    locale: "fr",
+    branding: {},
+    landing: {
+      headline: "Headline",
+      subheadline: "Subheadline",
+      faq: [],
+      seoTitle: "Title",
+      seoDescription: "Description",
+    },
+    inputs: [{ key: "topic", label: "Topic", type: "text", required: true }],
+    generation: {
+      model: "anthropic/claude-haiku-4.5",
+      promptTemplate: "Write about {{topic}}",
+      outputType: "markdown",
+    },
+    pricing: {
+      freeCreditsOnSignup: 3,
+      anonymousFreeGenerations: 1,
+      costPerGeneration: 1,
+      packs: [{ id: "pack-10", credits: 10, priceCents: 490 }],
+    },
+  };
 }
 
 /** A throwaway product with a small funnel story, cleaned up by the caller. */
@@ -47,7 +80,7 @@ async function createStoryProduct(
     productId: id,
     version: 1,
     createdBy: owner!.id,
-    config: { name, pricing: { costPerGeneration: 1 } } as never,
+    config: buildValidConfig(slug, name, theme!.id),
   });
 
   if (story.visits > 0) {

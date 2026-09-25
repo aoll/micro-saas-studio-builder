@@ -42,7 +42,7 @@ Un design unique, sobre et dense (shadcn par défaut), indépendant des thèmes 
 | BO-06 | Changement de statut | Modale sur BO-03 | Statut actuel → nouveau, métriques qui justifient, note de décision | Confirmation, passage en killed | Bonus |
 | BO-07 | Bibliothèque de thèmes | /admin/themes | Grille de vignettes, nombre de produits par thème | — | Bonus |
 | BO-08 | Éditeur de thème | /admin/themes/\[id\] | Tokens (couleurs clair/sombre, typo, radius), variante de landing, aperçu | Avertissement : « utilisé par N produits » | Bonus |
-| BO-09 | Réglages des seuils | /admin/settings | Seuils par défaut du studio (visites minimales, conversion « à couper », conversion « à scaler », marge positive exigée) ; surcharges par produit ; aperçu des badges qui changent | Erreur si « à couper » ≥ « à scaler », réglage par défaut verrouillé en mode démo | Indispensable |
+| BO-09 | Réglages des seuils | /admin/settings | Seuils par défaut du studio (visites minimales, conversion « à couper », conversion « à scaler », marge positive exigée) ; surcharges par produit ; aperçu des badges qui changent | Erreur si « à couper » ≥ « à scaler » | Indispensable |
 
 **BO-05 en détail : les étapes du formulaire**
 

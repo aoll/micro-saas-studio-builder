@@ -187,7 +187,7 @@ export async function purchase(slug: string, packId: string, idempotencyKey: str
 - Une Server Action est un **endpoint POST public** : authentification *et* autorisation dans chaque action, même si la page est déjà protégée.
 - Valider toutes les entrées (Zod), y compris le `slug` et le `packId`.
 - Ne renvoyer que ce dont l'UI a besoin.
-- Le coût IA justifie un **rate limit** sur `generate` et `testPrompt`.
+- Le coût IA justifie un **rate limit** sur `generate` ; `guardRequest(kind)` (`lib/security.ts`) passe aussi l'inscription, l'achat et « Tester le prompt » par BotID, sans rate limit.
 
 ## SEO par produit
 
@@ -195,7 +195,8 @@ Chaque produit a son propre référencement, **entièrement généré depuis la 
 
 | Fichier | Contenu | Source |
 | --- | --- | --- |
-| `[app]/layout.tsx` → `generateMetadata` | Titre, description, canonical, Open Graph | `landing.seoTitle`, `landing.seoDescription` |
+| `[app]/page.tsx` → `generateMetadata` | Titre, description, canonical, Open Graph | `landing.seoTitle`, `landing.seoDescription` |
+| `[app]/layout.tsx` → `metadata` | `metadataBase`, base des URL relatives (canonical, images) | `BETTER_AUTH_URL` |
 | `[app]/layout.tsx` → `generateViewport` | `themeColor` de la barre du navigateur mobile | Couleur principale du thème |
 | `[app]/opengraph-image.tsx` | Image de partage 1200×630 aux couleurs du produit | Nom, titre, thème, via `ImageResponse` |
 | `[app]/icon.tsx` | Favicon généré (initiale ou logo sur la couleur du thème) | Branding |
@@ -203,7 +204,7 @@ Chaque produit a son propre référencement, **entièrement généré depuis la 
 | `app/robots.ts` | Autorise les landings, interdit `/admin` | — |
 
 ```tsx
-// app/(products)/[app]/layout.tsx
+// app/(products)/[app]/page.tsx
 export async function generateMetadata(): Promise<Metadata> {
   'use cache'
   cacheLife('max')
@@ -220,7 +221,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 - Avec Cache Components, un `generateMetadata` non mis en cache sur une page par ailleurs statique lève une erreur : la doc demande de trancher. Ici, `'use cache'` est le bon choix. Les métadonnées sont alors dans le HTML initial, ce que veulent les moteurs de recherche.
 - Tout dépend du tag `product:{slug}` : le même `updateTag` qui rafraîchit la landing rafraîchit aussi titre, image OG et favicon après une modification dans le backoffice.
-- `metadataBase` se renvoie sous forme de **chaîne** dans un scope `'use cache'` (un objet `URL` n'est pas sérialisable).
+- `metadataBase` ne varie pas d'un produit à l'autre : il vit dans un export `metadata` statique du layout `[app]`, hors de tout scope `'use cache'` (un objet `URL` n'y serait pas sérialisable).
 - `opengraph-image` et `sitemap` sont des Route Handlers spéciaux, mis en cache par défaut ; `params` y est une Promise depuis la v16.
 - `ImageResponse` ne gère que le flexbox et un sous-ensemble de CSS : on garde l'image OG simple.
 

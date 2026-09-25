@@ -10,6 +10,8 @@ Acceptation :
 - Signatures exportées, corps throw new Error('not implemented') : toutes les
   fonctions du tableau des contrats (lib/dal/*), assertEditable et isEditable
   (lib/dal/guards.ts), guardRequest(kind) (lib/security.ts)
+  Note (run v1, 2026-09-25) : le verrou démo a été retiré par décision humaine ;
+  assertEditable, isEditable, Lockable et lib/dal/guards.ts n'existent plus (#44).
 - pnpm typecheck vert
 Périmètre   : lib/schemas/**, lib/dal/*.ts (signatures), lib/security.ts
 Hors périmètre : tables, migrations, implémentations (CONTRACT-data)

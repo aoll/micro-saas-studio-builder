@@ -68,7 +68,7 @@ C'est le cœur du parallèle : tout ce qu'un lot consomme chez un autre existe d
 | `track(event)`, `<TrackVisit>` | `lib/dal/events.ts` | Ne fait rien | Lot C |
 | `getFunnel()`, `getPortfolioMetrics()` | `lib/dal/metrics.ts` | Chiffres fixes plausibles | Lot C |
 | `getThresholds(productId)` | `lib/dal/thresholds.ts` | Réel, lit le réglage seedé | — (l'écriture arrive avec BO-09) |
-| `assertEditable(row)`, `isEditable(row)` | `lib/dal/guards.ts` | Ne bloquent rien | DEMO-mode |
+| `assertEditable(row)`, `isEditable(row)` | `lib/dal/guards.ts` | Ne bloquent rien | Retirés avec le fichier par CONTRACT-remove-demo-lock (#44) : décision humaine, pas de verrou démo |
 | `guardRequest(kind)` | `lib/security.ts` | Laisse tout passer | SECURITY |
 
 **Pourquoi ça fait shipper vite** :
@@ -101,9 +101,9 @@ flowchart LR
 | Vague | Jours | Lots en parallèle | Contenu | Sortie |
 | --- | --- | --- | --- | --- |
 | **V0 Walking skeleton** | J1 | 1 agent | `create-next-app` 16.3, tout le Tooling dev, Neon et Vercel branchés. `/{slug}` lit un produit en base, `/admin` est protégé par Better Auth. | **URL de prod** et pnpm check vert |
-| **V1 Contrats** | J2 | 1 agent, puis 2 | **C0 Types**, en premier : schémas Zod et signatures de tous les contrats. **C1 Données** : schéma Drizzle complet et migration, DAL en stubs typés (dont recordGeneration, assertEditable, guardRequest), modèle IA mock, seed d'un produit avec fixtures. **C2 UI shell** : les deux root layouts, 4 thèmes en variables CSS, composants shadcn, états communs (chargement, vide, erreur), messages i18n découpés par zone. | Les contrats sont gelés |
+| **V1 Contrats** | J2 | 1 agent, puis 2 | **C0 Types**, en premier : schémas Zod et signatures de tous les contrats. **C1 Données** : schéma Drizzle complet et migration, DAL en stubs typés (dont recordGeneration et guardRequest), modèle IA mock, seed d'un produit avec fixtures. **C2 UI shell** : les deux root layouts, 4 thèmes en variables CSS, composants shadcn, états communs (chargement, vide, erreur), messages i18n découpés par zone. | Les contrats sont gelés |
 | **V2 Parcours** | J3–J6 | 4 lots, jusqu'à 10 specs | **A Génération** : landing, produit introuvable, outil, historique, `api/generate` streamé. **B Crédits** : vrai ledger, inscription, tarifs, paiement simulé, compte. **C Pilotage** : connexion, portefeuille, fiche produit, events et funnel. **D Création** : formulaire BO-05 en 7 étapes, bibliothèque de thèmes BO-07. | **Jalon** : le script de démo passe en prod |
-| **V3 Compléments** | J7–J8 | 3 lots | **E** : BO-04, BO-06, BO-09. **F** : mode démo (`/admin/ops`, remise à zéro, produits seedés verrouillés, 4 produits et 30 jours d'events), BotID, rate limit. **G** : vérification des clés anglaises, SEO et images OG, BO-08 si le temps le permet. | Démo complète |
+| **V3 Compléments** | J7–J8 | 3 lots | **E** : BO-04, BO-06, BO-09. **F** : mode démo (`/admin/ops`, remise à zéro, bandeau « Démo », 3 produits seedés avec 30 jours d'usage et la config BioInsta), BotID, rate limit. **G** : vérification des clés anglaises, SEO et images OG, BO-08 si le temps le permet. | Démo complète |
 | **V4 Package** | J9–J10 | Moi, en série | E2E du script de démo avec `instant()`, fixtures enregistrées en live, passe perf, README, vidéo | Envoi à Dotworld |
 
 **Ce que ça change sur le planning** :

@@ -46,7 +46,7 @@ La table utilisateur de Better Auth, étendue d'un rôle.
 | `name` | text | non nul | Nom affiché |
 | `tokens` | jsonb | validé par Zod | Couleurs clair et sombre, clé de police du catalogue, radius |
 | `landing_variant` | enum | non nul | Mise en page de la landing |
-| `is_seed` | boolean | défaut `false` | Thème verrouillé en mode démo |
+| `is_seed` | boolean | défaut `false` | Thème du seed, restauré à la remise à zéro |
 | `updated_at` | timestamptz |  |  |
 
 ### `products`
@@ -61,7 +61,7 @@ La ligne « vivante » d'un produit : statut et pointeur vers sa config courante
 | `theme_id` | uuid | FK → `themes` | Thème choisi |
 | `current_version` | integer | non nul | Version de config en ligne |
 | `locale` | text | `fr` \| `en` | Langue de la sub-app |
-| `is_seed` | boolean | défaut `false` | Produit verrouillé en mode démo, conservé à la remise à zéro |
+| `is_seed` | boolean | défaut `false` | Produit du seed, conservé et restauré à la remise à zéro |
 | `created_by` | text | FK → `users` | Qui l'a créé (visiteur ou seed) |
 | `status_note` | text |  | Note de décision du dernier changement de statut (BO-06) |
 | `created_at`, `updated_at` | timestamptz |  |  |
@@ -144,7 +144,7 @@ Solde dénormalisé, pour lire le solde sans sommer le ledger. Mis à jour **dan
 
 ### `events`
 
-Table d'analytics à insertion seule, source du funnel et des dashboards.
+Table d'analytics à insertion seule, source du funnel et des dashboards. `track()` dédoublonne trois types, pour qu'un rejeu ne gonfle pas le funnel : `visit` une fois par `anonymous_id`, produit et jour UTC ; `signup` une fois par produit et `user_id` ; `purchase` une fois par `metadata.purchaseKey` (la clé d'idempotence de l'achat).
 
 | Colonne | Type | Contraintes | Rôle |
 | --- | --- | --- | --- |
@@ -170,7 +170,7 @@ Les seuils qui déclenchent les badges « à couper » et « à scaler », régl
 | kill\_max\_conversion | numeric(5,4) | entre 0 et 1 | Conversion inscription → achat sous laquelle on suggère de couper (0,02) |
 | scale\_min\_conversion | numeric(5,4) | entre 0 et 1 | Conversion à partir de laquelle on suggère de scaler (0,05) |
 | scale\_requires\_positive\_margin | boolean |  | Scaler seulement si la marge par génération est positive (vrai) |
-| is\_seed | boolean | défaut false | Réglage par défaut verrouillé en mode démo |
+| is\_seed | boolean | défaut false | Réglage par défaut du seed, restauré à la remise à zéro |
 | updated\_by | text | FK → users | Qui a changé les seuils |
 | updated\_at | timestamptz |  |  |
 
@@ -265,7 +265,9 @@ Chaque branche (débit normal, retry, solde insuffisant, pas de ligne, deux déb
 
 - Schéma dans `lib/db/schema.ts`, migrations générées par `drizzle-kit generate` et committées, appliquées par `drizzle-kit migrate` avant le déploiement.
 - En développement, une base Postgres locale par worktree (onglet Implémentation) ; les tests e2e tournent sur une base seedée à chaque exécution.
-- `db:seed` crée les thèmes et produits `is_seed`, le compte admin de démo et le compte `owner`, les historiques depuis les fixtures, et 30 jours d'events calculés.
-- La remise à zéro supprime tout ce qui n'est pas `is_seed` (produits visiteurs, générations, achats, ledger, events récents), puis rejoue la partie « usage » du seed.
+- `db:seed` crée les thèmes et produits `is_seed`, le compte admin de démo et le compte `owner`, les historiques depuis les fixtures, et 30 jours d'events calculés. Avec `DEMO_MODE=true`, il refuse de tourner avec les identifiants de développement (`SEED_ADMIN_*` et `SEED_OWNER_*`, documentés dans `.env.example`).
+- La remise à zéro (`scripts/reset-demo.ts`) supprime les produits visiteurs (non `is_seed`) et tout l'usage (générations, achats, ledger, soldes, events, comptes utilisateurs finaux), restaure le catalogue seedé, puis rejoue l'usage du seed. `is_seed` ne sert qu'à ça : il ne verrouille rien.
 
 **Hors v1** : table d'expériences A/B, table d'agrégats quotidiens (les dashboards calculent directement sur `events`, largement suffisant à ce volume).
+
+**Suivis de contrat relevés pendant le run v1** (une PR de contrat chacun, quand le volume le justifiera) : index sur `purchases` (`(product_id, created_at)` et `(user_id, product_id, created_at)`) et sur `credit_transactions (product_id, created_at)` pour le portefeuille, le funnel et les listes d'activité ; pour le dédoublonnage de `track()`, un index `events (product_id, type, user_id)` et une colonne ou un index d'expression sur `metadata->>purchaseKey`.

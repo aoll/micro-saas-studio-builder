@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { events, productVersions, products, themes } from "@/lib/db/schema";
 import { eventTypeSchema } from "@/lib/schemas/event-type";
-import type { ProductConfig } from "@/lib/schemas/product-config";
+import { productConfigSchema, type ProductConfig } from "@/lib/schemas/product-config";
 
 const getSession = vi.fn();
 vi.mock("./session", () => ({ getSession: () => getSession() }));
@@ -26,22 +26,52 @@ async function anyUserId(): Promise<string> {
 // A throwaway product, inserted directly (not through product-editor, whose
 // `createProduct` needs `requireAdmin` — a different export of the mocked
 // "./session" module), used only to prove the visit dedupe is scoped per
-// product.
+// product. Its config must satisfy `productConfigSchema`: `listProducts()`
+// (lib/dal/products.ts) Zod-parses every product row, and a concurrently
+// running lib/dal/products.test.ts fails with a ZodError while a row with a
+// partial/empty config exists (mirrors the buildConfig() fixture of
+// lib/dal/product-editor.test.ts).
 async function createTempProduct(): Promise<{ id: string; cleanup: () => Promise<void> }> {
   const theme = await db.query.themes.findFirst({ where: eq(themes.slug, "editorial") });
   const owner = await db.query.users.findFirst();
   const id = randomUUID();
+  const slug = `events-test-${randomUUID()}`;
+  const config: ProductConfig = productConfigSchema.parse({
+    slug,
+    name: "Events test product",
+    status: "test",
+    themeId: theme!.id,
+    locale: "fr",
+    branding: {},
+    landing: {
+      headline: "Headline",
+      subheadline: "Subheadline",
+      faq: [],
+      seoTitle: "Title",
+      seoDescription: "Description",
+    },
+    inputs: [{ key: "topic", label: "Topic", type: "text", required: true }],
+    generation: {
+      model: "anthropic/claude-haiku-4.5",
+      promptTemplate: "Write about {{topic}}",
+      outputType: "markdown",
+    },
+    pricing: {
+      freeCreditsOnSignup: 3,
+      anonymousFreeGenerations: 1,
+      costPerGeneration: 1,
+      packs: [{ id: "pack-10", credits: 10, priceCents: 490 }],
+    },
+  });
   await db.insert(products).values({
     id,
-    slug: `events-test-${randomUUID()}`,
+    slug,
     themeId: theme!.id,
     currentVersion: 1,
     locale: "fr",
     createdBy: owner!.id,
   });
-  await db
-    .insert(productVersions)
-    .values({ productId: id, version: 1, config: {} as ProductConfig, createdBy: owner!.id });
+  await db.insert(productVersions).values({ productId: id, version: 1, config, createdBy: owner!.id });
   return {
     id,
     cleanup: async () => {

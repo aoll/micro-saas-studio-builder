@@ -57,7 +57,12 @@ async function otherProductId(): Promise<string> {
       landing: { headline: "H", subheadline: "S", faq: [], seoTitle: "T", seoDescription: "D" },
       inputs: [{ key: "topic", label: "Topic", type: "text", required: true }],
       generation: { model: "anthropic/claude-haiku-4.5", promptTemplate: "About {{topic}}", outputType: "markdown" },
-      pricing: { freeCreditsOnSignup: 3, anonymousFreeGenerations: 1, costPerGeneration: 1, packs: [] },
+      pricing: {
+        freeCreditsOnSignup: 3,
+        anonymousFreeGenerations: 1,
+        costPerGeneration: 1,
+        packs: [{ id: "pack-10", credits: 10, priceCents: 490 }],
+      },
     },
     createdBy: owner!.id,
   });

@@ -78,3 +78,23 @@ describe("createAppEnv › VERCEL", () => {
     expect(env.VERCEL).toBe("1");
   });
 });
+
+// NODE_ENV (TOOLING-test-transaction): optional with a default, kept out of
+// `validSource` for the same reason as GENERATION_RATE_LIMIT_PER_MINUTE and
+// VERCEL above. `lib/db/index.ts` reads `env.NODE_ENV` instead of
+// `process.env.NODE_ENV`.
+describe("createAppEnv › NODE_ENV", () => {
+  it('defaults to "development" when absent', () => {
+    const env = createAppEnv(validSource);
+    expect(env.NODE_ENV).toBe("development");
+  });
+
+  it.each(["development", "test", "production"])("accepts %s", (value) => {
+    const env = createAppEnv({ ...validSource, NODE_ENV: value });
+    expect(env.NODE_ENV).toBe(value);
+  });
+
+  it("throws on an unknown value", () => {
+    expect(() => createAppEnv({ ...validSource, NODE_ENV: "staging" })).toThrow();
+  });
+});

@@ -28,6 +28,12 @@ export const createAppEnv = (source: Record<string, string | undefined>) =>
       // any other non-Vercel host), since it must never branch on
       // `process.env` directly.
       VERCEL: z.string().optional(),
+      // TOOLING-test-transaction: read once here instead of `process.env`
+      // scattered in application code. `lib/db/index.ts` uses it to pick the
+      // Postgres pool size and to decide whether `db` routes through the
+      // per-test transaction; Vitest sets `NODE_ENV=test` itself (see
+      // `.env.test` and `vitest.config.mts`, both untouched by this spec).
+      NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     },
     runtimeEnv: source,
     emptyStringAsUndefined: true,

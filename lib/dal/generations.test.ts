@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
-import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
+import { withTestTransaction } from "@/lib/db/test-transaction";
 import { users } from "@/lib/db/auth-schema";
 import { generations, productVersions, products, themes } from "@/lib/db/schema";
 import { SEED_OWNER } from "@/scripts/seed";
@@ -18,23 +19,6 @@ async function lettreProId(): Promise<string> {
   return row!.id;
 }
 
-const createdProductIds: string[] = [];
-const createdUserIds: string[] = [];
-
-afterAll(async () => {
-  for (const id of createdProductIds) {
-    await db.delete(productVersions).where(eq(productVersions.productId, id));
-    await db.delete(products).where(eq(products.id, id));
-  }
-  for (const id of createdUserIds) {
-    // generations.user_id has no onDelete cascade: drop the rows this file
-    // wrote for that user first (tests already delete their own row after
-    // each assertion, this only covers a left-over on failure).
-    await db.delete(generations).where(eq(generations.userId, id));
-    await db.delete(users).where(eq(users.id, id));
-  }
-});
-
 // A dedicated, never-shared user for a test that counts *all* of a user's
 // generations (before/after). `db.query.users.findFirst()` (used elsewhere
 // in this file for tests that don't count) returns whichever row Postgres
@@ -46,7 +30,6 @@ afterAll(async () => {
 async function freshUserId(): Promise<string> {
   const id = randomUUID();
   await db.insert(users).values({ id, name: "Generations test user", email: `${id}@example.test`, role: "user" });
-  createdUserIds.push(id);
   return id;
 }
 
@@ -89,122 +72,139 @@ async function otherProductId(): Promise<string> {
     },
     createdBy: owner!.id,
   });
-  createdProductIds.push(product!.id);
   return product!.id;
 }
 
+// Fixtures and cleanup only, refactored onto withTestTransaction
+// (TOOLING-test-transaction): every test below except the two
+// `Promise.all` x 5 concurrency tests in "recordAnonymousGeneration" now
+// runs inside a transaction that is always rolled back, so the manual
+// per-test `db.delete(generations)...` calls and the file-level
+// createdProductIds/createdUserIds + afterAll this file used are gone.
+// Assertions are unchanged. The two concurrency tests keep their original,
+// non-transactional pattern with their own explicit cleanup (tdd-workflow
+// skill): postgres.js never releases a savepoint and concurrent savepoints
+// on one connection are unsafe, so a test that proves a real lock or a real
+// idempotent insert across several connections needs connections of its
+// own, not a single shared transaction.
 describe("recordGeneration", () => {
   it("inserts a pending row for an anonymous generation (no session)", async () => {
-    getSession.mockResolvedValue(null);
-    const { recordGeneration } = await import("./generations");
-    const idempotencyKey = randomUUID();
-    const result = await recordGeneration({
-      productId: await lettreProId(),
-      productVersion: 1,
-      userId: null,
-      anonymousId: randomUUID(),
-      ipHash: "hash",
-      input: { poste: "Développeur" },
-      idempotencyKey,
-    });
-    expect(result.id).toBeTruthy();
+    await withTestTransaction(async () => {
+      getSession.mockResolvedValue(null);
+      const { recordGeneration } = await import("./generations");
+      const idempotencyKey = randomUUID();
+      const result = await recordGeneration({
+        productId: await lettreProId(),
+        productVersion: 1,
+        userId: null,
+        anonymousId: randomUUID(),
+        ipHash: "hash",
+        input: { poste: "Développeur" },
+        idempotencyKey,
+      });
+      expect(result.id).toBeTruthy();
 
-    const row = await db.query.generations.findFirst({ where: eq(generations.id, result.id) });
-    expect(row?.status).toBe("pending");
-    await db.delete(generations).where(eq(generations.id, result.id));
+      const row = await db.query.generations.findFirst({ where: eq(generations.id, result.id) });
+      expect(row?.status).toBe("pending");
+    });
   });
 
   it("is idempotent: a replay with the same key returns the same id, one row", async () => {
-    const randomUser = await db.query.users.findFirst();
-    getSession.mockResolvedValue({ user: { id: randomUser!.id } });
-    const { recordGeneration } = await import("./generations");
-    const idempotencyKey = randomUUID();
-    const args = {
-      productId: await lettreProId(),
-      productVersion: 1,
-      userId: randomUser!.id,
-      anonymousId: null,
-      ipHash: "hash",
-      input: { poste: "Développeur" },
-      idempotencyKey,
-    };
-    const first = await recordGeneration(args);
-    const second = await recordGeneration(args);
-    expect(second.id).toBe(first.id);
+    await withTestTransaction(async () => {
+      const randomUser = await db.query.users.findFirst();
+      getSession.mockResolvedValue({ user: { id: randomUser!.id } });
+      const { recordGeneration } = await import("./generations");
+      const idempotencyKey = randomUUID();
+      const args = {
+        productId: await lettreProId(),
+        productVersion: 1,
+        userId: randomUser!.id,
+        anonymousId: null,
+        ipHash: "hash",
+        input: { poste: "Développeur" },
+        idempotencyKey,
+      };
+      const first = await recordGeneration(args);
+      const second = await recordGeneration(args);
+      expect(second.id).toBe(first.id);
 
-    const rows = await db.select().from(generations).where(eq(generations.idempotencyKey, idempotencyKey));
-    expect(rows).toHaveLength(1);
-    await db.delete(generations).where(eq(generations.id, first.id));
+      const rows = await db.select().from(generations).where(eq(generations.idempotencyKey, idempotencyKey));
+      expect(rows).toHaveLength(1);
+    });
   });
 
   it("throws when userId does not match the session", async () => {
-    const randomUser = await db.query.users.findFirst();
-    getSession.mockResolvedValue({ user: { id: randomUser!.id } });
-    const { recordGeneration } = await import("./generations");
-    await expect(
-      recordGeneration({
-        productId: await lettreProId(),
-        productVersion: 1,
-        userId: "someone-else",
-        anonymousId: null,
-        ipHash: "hash",
-        input: {},
-        idempotencyKey: randomUUID(),
-      }),
-    ).rejects.toThrow();
+    await withTestTransaction(async () => {
+      const randomUser = await db.query.users.findFirst();
+      getSession.mockResolvedValue({ user: { id: randomUser!.id } });
+      const { recordGeneration } = await import("./generations");
+      await expect(
+        recordGeneration({
+          productId: await lettreProId(),
+          productVersion: 1,
+          userId: "someone-else",
+          anonymousId: null,
+          ipHash: "hash",
+          input: {},
+          idempotencyKey: randomUUID(),
+        }),
+      ).rejects.toThrow();
+    });
   });
 });
 
 describe("saveGeneration", () => {
   it("marks a generation succeeded with its tokens, cost and model", async () => {
-    getSession.mockResolvedValue(null);
-    const { recordGeneration, saveGeneration } = await import("./generations");
-    const { id } = await recordGeneration({
-      productId: await lettreProId(),
-      productVersion: 1,
-      userId: null,
-      anonymousId: randomUUID(),
-      ipHash: "hash",
-      input: {},
-      idempotencyKey: randomUUID(),
-    });
+    await withTestTransaction(async () => {
+      getSession.mockResolvedValue(null);
+      const { recordGeneration, saveGeneration } = await import("./generations");
+      const { id } = await recordGeneration({
+        productId: await lettreProId(),
+        productVersion: 1,
+        userId: null,
+        anonymousId: randomUUID(),
+        ipHash: "hash",
+        input: {},
+        idempotencyKey: randomUUID(),
+      });
 
-    await saveGeneration(id, {
-      output: "Lettre générée",
-      model: "anthropic/claude-haiku-4.5",
-      inputTokens: 200,
-      outputTokens: 140,
-      cachedInputTokens: 0,
-      costMicros: 300,
-    });
+      await saveGeneration(id, {
+        output: "Lettre générée",
+        model: "anthropic/claude-haiku-4.5",
+        inputTokens: 200,
+        outputTokens: 140,
+        cachedInputTokens: 0,
+        costMicros: 300,
+      });
 
-    const row = await db.query.generations.findFirst({ where: eq(generations.id, id) });
-    expect(row?.status).toBe("succeeded");
-    expect(row?.model).toBe("anthropic/claude-haiku-4.5");
-    expect(row?.inputTokens).toBe(200);
-    expect(row?.costMicros).toBe(300);
-    await db.delete(generations).where(eq(generations.id, id));
+      const row = await db.query.generations.findFirst({ where: eq(generations.id, id) });
+      expect(row?.status).toBe("succeeded");
+      expect(row?.model).toBe("anthropic/claude-haiku-4.5");
+      expect(row?.inputTokens).toBe(200);
+      expect(row?.costMicros).toBe(300);
+    });
   });
 });
 
 describe("markGenerationFailed", () => {
   it("marks a generation failed", async () => {
-    getSession.mockResolvedValue(null);
-    const { recordGeneration, markGenerationFailed } = await import("./generations");
-    const { id } = await recordGeneration({
-      productId: await lettreProId(),
-      productVersion: 1,
-      userId: null,
-      anonymousId: randomUUID(),
-      ipHash: "hash",
-      input: {},
-      idempotencyKey: randomUUID(),
-    });
+    await withTestTransaction(async () => {
+      getSession.mockResolvedValue(null);
+      const { recordGeneration, markGenerationFailed } = await import("./generations");
+      const { id } = await recordGeneration({
+        productId: await lettreProId(),
+        productVersion: 1,
+        userId: null,
+        anonymousId: randomUUID(),
+        ipHash: "hash",
+        input: {},
+        idempotencyKey: randomUUID(),
+      });
 
-    await markGenerationFailed(id);
-    const row = await db.query.generations.findFirst({ where: eq(generations.id, id) });
-    expect(row?.status).toBe("failed");
-    await db.delete(generations).where(eq(generations.id, id));
+      await markGenerationFailed(id);
+      const row = await db.query.generations.findFirst({ where: eq(generations.id, id) });
+      expect(row?.status).toBe("failed");
+    });
   });
 });
 
@@ -235,210 +235,223 @@ describe("findGenerationByKey", () => {
   });
 
   it("returns the id and status of an existing row", async () => {
-    getSession.mockResolvedValue(null);
-    const { recordGeneration, findGenerationByKey } = await import("./generations");
-    const idempotencyKey = randomUUID();
-    const { id } = await recordGeneration({
-      productId: await lettreProId(),
-      productVersion: 1,
-      userId: null,
-      anonymousId: randomUUID(),
-      ipHash: "hash",
-      input: {},
-      idempotencyKey,
-    });
+    await withTestTransaction(async () => {
+      getSession.mockResolvedValue(null);
+      const { recordGeneration, findGenerationByKey } = await import("./generations");
+      const idempotencyKey = randomUUID();
+      const { id } = await recordGeneration({
+        productId: await lettreProId(),
+        productVersion: 1,
+        userId: null,
+        anonymousId: randomUUID(),
+        ipHash: "hash",
+        input: {},
+        idempotencyKey,
+      });
 
-    expect(await findGenerationByKey(idempotencyKey)).toEqual({ id, status: "pending" });
-    await db.delete(generations).where(eq(generations.id, id));
+      expect(await findGenerationByKey(idempotencyKey)).toEqual({ id, status: "pending" });
+    });
   });
 });
 
 describe("countPriorGenerations", () => {
   it("anonymous: 0 with no prior row, 1 after a pending one for the same cookie", async () => {
-    getSession.mockResolvedValue(null);
-    const { recordGeneration, countPriorGenerations } = await import("./generations");
-    const productId = await lettreProId();
-    const anonymousId = randomUUID();
-    const ipHash = `ip-${randomUUID()}`;
+    await withTestTransaction(async () => {
+      getSession.mockResolvedValue(null);
+      const { recordGeneration, countPriorGenerations } = await import("./generations");
+      const productId = await lettreProId();
+      const anonymousId = randomUUID();
+      const ipHash = `ip-${randomUUID()}`;
 
-    expect(await countPriorGenerations({ productId, userId: null, anonymousId, ipHash })).toBe(0);
+      expect(await countPriorGenerations({ productId, userId: null, anonymousId, ipHash })).toBe(0);
 
-    const { id } = await recordGeneration({
-      productId,
-      productVersion: 1,
-      userId: null,
-      anonymousId,
-      ipHash,
-      input: {},
-      idempotencyKey: randomUUID(),
+      await recordGeneration({
+        productId,
+        productVersion: 1,
+        userId: null,
+        anonymousId,
+        ipHash,
+        input: {},
+        idempotencyKey: randomUUID(),
+      });
+
+      expect(await countPriorGenerations({ productId, userId: null, anonymousId, ipHash })).toBe(1);
     });
-
-    expect(await countPriorGenerations({ productId, userId: null, anonymousId, ipHash })).toBe(1);
-    await db.delete(generations).where(eq(generations.id, id));
   });
 
   it("anonymous: the same IP with a different cookie still counts", async () => {
-    getSession.mockResolvedValue(null);
-    const { recordGeneration, countPriorGenerations } = await import("./generations");
-    const productId = await lettreProId();
-    const ipHash = `ip-${randomUUID()}`;
+    await withTestTransaction(async () => {
+      getSession.mockResolvedValue(null);
+      const { recordGeneration, countPriorGenerations } = await import("./generations");
+      const productId = await lettreProId();
+      const ipHash = `ip-${randomUUID()}`;
 
-    const { id } = await recordGeneration({
-      productId,
-      productVersion: 1,
-      userId: null,
-      anonymousId: randomUUID(),
-      ipHash,
-      input: {},
-      idempotencyKey: randomUUID(),
+      await recordGeneration({
+        productId,
+        productVersion: 1,
+        userId: null,
+        anonymousId: randomUUID(),
+        ipHash,
+        input: {},
+        idempotencyKey: randomUUID(),
+      });
+
+      const otherCookie = randomUUID();
+      expect(await countPriorGenerations({ productId, userId: null, anonymousId: otherCookie, ipHash })).toBe(1);
     });
-
-    const otherCookie = randomUUID();
-    expect(await countPriorGenerations({ productId, userId: null, anonymousId: otherCookie, ipHash })).toBe(1);
-    await db.delete(generations).where(eq(generations.id, id));
   });
 
   it("anonymous: a failed generation is not counted", async () => {
-    getSession.mockResolvedValue(null);
-    const { recordGeneration, markGenerationFailed, countPriorGenerations } = await import("./generations");
-    const productId = await lettreProId();
-    const anonymousId = randomUUID();
-    const ipHash = `ip-${randomUUID()}`;
+    await withTestTransaction(async () => {
+      getSession.mockResolvedValue(null);
+      const { recordGeneration, markGenerationFailed, countPriorGenerations } = await import("./generations");
+      const productId = await lettreProId();
+      const anonymousId = randomUUID();
+      const ipHash = `ip-${randomUUID()}`;
 
-    const { id } = await recordGeneration({
-      productId,
-      productVersion: 1,
-      userId: null,
-      anonymousId,
-      ipHash,
-      input: {},
-      idempotencyKey: randomUUID(),
+      const { id } = await recordGeneration({
+        productId,
+        productVersion: 1,
+        userId: null,
+        anonymousId,
+        ipHash,
+        input: {},
+        idempotencyKey: randomUUID(),
+      });
+      await markGenerationFailed(id);
+
+      expect(await countPriorGenerations({ productId, userId: null, anonymousId, ipHash })).toBe(0);
     });
-    await markGenerationFailed(id);
-
-    expect(await countPriorGenerations({ productId, userId: null, anonymousId, ipHash })).toBe(0);
-    await db.delete(generations).where(eq(generations.id, id));
   });
 
   it("anonymous: a row from another product is not counted", async () => {
-    getSession.mockResolvedValue(null);
-    const { recordGeneration, countPriorGenerations } = await import("./generations");
-    const productId = await lettreProId();
-    const anonymousId = randomUUID();
-    const ipHash = `ip-${randomUUID()}`;
+    await withTestTransaction(async () => {
+      getSession.mockResolvedValue(null);
+      const { recordGeneration, countPriorGenerations } = await import("./generations");
+      const productId = await lettreProId();
+      const anonymousId = randomUUID();
+      const ipHash = `ip-${randomUUID()}`;
 
-    const { id } = await recordGeneration({
-      productId,
-      productVersion: 1,
-      userId: null,
-      anonymousId,
-      ipHash,
-      input: {},
-      idempotencyKey: randomUUID(),
+      await recordGeneration({
+        productId,
+        productVersion: 1,
+        userId: null,
+        anonymousId,
+        ipHash,
+        input: {},
+        idempotencyKey: randomUUID(),
+      });
+
+      const otherId = await otherProductId();
+      expect(await countPriorGenerations({ productId: otherId, userId: null, anonymousId, ipHash })).toBe(0);
     });
-
-    const otherId = await otherProductId();
-    expect(await countPriorGenerations({ productId: otherId, userId: null, anonymousId, ipHash })).toBe(0);
-    await db.delete(generations).where(eq(generations.id, id));
   });
 
   it("by userId: counts the signed-in user's prior generations on this product", async () => {
-    const userId = await freshUserId();
-    getSession.mockResolvedValue({ user: { id: userId } });
-    const { recordGeneration, countPriorGenerations } = await import("./generations");
-    const productId = await lettreProId();
+    await withTestTransaction(async () => {
+      const userId = await freshUserId();
+      getSession.mockResolvedValue({ user: { id: userId } });
+      const { recordGeneration, countPriorGenerations } = await import("./generations");
+      const productId = await lettreProId();
 
-    const before = await countPriorGenerations({
-      productId,
-      userId,
-      anonymousId: null,
-      ipHash: null,
+      const before = await countPriorGenerations({
+        productId,
+        userId,
+        anonymousId: null,
+        ipHash: null,
+      });
+
+      await recordGeneration({
+        productId,
+        productVersion: 1,
+        userId,
+        anonymousId: null,
+        ipHash: "hash",
+        input: {},
+        idempotencyKey: randomUUID(),
+      });
+
+      const after = await countPriorGenerations({ productId, userId, anonymousId: null, ipHash: null });
+      expect(after).toBe(before + 1);
     });
-
-    const { id } = await recordGeneration({
-      productId,
-      productVersion: 1,
-      userId,
-      anonymousId: null,
-      ipHash: "hash",
-      input: {},
-      idempotencyKey: randomUUID(),
-    });
-
-    const after = await countPriorGenerations({ productId, userId, anonymousId: null, ipHash: null });
-    expect(after).toBe(before + 1);
-    await db.delete(generations).where(eq(generations.id, id));
   });
 
   it("throws when the given userId does not match the session", async () => {
-    const userId = await freshUserId();
-    getSession.mockResolvedValue({ user: { id: userId } });
-    const { countPriorGenerations } = await import("./generations");
-    await expect(
-      countPriorGenerations({
-        productId: await lettreProId(),
-        userId: "someone-else",
-        anonymousId: null,
-        ipHash: null,
-      }),
-    ).rejects.toThrow();
+    await withTestTransaction(async () => {
+      const userId = await freshUserId();
+      getSession.mockResolvedValue({ user: { id: userId } });
+      const { countPriorGenerations } = await import("./generations");
+      await expect(
+        countPriorGenerations({
+          productId: await lettreProId(),
+          userId: "someone-else",
+          anonymousId: null,
+          ipHash: null,
+        }),
+      ).rejects.toThrow();
+    });
   });
 });
 
 describe("recordAnonymousGeneration", () => {
   it("succeeds under the limit and returns the free generations left", async () => {
-    const { recordAnonymousGeneration } = await import("./generations");
-    const productId = await lettreProId();
-    const anonymousId = randomUUID();
-    const ipHash = `ip-${randomUUID()}`;
+    await withTestTransaction(async () => {
+      const { recordAnonymousGeneration } = await import("./generations");
+      const productId = await lettreProId();
+      const anonymousId = randomUUID();
+      const ipHash = `ip-${randomUUID()}`;
 
-    const result = await recordAnonymousGeneration({
-      productId,
-      productVersion: 1,
-      anonymousId,
-      ipHash,
-      input: {},
-      idempotencyKey: randomUUID(),
-      limit: 1,
+      const result = await recordAnonymousGeneration({
+        productId,
+        productVersion: 1,
+        anonymousId,
+        ipHash,
+        input: {},
+        idempotencyKey: randomUUID(),
+        limit: 1,
+      });
+
+      expect(result).toMatchObject({ ok: true, freeGenerationsLeft: 0, isFirst: true });
     });
-
-    expect(result).toMatchObject({ ok: true, freeGenerationsLeft: 0, isFirst: true });
-    if (result.ok) await db.delete(generations).where(eq(generations.id, result.id));
   });
 
   it("refuses at the limit with 'signup_required', writing nothing", async () => {
-    const { recordAnonymousGeneration, findGenerationByKey } = await import("./generations");
-    const productId = await lettreProId();
-    const anonymousId = randomUUID();
-    const ipHash = `ip-${randomUUID()}`;
+    await withTestTransaction(async () => {
+      const { recordAnonymousGeneration, findGenerationByKey } = await import("./generations");
+      const productId = await lettreProId();
+      const anonymousId = randomUUID();
+      const ipHash = `ip-${randomUUID()}`;
 
-    const first = await recordAnonymousGeneration({
-      productId,
-      productVersion: 1,
-      anonymousId,
-      ipHash,
-      input: {},
-      idempotencyKey: randomUUID(),
-      limit: 1,
+      const first = await recordAnonymousGeneration({
+        productId,
+        productVersion: 1,
+        anonymousId,
+        ipHash,
+        input: {},
+        idempotencyKey: randomUUID(),
+        limit: 1,
+      });
+      expect(first.ok).toBe(true);
+
+      const secondKey = randomUUID();
+      const second = await recordAnonymousGeneration({
+        productId,
+        productVersion: 1,
+        anonymousId,
+        ipHash,
+        input: {},
+        idempotencyKey: secondKey,
+        limit: 1,
+      });
+      expect(second).toEqual({ ok: false, reason: "signup_required" });
+      expect(await findGenerationByKey(secondKey)).toBeNull();
     });
-    expect(first.ok).toBe(true);
-
-    const secondKey = randomUUID();
-    const second = await recordAnonymousGeneration({
-      productId,
-      productVersion: 1,
-      anonymousId,
-      ipHash,
-      input: {},
-      idempotencyKey: secondKey,
-      limit: 1,
-    });
-    expect(second).toEqual({ ok: false, reason: "signup_required" });
-    expect(await findGenerationByKey(secondKey)).toBeNull();
-
-    if (first.ok) await db.delete(generations).where(eq(generations.id, first.id));
   });
 
+  // Kept on the original pattern (own connections, explicit cleanup): these
+  // two prove a real lock across several concurrent Postgres connections,
+  // which a single shared transaction cannot — postgres.js never releases a
+  // savepoint and concurrent savepoints on one connection are unsafe.
   it("5 concurrent calls with the same cookie produce exactly `limit` rows", async () => {
     const { recordAnonymousGeneration } = await import("./generations");
     const productId = await lettreProId();
@@ -500,66 +513,67 @@ describe("recordAnonymousGeneration", () => {
   });
 
   it("a failed generation does not count against the limit", async () => {
-    const { recordAnonymousGeneration, markGenerationFailed } = await import("./generations");
-    const productId = await lettreProId();
-    const anonymousId = randomUUID();
-    const ipHash = `ip-${randomUUID()}`;
+    await withTestTransaction(async () => {
+      const { recordAnonymousGeneration, markGenerationFailed } = await import("./generations");
+      const productId = await lettreProId();
+      const anonymousId = randomUUID();
+      const ipHash = `ip-${randomUUID()}`;
 
-    const first = await recordAnonymousGeneration({
-      productId,
-      productVersion: 1,
-      anonymousId,
-      ipHash,
-      input: {},
-      idempotencyKey: randomUUID(),
-      limit: 1,
+      const first = await recordAnonymousGeneration({
+        productId,
+        productVersion: 1,
+        anonymousId,
+        ipHash,
+        input: {},
+        idempotencyKey: randomUUID(),
+        limit: 1,
+      });
+      if (first.ok) await markGenerationFailed(first.id);
+
+      const second = await recordAnonymousGeneration({
+        productId,
+        productVersion: 1,
+        anonymousId,
+        ipHash,
+        input: {},
+        idempotencyKey: randomUUID(),
+        limit: 1,
+      });
+      expect(second).toMatchObject({ ok: true, isFirst: true });
     });
-    if (first.ok) await markGenerationFailed(first.id);
-
-    const second = await recordAnonymousGeneration({
-      productId,
-      productVersion: 1,
-      anonymousId,
-      ipHash,
-      input: {},
-      idempotencyKey: randomUUID(),
-      limit: 1,
-    });
-    expect(second).toMatchObject({ ok: true, isFirst: true });
-
-    await db.delete(generations).where(eq(generations.anonymousId, anonymousId));
   });
 
   it("a replayed idempotency key returns the existing row instead of inserting again", async () => {
-    const { recordAnonymousGeneration } = await import("./generations");
-    const productId = await lettreProId();
-    const anonymousId = randomUUID();
-    const ipHash = `ip-${randomUUID()}`;
-    const idempotencyKey = randomUUID();
+    await withTestTransaction(async () => {
+      const { recordAnonymousGeneration } = await import("./generations");
+      const productId = await lettreProId();
+      const anonymousId = randomUUID();
+      const ipHash = `ip-${randomUUID()}`;
+      const idempotencyKey = randomUUID();
 
-    const first = await recordAnonymousGeneration({
-      productId,
-      productVersion: 1,
-      anonymousId,
-      ipHash,
-      input: {},
-      idempotencyKey,
-      limit: 1,
-    });
-    const second = await recordAnonymousGeneration({
-      productId,
-      productVersion: 1,
-      anonymousId,
-      ipHash,
-      input: {},
-      idempotencyKey,
-      limit: 1,
-    });
+      const first = await recordAnonymousGeneration({
+        productId,
+        productVersion: 1,
+        anonymousId,
+        ipHash,
+        input: {},
+        idempotencyKey,
+        limit: 1,
+      });
+      const second = await recordAnonymousGeneration({
+        productId,
+        productVersion: 1,
+        anonymousId,
+        ipHash,
+        input: {},
+        idempotencyKey,
+        limit: 1,
+      });
 
-    expect(first.ok && second.ok && first.id === second.id).toBe(true);
-    const rows = await db.select().from(generations).where(eq(generations.idempotencyKey, idempotencyKey));
-    expect(rows).toHaveLength(1);
-    await db.delete(generations).where(eq(generations.idempotencyKey, idempotencyKey));
+      expect(first.ok && second.ok && first.id === second.id).toBe(true);
+      const rows = await db.select().from(generations).where(eq(generations.idempotencyKey, idempotencyKey));
+      expect(rows).toHaveLength(1);
+    });
   });
 });
 
@@ -593,79 +607,71 @@ describe("countRecentGenerations", () => {
   }
 
   it("counts rows inside the 60 s window and excludes older ones, by user and by ip", async () => {
-    // freshUserId(), not a shared db.query.users.findFirst() row (review
-    // round, HIGH): app/(products)/[app]/api/generate/route.test.ts also
-    // grabs "a" user this way and, unmocked, writes real generations for it
-    // through the real POST handler. Both files run concurrently under
-    // Vitest against the same worktree DB; a concurrent write landing for
-    // the shared user between this test's inserts and its
-    // countRecentGenerations call pushed `byUser` to 3 instead of 2.
-    // Reproduced directly: looping the two files together failed `expect(
-    // byUser).toBe(2)` with `byUser` off by one in 4 of 5 runs before this
-    // fix. A fresh, never-shared user removes any other suite from the
-    // count.
-    const userId = await freshUserId();
-    getSession.mockResolvedValue({ user: { id: userId } });
-    const { countRecentGenerations } = await import("./generations");
-    const productId = await lettreProId();
-    const ipHash = `ip-${randomUUID()}`;
-    const ids = [
-      await insertAt({ productId, userId, ipHash, secondsAgo: 0 }),
-      await insertAt({ productId, userId, ipHash, secondsAgo: 30 }),
+    await withTestTransaction(async () => {
+      // freshUserId(), not a shared db.query.users.findFirst() row (review
+      // round, HIGH): app/(products)/[app]/api/generate/route.test.ts also
+      // grabs "a" user this way and, unmocked, writes real generations for it
+      // through the real POST handler. Both files run concurrently under
+      // Vitest against the same worktree DB; a concurrent write landing for
+      // the shared user between this test's inserts and its
+      // countRecentGenerations call pushed `byUser` to 3 instead of 2.
+      // Reproduced directly: looping the two files together failed `expect(
+      // byUser).toBe(2)` with `byUser` off by one in 4 of 5 runs before this
+      // fix. A fresh, never-shared user removes any other suite from the
+      // count.
+      const userId = await freshUserId();
+      getSession.mockResolvedValue({ user: { id: userId } });
+      const { countRecentGenerations } = await import("./generations");
+      const productId = await lettreProId();
+      const ipHash = `ip-${randomUUID()}`;
+      await insertAt({ productId, userId, ipHash, secondsAgo: 0 });
+      await insertAt({ productId, userId, ipHash, secondsAgo: 30 });
       // Outside the window: must not be counted.
-      await insertAt({ productId, userId, ipHash, secondsAgo: 61 }),
-    ];
+      await insertAt({ productId, userId, ipHash, secondsAgo: 61 });
 
-    try {
       const { byUser, byIp } = await countRecentGenerations({ userId, ipHash, windowSeconds: 60 });
       expect(byUser).toBe(2);
       expect(byIp).toBe(2);
-    } finally {
-      for (const id of ids) await db.delete(generations).where(eq(generations.id, id));
-    }
+    });
   });
 
   it("scopes by ip_hash across products, and a failed row still counts (rate limiting counts attempts)", async () => {
-    getSession.mockResolvedValue(null);
-    const { countRecentGenerations } = await import("./generations");
-    const productId = await lettreProId();
-    const otherId = await otherProductId();
-    const ipHash = `ip-${randomUUID()}`;
-    const ids = [
-      await insertAt({ productId, userId: null, ipHash, secondsAgo: 0, status: "succeeded" }),
-      await insertAt({ productId: otherId, userId: null, ipHash, secondsAgo: 0, status: "failed" }),
-    ];
+    await withTestTransaction(async () => {
+      getSession.mockResolvedValue(null);
+      const { countRecentGenerations } = await import("./generations");
+      const productId = await lettreProId();
+      const otherId = await otherProductId();
+      const ipHash = `ip-${randomUUID()}`;
+      await insertAt({ productId, userId: null, ipHash, secondsAgo: 0, status: "succeeded" });
+      await insertAt({ productId: otherId, userId: null, ipHash, secondsAgo: 0, status: "failed" });
 
-    try {
       const { byIp } = await countRecentGenerations({ userId: null, ipHash, windowSeconds: 60 });
       expect(byIp).toBe(2);
-    } finally {
-      for (const id of ids) await db.delete(generations).where(eq(generations.id, id));
-    }
+    });
   });
 
   it("byUser is 0 for an anonymous caller (userId null), regardless of byIp", async () => {
-    getSession.mockResolvedValue(null);
-    const { countRecentGenerations } = await import("./generations");
-    const productId = await lettreProId();
-    const ipHash = `ip-${randomUUID()}`;
-    const id = await insertAt({ productId, userId: null, ipHash, secondsAgo: 0 });
+    await withTestTransaction(async () => {
+      getSession.mockResolvedValue(null);
+      const { countRecentGenerations } = await import("./generations");
+      const productId = await lettreProId();
+      const ipHash = `ip-${randomUUID()}`;
+      await insertAt({ productId, userId: null, ipHash, secondsAgo: 0 });
 
-    try {
       const { byUser, byIp } = await countRecentGenerations({ userId: null, ipHash, windowSeconds: 60 });
       expect(byUser).toBe(0);
       expect(byIp).toBe(1);
-    } finally {
-      await db.delete(generations).where(eq(generations.id, id));
-    }
+    });
   });
 
   it("throws when the given userId does not match the session", async () => {
-    const randomUser = await db.query.users.findFirst();
-    getSession.mockResolvedValue({ user: { id: randomUser!.id } });
-    const { countRecentGenerations } = await import("./generations");
-    await expect(
-      countRecentGenerations({ userId: "someone-else", ipHash: "hash", windowSeconds: 60 }),
-    ).rejects.toThrow();
+    await withTestTransaction(async () => {
+      const randomUser = await db.query.users.findFirst();
+      getSession.mockResolvedValue({ user: { id: randomUser!.id } });
+      const { countRecentGenerations } = await import("./generations");
+      await expect(
+        countRecentGenerations({ userId: "someone-else", ipHash: "hash", windowSeconds: 60 }),
+      ).rejects.toThrow();
+    });
   });
 });

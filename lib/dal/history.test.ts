@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { eq, inArray } from "drizzle-orm";
-import { afterAll, afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
+import { eq } from "drizzle-orm";
+import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 import { db } from "@/lib/db";
+import { withTestTransaction } from "@/lib/db/test-transaction";
 import { users } from "@/lib/db/auth-schema";
 import { generations, productVersions, products, themes } from "@/lib/db/schema";
 import { SEED_OWNER } from "@/scripts/seed";
@@ -9,30 +10,8 @@ import { SEED_OWNER } from "@/scripts/seed";
 const getSession = vi.fn();
 vi.mock("./session", () => ({ getSession: () => getSession() }));
 
-// This file writes rows other suites' tests share (lettre-pro's own
-// generations, and — via listProducts()'s unfiltered, cached read — every
-// product row): everything inserted here is tracked and deleted, generations
-// first (FK), then product versions and products, then the throwaway users.
-const insertedGenerationIds: string[] = [];
-const createdProductIds: string[] = [];
-const createdUserIds: string[] = [];
-
-afterEach(async () => {
+afterEach(() => {
   getSession.mockReset();
-  if (insertedGenerationIds.length > 0) {
-    await db.delete(generations).where(inArray(generations.id, insertedGenerationIds));
-    insertedGenerationIds.length = 0;
-  }
-});
-
-afterAll(async () => {
-  for (const id of createdProductIds) {
-    await db.delete(productVersions).where(eq(productVersions.productId, id));
-    await db.delete(products).where(eq(products.id, id));
-  }
-  if (createdUserIds.length > 0) {
-    await db.delete(users).where(inArray(users.id, createdUserIds));
-  }
 });
 
 async function lettreProId(): Promise<string> {
@@ -48,7 +27,6 @@ async function createUser(): Promise<string> {
     .insert(users)
     .values({ id: randomUUID(), name: "History test user", email: `history-${randomUUID()}@example.com` })
     .returning({ id: users.id });
-  createdUserIds.push(row!.id);
   return row!.id;
 }
 
@@ -92,7 +70,6 @@ async function createProduct(): Promise<string> {
     },
     createdBy: owner!.id,
   });
-  createdProductIds.push(product!.id);
   return product!.id;
 }
 
@@ -120,10 +97,18 @@ async function insertGeneration(overrides: {
       ...(overrides.createdAt ? { createdAt: overrides.createdAt } : {}),
     })
     .returning({ id: generations.id });
-  insertedGenerationIds.push(row!.id);
   return row!.id;
 }
 
+// Fixtures and cleanup only, refactored onto withTestTransaction
+// (TOOLING-test-transaction): every test below now runs inside a
+// transaction that is always rolled back, so the manual afterEach/afterAll
+// deletes this file used to track (insertedGenerationIds, createdProductIds,
+// createdUserIds) are gone. Assertions are unchanged. The two page-guard
+// tests that spy on db.query.generations.findMany stay outside
+// withTestTransaction (tdd-workflow skill): they write nothing, and
+// asserting "no query happened" against a spy planted on the base instance
+// is simplest without a transaction scope in the way.
 describe("listGenerations", () => {
   it("has the spec's literal signature", async () => {
     const { listGenerations } = await import("./history");
@@ -134,120 +119,138 @@ describe("listGenerations", () => {
   });
 
   it("returns an empty page for a user with no generations", async () => {
-    const userId = await createUser();
-    getSession.mockResolvedValue({ user: { id: userId } });
-    const { listGenerations } = await import("./history");
+    await withTestTransaction(async () => {
+      const userId = await createUser();
+      getSession.mockResolvedValue({ user: { id: userId } });
+      const { listGenerations } = await import("./history");
 
-    const result = await listGenerations(userId, await lettreProId(), 1);
-    expect(result).toEqual({ entries: [], page: 1, total: 0, hasMore: false });
+      const result = await listGenerations(userId, await lettreProId(), 1);
+      expect(result).toEqual({ entries: [], page: 1, total: 0, hasMore: false });
+    });
   });
 
   it("orders newest first and paginates 20 per page, with a stable order across equal timestamps", async () => {
-    const userId = await createUser();
-    const productId = await createProduct();
-    getSession.mockResolvedValue({ user: { id: userId } });
+    await withTestTransaction(async () => {
+      const userId = await createUser();
+      const productId = await createProduct();
+      getSession.mockResolvedValue({ user: { id: userId } });
 
-    const sameInstant = new Date("2026-01-01T00:00:00.000Z");
-    const ids: string[] = [];
-    for (let index = 0; index < 21; index += 1) {
-      // Two rows share the same timestamp to exercise the tie-break
-      // (`created_at DESC, id DESC`): no duplicate, no gap across pages.
-      const createdAt = index < 2 ? sameInstant : new Date(sameInstant.getTime() + index * 1000);
-      ids.push(await insertGeneration({ productId, userId, input: { topic: `t${index}` }, createdAt }));
-    }
+      const sameInstant = new Date("2026-01-01T00:00:00.000Z");
+      const ids: string[] = [];
+      for (let index = 0; index < 21; index += 1) {
+        // Two rows share the same timestamp to exercise the tie-break
+        // (`created_at DESC, id DESC`): no duplicate, no gap across pages.
+        const createdAt = index < 2 ? sameInstant : new Date(sameInstant.getTime() + index * 1000);
+        ids.push(await insertGeneration({ productId, userId, input: { topic: `t${index}` }, createdAt }));
+      }
 
-    const { listGenerations } = await import("./history");
-    const firstPage = await listGenerations(userId, productId, 1);
-    expect(firstPage.entries).toHaveLength(20);
-    expect(firstPage.total).toBe(21);
-    expect(firstPage.hasMore).toBe(true);
+      const { listGenerations } = await import("./history");
+      const firstPage = await listGenerations(userId, productId, 1);
+      expect(firstPage.entries).toHaveLength(20);
+      expect(firstPage.total).toBe(21);
+      expect(firstPage.hasMore).toBe(true);
 
-    const secondPage = await listGenerations(userId, productId, 2);
-    expect(secondPage.entries).toHaveLength(1);
-    expect(secondPage.hasMore).toBe(false);
+      const secondPage = await listGenerations(userId, productId, 2);
+      expect(secondPage.entries).toHaveLength(1);
+      expect(secondPage.hasMore).toBe(false);
 
-    const allIds = [...firstPage.entries, ...secondPage.entries].map((entry) => entry.id);
-    expect(new Set(allIds).size).toBe(21);
-    expect(allIds.sort()).toEqual([...ids].sort());
+      const allIds = [...firstPage.entries, ...secondPage.entries].map((entry) => entry.id);
+      expect(new Set(allIds).size).toBe(21);
+      expect(allIds.sort()).toEqual([...ids].sort());
+    });
   });
 
   it("excludes pending and failed generations from entries and total", async () => {
-    const userId = await createUser();
-    const productId = await createProduct();
-    getSession.mockResolvedValue({ user: { id: userId } });
+    await withTestTransaction(async () => {
+      const userId = await createUser();
+      const productId = await createProduct();
+      getSession.mockResolvedValue({ user: { id: userId } });
 
-    await insertGeneration({ productId, userId, status: "succeeded" });
-    await insertGeneration({ productId, userId, status: "pending" });
-    await insertGeneration({ productId, userId, status: "failed" });
+      await insertGeneration({ productId, userId, status: "succeeded" });
+      await insertGeneration({ productId, userId, status: "pending" });
+      await insertGeneration({ productId, userId, status: "failed" });
 
-    const { listGenerations } = await import("./history");
-    const result = await listGenerations(userId, productId, 1);
-    expect(result.total).toBe(1);
-    expect(result.entries).toHaveLength(1);
+      const { listGenerations } = await import("./history");
+      const result = await listGenerations(userId, productId, 1);
+      expect(result.total).toBe(1);
+      expect(result.entries).toHaveLength(1);
+    });
   });
 
   it("a user never sees another user's generations on the same product", async () => {
-    const userA = await createUser();
-    const userB = await createUser();
-    const productId = await createProduct();
-    await insertGeneration({ productId, userId: userB });
+    await withTestTransaction(async () => {
+      const userA = await createUser();
+      const userB = await createUser();
+      const productId = await createProduct();
+      await insertGeneration({ productId, userId: userB });
 
-    getSession.mockResolvedValue({ user: { id: userA } });
-    const { listGenerations } = await import("./history");
-    const result = await listGenerations(userA, productId, 1);
-    expect(result).toEqual({ entries: [], page: 1, total: 0, hasMore: false });
+      getSession.mockResolvedValue({ user: { id: userA } });
+      const { listGenerations } = await import("./history");
+      const result = await listGenerations(userA, productId, 1);
+      expect(result).toEqual({ entries: [], page: 1, total: 0, hasMore: false });
+    });
   });
 
   it("throws when userOrAnonId does not match the session user", async () => {
-    const userA = await createUser();
-    getSession.mockResolvedValue({ user: { id: userA } });
-    const { listGenerations } = await import("./history");
-    await expect(listGenerations("someone-else", await lettreProId(), 1)).rejects.toThrow();
+    await withTestTransaction(async () => {
+      const userA = await createUser();
+      getSession.mockResolvedValue({ user: { id: userA } });
+      const { listGenerations } = await import("./history");
+      await expect(listGenerations("someone-else", await lettreProId(), 1)).rejects.toThrow();
+    });
   });
 
   it("anonymous: filters by anonymous_id and excludes rows that have a user_id, even with the same value", async () => {
-    const productId = await createProduct();
-    const anonymousId = randomUUID();
-    await insertGeneration({ productId, anonymousId });
-    // A user-owned row that happens to carry the same anonymous_id (e.g. the
-    // user's own signup cookie): must not leak into the anonymous view.
-    const userB = await createUser();
-    await insertGeneration({ productId, userId: userB, anonymousId });
+    await withTestTransaction(async () => {
+      const productId = await createProduct();
+      const anonymousId = randomUUID();
+      await insertGeneration({ productId, anonymousId });
+      // A user-owned row that happens to carry the same anonymous_id (e.g. the
+      // user's own signup cookie): must not leak into the anonymous view.
+      const userB = await createUser();
+      await insertGeneration({ productId, userId: userB, anonymousId });
 
-    getSession.mockResolvedValue(null);
-    const { listGenerations } = await import("./history");
-    const result = await listGenerations(anonymousId, productId, 1);
-    expect(result.total).toBe(1);
-    expect(result.entries[0]!.output).toBeTruthy();
+      getSession.mockResolvedValue(null);
+      const { listGenerations } = await import("./history");
+      const result = await listGenerations(anonymousId, productId, 1);
+      expect(result.total).toBe(1);
+      expect(result.entries[0]!.output).toBeTruthy();
+    });
   });
 
   it("anonymous: an unknown anonymous id returns an empty page", async () => {
-    getSession.mockResolvedValue(null);
-    const { listGenerations } = await import("./history");
-    const result = await listGenerations(randomUUID(), await lettreProId(), 1);
-    expect(result).toEqual({ entries: [], page: 1, total: 0, hasMore: false });
+    await withTestTransaction(async () => {
+      getSession.mockResolvedValue(null);
+      const { listGenerations } = await import("./history");
+      const result = await listGenerations(randomUUID(), await lettreProId(), 1);
+      expect(result).toEqual({ entries: [], page: 1, total: 0, hasMore: false });
+    });
   });
 
   it("normalizes a structured jsonb output to a pretty-printed JSON string", async () => {
-    const userId = await createUser();
-    const productId = await createProduct();
-    getSession.mockResolvedValue({ user: { id: userId } });
-    await insertGeneration({ productId, userId, output: { names: ["Alpha", "Beta"] } });
+    await withTestTransaction(async () => {
+      const userId = await createUser();
+      const productId = await createProduct();
+      getSession.mockResolvedValue({ user: { id: userId } });
+      await insertGeneration({ productId, userId, output: { names: ["Alpha", "Beta"] } });
 
-    const { listGenerations } = await import("./history");
-    const result = await listGenerations(userId, productId, 1);
-    expect(result.entries[0]!.output).toBe(JSON.stringify({ names: ["Alpha", "Beta"] }, null, 2));
+      const { listGenerations } = await import("./history");
+      const result = await listGenerations(userId, productId, 1);
+      expect(result.entries[0]!.output).toBe(JSON.stringify({ names: ["Alpha", "Beta"] }, null, 2));
+    });
   });
 
   it("keeps a string markdown output as-is", async () => {
-    const userId = await createUser();
-    const productId = await createProduct();
-    getSession.mockResolvedValue({ user: { id: userId } });
-    await insertGeneration({ productId, userId, output: "Bonjour, voici votre lettre." });
+    await withTestTransaction(async () => {
+      const userId = await createUser();
+      const productId = await createProduct();
+      getSession.mockResolvedValue({ user: { id: userId } });
+      await insertGeneration({ productId, userId, output: "Bonjour, voici votre lettre." });
 
-    const { listGenerations } = await import("./history");
-    const result = await listGenerations(userId, productId, 1);
-    expect(result.entries[0]!.output).toBe("Bonjour, voici votre lettre.");
+      const { listGenerations } = await import("./history");
+      const result = await listGenerations(userId, productId, 1);
+      expect(result.entries[0]!.output).toBe("Bonjour, voici votre lettre.");
+    });
   });
 
   it.each([0, -1, 1.5, Number.NaN])(

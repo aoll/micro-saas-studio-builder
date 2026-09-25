@@ -47,7 +47,7 @@ const RESET_LOCK_KEY = sql`hashtext('reset-demo')`;
 // and survive). Usage carries no `is_seed` column of its own, so a full
 // wipe followed by applySeed's fresh, deterministic replay is the only
 // way to guarantee the reset story matches the seed exactly — a partial
-// wipe would leave stray visitor activity mixed into a locked product's
+// wipe would leave stray visitor activity mixed into a seeded product's
 // metrics. Exported so scripts/reset-demo.test.ts can assert on it
 // directly, one statement at a time, on the isolated database it creates.
 export async function applyReset(tx: SeedTx, now: Date): Promise<void> {
@@ -70,7 +70,7 @@ export async function applyReset(tx: SeedTx, now: Date): Promise<void> {
     await tx.delete(products).where(inArray(products.id, visitorProductIds));
   }
 
-  // Replays the seeded catalogue (idempotent upserts: themes, the 3 locked
+  // Replays the seeded catalogue (idempotent upserts: themes, the 3 seeded
   // products, the default thresholds, admin/owner) and fresh usage.
   await applySeed(tx, now);
 }

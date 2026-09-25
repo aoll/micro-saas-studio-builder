@@ -1,6 +1,6 @@
 // Idempotent local seed (specs/CONTRACT-data.md, specs/DEMO-mode.md): the 4
 // dossier themes (docs/01-produit.md › Thèmes seedés pour la démo), the 3
-// locked products that tell the scale / hesitate / kill story
+// seeded products that tell the scale / hesitate / kill story
 // (docs/01 › Contenu des produits seedés), the admin and owner accounts,
 // the studio's default decision thresholds (docs/07-modele-de-donnees.md),
 // and 30 days of usage that makes the story readable through the real
@@ -308,7 +308,7 @@ function readGenerationFixtures(slug: string): GenerationFixture[] {
   return fixtures;
 }
 
-// The 3 locked products that tell the story (docs/01 › Contenu des
+// The 3 seeded products that tell the story (docs/01 › Contenu des
 // produits seedés): LettrePro scales, DescriPro hesitates (no badge),
 // NomDeMarque gets flagged to cut. BioInsta stays a fixture-only config,
 // created live during the demo script (fixtures/fixtures.test.ts).
@@ -736,7 +736,7 @@ async function insertSeedUsage(tx: SeedTx, productId: string, slug: string, plan
   }
 }
 
-// The catalogue (themes, the 3 locked products, thresholds, admin/owner
+// The catalogue (themes, the 3 seeded products, thresholds, admin/owner
 // accounts) plus 30 days of usage that tells the story, replaced on every
 // run (orchestrator decision 4: "Usage is replaced in one transaction").
 export async function applySeed(tx: SeedTx, now: Date): Promise<void> {
@@ -793,7 +793,7 @@ export async function seed(opts: { sql?: postgres.Sql; now?: Date } = {}): Promi
       await applySeed(tx, opts.now ?? new Date());
     });
     console.log(
-      "Seed complete: 4 themes, 3 locked products (LettrePro/DescriPro/NomDeMarque), admin and owner accounts, default thresholds, 30 days of usage.",
+      "Seed complete: 4 themes, 3 seeded products (LettrePro/DescriPro/NomDeMarque), admin and owner accounts, default thresholds, 30 days of usage.",
     );
   } finally {
     if (ownsSql) await sqlClient.end({ timeout: 5 });

@@ -146,9 +146,9 @@
     },
     "QA1-P4-E1-erreurs-perimees": {
       "dependsOn": [],
-      "status": "dispatched",
-      "worktree": "qa1-p4-e1-erreurs-perimees",
-      "pr": null,
+      "status": "merged",
+      "worktree": null,
+      "pr": 71,
       "mode": "plan dans la spec"
     }
   },

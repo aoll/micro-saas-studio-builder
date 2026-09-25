@@ -25,6 +25,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx scripts/seed.ts",
+    "db:seed:if-empty": "tsx scripts/seed-if-empty.ts",
     "prepare": "husky"
   },
   "dependencies": {

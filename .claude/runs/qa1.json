@@ -37,9 +37,9 @@
     },
     "QA1-P1-B3-paiement-pricing": {
       "dependsOn": [],
-      "status": "dispatched",
-      "worktree": "qa1-p1-b3-paiement-pricing",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 63
     },
     "QA1-P1-B4-visite-double": {
       "dependsOn": [],

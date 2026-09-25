@@ -157,9 +157,9 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "dispatched",
-      "worktree": "bo-05a-formulaire",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 18
     },
     "BO-05b-generation-publication": {
       "dependsOn": [
@@ -177,8 +177,8 @@
         "CONTRACT-ui",
         "BO-05a-formulaire"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "bo-07-themes",
       "pr": null
     },
     "DEMO-mode": {

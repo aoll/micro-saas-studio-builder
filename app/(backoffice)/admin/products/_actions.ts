@@ -6,7 +6,13 @@ import { updateTag } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { toolInputSchema } from "@/app/(products)/[app]/tool/_lib/tool-input-schema";
 import { costMicros, streamGeneration, type GenerationUsage } from "@/lib/ai/generate";
-import { createProduct, isSlugAvailable, listThemeOptions, saveVersion } from "@/lib/dal/product-editor";
+import {
+  createProduct,
+  isSlugAvailable,
+  listThemeOptions,
+  publishProduct,
+  saveVersion,
+} from "@/lib/dal/product-editor";
 import { requireAdmin } from "@/lib/dal/session";
 import { env } from "@/lib/env";
 import { guardRequest } from "@/lib/security";
@@ -276,4 +282,90 @@ const REFERENCE_USAGE: GenerationUsage = { inputTokens: 1000, outputTokens: 500,
 export async function estimateGenerationCost(model: string): Promise<{ costMicros: number }> {
   await requireAdmin();
   return { costMicros: costMicros(model, REFERENCE_USAGE) };
+}
+
+export type PublishState = {
+  ok?: boolean;
+  slug?: string;
+  version?: number;
+  url?: string;
+  errors?: Record<string, string>;
+  step?: number;
+  formError?: string;
+};
+
+// BO-05 step 7's « Publier » (docs/02-ecrans.md): "what you see goes live"
+// (the plan's orchestrator decision 1) — saves the current form as a new
+// version, then publishes that very version, in create mode as well as
+// edit mode (a create-mode publish never requires a prior "Enregistrer").
+// Same full-config validation as `saveProduct` (a product only goes live
+// once every step is valid), plus `publishProduct`'s cache-visible move of
+// `current_version`.
+export async function publish(
+  slug: string | null,
+  _prevState: PublishState,
+  formData: FormData,
+): Promise<PublishState> {
+  await requireAdmin();
+
+  const parsedForm = parseConfigForm(formData);
+  if (!parsedForm.ok) return { formError: parsedForm.formError };
+
+  const parsed = productConfigSchema.safeParse(parsedForm.candidate);
+  if (!parsed.success) {
+    const step = Math.min(...parsed.error.issues.map((issue) => stepOfPath(issue.path)));
+    return { errors: issuesToErrors(parsed.error.issues), step };
+  }
+  const config = parsed.data;
+
+  const themeOptions = await listThemeOptions();
+  if (!themeOptions.some((theme) => theme.id === config.themeId)) {
+    return { errors: { themeId: "Thème introuvable" }, step: 2 };
+  }
+
+  try {
+    let publishedSlug: string;
+    let publishedVersion: number;
+
+    if (slug === null) {
+      if (!(await isSlugAvailable(config.slug))) {
+        return { errors: { slug: "Ce slug est déjà utilisé" }, step: 1 };
+      }
+      const created = await createProduct(config);
+      const published = await publishProduct(created.slug, created.version);
+      if (!published) {
+        // createProduct just returned this very (id, version): publishProduct
+        // not finding it would be a database inconsistency, not a normal
+        // "not found" the admin can act on.
+        throw new Error(
+          `publish: publishProduct(${created.slug}, ${created.version}) returned null right after createProduct`,
+        );
+      }
+      publishedSlug = published.slug;
+      publishedVersion = published.version;
+    } else {
+      if (!slugSchema.safeParse(slug).success) {
+        return { formError: "Slug invalide" };
+      }
+      const saved = await saveVersion(slug, config);
+      if (!saved) return { formError: "Produit introuvable" };
+      const published = await publishProduct(slug, saved.version);
+      if (!published) {
+        throw new Error(`publish: publishProduct(${slug}, ${saved.version}) returned null right after saveVersion`);
+      }
+      publishedSlug = published.slug;
+      publishedVersion = published.version;
+    }
+
+    updateTag("products");
+    updateTag(`product:${publishedSlug}`);
+    return { ok: true, slug: publishedSlug, version: publishedVersion, url: `/${publishedSlug}` };
+  } catch (err) {
+    unstable_rethrow(err);
+    if (isUniqueSlugViolation(err)) {
+      return { errors: { slug: "Ce slug est déjà utilisé" }, step: 1 };
+    }
+    console.error("[admin/products] publish failed", err);
+    throw err;
+  }
 }

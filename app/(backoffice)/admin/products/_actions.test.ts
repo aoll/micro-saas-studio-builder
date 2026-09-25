@@ -498,3 +498,145 @@ describe("estimateGenerationCost", () => {
     );
   });
 });
+
+describe("publish · create path", () => {
+  it("redirects a non-admin caller without writing anything", async () => {
+    requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
+    const { publish } = await import("./_actions");
+    const config = await buildConfig();
+    await expect(publish(null, {}, configForm(config))).rejects.toThrow("redirect:/admin/login");
+    const row = await db.query.products.findFirst({ where: eq(products.slug, config.slug) });
+    expect(row).toBeUndefined();
+  });
+
+  it("returns step errors for an invalid config without creating a product", async () => {
+    await currentAdmin();
+    const { publish } = await import("./_actions");
+    const config = await buildConfig({ slug: "admin" });
+    const result = await publish(null, {}, configForm(config));
+    expect(result.step).toBe(1);
+    expect(result.errors?.slug).toBeTruthy();
+    const row = await db.query.products.findFirst({ where: eq(products.slug, "admin") });
+    expect(row).toBeUndefined();
+  });
+
+  it("returns a step 2 error for an unknown theme", async () => {
+    await currentAdmin();
+    const { publish } = await import("./_actions");
+    const config = await buildConfig({ themeId: randomUUID() });
+    const result = await publish(null, {}, configForm(config));
+    expect(result.step).toBe(2);
+    expect(result.errors?.themeId).toBeTruthy();
+  });
+
+  it("returns a step 1 error when the slug is already taken", async () => {
+    await currentAdmin();
+    const { publish } = await import("./_actions");
+    const config = await buildConfig({ slug: "lettre-pro" });
+    const result = await publish(null, {}, configForm(config));
+    expect(result.step).toBe(1);
+    expect(result.errors?.slug).toBeTruthy();
+  });
+
+  it("creates and publishes the product as v1, tags the cache, and returns the url", async () => {
+    await currentAdmin();
+    const { publish } = await import("./_actions");
+    const config = await buildConfig();
+    const result = await publish(null, {}, configForm(config));
+    expect(result).toMatchObject({ ok: true, slug: config.slug, version: 1, url: `/${config.slug}` });
+    expect(updateTag).toHaveBeenCalledWith("products");
+    expect(updateTag).toHaveBeenCalledWith(`product:${config.slug}`);
+
+    const row = await db.query.products.findFirst({ where: eq(products.slug, config.slug) });
+    expect(row).toMatchObject({ currentVersion: 1 });
+    await cleanupProduct(row!.id);
+  });
+});
+
+describe("publish · slug race", () => {
+  afterEach(() => {
+    vi.doUnmock("@/lib/dal/product-editor");
+    vi.resetModules();
+  });
+
+  it("returns a step 1 slug error when createProduct hits a unique constraint violation", async () => {
+    await currentAdmin();
+    vi.resetModules();
+    vi.doMock("@/lib/dal/product-editor", async () => {
+      const actual = await vi.importActual<typeof import("@/lib/dal/product-editor")>("@/lib/dal/product-editor");
+      return {
+        ...actual,
+        isSlugAvailable: async () => true,
+        createProduct: async () => {
+          const err = new Error('duplicate key value violates unique constraint "products_slug_unique"') as Error & {
+            code: string;
+          };
+          err.code = "23505";
+          throw err;
+        },
+      };
+    });
+    const { publish } = await import("./_actions");
+    const config = await buildConfig();
+    const result = await publish(null, {}, configForm(config));
+    expect(result).toEqual({ errors: { slug: "Ce slug est déjà utilisé" }, step: 1 });
+  });
+
+  it("rethrows an unrelated database error instead of reporting a slug conflict", async () => {
+    await currentAdmin();
+    vi.resetModules();
+    vi.doMock("@/lib/dal/product-editor", async () => {
+      const actual = await vi.importActual<typeof import("@/lib/dal/product-editor")>("@/lib/dal/product-editor");
+      return {
+        ...actual,
+        isSlugAvailable: async () => true,
+        createProduct: async () => {
+          throw new Error("connection reset by peer");
+        },
+      };
+    });
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { publish } = await import("./_actions");
+    const config = await buildConfig();
+    await expect(publish(null, {}, configForm(config))).rejects.toThrow("connection reset by peer");
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+});
+
+describe("publish · edit path", () => {
+  it("returns a form error for an invalid bound slug", async () => {
+    await currentAdmin();
+    const { publish } = await import("./_actions");
+    const config = await buildConfig();
+    const result = await publish("Not A Slug", {}, configForm(config));
+    expect(result.formError).toBeTruthy();
+  });
+
+  it("returns 'Produit introuvable' when saveVersion finds nothing, without an updateTag", async () => {
+    await currentAdmin();
+    const { publish } = await import("./_actions");
+    const config = await buildConfig();
+    const result = await publish(`missing-${randomUUID()}`, {}, configForm(config));
+    expect(result.formError).toBe("Produit introuvable");
+    expect(updateTag).not.toHaveBeenCalled();
+  });
+
+  it("saves a new version, publishes it as v2, and tags the cache", async () => {
+    await currentAdmin();
+    const { publish, saveProduct } = await import("./_actions");
+    const config = await buildConfig();
+    const created = await saveProduct(null, {}, configForm(config));
+    expect(created.ok).toBe(true);
+    updateTag.mockReset();
+
+    const result = await publish(config.slug, {}, configForm({ ...config, name: "Renamed" }));
+    expect(result).toMatchObject({ ok: true, slug: config.slug, version: 2, url: `/${config.slug}` });
+    expect(updateTag).toHaveBeenCalledWith("products");
+    expect(updateTag).toHaveBeenCalledWith(`product:${config.slug}`);
+
+    const row = await db.query.products.findFirst({ where: eq(products.slug, config.slug) });
+    expect(row).toMatchObject({ currentVersion: 2 });
+    await cleanupProduct(row!.id);
+  });
+});

@@ -58,16 +58,16 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "dispatched",
-      "worktree": "sa-02-outil",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 19
     },
     "SA-06-historique": {
       "dependsOn": [
         "SA-02-outil"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "sa-06-historique",
       "pr": null
     },
     "LEDGER": {
@@ -166,8 +166,8 @@
         "BO-05a-formulaire",
         "SA-02-outil"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "bo-05b-generation-publication",
       "pr": null
     },
     "BO-07-themes": {
@@ -337,7 +337,7 @@
       "spec": "SA-02-outil",
       "blockedOn": "TRACKING",
       "what": "api/generate: use TRACKING anonymous-id helper (ANONYMOUS_ID_COOKIE, readAnonymousId, anonymousIdCookie) instead of inline cookie code",
-      "resolved": false
+      "resolved": true
     },
     {
       "spec": "SA-01-landing",
@@ -349,6 +349,18 @@
       "spec": "SA-04-tarifs",
       "blockedOn": "SA-05-paiement",
       "what": "drop the `/${slug}/checkout/${packId}` as Route cast in [app]/pricing/_components/pricing-content.tsx once the checkout route exists; un-fixme e2e/pricing.spec.ts journey 3 once SA-02 and LEDGER are merged",
+      "resolved": false
+    },
+    {
+      "spec": "BO-07-themes",
+      "blockedOn": "BO-08-editeur-theme",
+      "what": "wrap ThemeCard (admin/themes/_components/theme-card.tsx) in a <Link> to /admin/themes/[id] once the editor route exists",
+      "resolved": false
+    },
+    {
+      "spec": "CONTRACT-ui",
+      "blockedOn": "BO-07-themes",
+      "what": "drop the \"/admin/themes\" as Route cast (and comment) in components/backoffice/admin-sidebar.tsx once /admin/themes exists",
       "resolved": false
     }
   ],
@@ -370,6 +382,10 @@
     {
       "for": "BO-03, BO-09",
       "note": "lib/decision.ts (BO-02): evaluate(metrics: DecisionMetrics, thresholds: Thresholds): \"kill\"|\"scale\"|null; metric definitions in lib/dal/metrics.ts header; admin/loading.tsx wraps nested admin routes."
+    },
+    {
+      "for": "BO-05b",
+      "note": "publishProduct must updateTag(\"products\") (and product:<slug>) when theme_id/locale change, else BO-07 counts and layouts stay stale; sync products.theme_id/locale from the published config (BO-05a)."
     }
   ]
 }

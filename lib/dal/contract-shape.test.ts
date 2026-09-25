@@ -9,7 +9,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/auth-schema";
-import { productVersions, products, themes } from "@/lib/db/schema";
+import { balances, creditTransactions, generations, productVersions, products, themes } from "@/lib/db/schema";
 import type { ProductConfig } from "@/lib/schemas/product-config";
 import { SEED_OWNER } from "@/scripts/seed";
 
@@ -19,12 +19,17 @@ let ownerId: string;
 let lettreProId: string;
 let editorialThemeId: string;
 
+// Mutable so the "debit matches DebitResult" test can briefly impersonate a
+// throwaway user instead of the seeded owner (see that test): every other
+// test in this file keeps running as the owner.
+let sessionUserId: string;
+
 vi.mock("./session", async () => {
   const actual = await vi.importActual<typeof import("./session")>("./session");
   return {
     ...actual,
-    getSession: async () => ({ user: { id: ownerId, role: "owner" } }),
-    requireAdmin: async () => ({ user: { id: ownerId, role: "owner" } }),
+    getSession: async () => ({ user: { id: sessionUserId, role: "owner" } }),
+    requireAdmin: async () => ({ user: { id: sessionUserId, role: "owner" } }),
   };
 });
 
@@ -40,6 +45,7 @@ afterAll(async () => {
 beforeAll(async () => {
   const owner = await db.query.users.findFirst({ where: eq(users.email, SEED_OWNER.email) });
   ownerId = owner!.id;
+  sessionUserId = ownerId;
   const lettrePro = await db.query.products.findFirst({ where: eq(products.slug, "lettre-pro") });
   lettreProId = lettrePro!.id;
   const editorial = await db.query.themes.findFirst({ where: eq(themes.slug, "editorial") });
@@ -57,26 +63,47 @@ describe("credits", () => {
   it("debit matches DebitResult", async () => {
     // A real ledger enforces the FK from credit_transactions.generation_id
     // to generations.id (LEDGER): pass a real generation instead of the
-    // non-uuid "g1" no honest ledger could accept.
-    const { recordGeneration } = await import("./generations");
-    const { id: generationId } = await recordGeneration({
-      productId: lettreProId,
-      productVersion: 1,
-      userId: ownerId,
-      anonymousId: null,
-      ipHash: "hash",
-      input: {},
-      idempotencyKey: randomUUID(),
+    // non-uuid "g1" no honest ledger could accept. Uses a throwaway user
+    // (impersonated via sessionUserId) rather than the seeded owner, so this
+    // test never leaves a pending generation behind on the owner's account —
+    // that leak previously broke SA-02's "first_generation only on the
+    // caller's first generation" test, which reads the owner's generation
+    // history. Cleaned up in `finally`, whatever debit() returns.
+    const throwawayUserId = randomUUID();
+    await db.insert(users).values({
+      id: throwawayUserId,
+      name: "Contract shape test user",
+      email: `${throwawayUserId}@contract-shape.test`,
+      emailVerified: true,
     });
-    const { debit } = await import("./credits");
-    const result = await debit({
-      userId: ownerId,
-      productId: lettreProId,
-      cost: 1,
-      generationId,
-      idempotencyKey: randomUUID(),
-    });
-    expect(debitResultSchema.safeParse(result).success).toBe(true);
+    sessionUserId = throwawayUserId;
+    try {
+      const { recordGeneration } = await import("./generations");
+      const { id: generationId } = await recordGeneration({
+        productId: lettreProId,
+        productVersion: 1,
+        userId: throwawayUserId,
+        anonymousId: null,
+        ipHash: "hash",
+        input: {},
+        idempotencyKey: randomUUID(),
+      });
+      const { debit } = await import("./credits");
+      const result = await debit({
+        userId: throwawayUserId,
+        productId: lettreProId,
+        cost: 1,
+        generationId,
+        idempotencyKey: randomUUID(),
+      });
+      expect(debitResultSchema.safeParse(result).success).toBe(true);
+    } finally {
+      sessionUserId = ownerId;
+      await db.delete(creditTransactions).where(eq(creditTransactions.userId, throwawayUserId));
+      await db.delete(balances).where(eq(balances.userId, throwawayUserId));
+      await db.delete(generations).where(eq(generations.userId, throwawayUserId));
+      await db.delete(users).where(eq(users.id, throwawayUserId));
+    }
   });
 
   it("getBalance matches a non-negative number", async () => {

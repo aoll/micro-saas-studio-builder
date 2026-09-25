@@ -4,10 +4,14 @@ import { randomUUID } from "node:crypto";
 import { put } from "@vercel/blob";
 import { updateTag } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
-import { env } from "@/lib/env";
+import { toolInputSchema } from "@/app/(products)/[app]/tool/_lib/tool-input-schema";
+import { costMicros, streamGeneration, type GenerationUsage } from "@/lib/ai/generate";
 import { createProduct, isSlugAvailable, listThemeOptions, saveVersion } from "@/lib/dal/product-editor";
 import { requireAdmin } from "@/lib/dal/session";
-import { productConfigSchema, slugSchema } from "@/lib/schemas/product-config";
+import { env } from "@/lib/env";
+import { guardRequest } from "@/lib/security";
+import { generateInputSchema } from "@/lib/schemas/inputs";
+import { productConfigSchema, slugSchema, templateVariables } from "@/lib/schemas/product-config";
 import { detectImageType, IMAGE_EXTENSIONS, type DetectedImageType } from "./_components/product-form/image-signature";
 import { issuesToErrors, stepOfPath } from "./_components/product-form/validation";
 
@@ -33,6 +37,17 @@ function isUniqueSlugViolation(err: unknown): boolean {
   return typeof err === "object" && err !== null && "code" in err && (err as { code?: unknown }).code === "23505";
 }
 
+// Shared by every action below that reads the form's "config" hidden field
+// (product-form.tsx): unreadable JSON is a form-level error, not a
+// validation issue on a specific field.
+function parseConfigForm(formData: FormData): { ok: true; candidate: unknown } | { ok: false; formError: string } {
+  try {
+    return { ok: true, candidate: JSON.parse(String(formData.get("config") ?? "")) };
+  } catch {
+    return { ok: false, formError: "Configuration illisible" };
+  }
+}
+
 export async function saveProduct(
   slug: string | null,
   _prevState: SaveProductState,
@@ -40,12 +55,9 @@ export async function saveProduct(
 ): Promise<SaveProductState> {
   await requireAdmin();
 
-  let candidate: unknown;
-  try {
-    candidate = JSON.parse(String(formData.get("config") ?? ""));
-  } catch {
-    return { formError: "Configuration illisible" };
-  }
+  const parsedForm = parseConfigForm(formData);
+  if (!parsedForm.ok) return { formError: parsedForm.formError };
+  const candidate = parsedForm.candidate;
 
   const parsed = productConfigSchema.safeParse(candidate);
   if (!parsed.success) {
@@ -137,4 +149,131 @@ export async function uploadLogo(
     console.error("[admin/products] uploadLogo failed", err);
     return { error: "Échec de l'envoi du logo" };
   }
+}
+
+export type TestPromptState = {
+  ok?: boolean;
+  output?: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  costMicros?: number;
+  error?: string;
+};
+
+// The form waits for streamGeneration's callbacks rather than for
+// `consumeStream()` alone (see below): this bounds that wait so a stuck
+// mock or a misbehaving provider still returns to the admin.
+const TEST_PROMPT_TIMEOUT_MS = 20_000;
+
+// BO-05 step 5's « Tester le prompt » (docs/02-ecrans.md): a generation
+// run from the backoffice, without touching credits or `generations`
+// (docs/05-ia.md's `testPrompt` row: "Appel IA sans débit"). Reads the
+// same "config" field as `saveProduct`/`publish`, but only needs its
+// `inputs` and `generation` parts to be valid — the rest of the draft can
+// still have errors on other steps.
+export async function testPrompt(
+  slug: string | null,
+  _prevState: TestPromptState,
+  formData: FormData,
+): Promise<TestPromptState> {
+  await requireAdmin();
+
+  const guard = await guardRequest("test-prompt");
+  if (!guard.ok) {
+    return { error: "Trop de tests pour le moment, réessayez dans un instant." };
+  }
+
+  const parsedForm = parseConfigForm(formData);
+  if (!parsedForm.ok) return { error: parsedForm.formError };
+  const candidate = parsedForm.candidate as { inputs?: unknown; generation?: unknown };
+
+  const inputsResult = productConfigSchema.shape.inputs.safeParse(candidate.inputs);
+  if (!inputsResult.success) return { error: "Les champs de l'outil sont invalides" };
+  const generationResult = productConfigSchema.shape.generation.safeParse(candidate.generation);
+  if (!generationResult.success) return { error: "La configuration de génération est invalide" };
+  const inputs = inputsResult.data;
+  const generation = generationResult.data;
+
+  const fieldKeys = new Set(inputs.map((field) => field.key));
+  for (const variable of templateVariables(generation.promptTemplate)) {
+    if (!fieldKeys.has(variable)) {
+      return { error: `Variable {{${variable}}} sans champ correspondant` };
+    }
+  }
+
+  // Bonus per docs/01 (image output), out of this spec's Périmètre (plan's
+  // orchestrator decision 5): shown disabled in the picker, refused here
+  // too rather than silently mis-handled as markdown.
+  if (generation.outputType === "image") {
+    return { error: "La sortie image n'est pas encore disponible" };
+  }
+
+  let sampleCandidate: unknown;
+  try {
+    sampleCandidate = JSON.parse(String(formData.get("sample") ?? "{}"));
+  } catch {
+    return { error: "Échantillon illisible" };
+  }
+  const sampleResult = generateInputSchema.shape.input.safeParse(sampleCandidate);
+  if (!sampleResult.success) return { error: "Échantillon invalide" };
+
+  const fields = toolInputSchema(inputs, sampleResult.data);
+  if (!fields.success) return { error: "Complétez les champs obligatoires de l'échantillon" };
+
+  // `resolveModel` (lib/ai/model.ts) picks a mock fixture by slug in
+  // AI_MODE=mock; a brand-new product (create mode, no slug yet) falls
+  // back to the same default fixture as an unknown slug.
+  const effectiveSlug = slug ?? "test-prompt-draft";
+
+  let settle!: (state: TestPromptState) => void;
+  const settled = new Promise<TestPromptState>((resolvePromise) => {
+    settle = resolvePromise;
+  });
+
+  const result = streamGeneration({
+    product: { slug: effectiveSlug, generation },
+    inputs: fields.data,
+    onSuccess: (generationResult) => {
+      settle({
+        ok: true,
+        output:
+          typeof generationResult.output === "string"
+            ? generationResult.output
+            : JSON.stringify(generationResult.output),
+        inputTokens: generationResult.inputTokens,
+        outputTokens: generationResult.outputTokens,
+        costMicros: generationResult.costMicros,
+      });
+    },
+    onError: (error) => {
+      console.error("[admin/products] testPrompt failed", error);
+      settle({ error: "La génération de test a échoué" });
+    },
+  });
+
+  // Registered with after() in the real generation route (api/generate);
+  // here the action itself is the caller waiting on it, so it is awaited
+  // directly instead.
+  await result.consumeStream();
+
+  const timeout = new Promise<TestPromptState>((resolveTimeout) => {
+    setTimeout(() => resolveTimeout({ error: "La génération de test a échoué" }), TEST_PROMPT_TIMEOUT_MS);
+  });
+
+  return Promise.race([settled, timeout]);
+}
+
+// docs/05-ia.md's reference usage for BO-05 step 6's estimated margin,
+// before any real test has run (the plan's orchestrator decision 2):
+// ~1000 input / ~500 output tokens, the order of magnitude of the demo's
+// text generations (docs/05: "1 000 / 600" for the largest example).
+const REFERENCE_USAGE: GenerationUsage = { inputTokens: 1000, outputTokens: 500, cachedInputTokens: 0 };
+
+// BO-05 step 6's margin panel, before "Tester le prompt" has run: no AI
+// call, just the reference usage priced at the chosen model's rate
+// (lib/ai/generate.ts's `costMicros`, which already prices an unrecognized
+// model at the highest known rate rather than under-billing it).
+export async function estimateGenerationCost(model: string): Promise<{ costMicros: number }> {
+  await requireAdmin();
+  return { costMicros: costMicros(model, REFERENCE_USAGE) };
 }

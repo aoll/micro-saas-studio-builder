@@ -22,9 +22,13 @@ vi.mock("next/cache", () => ({ updateTag: (tag: string) => updateTag(tag) }));
 const put = vi.fn();
 vi.mock("@vercel/blob", () => ({ put: (...args: unknown[]) => put(...args) }));
 
+const guardRequest = vi.fn();
+vi.mock("@/lib/security", () => ({ guardRequest: (kind: string) => guardRequest(kind) }));
+
 async function currentAdmin() {
   const owner = await db.query.users.findFirst({ where: eq(users.email, SEED_OWNER.email) });
   requireAdmin.mockResolvedValue({ user: { id: owner!.id, role: "admin" } });
+  guardRequest.mockResolvedValue({ ok: true });
   return owner!.id;
 }
 
@@ -32,6 +36,7 @@ afterEach(() => {
   requireAdmin.mockReset();
   updateTag.mockReset();
   put.mockReset();
+  guardRequest.mockReset();
 });
 
 async function buildConfig(overrides: Partial<ProductConfig> = {}): Promise<ProductConfig> {
@@ -362,5 +367,134 @@ describe("uploadLogo", () => {
     expect(result.error).toBeTruthy();
     expect(consoleSpy).toHaveBeenCalled();
     consoleSpy.mockRestore();
+  });
+});
+
+const testInputsFixture = [{ key: "poste", label: "Poste visé", type: "text", required: true }];
+const testGenerationFixture = {
+  model: "anthropic/claude-haiku-4.5",
+  promptTemplate: "Rédige un texte pour {{poste}}",
+  outputType: "markdown",
+};
+
+function testPromptForm({
+  inputs = testInputsFixture,
+  generation = testGenerationFixture,
+  sample = { poste: "Développeur Frontend" },
+}: Partial<{ inputs: unknown; generation: unknown; sample: Record<string, string> }> = {}): FormData {
+  const data = new FormData();
+  data.set("config", JSON.stringify({ inputs, generation }));
+  data.set("sample", JSON.stringify(sample));
+  return data;
+}
+
+describe("testPrompt", () => {
+  it("redirects a non-admin caller", async () => {
+    requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
+    const { testPrompt } = await import("./_actions");
+    await expect(testPrompt(null, {}, testPromptForm())).rejects.toThrow("redirect:/admin/login");
+  });
+
+  it("returns an error without calling the AI when the guard refuses", async () => {
+    await currentAdmin();
+    guardRequest.mockResolvedValue({ ok: false, reason: "rate_limited" });
+    const { testPrompt } = await import("./_actions");
+    const result = await testPrompt(null, {}, testPromptForm());
+    expect(result).toEqual({ error: expect.any(String) });
+    expect(guardRequest).toHaveBeenCalledWith("test-prompt");
+  });
+
+  it("returns an error for a {{variable}} without a matching field", async () => {
+    await currentAdmin();
+    const { testPrompt } = await import("./_actions");
+    const result = await testPrompt(
+      null,
+      {},
+      testPromptForm({ generation: { ...testGenerationFixture, promptTemplate: "Pour {{inconnu}}" } }),
+    );
+    expect(result.error).toBe("Variable {{inconnu}} sans champ correspondant");
+    expect(result.ok).toBeUndefined();
+  });
+
+  it("returns an error when a required sample field is left empty", async () => {
+    await currentAdmin();
+    const { testPrompt } = await import("./_actions");
+    const result = await testPrompt(null, {}, testPromptForm({ sample: { poste: "" } }));
+    expect(result.error).toBeTruthy();
+    expect(result.ok).toBeUndefined();
+  });
+
+  it("returns an error for an image output type, without calling the AI", async () => {
+    await currentAdmin();
+    const { testPrompt } = await import("./_actions");
+    const result = await testPrompt(
+      null,
+      {},
+      testPromptForm({ generation: { ...testGenerationFixture, outputType: "image" } }),
+    );
+    expect(result.error).toBeTruthy();
+    expect(result.ok).toBeUndefined();
+  });
+
+  it("mock mode: returns the fixture output, its token counts and its cost", async () => {
+    await currentAdmin();
+    const { testPrompt } = await import("./_actions");
+    const result = await testPrompt(null, {}, testPromptForm());
+    expect(result.ok).toBe(true);
+    expect(typeof result.output).toBe("string");
+    expect(result.output!.length).toBeGreaterThan(0);
+    expect(result.inputTokens).toBeGreaterThan(0);
+    expect(result.outputTokens).toBeGreaterThan(0);
+    expect(result.costMicros).toBeGreaterThan(0);
+  });
+
+  it("on an AI failure, logs and returns a generic French error, never the raw error", async () => {
+    await currentAdmin();
+    vi.resetModules();
+    vi.doMock("@/lib/ai/generate", async () => {
+      const actual = await vi.importActual<typeof import("@/lib/ai/generate")>("@/lib/ai/generate");
+      return {
+        ...actual,
+        streamGeneration: (args: { onError: (error: unknown) => void | Promise<void> }) => {
+          queueMicrotask(() => {
+            void args.onError(new Error("provider unavailable: secret leak in stack trace"));
+          });
+          return { consumeStream: async () => undefined };
+        },
+      };
+    });
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { testPrompt } = await import("./_actions");
+    const result = await testPrompt(null, {}, testPromptForm());
+    expect(result).toEqual({ error: "La génération de test a échoué" });
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
+    vi.doUnmock("@/lib/ai/generate");
+    vi.resetModules();
+  });
+});
+
+describe("estimateGenerationCost", () => {
+  it("redirects a non-admin caller", async () => {
+    requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
+    const { estimateGenerationCost } = await import("./_actions");
+    await expect(estimateGenerationCost("anthropic/claude-haiku-4.5")).rejects.toThrow("redirect:/admin/login");
+  });
+
+  it("returns a plausible cost for an empty model, without throwing", async () => {
+    await currentAdmin();
+    const { estimateGenerationCost } = await import("./_actions");
+    const result = await estimateGenerationCost("");
+    expect(result.costMicros).toBeGreaterThan(0);
+  });
+
+  it("returns the reference cost for the Haiku model", async () => {
+    await currentAdmin();
+    const { estimateGenerationCost } = await import("./_actions");
+    const { costMicros } = await import("@/lib/ai/generate");
+    const result = await estimateGenerationCost("anthropic/claude-haiku-4.5");
+    expect(result.costMicros).toBe(
+      costMicros("anthropic/claude-haiku-4.5", { inputTokens: 1000, outputTokens: 500, cachedInputTokens: 0 }),
+    );
   });
 });

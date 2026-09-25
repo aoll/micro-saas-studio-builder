@@ -37,9 +37,9 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "dispatched",
-      "worktree": "sa-01-landing",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 16
     },
     "SA-08-introuvable": {
       "dependsOn": [
@@ -47,9 +47,10 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "dispatched",
+      "status": "blocked",
       "worktree": "sa-08-introuvable",
-      "pr": null
+      "pr": null,
+      "blockedReason": "root-layout notFound() is rendered by the parent segment: needs app/(products)/not-found.tsx (full <html> document) + a shared SA-08 component, outside Périmètre. Waiting for human approval."
     },
     "SA-02-outil": {
       "dependsOn": [

@@ -47,9 +47,9 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "dispatched",
-      "worktree": "sa-08-introuvable",
-      "pr": null,
+      "status": "merged",
+      "worktree": null,
+      "pr": 32,
       "humanDecision": "2026-09-25: human approved (OK SA-08) extending Périmètre to app/(products)/not-found.tsx (full <html> document) + a shared SA-08 content component used by both not-found files."
     },
     "SA-02-outil": {
@@ -105,7 +105,8 @@
       ],
       "status": "dispatched",
       "worktree": "sa-05-paiement",
-      "pr": null
+      "pr": null,
+      "step": "review"
     },
     "SA-07-compte": {
       "dependsOn": [
@@ -438,6 +439,12 @@
       "spec": "SA-02-outil",
       "blockedOn": "SA-02-outil",
       "what": "intermittent: lib/dal/generations.test.ts failed once under shared DB load during SA-07 full run (green isolated and on re-run); root-cause like the other DAL test races",
+      "resolved": false
+    },
+    {
+      "spec": "BO-05a-formulaire",
+      "blockedOn": "BO-05a-formulaire",
+      "what": "product-form.test.tsx create-mode publish test failed once in a full pnpm test run (SA-05 TDD, after the #31 act() fix); root-cause before the end of the run",
       "resolved": false
     }
   ],

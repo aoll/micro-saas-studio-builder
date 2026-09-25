@@ -27,9 +27,9 @@
       "dependsOn": [
         "CONTRACT-types"
       ],
-      "status": "dispatched",
-      "worktree": "contract-ui",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 13
     },
     "SA-01-landing": {
       "dependsOn": [
@@ -37,8 +37,8 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "sa-01-landing",
       "pr": null
     },
     "SA-08-introuvable": {
@@ -47,8 +47,8 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "sa-08-introuvable",
       "pr": null
     },
     "SA-02-outil": {
@@ -57,8 +57,8 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "sa-02-outil",
       "pr": null
     },
     "SA-06-historique": {
@@ -75,8 +75,8 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "ledger",
       "pr": null
     },
     "SA-03-inscription": {
@@ -93,9 +93,9 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "pending",
+      "status": "merged",
       "worktree": null,
-      "pr": null
+      "pr": 15
     },
     "SA-05-paiement": {
       "dependsOn": [
@@ -120,9 +120,9 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "pending",
+      "status": "merged",
       "worktree": null,
-      "pr": null
+      "pr": 14
     },
     "TRACKING": {
       "dependsOn": [
@@ -130,8 +130,8 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "tracking",
       "pr": null
     },
     "BO-02-portefeuille": {
@@ -156,8 +156,8 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "bo-05a-formulaire",
       "pr": null
     },
     "BO-05b-generation-publication": {
@@ -173,7 +173,8 @@
       "dependsOn": [
         "CONTRACT-types",
         "CONTRACT-data",
-        "CONTRACT-ui"
+        "CONTRACT-ui",
+        "BO-05a-formulaire"
       ],
       "status": "pending",
       "worktree": null,
@@ -330,5 +331,28 @@
       "pr": null
     }
   },
-  "pendingIntegrations": []
+  "pendingIntegrations": [
+    {
+      "spec": "SA-02-outil",
+      "blockedOn": "TRACKING",
+      "what": "api/generate: use TRACKING anonymous-id helper (ANONYMOUS_ID_COOKIE, readAnonymousId, anonymousIdCookie) instead of inline cookie code",
+      "resolved": false
+    },
+    {
+      "spec": "SA-01-landing",
+      "blockedOn": "SA-02-outil",
+      "what": "drop the `/${slug}/tool` as Route casts in [app]/_components/landing/hero.tsx and landing-pricing.tsx once [app]/tool/page.tsx exists",
+      "resolved": false
+    },
+    {
+      "spec": "SA-04-tarifs",
+      "blockedOn": "SA-05-paiement",
+      "what": "drop the `/${slug}/checkout/${packId}` as Route cast in [app]/pricing/_components/pricing-content.tsx once the checkout route exists; un-fixme e2e/pricing.spec.ts journey 3 once SA-02 and LEDGER are merged",
+      "resolved": false
+    }
+  ],
+  "notes": [
+    "SECURITY: lib/auth.ts before-hook rejects unknown/non-admin emails without hashing (timing side-channel to enumerate the admin email); pad the fast path with a dummy hash (BO-01 security review).",
+    "SECURITY: public login and events beacon have no rate limit yet; hashIp from lib/dal/generations.ts (SA-02) is the shared IP key."
+  ]
 }

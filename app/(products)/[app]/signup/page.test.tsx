@@ -53,7 +53,7 @@ describe("/[app]/signup page", () => {
     app.mockResolvedValue("lettre-pro");
     getProduct.mockResolvedValue(product);
     const { default: SignupPage } = await import("./page");
-    const ui = await SignupPage({ searchParams: Promise.resolve({}) });
+    const ui = await SignupPage({ searchParams: Promise.resolve({}) } as never);
     render(ui);
 
     const panel = screen.getByTestId("signup-panel");
@@ -65,13 +65,13 @@ describe("/[app]/signup page", () => {
     app.mockResolvedValue("unknown-slug");
     getProduct.mockResolvedValue(null);
     const { default: SignupPage } = await import("./page");
-    await expect(SignupPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("NEXT_NOT_FOUND");
+    await expect(SignupPage({ searchParams: Promise.resolve({}) } as never)).rejects.toThrow("NEXT_NOT_FOUND");
   });
 
   it("calls notFound and never reads the product when there is no root param", async () => {
     app.mockResolvedValue(undefined);
     const { default: SignupPage } = await import("./page");
-    await expect(SignupPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("NEXT_NOT_FOUND");
+    await expect(SignupPage({ searchParams: Promise.resolve({}) } as never)).rejects.toThrow("NEXT_NOT_FOUND");
     expect(getProduct).not.toHaveBeenCalled();
   });
 });

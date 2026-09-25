@@ -69,7 +69,7 @@ Déjà dans la stack, avec `prettier-plugin-tailwindcss` qui trie les classes Ta
 
 ### Variables d'environnement validées
 
-`@t3-oss/env-nextjs` dans `lib/env.ts` : un schéma Zod pour les 8 variables. Le fichier est importé dans `next.config.ts`, donc **le build échoue** si `DATABASE_URL` manque ou si `AI_MODE` vaut autre chose que `mock` ou `live`. Le code lit `env.AI_MODE`, typé, et plus jamais `process.env`.
+`@t3-oss/env-nextjs` dans `lib/env.ts` : un schéma Zod pour les 8 variables obligatoires, plus 2 optionnelles (`GENERATION_RATE_LIMIT_PER_MINUTE`, `VERCEL`). Le fichier est importé dans `next.config.ts`, donc **le build échoue** si `DATABASE_URL` manque ou si `AI_MODE` vaut autre chose que `mock` ou `live`. Le code lit `env.AI_MODE`, typé, et plus jamais `process.env`.
 
 ## Git : hooks, commits, PR
 
@@ -132,7 +132,7 @@ Chaque PR reçoit une URL de preview, sans configuration. C'est elle qu'on colle
   - `.vscode/extensions.json`, qui recommande ESLint, Prettier et Tailwind ;
   - `.vscode/settings.json` : formatage à l'enregistrement, et version de TypeScript du workspace, pour activer le plugin TS de Next.js (erreurs sur `'use client'`, options de segment…).
 - **Knip** : détecte fichiers, exports et dépendances inutilisés. Très utile sur un repo écrit par un agent, qui laisse volontiers des restes. Il fait partie de `pnpm check`, donc tourne en local, dans `/verify`.
-- **`.env.example`** : les 8 variables, sans valeurs, synchronisées avec `lib/env.ts`.
+- **`.env.example`** : les variables de `lib/env.ts`, sans valeurs, plus les `SEED_*` optionnelles lues par le seed.
 
 ## Outillage agentique
 

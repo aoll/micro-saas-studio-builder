@@ -6,7 +6,7 @@ Hébergement et briques de plateforme, hors IA (l'AI SDK et l'AI Gateway sont da
 
 | Brique | Intérêt pour la démo | Verdict |
 | --- | --- | --- |
-| **BotID** | CAPTCHA invisible vérifié côté serveur par `checkBotId()`. Protège `api/generate`, l'inscription et l'achat : un bot sur une URL publique brûle des crédits IA réels. Niveau **Basic gratuit** sur tous les plans ; l'analyse approfondie (Kasada) est facturée à l'appel sur Pro. | v1 |
+| **BotID** | CAPTCHA invisible vérifié côté serveur par `checkBotId()`. Protège `api/generate`, l'inscription, l'achat et « Tester le prompt » : un bot sur une URL publique brûle des crédits IA réels. Appliqué seulement sur Vercel (`VERCEL=1`) ; ailleurs, y compris en local, le contrôle est contourné et seul le rate limit Postgres reste. Niveau **Basic gratuit** sur tous les plans ; l'analyse approfondie (Kasada) est facturée à l'appel sur Pro. | v1 |
 | **Blob** | Stockage des logos chargés au formulaire BO-05, servis via `next/image` | v1 |
 | **Flags SDK** | Bibliothèque open source (fonctionne hors Vercel) : flags déclarés en code avec `flag()` et `decide`, précalculables pour les pages statiques. Permet un **A/B test du titre de la landing** sans perdre le shell statique, soit exactement la phase « Learn » de Dotworld. | Bonus fort |
 | **Web Analytics + Speed Insights** | Visites et Core Web Vitals des landings sans code ; `track()` côté serveur pour des events. Fait doublon avec la table `events`, qui reste la source du funnel. | Bonus |

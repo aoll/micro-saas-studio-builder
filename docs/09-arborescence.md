@@ -96,7 +96,6 @@ micro-saas-studio-builder/
 │   │   ├── metrics.ts                 # funnel, portefeuille
 │   │   ├── activity.ts
 │   │   ├── thresholds.ts              # seuils de décision
-│   │   ├── guards.ts                  # assertEditable, isEditable (mode démo)
 │   │   └── session.ts
 │   ├── ai/
 │   │   ├── model.ts                   # AI_MODE mock | live, Gateway + fallbacks
@@ -104,7 +103,7 @@ micro-saas-studio-builder/
 │   │   └── generate.ts
 │   ├── decision.ts                    # evaluate(metrics, thresholds), fonction pure
 │   ├── schemas/                       # Zod partagés form ↔ action ↔ API
-│   ├── security.ts                    # guardRequest(kind) : BotID + rate limit
+│   ├── security.ts                    # guardRequest(kind) : BotID (sur Vercel) + rate limit (generate)
 │   ├── rate-limit.ts                  # rate limit Postgres
 │   ├── env.ts                         # variables validées (t3-env), importé par next.config.ts
 │   ├── fonts.ts                       # next/font
@@ -145,7 +144,7 @@ micro-saas-studio-builder/
 ├── .lintstagedrc.js
 ├── .nvmrc                             # Node 22
 ├── .editorconfig
-├── .env.example                       # les 8 variables, sans valeurs
+├── .env.example                       # les 8 variables obligatoires + les optionnelles, sans valeurs
 ├── .mcp.json                          # next-devtools-mcp
 ├── AGENTS.md                          # géré par next dev
 ├── CLAUDE.md

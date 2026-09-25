@@ -189,12 +189,13 @@ Toutes ces métriques sortent d'**une seule table `events`** (`product_id`, `typ
 L'URL va circuler, et le backoffice sera ouvert à des inconnus. **Le prochain recruteur doit toujours trouver la démo dans l'état du script.**
 
 - **Compte admin de démo** créé par le seed. Les identifiants sont **envoyés avec la candidature**, pas affichés dans l'app. Pas d'inscription admin possible.
-- **Produits seedés verrouillés** : on peut les consulter, pas les modifier, les passer en Killed ni changer leur thème. Les thèmes seedés aussi. Les modifications s'exercent sur les produits créés par le visiteur.
-- **Remise à zéro** : un script supprime les produits créés par les visiteurs, leurs générations et leurs events, puis rejoue le seed. Il est déclenché par un bouton sur une **page cachée** (`/admin/ops`), non listée dans la navigation, réservée à mon propre compte (rôle `owner`, distinct du compte admin de démo). En bonus, un cron Vercel le lance aussi chaque nuit.
-- **Limites** : 10 produits créés par les visiteurs au maximum entre deux remises à zéro, en plus du rate limit sur les générations.
-- **Signal visuel** : un bandeau discret « Démo » rappelle que le paiement et l'email sont simulés, pour qu'aucun visiteur ne s'y trompe.
+- **Pas de verrou sur les données seedées** (décision du run v1) : je réinitialise la démo avant chaque présentation, un verrou n'apporterait rien. Produits, thèmes et seuils seedés se modifient comme les autres ; la colonne `is_seed` sert seulement au seed et à la remise à zéro pour savoir quoi garder.
+- **Remise à zéro** : `scripts/reset-demo.ts` supprime les produits créés par les visiteurs et tout l'usage (générations, achats, crédits, events, comptes utilisateurs), restaure le catalogue seedé, puis rejoue l'usage du seed. Il est déclenché par le bouton « Réinitialiser » d'une **page cachée** (`/admin/ops`), non listée dans la navigation, réservée à mon propre compte (rôle `owner`, distinct du compte admin de démo) : tout autre visiteur, anonyme ou admin, reçoit une 404. En bonus, un cron Vercel le lance aussi chaque nuit.
+- **Limites** : pas de plafond sur le nombre de produits créés par les visiteurs (décision du run v1) ; le rate limit porte sur les générations.
+- **Signal visuel** : un bandeau discret « Démo » sur les sub-apps rappelle que le paiement et l'email sont simulés, pour qu'aucun visiteur ne s'y trompe.
+- **Identifiants** : avec `DEMO_MODE=true`, le seed refuse de tourner avec les identifiants de développement ; les comptes admin et `owner` viennent de `SEED_ADMIN_*` et `SEED_OWNER_*` (documentées dans `.env.example`).
 
-En local et dans les tests, le mode démo est désactivé (`DEMO_MODE=false`) : tout est modifiable.
+`DEMO_MODE=true` ne fait donc que deux choses : afficher le bandeau et exiger de vrais identifiants au seed. En local et dans les tests, le mode démo est désactivé (`DEMO_MODE=false`).
 
 ## Contenu des produits seedés
 
@@ -207,7 +208,7 @@ La crédibilité de la démo repose sur des produits qui ressemblent à de vrais
 | NomDeMarque (noms de marque) | Playful | Test, « à couper » | Idem, sortie structurée (liste de noms) |
 | BioInsta (bio Instagram) | Neon | Créé en direct pendant la démo | Config prête à coller dans le formulaire, pour ne pas taper en live |
 
-Les chiffres de chaque produit (visites, conversion, revenu, coût IA) sont choisis pour raconter une histoire : un produit qui marche, un qui hésite, un à couper.
+Les chiffres de chaque produit (visites, conversion, revenu, coût IA) sont choisis pour raconter une histoire sur 30 jours : LettrePro « à scaler », DescriPro sans badge, NomDeMarque « à couper », chacun avec au moins 1 000 visites. La config de BioInsta est prête à coller (`fixtures/bio-instagram.config.json`). En mode mock, l'IA sert à chaque produit sa propre fixture.
 
 **Langues** : chaque produit a une **langue dans sa config** (`locale`), comme un vrai SaaS studio qui lance un produit par marché. Le contenu du produit (landing, FAQ, prompt) est déjà rédigé dans cette langue ; seuls les textes communs de la sub-app (boutons, paywall, modales, erreurs, environ 60 clés) passent par **next-intl**, en français et en anglais. Pas de segment `/fr` ou `/en` dans l'URL : la langue se déduit du produit via le root param `[app]`. Le backoffice reste en français. Moment de démo possible : créer BioInsta en anglais et montrer la sub-app entièrement en anglais. Détail dans l'onglet Stack.
 

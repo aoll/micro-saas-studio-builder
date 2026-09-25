@@ -14,6 +14,8 @@ Acceptation :
   markGenerationFailed → insertion simple ; assertEditable / isEditable → ne
   bloquent rien ; guardRequest → laisse tout passer ; getThresholds(productId)
   réel (défaut du studio fusionné avec la surcharge du produit, tag 'thresholds')
+  Note (run v1, 2026-09-25) : le verrou démo a été retiré par décision humaine ;
+  assertEditable, isEditable et lib/dal/guards.ts n'existent plus (#44).
 - Chaque stub a un test de contrat (types + forme de la réponse) que la vraie
   implémentation devra passer
 - resolveModel() : mock en AI_MODE=mock, rejoue fixtures/lettre-pro.json en streaming

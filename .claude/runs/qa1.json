@@ -30,9 +30,9 @@
   "specs": {
     "QA1-P1-L1-lot-leger": {
       "dependsOn": [],
-      "status": "dispatched",
-      "worktree": "qa1-p1-l1-lot-leger",
-      "pr": null,
+      "status": "merged",
+      "worktree": null,
+      "pr": 55,
       "mode": "léger"
     },
     "QA1-P1-B3-paiement-pricing": {

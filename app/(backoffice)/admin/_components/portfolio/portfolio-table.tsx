@@ -52,6 +52,9 @@ export function PortfolioTable({ rows }: { rows: PortfolioRow[] }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-left">
+            <th scope="col" className="py-2 pr-4 font-medium">
+              Produit
+            </th>
             {COLUMNS.map(({ key, label }) => (
               <th key={key} scope="col" aria-sort={ariaSortFor(key, sort.column, sort.direction)} className="py-2 pr-4">
                 <button type="button" onClick={() => toggleSort(key)} className="font-medium hover:underline">
@@ -65,6 +68,12 @@ export function PortfolioTable({ rows }: { rows: PortfolioRow[] }) {
           {sorted.map((row) => (
             <tr key={row.productId} className="border-b last:border-0">
               <td className="py-2 pr-4">
+                <Link href={productHref(row.slug)} className="font-medium hover:underline">
+                  {row.name}
+                </Link>
+                <div className="text-xs text-muted-foreground">/{row.slug}</div>
+              </td>
+              <td className="py-2 pr-4">
                 <div className="flex items-center gap-2">
                   <StatusBadge status={row.status} />
                   <DecisionBadge decision={row.decision} />
@@ -75,11 +84,6 @@ export function PortfolioTable({ rows }: { rows: PortfolioRow[] }) {
               <td className="py-2 pr-4">{row.display.revenue}</td>
               <td className="py-2 pr-4">{row.display.aiCost}</td>
               <td className="py-2 pr-4">{row.display.margin}</td>
-              <td className="py-2 pr-4">
-                <Link href={productHref(row.slug)} className="font-medium hover:underline">
-                  {row.name}
-                </Link>
-              </td>
             </tr>
           ))}
         </tbody>

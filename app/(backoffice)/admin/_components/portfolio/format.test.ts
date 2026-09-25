@@ -26,6 +26,20 @@ describe("formatEuroMicros", () => {
   it("formats a negative margin", () => {
     expect(formatEuroMicros(-5_000_000)).toBe(`-5,00${NBSP}€`);
   });
+
+  it("adds decimals so a non-zero sub-cent cost never reads 0,00 €", () => {
+    expect(formatEuroMicros(1_180)).toBe(`0,0012${NBSP}€`);
+    expect(formatEuroMicros(295)).toBe(`0,0003${NBSP}€`);
+    expect(formatEuroMicros(4_000)).toBe(`0,004${NBSP}€`);
+    expect(formatEuroMicros(1)).toBe(`0,000001${NBSP}€`);
+    expect(formatEuroMicros(490_000)).toBe(`0,49${NBSP}€`);
+    expect(formatEuroMicros(0)).toBe(`0,00${NBSP}€`);
+  });
+
+  it("honours a larger minimum of decimals", () => {
+    expect(formatEuroMicros(0, 3)).toBe(`0,000${NBSP}€`);
+    expect(formatEuroMicros(4_000_000, 3)).toBe(`4,000${NBSP}€`);
+  });
 });
 
 describe("formatPercent", () => {

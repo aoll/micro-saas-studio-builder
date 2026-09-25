@@ -1,4 +1,4 @@
-import { formatEuroCents } from "@/app/(backoffice)/admin/_components/portfolio/format";
+import { formatEuroCents, formatEuroMicros } from "@/app/(backoffice)/admin/_components/portfolio/format";
 import { excerpt, summarizeInput } from "@/app/(products)/[app]/history/_lib/summarize";
 import type { ActivityGeneration, ActivityMovement, PurchaseSummary } from "@/lib/dal/activity";
 
@@ -10,18 +10,11 @@ import type { ActivityGeneration, ActivityMovement, PurchaseSummary } from "@/li
 
 const EM_DASH = "—";
 
-// AI cost needs 3 decimals ("0,004 €", plan design decision 4): the
-// portfolio's `formatEuroMicros` rounds to 2, hiding a sub-cent generation.
-const COST_FORMATTER = new Intl.NumberFormat("fr-FR", {
-  style: "currency",
-  currency: "EUR",
-  minimumFractionDigits: 3,
-  maximumFractionDigits: 3,
-});
-const MICROS_PER_EURO = 1_000_000;
-
+// AI cost with at least 3 decimals ("0,004 €", plan design decision 4),
+// more when needed so a sub-millieuro generation never reads 0,000 €
+// (QA1 B8): the portfolio's adaptive `formatEuroMicros`.
 export function formatCostMicros(costMicros: number | null): string {
-  return COST_FORMATTER.format((costMicros ?? 0) / MICROS_PER_EURO);
+  return formatEuroMicros(costMicros ?? 0, 3);
 }
 
 const MS_PER_MINUTE = 60_000;

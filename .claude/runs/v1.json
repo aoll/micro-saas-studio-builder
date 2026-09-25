@@ -139,8 +139,8 @@
       "dependsOn": [
         "TRACKING"
       ],
-      "status": "ready",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "bo-02-portefeuille",
       "pr": null
     },
     "BO-03-fiche": {
@@ -358,6 +358,10 @@
     {
       "for": "CONTRACT follow-up",
       "note": "events: index covering (product_id, anonymous_id, type, created_at) for the visit dedupe (TRACKING database review)"
+    },
+    {
+      "for": "SECURITY",
+      "note": "api/generate trusts the first X-Forwarded-For entry for the anonymous free-try key: fine behind Vercel (edge overwrites XFF), self-hosting must strip inbound XFF at its proxy (SA-02 security review)."
     }
   ]
 }

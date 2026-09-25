@@ -57,7 +57,11 @@ const FUNNEL_STEP_TYPES = ["visit", "first_generation", "signup", "credits_exhau
 
 // The 5 funnel steps (BO-03) and their pass rate from the previous step, from one product's
 // ProductMetrics: `null` for the first step (no previous step) and whenever the previous step's
-// count is 0 (nothing to divide by).
+// count is 0 (nothing to divide by). Each step counts distinct persons (QA1-P1-Q5), independent
+// of whether that same person also has an event for the previous step (a person is never
+// required to "pass through" earlier steps to be counted at a later one): the rate can still
+// exceed 1 at the range boundary (e.g. a signup just before `since`, a credits_exhausted just
+// after), so it is clamped to `[0, 1]` — the count itself is left untouched, a true fact.
 function buildSteps(metrics: ProductMetrics): FunnelStep[] {
   const counts: Record<(typeof FUNNEL_STEP_TYPES)[number], number> = {
     visit: metrics.visits,
@@ -72,7 +76,7 @@ function buildSteps(metrics: ProductMetrics): FunnelStep[] {
     return {
       type,
       count: counts[type],
-      rateFromPrevious: previousCount && previousCount > 0 ? counts[type] / previousCount : null,
+      rateFromPrevious: previousCount && previousCount > 0 ? Math.min(1, counts[type] / previousCount) : null,
     };
   });
 }

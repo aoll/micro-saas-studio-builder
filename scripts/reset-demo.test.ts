@@ -109,7 +109,7 @@ function visitorConfig(slug: string, themeId: string): ProductConfig {
   };
 }
 
-/** Pollutes the freshly seeded database with a visitor-created product and visitor activity mixed onto a locked (seeded) product, exactly the mess resetDemo exists to clean up. */
+/** Pollutes the freshly seeded database with a visitor-created product and visitor activity mixed onto a seeded product, exactly the mess resetDemo exists to clean up. */
 async function pollute(): Promise<{ visitorProductId: string; lettreProId: string; visitorUserId: string }> {
   const database = db();
   const editorial = await database.query.themes.findFirst({ where: eq(themes.slug, "editorial") });
@@ -152,7 +152,7 @@ async function pollute(): Promise<{ visitorProductId: string; lettreProId: strin
     idempotencyKey: `real:${randomUUID()}`,
   });
 
-  // Visitor activity mixed onto the *locked* LettrePro product — the case
+  // Visitor activity mixed onto the *seeded* LettrePro product — the case
   // a partial ("only delete non-seed products") reset would miss.
   await database.insert(purchases).values({
     userId: visitorUserId,
@@ -175,7 +175,7 @@ async function pollute(): Promise<{ visitorProductId: string; lettreProId: strin
 }
 
 describe("resetDemo", () => {
-  it("wipes visitor products, visitor activity on locked products, and visitor accounts; replays the seeded story", async () => {
+  it("wipes visitor products, visitor activity on seeded products, and visitor accounts; replays the seeded story", async () => {
     const { visitorProductId, lettreProId, visitorUserId } = await pollute();
 
     await resetDemo({ sql });
@@ -207,7 +207,7 @@ describe("resetDemo", () => {
     const lettreProBalances = await database.select().from(balances).where(eq(balances.productId, lettreProId));
     expect(lettreProBalances.every((row) => row.userId !== visitorUserId)).toBe(true);
 
-    // The 3 locked products survive, unchanged in slug/theme/status.
+    // The 3 seeded products survive, unchanged in slug/theme/status.
     const lettrePro = await database.query.products.findFirst({ where: eq(products.slug, "lettre-pro") });
     expect(lettrePro?.isSeed).toBe(true);
     expect(lettrePro?.status).toBe("scale");

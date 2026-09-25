@@ -140,7 +140,7 @@ test.describe("DEMO-mode · /admin/ops is owner-only", () => {
 test.describe.serial("DEMO-mode · a full reset wipes visitor data and keeps the seeded story", () => {
   test.skip(true, "run explicitly and alone: pnpm test:e2e -- demo-mode.spec.ts --grep 'full reset'");
 
-  test("full reset: a visitor product disappears, the 3 locked products survive", async ({ page }) => {
+  test("full reset: a visitor product disappears, the 3 seeded products survive", async ({ page }) => {
     const visitor = await createVisitorProduct();
 
     await signInAs(page, SEED_OWNER);

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { productConfigSchema } from "../lib/schemas/product-config";
 
-// specs/DEMO-mode.md: the seeded story needs one config per locked
+// specs/DEMO-mode.md: the seeded story needs one config per seeded
 // product (lettre-pro, descri-pro, nom-de-marque), plus BioInsta's config
 // as a fixture only — pasted live into the BO-05 form during the demo
 // script, never seeded as a product row (docs/01 › Contenu des produits

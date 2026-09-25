@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import type { ProductConfig } from "@/lib/schemas/product-config";
 
 // The starting point for BO-05 steps 5 and 6 (GenerationStep, PricingStep)
@@ -41,7 +40,7 @@ export function newProductDraft(themeId: string): ProductDraft {
     locale: "fr",
     branding: {},
     landing: { headline: "", subheadline: "", faq: [], seoTitle: "", seoDescription: "" },
-    inputs: [{ id: randomUUID(), key: "champ_1", label: "Champ 1", type: "text", required: true }],
+    inputs: [{ id: crypto.randomUUID(), key: "champ_1", label: "Champ 1", type: "text", required: true }],
     generation: DEFAULT_GENERATION,
     pricing: DEFAULT_PRICING,
   };

@@ -30,4 +30,13 @@ describe("TrendChart", () => {
     expect(screen.getByText("Visites")).toBeTruthy();
     expect(screen.getByText("Achats")).toBeTruthy();
   });
+
+  it("draws the two series in distinct colours, purchases dashed, like the BO-03 mockup", () => {
+    render(<TrendChart points={points} />);
+    const visits = screen.getByTestId("legend-visits");
+    const purchases = screen.getByTestId("legend-purchases");
+    expect(visits.style.borderColor).not.toBe(purchases.style.borderColor);
+    expect(visits.style.borderStyle).toBe("solid");
+    expect(purchases.style.borderStyle).toBe("dashed");
+  });
 });

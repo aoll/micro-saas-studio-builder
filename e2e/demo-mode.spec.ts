@@ -25,6 +25,10 @@ import { SEED_ADMIN, SEED_OWNER } from "../scripts/seed";
 const sql = postgres(requireDatabaseUrl(), { max: 1, onnotice: () => {} });
 const db = drizzle(sql, { schema: { products, productVersions, themes, users } });
 
+test.afterAll(async () => {
+  await sql.end({ timeout: 5 });
+});
+
 async function signInAs(page: Page, credential: { email: string; password: string }): Promise<void> {
   await page.goto("/admin/login");
   await page.getByLabel("Email").fill(credential.email);

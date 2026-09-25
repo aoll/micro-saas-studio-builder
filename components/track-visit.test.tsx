@@ -47,4 +47,23 @@ describe("TrackVisit", () => {
     Object.defineProperty(navigator, "sendBeacon", { value: undefined, configurable: true, writable: true });
     expect(() => render(<TrackVisit slug="lettre-pro" />)).not.toThrow();
   });
+
+  // QA1-P1-B4: the id used to be minted client-side (crypto.randomUUID()),
+  // once per beacon — the mechanism of the bug. Identity now only ever
+  // comes from the cookie proxy.ts sets before this component ever mounts;
+  // the route ignores the body id entirely (api/events/route.ts).
+  it("never mints an id: every beacon body carries the same fixed placeholder (B4)", async () => {
+    const randomUUID = vi.spyOn(crypto, "randomUUID");
+    const { rerender } = render(<TrackVisit slug="lettre-pro" />);
+    rerender(<TrackVisit slug="bio-insta" />);
+
+    expect(randomUUID).not.toHaveBeenCalled();
+    const bodies = await Promise.all(
+      sendBeacon.mock.calls.map(
+        async ([, blob]: [string, Blob]) => JSON.parse(await blob.text()) as { anonymousId: string },
+      ),
+    );
+    expect(bodies).toHaveLength(2);
+    expect(new Set(bodies.map((body) => body.anonymousId)).size).toBe(1);
+  });
 });

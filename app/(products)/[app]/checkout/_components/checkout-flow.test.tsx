@@ -49,6 +49,25 @@ function renderFlow(variant: "modal" | "page", balance = 0) {
   );
 }
 
+// QA1-P1-B3 (.claude/plans/QA1-P1-B3.plan.md, step 5): the checkout modal
+// (variant "modal") mounted next to the pricing page's own marker
+// (pricing-content.tsx), inside a <main> the same way [app]/layout.tsx
+// wraps the pricing page's children — the one background where a refresh
+// mid-modal reproduces B3.
+function renderFlowOverPricingPage(balance = 0) {
+  return render(
+    <NextIntlClientProvider locale="fr" messages={{ common: fr, checkout: checkoutFr }}>
+      <BalanceProvider>
+        <BalanceBadge balance={balance} />
+        <main>
+          <div data-slot="pricing-content" />
+        </main>
+        <CheckoutFlow variant="modal" slug="bio-insta" productName="BioInsta" pack={pack} costPerGeneration={1} />
+      </BalanceProvider>
+    </NextIntlClientProvider>,
+  );
+}
+
 describe("CheckoutFlow — idle state", () => {
   it("shows the pack summary, the test card and the pay button with the price", () => {
     renderFlow("page");
@@ -161,6 +180,30 @@ describe("CheckoutFlow — router refresh outside the pricing page (A2)", () => 
     fireEvent.click(screen.getByRole("button", { name: "Payer 14,90 € (simulé)" }));
     await screen.findByText("Le paiement a échoué, réessayez");
     expect(refresh).not.toHaveBeenCalled();
+  });
+});
+
+// QA1-P1-B3 (.claude/qa/reports/2026-09-25-full.md › B3,
+// .claude/plans/QA1-P1-B3.plan.md step 5): the pricing-content marker means
+// the checkout modal sits over the full /pricing page. Refreshing the
+// router while that modal is still mounted re-fetches the intercepted
+// /pricing background and reproduces B3, so CheckoutFlow must not refresh
+// on success here, and Resume must close the modal (router.back()) instead
+// of replacing to /tool.
+describe("CheckoutFlow — over the pricing page (A1, A3)", () => {
+  it("shows the confirmation without refreshing, and Resume goes back instead of replacing", async () => {
+    purchase.mockResolvedValue({ ok: true, balance: 10 });
+    renderFlowOverPricingPage(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Payer 14,90 € (simulé)" }));
+    await screen.findByText("+50 crédits");
+    expect(screen.getByText("Nouveau solde")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Payer/ })).toBeNull();
+    expect(refresh).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Reprendre ma génération →" }));
+    expect(back).toHaveBeenCalledOnce();
+    expect(replace).not.toHaveBeenCalled();
   });
 });
 

@@ -49,11 +49,21 @@ export function CheckoutFlow({
   // retries with the very purchase the buyer already tried, so a replay
   // after a transient failure still dedupes on the ledger's idempotency key.
   const keyRef = useRef<string | null>(null);
+  // QA1-P1-B3 (.claude/plans/QA1-P1-B3.plan.md, design decisions 2-3): true
+  // when the checkout modal opened over the full /pricing page — the only
+  // background where refreshing the router while the modal is still mounted
+  // re-fetches the intercepted /pricing background and reproduces B3
+  // (.claude/qa/reports/2026-09-25-full.md › B3). Set once, at the moment
+  // of paying, so handleResume reads the same value handlePay computed.
+  const overPricingPageRef = useRef(false);
 
   function handlePay() {
     if (status === "pending") return;
     keyRef.current ??= crypto.randomUUID();
     const key = keyRef.current;
+    if (variant === "modal") {
+      overPricingPageRef.current = document.querySelector('main [data-slot="pricing-content"]') !== null;
+    }
     setStatus("pending");
     setErrorCode(null);
 
@@ -63,13 +73,12 @@ export function CheckoutFlow({
       if (result.ok) {
         setBalance(result.balance);
         setStatus("confirmed");
-        // QA1-P1-B3 (.claude/qa/reports/2026-09-25-full.md › B3): purchase()
-        // no longer calls refresh() itself — a server refresh re-fetches the
-        // full /pricing page kept behind the checkout modal, and gets
-        // intercepted by @modal/(.)pricing, which mismatches the tree and
-        // forces a hard reload (.claude/plans/QA1-P1-B3.plan.md, root cause).
-        // Only CheckoutFlow knows whether that background is present.
-        router.refresh();
+        // purchase() no longer calls refresh() itself (root cause: a server
+        // refresh re-fetches the /pricing background kept behind the modal,
+        // gets intercepted by @modal/(.)pricing, and forces a hard reload).
+        // Refreshing here is safe everywhere except over the full /pricing
+        // page, where the modal is still mounted right after this call.
+        if (!overPricingPageRef.current) router.refresh();
       } else {
         setStatus("error");
         setErrorCode(result.error);
@@ -78,7 +87,12 @@ export function CheckoutFlow({
   }
 
   function handleResume() {
-    router.replace(`/${slug}/tool` as Route);
+    // Over /pricing, history is [/pricing, /checkout/pack-N] and the
+    // purchase pushed nothing, so back() lands on /pricing without a
+    // reload — the same route RouteModal's own close already takes
+    // (design decision 4). Everywhere else, replace to the tool.
+    if (overPricingPageRef.current) router.back();
+    else router.replace(`/${slug}/tool` as Route);
   }
 
   const price = format.number(pack.priceCents / 100, { style: "currency", currency: "EUR" });

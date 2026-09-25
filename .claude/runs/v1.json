@@ -66,9 +66,9 @@
       "dependsOn": [
         "SA-02-outil"
       ],
-      "status": "dispatched",
-      "worktree": "sa-06-historique",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 24
     },
     "LEDGER": {
       "dependsOn": [

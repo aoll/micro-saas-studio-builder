@@ -1,0 +1,11 @@
+{
+  "studio": "SaaS Studio",
+  "title": "This product is no longer available",
+  "closed": "“{name}” has closed or does not exist.",
+  "unknown": "This product has closed or does not exist.",
+  "dataOnRequest": "Your data remains available on request.",
+  "pageTitle": "Page not found",
+  "pageMissing": "This page does not exist on {name}.",
+  "backTo": "Back to {name}",
+  "otherTools": "Our other tools"
+}

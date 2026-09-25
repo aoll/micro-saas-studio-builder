@@ -12,7 +12,11 @@ export async function HeaderBalance({ productId, slug }: { productId: string; sl
   if (!session) return <SignInLink slug={slug} />;
 
   const balance = await getBalance(session.user.id, productId);
-  return <BalanceBadge balance={balance} />;
+  return (
+    <Link href={`/${slug}/account`}>
+      <BalanceBadge balance={balance} />
+    </Link>
+  );
 }
 
 function SignInLink({ slug }: { slug: string }) {

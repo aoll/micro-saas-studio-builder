@@ -580,4 +580,89 @@ describe("POST [app]/api/generate — first_generation across signup (QA1-P1-B5)
       expect(track).not.toHaveBeenCalledWith(expect.objectContaining({ type: "first_generation" }));
     });
   });
+
+  it("still tracks first_generation for a first signed-in generation with a cookie that never generated (only a visit)", async () => {
+    await withTestTransaction(async () => {
+      const userId = await freshUserId();
+      testHeaders = new Headers({ "x-forwarded-for": randomIp() });
+      // A cookie is present (the visitor was tracked via TRACKING's
+      // <TrackVisit>), but it never generated anonymously: no row links to
+      // it, so this must still be treated as the caller's first generation.
+      cookieStore.get.mockReturnValue({ value: randomUUID() });
+      getSession.mockResolvedValue({ user: { id: userId } });
+
+      const { POST } = await import("./route");
+      const response = await POST(postRequest({ input: validInput, idempotencyKey: randomUUID() }), ctx());
+      expect(response.status).toBe(200);
+      await readTextDeltas(response);
+      await flushAfterCallbacks();
+
+      expect(track).toHaveBeenCalledWith(expect.objectContaining({ type: "first_generation" }));
+    });
+  });
+
+  it("tracks first_generation once when the visitor's only anonymous generation failed before signing in", async () => {
+    await withTestTransaction(async () => {
+      const userId = await freshUserId();
+      const anonymousId = randomUUID();
+      testHeaders = new Headers({ "x-forwarded-for": randomIp() });
+      cookieStore.get.mockReturnValue({ value: anonymousId });
+
+      const failingModel = await import("@/lib/ai/model");
+      vi.spyOn(failingModel, "resolveModel").mockImplementationOnce(() => {
+        throw new Error("boom");
+      });
+
+      const { POST } = await import("./route");
+
+      getSession.mockResolvedValue(null);
+      const anonymousResponse = await POST(postRequest({ input: validInput, idempotencyKey: randomUUID() }), ctx());
+      expect(anonymousResponse.status).toBe(502);
+      track.mockClear();
+
+      getSession.mockResolvedValue({ user: { id: userId } });
+      const signedInResponse = await POST(postRequest({ input: validInput, idempotencyKey: randomUUID() }), ctx());
+      expect(signedInResponse.status).toBe(200);
+      await readTextDeltas(signedInResponse);
+      await flushAfterCallbacks();
+
+      expect(track).toHaveBeenCalledTimes(2);
+      expect(track).toHaveBeenCalledWith(expect.objectContaining({ type: "generation" }));
+      expect(track).toHaveBeenCalledWith(expect.objectContaining({ type: "first_generation" }));
+    });
+  });
+});
+
+describe("POST [app]/api/generate — signed-in generation events keep anonymousId null (QA1-P1-B5)", () => {
+  it("tracks the generation event with anonymousId: null even when a cookie linked a prior anonymous generation", async () => {
+    await withTestTransaction(async () => {
+      const userId = await freshUserId();
+      const productId = await lettreProId();
+      const anonymousId = randomUUID();
+      testHeaders = new Headers({ "x-forwarded-for": randomIp() });
+      cookieStore.get.mockReturnValue({ value: anonymousId });
+
+      const { POST } = await import("./route");
+
+      getSession.mockResolvedValue(null);
+      const anonymousResponse = await POST(postRequest({ input: validInput, idempotencyKey: randomUUID() }), ctx());
+      await readTextDeltas(anonymousResponse);
+      await flushAfterCallbacks();
+      track.mockClear();
+
+      getSession.mockResolvedValue({ user: { id: userId } });
+      const signedInKey = randomUUID();
+      const signedInResponse = await POST(postRequest({ input: validInput, idempotencyKey: signedInKey }), ctx());
+      await readTextDeltas(signedInResponse);
+      await flushAfterCallbacks();
+
+      expect(track).toHaveBeenCalledWith({
+        type: "generation",
+        productId,
+        userId,
+        anonymousId: null,
+        metadata: { generationId: signedInResponse.headers.get("x-generation-id") },
+      });
+    });
+  });
 });

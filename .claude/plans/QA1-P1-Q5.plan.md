@@ -18,16 +18,34 @@ frozen signature or return type.
 
 ## Design decisions
 
-**D1 — Identity per event type**, driven by what the write side actually
-stores (verified in the routes above), not a new column or a join to signups:
-- `visit` → `anonymous_id` (always present, never `user_id`)
-- `first_generation` → `coalesce(user_id, anonymous_id)` (exactly one of the
-  two is set, per `api/generate/route.ts`)
-- `signup`, `credits_exhausted`, `purchase` → `user_id` (always present; these
-  three actions require an authenticated session)
+**D1 — Identity per event type: `coalesce(user_id, anonymous_id)` for all 5**
+(revised from the original per-type split below, orchestrator decision after
+`scripts/seed.test.ts` broke — see "Revision" at the end of this section).
+Driven by what the write side actually stores (verified in the routes above),
+not a new column or a join to signups: `count(distinct coalesce(user_id,
+anonymous_id))` for every one of `visit`, `first_generation`, `signup`,
+`credits_exhausted`, `purchase`.
 
 This needs no join and no change to `lib/dal/events.ts` (out of `Périmètre`):
 it is a pure read-side aggregation fix in `lib/dal/metrics.ts`.
+
+*Original D1 (superseded)*: split the identity per type — `visit` →
+`anonymous_id` alone, `first_generation` → `coalesce(user_id, anonymous_id)`,
+`signup`/`credits_exhausted`/`purchase` → `user_id` alone (always present in
+production; these three actions require an authenticated session). This was
+correct for production data, but broke `scripts/seed.test.ts`'s two decision
+tests ("lettre-pro evaluates to scale", "nom-de-marque evaluates to kill"):
+`scripts/seed.ts`'s `buildSeedUsage()` seeds `signup`/`credits_exhausted`
+events with `anonymousId` only (never a real `userId`), so `user_id`-only
+counting silently read them back as 0. `scripts/seed.ts` stays out of this
+spec's `Périmètre` (orchestrator decision), so the fix moves to the read
+side instead: `coalesce(user_id, anonymous_id)` gives the exact same result
+as the per-type split for every real production event (visit and
+first_generation never carry a userId of a kind that would collide with
+their own anonymous_id; signup/credits_exhausted/purchase always carry a
+real userId, so coalesce resolves to it), while also counting the seed's
+anonymous-only signup/credits_exhausted events as one person per
+`anonymous_id`, matching what the seed's own commentary already assumes.
 
 **D2 — How a person who skips a step is counted.** The funnel keeps its
 current per-step independence: each step's count is "how many distinct
@@ -281,4 +299,6 @@ required for the funnel's own "Inscription" step. No visible KPI changes.
       `lib/dal/metrics.ts`, `lib/dal/metrics.test.ts`,
       `admin/products/[slug]/_components/sheet.ts`,
       `admin/products/[slug]/_components/sheet.test.ts`
-- [ ] `pnpm check` passes, coverage 80%+ on `lib/**`
+- [ ] `pnpm check` passes (`scripts/seed.test.ts`'s kill/scale decision tests
+      included), coverage 80%+ on `lib/**`, without any change to
+      `scripts/seed.ts` (D1's revision)

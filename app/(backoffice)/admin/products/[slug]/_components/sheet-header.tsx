@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/backoffice/status-badge";
 import { DecisionBadge } from "@/app/(backoffice)/admin/_components/portfolio/decision-badge";
 import type { ProductSheetViewModel } from "./sheet";
+import { ProductTabs } from "./product-tabs";
 import { StatusChange } from "./status/status-change";
 
 // docs/02-ecrans.md › BO-03 état "produit killed" (plan design decisions 3 and 5): the
@@ -51,6 +52,7 @@ export function SheetHeader({ sheet }: { sheet: ProductSheetViewModel }) {
         </div>
       </div>
       {isKilled ? <KilledBanner slug={sheet.slug} /> : null}
+      <ProductTabs slug={sheet.slug} active="overview" />
     </div>
   );
 }

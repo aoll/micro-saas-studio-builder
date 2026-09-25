@@ -512,7 +512,8 @@
       "spec": "BO-03-fiche",
       "blockedOn": "BO-04-activite",
       "what": "link the BO-03 product sheet to /admin/products/[slug]/activity (reuse BO-04 ProductTabs in sheet-header or a [slug]/layout.tsx)",
-      "resolved": false
+      "resolved": true,
+      "pr": 46
     },
     {
       "spec": "SA-02-outil",

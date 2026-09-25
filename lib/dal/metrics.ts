@@ -1,5 +1,6 @@
 import "server-only";
 import { sql } from "drizzle-orm";
+import { z } from "zod";
 import { db } from "@/lib/db";
 import type { EventType } from "@/lib/schemas/event-type";
 import type { ProductStatus } from "@/lib/schemas/product-config";
@@ -212,23 +213,14 @@ export function toProductMetrics(row: PortfolioRow): ProductMetrics {
   };
 }
 
-// Powers the portfolio (BO-02); calls `requireAdmin()` inside, before
-// validating the range. One own SQL statement rather than `listProducts()`
-// (specs/BO-02-portefeuille.md plan, design decision 2): `products` joined
-// to its current `product_versions` row (for `name` and
-// `pricing.costPerGeneration`), left-joined to three subqueries grouped by
-// `product_id` — `events` (the 5 funnel-step counts), `purchases`
-// (revenue, credits sold, distinct buyers) and `generations` (succeeded
-// count, AI cost over every status) — so no product fans out into
-// duplicate rows. Every product is returned, `killed` included, with
-// zeros and `null` rates when idle.
-export const getPortfolioMetrics: (range: MetricsRange) => Promise<PortfolioMetrics> = async (range) => {
-  await requireAdmin();
-  const days = validateRangeDays(range);
-  // `postgres` (the driver) refuses a bare `Date` as a bind parameter; an
-  // ISO string round-trips through `timestamptz` correctly.
-  const since = computeSince(days).toISOString();
-
+// The portfolio's aggregation SQL (BO-02), extracted so getFunnel (BO-03) can reuse it filtered
+// to one product instead of duplicating the 3 subqueries: `products` joined to its current
+// `product_versions` row (for `name` and `pricing.costPerGeneration`), left-joined to `events`
+// (the 5 funnel-step counts), `purchases` (revenue, credits sold, distinct buyers) and
+// `generations` (succeeded count, AI cost over every status), grouped by `product_id` so no
+// product fans out into duplicate rows. With no `productId`, every product is returned, `killed`
+// included; with one, at most one row (empty when the id doesn't exist).
+async function selectProductRows(since: string, productId?: string): Promise<PortfolioRow[]> {
   const result = await db.execute<PortfolioRow>(sql`
     select
       p.id as product_id,
@@ -280,8 +272,21 @@ export const getPortfolioMetrics: (range: MetricsRange) => Promise<PortfolioMetr
       where created_at >= ${since}
       group by product_id
     ) gen on gen.product_id = p.id
+    ${productId ? sql`where p.id = ${productId}` : sql``}
   `);
-  const productMetrics = [...result].map(toProductMetrics);
+  return [...result];
+}
+
+// Powers the portfolio (BO-02); calls `requireAdmin()` inside, before
+// validating the range (specs/BO-02-portefeuille.md plan, design decision 2).
+export const getPortfolioMetrics: (range: MetricsRange) => Promise<PortfolioMetrics> = async (range) => {
+  await requireAdmin();
+  const days = validateRangeDays(range);
+  // `postgres` (the driver) refuses a bare `Date` as a bind parameter; an
+  // ISO string round-trips through `timestamptz` correctly.
+  const since = computeSince(days).toISOString();
+
+  const productMetrics = (await selectProductRows(since)).map(toProductMetrics);
   return {
     totals: {
       visits: productMetrics.reduce((sum, product) => sum + product.visits, 0),
@@ -296,9 +301,21 @@ export const getPortfolioMetrics: (range: MetricsRange) => Promise<PortfolioMetr
   };
 };
 
-// Powers the product sheet (BO-03); calls `requireAdmin()` inside.
+// Powers the product sheet (BO-03); calls `requireAdmin()` inside, before validating the range
+// (mirrors getPortfolioMetrics). A malformed or unknown productId throws before any SQL runs
+// (`z.uuid()`, cheaper and clearer than a Postgres "invalid input syntax for type uuid" error):
+// there is no "empty funnel" to render for a product that doesn't exist, unlike an idle product,
+// whose row exists with zero counts.
 export const getFunnel: (productId: string, range: MetricsRange) => Promise<Funnel> = async (productId, range) => {
   await requireAdmin();
-  const metrics = await buildProductMetrics(productId);
+  const days = validateRangeDays(range);
+  if (!z.uuid().safeParse(productId).success) {
+    throw new Error(`getFunnel: unknown product ${productId}`);
+  }
+  const since = computeSince(days).toISOString();
+
+  const [row] = await selectProductRows(since, productId);
+  if (!row) throw new Error(`getFunnel: unknown product ${productId}`);
+  const metrics = toProductMetrics(row);
   return { metrics, steps: buildSteps(metrics), daily: buildDaily(range, metrics) };
 };

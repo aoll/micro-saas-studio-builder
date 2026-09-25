@@ -551,6 +551,35 @@ describe("getFunnel", () => {
     const { getFunnel } = await import("./metrics");
     await expect(getFunnel("p1", { days: 30 })).rejects.toThrow("redirect:/admin/login");
   });
+
+  // Task 1 — guards
+  describe("guards", () => {
+    it("checks the admin session before validating the range", async () => {
+      requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
+      const { getFunnel } = await import("./metrics");
+      await expect(getFunnel("p1", { days: 0 })).rejects.toThrow("redirect:/admin/login");
+    });
+
+    it.each([0, 1.5, 400])("rejects an invalid range of %s days with a RangeError", async (days) => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const product = await db.query.products.findFirst({ where: eq(products.slug, "lettre-pro") });
+      const { getFunnel } = await import("./metrics");
+      await expect(getFunnel(product!.id, { days })).rejects.toThrow(RangeError);
+    });
+
+    it("throws on a well-formed but unknown productId", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const unknownId = randomUUID();
+      const { getFunnel } = await import("./metrics");
+      await expect(getFunnel(unknownId, { days: 30 })).rejects.toThrow(`getFunnel: unknown product ${unknownId}`);
+    });
+
+    it("throws on a non-uuid productId", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { getFunnel } = await import("./metrics");
+      await expect(getFunnel("not-a-uuid", { days: 30 })).rejects.toThrow("getFunnel: unknown product not-a-uuid");
+    });
+  });
 });
 
 /**

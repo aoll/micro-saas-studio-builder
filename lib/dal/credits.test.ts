@@ -399,6 +399,46 @@ describe("debit", () => {
     await expect(debit({ userId, productId, cost: 1, generationId, idempotencyKey: randomUUID() })).rejects.toThrow();
   });
 
+  it("rejects a generation belonging to another user, writing nothing", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct()).id;
+    await giveCredits(userId, productId, 3);
+    const otherUserId = await createUser();
+    const generationId = await createGeneration(otherUserId, productId);
+    asUser(userId);
+
+    const { debit, getBalance } = await import("./credits");
+    const idempotencyKey = randomUUID();
+    await expect(debit({ userId, productId, cost: 1, generationId, idempotencyKey })).rejects.toThrow();
+    expect(await getBalance(userId, productId)).toBe(3);
+
+    const rows = await db
+      .select()
+      .from(creditTransactions)
+      .where(eq(creditTransactions.idempotencyKey, idempotencyKey));
+    expect(rows).toHaveLength(0);
+  });
+
+  it("rejects a generation belonging to another product, writing nothing", async () => {
+    const userId = await createUser();
+    const productId = (await createProduct()).id;
+    const otherProductId = (await createProduct()).id;
+    await giveCredits(userId, productId, 3);
+    const generationId = await createGeneration(userId, otherProductId);
+    asUser(userId);
+
+    const { debit, getBalance } = await import("./credits");
+    const idempotencyKey = randomUUID();
+    await expect(debit({ userId, productId, cost: 1, generationId, idempotencyKey })).rejects.toThrow();
+    expect(await getBalance(userId, productId)).toBe(3);
+
+    const rows = await db
+      .select()
+      .from(creditTransactions)
+      .where(eq(creditTransactions.idempotencyKey, idempotencyKey));
+    expect(rows).toHaveLength(0);
+  });
+
   it("rejects a non-positive-integer cost", async () => {
     const userId = await createUser();
     const productId = (await createProduct()).id;

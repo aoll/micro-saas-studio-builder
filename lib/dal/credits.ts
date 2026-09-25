@@ -2,7 +2,7 @@ import "server-only";
 import { and, eq, gte, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { balances, creditTransactions, productVersions, products, purchases } from "@/lib/db/schema";
+import { balances, creditTransactions, generations, productVersions, products, purchases } from "@/lib/db/schema";
 import type { ProductConfig } from "@/lib/schemas/product-config";
 import { getSession } from "./session";
 
@@ -131,6 +131,14 @@ export const debit: (args: Debit) => Promise<DebitResult> = async ({
 
   try {
     return await db.transaction(async (tx) => {
+      // 0. The generation must belong to this user and this product: a
+      // client-supplied generationId could otherwise point at someone
+      // else's (or another product's) generation and attach a debit to it.
+      const generation = await tx.query.generations.findFirst({ where: eq(generations.id, generationId) });
+      if (!generation || generation.userId !== userId || generation.productId !== productId) {
+        throw new Error("debit: generationId does not belong to this user and product");
+      }
+
       // 1. The ledger row first: if the key already exists (retry), nothing
       // is inserted and the debit replays without touching the balance.
       const inserted = await tx

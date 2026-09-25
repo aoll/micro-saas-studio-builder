@@ -2,6 +2,8 @@
 import { cleanup, render } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
 import { NextIntlClientProvider } from "next-intl";
+import { Suspense } from "react";
+import type { ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import fr from "@/messages/fr/common.json";
 import checkoutFr from "@/messages/fr/checkout.json";
@@ -65,11 +67,33 @@ function ctx(packId = "pack-50") {
   return { params: Promise.resolve({ app: "bio-insta", packId }), searchParams: Promise.resolve({}) };
 }
 
-describe("/[app]/checkout/[packId] page", () => {
+// QA1-P1-B14 (.claude/plans/QA1-P1-B14.plan.md, step 4): before this spec,
+// CheckoutPage was an `async function` awaiting `params` at its top level,
+// outside any <Suspense> — categorically flagged by Cache Components
+// (node_modules/next/dist/docs/…/migrating-to-cache-components.md ›
+// "Await params inside <Suspense>", .claude/qa/reports/2026-09-25-full.md ›
+// B14). This structural guard replaces the old "await CheckoutPage(ctx())"
+// assertions below (mirrors history/page.test.tsx's pattern): CheckoutPage
+// itself is now synchronous and must return a <Suspense> element whose
+// single child (CheckoutContent) receives the *same* params promise,
+// unconsumed at this level.
+describe("/[app]/checkout/[packId] page — structure", () => {
+  it("returns a <Suspense> wrapping CheckoutContent, with params forwarded unawaited", async () => {
+    const { default: CheckoutPage } = await import("./page");
+    const paramsPromise = ctx("pack-50").params;
+    const element = CheckoutPage({ params: paramsPromise, searchParams: Promise.resolve({}) }) as ReactElement<{
+      children: ReactElement<{ params: unknown }>;
+    }>;
+    expect(element.type).toBe(Suspense);
+    expect(element.props.children.props.params).toBe(paramsPromise);
+  });
+});
+
+describe("/[app]/checkout/[packId] page — CheckoutContent", () => {
   it("renders the checkout flow for the requested pack, as a full page with an <h1>", async () => {
     getProduct.mockResolvedValue(product);
-    const { default: CheckoutPage } = await import("./page");
-    const ui = await CheckoutPage(ctx("pack-50"));
+    const { CheckoutContent } = await import("./page");
+    const ui = await CheckoutContent(ctx("pack-50"));
     renderUi(ui);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Paiement");
     expect(screen.getByText("BioInsta · pack")).toBeTruthy();
@@ -78,14 +102,14 @@ describe("/[app]/checkout/[packId] page", () => {
 
   it("calls notFound for an unknown product", async () => {
     getProduct.mockResolvedValue(null);
-    const { default: CheckoutPage } = await import("./page");
-    await expect(CheckoutPage(ctx("pack-50"))).rejects.toThrow("NEXT_NOT_FOUND");
+    const { CheckoutContent } = await import("./page");
+    await expect(CheckoutContent(ctx("pack-50"))).rejects.toThrow("NEXT_NOT_FOUND");
   });
 
   it("calls notFound for a packId absent from the product's config", async () => {
     getProduct.mockResolvedValue(product);
-    const { default: CheckoutPage } = await import("./page");
-    await expect(CheckoutPage(ctx("does-not-exist"))).rejects.toThrow("NEXT_NOT_FOUND");
+    const { CheckoutContent } = await import("./page");
+    await expect(CheckoutContent(ctx("does-not-exist"))).rejects.toThrow("NEXT_NOT_FOUND");
   });
 });
 

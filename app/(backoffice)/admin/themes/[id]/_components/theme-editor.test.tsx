@@ -184,4 +184,18 @@ describe("ThemeEditor", () => {
     expect(payloadOf(formData as FormData)).toEqual({ tokens, landingVariant: "centered" });
     await act(() => Promise.resolve());
   });
+
+  it("shows a live preview whose colors follow the draft as it is edited", () => {
+    render(<ThemeEditor theme={theme} readOnly={false} />);
+    const preview = screen.getByTestId("theme-preview");
+    expect(preview.style.getPropertyValue("--primary")).toBe(LIGHT.primary);
+
+    fireEvent.change(screen.getByLabelText("Primary"), { target: { value: "#123456" } });
+    expect(preview.style.getPropertyValue("--primary")).toBe("#123456");
+  });
+
+  it("passes the sample product name through to the preview headline", () => {
+    render(<ThemeEditor theme={theme} readOnly={false} sampleProductName="LettrePro" />);
+    expect(screen.getByText("LettrePro")).toBeTruthy();
+  });
 });

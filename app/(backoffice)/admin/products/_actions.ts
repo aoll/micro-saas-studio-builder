@@ -8,6 +8,7 @@ import { toolInputSchema } from "@/app/(products)/[app]/tool/_lib/tool-input-sch
 import { costMicros, streamGeneration, type GenerationUsage } from "@/lib/ai/generate";
 import {
   createProduct,
+  getProductDraft,
   isSlugAvailable,
   listThemeOptions,
   publishProduct,
@@ -19,6 +20,7 @@ import { guardRequest } from "@/lib/security";
 import { generateInputSchema } from "@/lib/schemas/inputs";
 import { productConfigSchema, slugSchema, templateVariables } from "@/lib/schemas/product-config";
 import { detectImageType, IMAGE_EXTENSIONS, type DetectedImageType } from "./_components/product-form/image-signature";
+import { MODEL_CATALOGUE_VALUES } from "./_components/product-form/model-catalogue";
 import { issuesToErrors, stepOfPath } from "./_components/product-form/validation";
 
 // BO-05a (specs/BO-05a-formulaire.md): one Server Action per domain
@@ -52,6 +54,20 @@ function parseConfigForm(formData: FormData): { ok: true; candidate: unknown } |
   } catch {
     return { ok: false, formError: "Configuration illisible" };
   }
+}
+
+// Security review (LOW): `generation.model`'s frozen schema only checks
+// `z.string().min(1)` (lib/schemas/product-config.ts), so `testPrompt` and
+// `publish` — both public POST endpoints — enforce the picker's own
+// catalogue (model-catalogue.ts) themselves. The one exception is the
+// model already stored on the product being edited: the picker shows it
+// too (generation-step.tsx's modelOptions()), so a draft that hasn't
+// touched step 5 yet must still be re-testable/re-publishable.
+async function isAllowedModel(model: string, slug: string | null): Promise<boolean> {
+  if (MODEL_CATALOGUE_VALUES.includes(model)) return true;
+  if (slug === null) return false;
+  const draft = await getProductDraft(slug);
+  return draft?.config.generation.model === model;
 }
 
 export async function saveProduct(
@@ -200,6 +216,10 @@ export async function testPrompt(
   const inputs = inputsResult.data;
   const generation = generationResult.data;
 
+  if (!(await isAllowedModel(generation.model, slug))) {
+    return { error: "Modèle non autorisé" };
+  }
+
   const fieldKeys = new Set(inputs.map((field) => field.key));
   for (const variable of templateVariables(generation.promptTemplate)) {
     if (!fieldKeys.has(variable)) {
@@ -321,6 +341,10 @@ export async function publish(
   const themeOptions = await listThemeOptions();
   if (!themeOptions.some((theme) => theme.id === config.themeId)) {
     return { errors: { themeId: "Thème introuvable" }, step: 2 };
+  }
+
+  if (!(await isAllowedModel(config.generation.model, slug))) {
+    return { errors: { "generation.model": "Modèle non autorisé" }, step: 5 };
   }
 
   try {

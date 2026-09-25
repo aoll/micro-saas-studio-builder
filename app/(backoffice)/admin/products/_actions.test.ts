@@ -436,6 +436,60 @@ describe("testPrompt", () => {
     expect(result.ok).toBeUndefined();
   });
 
+  it("returns an error for a model outside the catalogue, without calling the AI (create mode, no stored model to except)", async () => {
+    await currentAdmin();
+    const { testPrompt } = await import("./_actions");
+    const result = await testPrompt(
+      null,
+      {},
+      testPromptForm({ generation: { ...testGenerationFixture, model: "openai/gpt-5-mini" } }),
+    );
+    expect(result.error).toBeTruthy();
+    expect(result.ok).toBeUndefined();
+  });
+
+  it("accepts a non-catalogue model when it matches the edited product's own stored model", async () => {
+    await currentAdmin();
+    const { createProduct } = await import("@/lib/dal/product-editor");
+    const config = await buildConfig({
+      generation: { model: "openai/gpt-5-mini", promptTemplate: "Écris sur {{topic}}", outputType: "markdown" },
+      inputs: [{ key: "topic", label: "Topic", type: "text", required: true }],
+    });
+    const created = await createProduct(config);
+
+    const { testPrompt } = await import("./_actions");
+    const result = await testPrompt(
+      created.slug,
+      {},
+      testPromptForm({
+        inputs: [{ key: "topic", label: "Topic", type: "text", required: true }],
+        generation: { model: "openai/gpt-5-mini", promptTemplate: "Écris sur {{topic}}", outputType: "markdown" },
+        sample: { topic: "le café" },
+      }),
+    );
+    expect(result.ok).toBe(true);
+
+    await cleanupProduct(created.id);
+  });
+
+  it("returns an error for a non-catalogue model that doesn't match the edited product's stored model either", async () => {
+    await currentAdmin();
+    const { createProduct } = await import("@/lib/dal/product-editor");
+    const config = await buildConfig({ generation: testGenerationFixture, inputs: testInputsFixture });
+    const created = await createProduct(config);
+
+    const { testPrompt } = await import("./_actions");
+    const result = await testPrompt(
+      created.slug,
+      {},
+      testPromptForm({ generation: { ...testGenerationFixture, model: "openai/gpt-5-mini" } }),
+    );
+    expect(result.error).toBeTruthy();
+    expect(result.ok).toBeUndefined();
+
+    await cleanupProduct(created.id);
+  });
+
   it("mock mode: returns the fixture output, its token counts and its cost", async () => {
     await currentAdmin();
     const { testPrompt } = await import("./_actions");
@@ -538,6 +592,20 @@ describe("publish · create path", () => {
     expect(result.errors?.slug).toBeTruthy();
   });
 
+  it("returns a step 5 field error for a model outside the catalogue, without creating a product", async () => {
+    await currentAdmin();
+    const { publish } = await import("./_actions");
+    const config = await buildConfig({
+      generation: { ...testGenerationFixture, model: "openai/gpt-5-mini" },
+      inputs: testInputsFixture,
+    });
+    const result = await publish(null, {}, configForm(config));
+    expect(result.step).toBe(5);
+    expect(result.errors?.["generation.model"]).toBeTruthy();
+    const row = await db.query.products.findFirst({ where: eq(products.slug, config.slug) });
+    expect(row).toBeUndefined();
+  });
+
   it("creates and publishes the product as v1, tags the cache, and returns the url", async () => {
     await currentAdmin();
     const { publish } = await import("./_actions");
@@ -638,5 +706,39 @@ describe("publish · edit path", () => {
     const row = await db.query.products.findFirst({ where: eq(products.slug, config.slug) });
     expect(row).toMatchObject({ currentVersion: 2 });
     await cleanupProduct(row!.id);
+  });
+
+  it("accepts a non-catalogue model when it matches the product's own stored model", async () => {
+    await currentAdmin();
+    const { createProduct } = await import("@/lib/dal/product-editor");
+    const config = await buildConfig({
+      generation: { ...testGenerationFixture, model: "openai/gpt-5-mini" },
+      inputs: testInputsFixture,
+    });
+    const created = await createProduct(config);
+
+    const { publish } = await import("./_actions");
+    const result = await publish(created.slug, {}, configForm(config));
+    expect(result).toMatchObject({ ok: true, slug: config.slug, version: 2 });
+
+    await cleanupProduct(created.id);
+  });
+
+  it("returns a step 5 error for a non-catalogue model that doesn't match the product's stored model either", async () => {
+    await currentAdmin();
+    const { createProduct } = await import("@/lib/dal/product-editor");
+    const config = await buildConfig({ generation: testGenerationFixture, inputs: testInputsFixture });
+    const created = await createProduct(config);
+
+    const { publish } = await import("./_actions");
+    const result = await publish(
+      created.slug,
+      {},
+      configForm({ ...config, generation: { ...testGenerationFixture, model: "openai/gpt-5-mini" } }),
+    );
+    expect(result.step).toBe(5);
+    expect(result.errors?.["generation.model"]).toBeTruthy();
+
+    await cleanupProduct(created.id);
   });
 });

@@ -72,6 +72,12 @@ describe("ThemeCard", () => {
     expect(screen.getByRole("heading", { name: "Editorial" })).toBeTruthy();
   });
 
+  it("links to its BO-08 editor, named after the theme", () => {
+    render(<ThemeCard theme={theme()} productNames={[]} />);
+    const link = screen.getByRole("link", { name: "Editorial" });
+    expect(link.getAttribute("href")).toBe("/admin/themes/11111111-1111-1111-1111-111111111111");
+  });
+
   it("renders a single thumbnail, without a duplicated name inside it", () => {
     render(<ThemeCard theme={theme()} productNames={[]} />);
     const thumbnails = screen.getAllByTestId("theme-thumbnail");

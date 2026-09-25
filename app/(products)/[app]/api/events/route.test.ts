@@ -36,6 +36,25 @@ async function callPost(request: NextRequest, app = "lettre-pro") {
 }
 
 describe("POST /[app]/api/events", () => {
+  it("two concurrent cookieless visit beacons never create two visitors (B4)", async () => {
+    // Reproduces QA1-P1-B4: two beacons of the same page load, each with its
+    // own client-minted id, race in before any cookie exists. The route must
+    // never let a body-supplied anonymousId reach track(): at most one
+    // identity (from a cookie) is ever tracked, and neither client id is it.
+    const bodyIdA = randomUUID();
+    const bodyIdB = randomUUID();
+
+    await Promise.all([
+      callPost(post({ body: { type: "visit", anonymousId: bodyIdA } })),
+      callPost(post({ body: { type: "visit", anonymousId: bodyIdB } })),
+    ]);
+
+    const trackedIds = track.mock.calls.map(([event]) => (event as { anonymousId: string }).anonymousId);
+    expect(new Set(trackedIds).size).toBeLessThanOrEqual(1);
+    expect(trackedIds).not.toContain(bodyIdA);
+    expect(trackedIds).not.toContain(bodyIdB);
+  });
+
   it("sets a fresh anonymous_id cookie and tracks a visit when there is no cookie", async () => {
     const bodyId = randomUUID();
     const response = await callPost(post({ body: { type: "visit", anonymousId: bodyId } }));

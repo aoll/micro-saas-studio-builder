@@ -87,3 +87,10 @@ check on `next dev`; 15 `pnpm check`, `pnpm test:coverage`, `pnpm build`.
 - [ ] Not signed in → sign-up modal: Tasks 12, 13 (merge held until SA-03)
 - [ ] History entry point: Task 4
 - [ ] Never cached, streamed; fr/en; no frozen contract edited; `pnpm check`, `pnpm build` green; PR title `feat(app): SA-07 account and credits page`
+
+## Orchestrator decisions, round 2 (binding)
+
+6. **Human decision (« OK SA-07 », 2026-09-25):** Périmètre extended to `lib/dal/account.ts` + `lib/dal/account.test.ts`:
+   additive user-scoped reads `listCreditMovements(userId, productId)` and `listPurchases(userId, productId)`
+   (session check before any query, newest first, limit 50, no idempotency keys / generation_id / purchase_id). Phase 2
+   is unblocked.

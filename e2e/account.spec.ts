@@ -8,35 +8,36 @@ import { expect, test } from "@playwright/test";
 // URL.
 //
 // Notes for whoever runs this:
-// - The not-signed-in journey (plan's Orchestrator decision 2) needs
-//   SA-03's `/lettre-pro/signup` page and its intercepted modal to exist:
-//   until SA-03 is merged, the account page's `href={.../signup as Route}`
-//   points at a route that 404s. Marked `test.fixme` with that reason;
-//   un-fixme and drop the reason once SA-03 merges.
+// - The not-signed-in journey now exercises SA-03's real `/lettre-pro/signup`
+//   page and its intercepted modal (`@modal/(.)signup`, merged #35):
+//   `OpenSignupModal`'s `router.replace` turns the hard `page.goto` to
+//   `/account` into a soft navigation to `/signup`, which opens the modal
+//   over the account page's own shell (docs/04-nextjs.md's intercepting
+//   routes) — the same "dialog" role and "Email" field as
+//   e2e/signup.spec.ts's own modal assertion.
 // - The signed-in journey (balance, movements, purchases, sign-out) needs
 //   a real session, reachable only through SA-03's magic-link flow (no
 //   email+password sign-up for regular users, lib/auth.ts:
 //   `disableSignUp: true`) — the same gap left as a placeholder in
-//   e2e/tool.spec.ts and e2e/history.spec.ts for the same reason. Once
-//   SA-03 is merged, sign in with its UI (or auth.api.signInMagicLink +
-//   the outbox's verify URL, lib/auth.ts:18-22,55 and
-//   lib/dal/magic-link.ts:19-27, the pattern e2e/history.spec.ts's plan
-//   entry names) before asserting the balance card, MovementList,
-//   PurchaseList and AccountSignOutButton content.
+//   e2e/tool.spec.ts and e2e/history.spec.ts for the same reason. Sign in
+//   with SA-03's UI (e2e/signup.spec.ts's second test: fill "Email", click
+//   "Recevoir mon lien de connexion", then "Me connecter" in the simulated
+//   inbox) before asserting the balance card, MovementList, PurchaseList
+//   and AccountSignOutButton content.
 
 test.describe("Account (/lettre-pro/account)", () => {
-  test.fixme("a not-signed-in visitor is sent to the sign-up modal (needs SA-03's /lettre-pro/signup)", async ({
-    page,
-  }) => {
+  test("a not-signed-in visitor is sent to the sign-up modal", async ({ page }) => {
     await page.goto("/lettre-pro/account");
     await expect(page).toHaveURL(/\/lettre-pro\/signup$/);
     await expect(page.getByText("Créez un compte pour voir vos crédits")).toBeVisible();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(page.getByLabel("Email")).toBeVisible();
   });
 
-  // Placeholder: needs SA-03's magic-link sign-in (see the file header).
-  // Once available: sign in, then assert the balance card ("Solde", the
-  // number of credits, "Recharger" → /lettre-pro/pricing), the "Mouvements
-  // de crédits" and "Achats" lists, the "Voir mes générations" link to
+  // Placeholder: needs a real session (see the file header). Once
+  // available: sign in, then assert the balance card ("Solde", the number
+  // of credits, "Recharger" → /lettre-pro/pricing), the "Mouvements de
+  // crédits" and "Achats" lists, the "Voir mes générations" link to
   // /lettre-pro/history, and that "Se déconnecter" signs out and returns to
   // /lettre-pro.
 });

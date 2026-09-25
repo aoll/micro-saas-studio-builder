@@ -770,6 +770,24 @@ describe("getFunnel", () => {
       await cleanupProduct(id);
     });
   });
+
+  // Task 5 — killed product: still returns its data (BO-03 bullet 4, "produit killed")
+  describe("killed product", () => {
+    it("returns status killed and its historical data, not an error", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id } = await createTempProduct({ name: "Killed P", costPerGeneration: 1 }, { status: "killed" });
+      const { buyerIds } = await seedFunnelStory(id, { visits: 5, signups: 2, buyers: 1, succeededGenerations: 1 });
+
+      const { getFunnel } = await import("./metrics");
+      const funnel = await getFunnel(id, { days: 30 });
+      expect(funnel.metrics.status).toBe("killed");
+      expect(funnel.metrics.visits).toBe(5);
+      expect(funnel.steps[0]).toEqual({ type: "visit", count: 5, rateFromPrevious: null });
+
+      await cleanupProduct(id);
+      if (buyerIds.length) await db.delete(users).where(inArray(users.id, buyerIds));
+    });
+  });
 });
 
 /**

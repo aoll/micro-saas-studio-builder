@@ -117,7 +117,7 @@ export function ThresholdsForm({
           <p className="font-medium">Badges qui changeraient :</p>
           <ul className="list-disc pl-4">
             {changes.map((change) => (
-              <li key={change.productId}>
+              <li key={change.productId} data-testid="preview-change">
                 {change.name} : {change.before ?? "—"} → {change.after ?? "—"}
               </li>
             ))}

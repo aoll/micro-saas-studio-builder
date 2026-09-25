@@ -446,6 +446,34 @@ describe("ProductForm · import a pasted config", () => {
     }
   });
 
+  // B-N1 (.claude/qa/reports/2026-09-25-full-3.md): `stepPatch(5, draft)`
+  // must validate step 5's {{variables}} against the draft's own step-4
+  // inputs (here the fixture's `niche`/`highlights`/`tone`, which the
+  // fixture's own unmodified template already matches), not against
+  // `validation.ts`'s `VALID_BASELINE` example field ("sujet"). Before the
+  // fix, `stepPatch(5)` returns only `{ generation }`, so `validateStep`
+  // merges it on the baseline's `inputs` and the real `{{niche}}` etc. are
+  // reported as unmatched.
+  it("advances from step 5 to step 6 on Suivant, with an imported config's own inputs intact", async () => {
+    render(
+      <ProductForm
+        mode="create"
+        slug={null}
+        initialDraft={newProductDraft(importThemeId)}
+        themes={importThemeOptions}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("Coller une configuration JSON"), {
+      target: { value: bioInstagramFixture },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Importer" }));
+    await act(() => Promise.resolve());
+
+    goToStep(5);
+    fireEvent.click(screen.getByRole("button", { name: "Suivant" }));
+    expect(screen.getByRole("button", { name: /6\. Pricing/ }).getAttribute("aria-current")).toBe("step");
+  });
+
   it("surfaces per-step errors from an invalid pasted config, without a separate error UI", () => {
     render(
       <ProductForm

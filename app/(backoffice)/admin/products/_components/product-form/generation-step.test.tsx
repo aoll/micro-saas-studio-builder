@@ -7,7 +7,10 @@ import { GenerationStep } from "./generation-step";
 
 afterEach(cleanup);
 
-const inputs: { key: string }[] = [{ key: "poste" }, { key: "entreprise" }];
+const inputs: { id: string; key: string }[] = [
+  { id: "input-poste", key: "poste" },
+  { id: "input-entreprise", key: "entreprise" },
+];
 
 const generation: ProductConfig["generation"] = {
   model: "anthropic/claude-haiku-4.5",
@@ -97,5 +100,25 @@ describe("GenerationStep", () => {
   it("shows the server-side error message when given one", () => {
     setup({ errors: { "generation.promptTemplate": "Ce champ est requis" } });
     expect(screen.getByText("Ce champ est requis")).toBeTruthy();
+  });
+
+  // B-N2 (.claude/qa/reports/2026-09-25-full-3.md): two step-4 fields can
+  // transiently share the same `key` while the admin is editing it (the
+  // "Clé déjà utilisée" message shows, but the row list itself must still
+  // render with a stable React key). `key={input.key}` produced React's
+  // "two children with the same key" console.error; the client id
+  // (`FieldDraft.id`, form-values.ts) must be used instead, since it never
+  // collides.
+  it("does not warn React about duplicate keys when two fields share the same key", () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    setup({
+      inputs: [
+        { id: "input-a", key: "niche" },
+        { id: "input-b", key: "niche" },
+      ],
+    });
+    const duplicateKeyWarning = consoleError.mock.calls.some((call) => String(call[0]).includes("same key"));
+    consoleError.mockRestore();
+    expect(duplicateKeyWarning).toBe(false);
   });
 });

@@ -179,6 +179,56 @@ describe("ProductForm", () => {
     expect(screen.getByRole("button", { name: /1\. Identité/ }).getAttribute("aria-current")).toBe("step");
   });
 
+  // Code review (HIGH, run v1): `checkSlug` is a Server Action — it can
+  // reject (network, an expired session inside `requireAdmin()`, a DB
+  // error), and an unguarded `await` in a click handler would leave that
+  // rejection unhandled with nothing shown to the admin. `handleNext` must
+  // catch it, show a French, actionable message under Slug, and never
+  // advance.
+  it("shows an error and stays on step 1 if checkSlug rejects (network, expired session…)", async () => {
+    checkSlug.mockRejectedValue(new Error("network error"));
+    render(
+      <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
+    );
+    fireEvent.change(screen.getByLabelText("Nom"), { target: { value: "LettrePro bis" } });
+    fireEvent.change(screen.getByLabelText("Slug"), { target: { value: "lettre-pro" } });
+    fireEvent.click(screen.getByRole("button", { name: "Suivant" }));
+    await screen.findByText(/Impossible de vérifier la disponibilité du slug/);
+    expect(screen.getByRole("button", { name: /1\. Identité/ }).getAttribute("aria-current")).toBe("step");
+  });
+
+  // Code review (MEDIUM, run v1): while the availability check is in
+  // flight, Suivant must be disabled (like Enregistrer's `disabled={pending}`)
+  // so a second click during the same check never fires a second request
+  // nor a second (possibly racing) state update.
+  it("disables Suivant while checking the slug's availability, and a second click has no effect", async () => {
+    let resolveCheck!: (result: { available: boolean; error?: string }) => void;
+    checkSlug.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveCheck = resolve;
+        }),
+    );
+    render(
+      <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
+    );
+    fireEvent.change(screen.getByLabelText("Nom"), { target: { value: "LettrePro bis" } });
+    fireEvent.change(screen.getByLabelText("Slug"), { target: { value: "lettre-pro" } });
+    // The keystroke above already fired its own (unrelated) checkSlug call
+    // via handleIdentityChange; only Suivant's own call matters here.
+    const callsBeforeNext = checkSlug.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "Suivant" }));
+
+    const pendingButton = (await screen.findByRole("button", { name: "Vérification…" })) as HTMLButtonElement;
+    expect(pendingButton.disabled).toBe(true);
+    fireEvent.click(pendingButton); // second click while still pending
+    expect(checkSlug.mock.calls.length).toBe(callsBeforeNext + 1); // no extra call
+
+    resolveCheck({ available: true });
+    await screen.findByRole("button", { name: "Suivant" });
+    expect(screen.getByRole("button", { name: /2\. Thème/ }).getAttribute("aria-current")).toBe("step");
+  });
+
   it("posts the cleaned config as JSON and shows success on save", async () => {
     saveProduct.mockResolvedValue({ ok: true, slug: "generateur-de-bio", version: 1 });
     render(

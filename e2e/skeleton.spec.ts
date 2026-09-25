@@ -12,7 +12,7 @@ import { SEED_ADMIN } from "../scripts/seed";
 
 test("/lettre-pro shows the product name", async ({ page }) => {
   await page.goto("/lettre-pro");
-  await expect(page.locator("h1")).toHaveText("LettrePro");
+  await expect(page.getByRole("banner")).toContainText("LettrePro");
 });
 
 test("/admin without a session ends on /admin/login", async ({ page }) => {

@@ -115,24 +115,66 @@ function buildSteps(metrics: ProductMetrics): FunnelStep[] {
   });
 }
 
-// One private builder (docs/11), shared by getFunnel's `daily` and the
-// (bonus) 30-day chart: an even split of the fixed totals over the
-// requested range, capped to 30 points (docs/01: "courbes sur 30 jours").
-function buildDaily(range: MetricsRange, metrics: ProductMetrics): DailyPoint[] {
-  const days = Math.max(1, Math.min(range.days, 30));
-  const today = new Date();
-  return Array.from({ length: days }, (_, index) => {
-    const date = new Date(today);
-    date.setUTCDate(date.getUTCDate() - (days - 1 - index));
-    return {
-      date: date.toISOString().slice(0, 10),
-      visits: Math.round(metrics.visits / days),
-      signups: Math.round(metrics.signups / days),
-      purchases: Math.round(metrics.purchases / days),
-      revenueCents: Math.round(metrics.revenueCents / days),
-      aiCostMicros: Math.round(metrics.aiCostMicros / days),
-    };
-  });
+type DailyRow = {
+  date: string;
+  visits: number;
+  signups: number;
+  purchases: number;
+  revenue_cents: number | string;
+  ai_cost_micros: number | string;
+};
+
+function toDailyPoint(row: DailyRow): DailyPoint {
+  return {
+    date: row.date,
+    visits: row.visits,
+    signups: row.signups,
+    purchases: row.purchases,
+    revenueCents: Number(row.revenue_cents),
+    aiCostMicros: Number(row.ai_cost_micros),
+  };
+}
+
+// One point per UTC calendar day of the range, `since` (00:00 UTC) to today included, zero-filled
+// where nothing happened (docs/01: "courbes sur 30 jours"). Own query, filtered to one product:
+// `events` for visits/signups/purchases, `purchases` for revenue, `generations` for AI cost (every
+// status, like selectProductRows). Bucketed by `(created_at at time zone 'UTC')::date` so the
+// day boundary is UTC midnight regardless of the server's local time zone.
+async function selectDailyPoints(productId: string, since: string, days: number): Promise<DailyPoint[]> {
+  const result = await db.execute<DailyRow>(sql`
+    select
+      to_char(gs.day, 'YYYY-MM-DD') as date,
+      coalesce(ev.visits, 0)::int as visits,
+      coalesce(ev.signups, 0)::int as signups,
+      coalesce(ev.purchases, 0)::int as purchases,
+      coalesce(pu.revenue_cents, 0)::bigint as revenue_cents,
+      coalesce(gen.ai_cost_micros, 0)::bigint as ai_cost_micros
+    from generate_series(${since}::date, ${since}::date + (${days - 1} || ' days')::interval, interval '1 day') as gs(day)
+    left join (
+      select
+        (created_at at time zone 'UTC')::date as day,
+        count(*) filter (where type = 'visit') as visits,
+        count(*) filter (where type = 'signup') as signups,
+        count(*) filter (where type = 'purchase') as purchases
+      from events
+      where product_id = ${productId} and created_at >= ${since}
+      group by 1
+    ) ev on ev.day = gs.day
+    left join (
+      select (created_at at time zone 'UTC')::date as day, sum(amount_cents) as revenue_cents
+      from purchases
+      where product_id = ${productId} and created_at >= ${since}
+      group by 1
+    ) pu on pu.day = gs.day
+    left join (
+      select (created_at at time zone 'UTC')::date as day, coalesce(sum(cost_micros), 0) as ai_cost_micros
+      from generations
+      where product_id = ${productId} and created_at >= ${since}
+      group by 1
+    ) gen on gen.day = gs.day
+    order by gs.day asc
+  `);
+  return [...result].map(toDailyPoint);
 }
 
 const MIN_RANGE_DAYS = 1;
@@ -317,5 +359,6 @@ export const getFunnel: (productId: string, range: MetricsRange) => Promise<Funn
   const [row] = await selectProductRows(since, productId);
   if (!row) throw new Error(`getFunnel: unknown product ${productId}`);
   const metrics = toProductMetrics(row);
-  return { metrics, steps: buildSteps(metrics), daily: buildDaily(range, metrics) };
+  const daily = await selectDailyPoints(productId, since, days);
+  return { metrics, steps: buildSteps(metrics), daily };
 };

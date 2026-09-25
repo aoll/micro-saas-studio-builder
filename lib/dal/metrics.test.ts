@@ -669,6 +669,107 @@ describe("getFunnel", () => {
       await cleanupProduct(id);
     });
   });
+
+  // Task 4 — daily
+  describe("daily", () => {
+    it("returns 30 zero-filled points, ascending, ending today (UTC), for an idle product", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id } = await createTempProduct({ name: "Idle daily P" });
+
+      const { getFunnel } = await import("./metrics");
+      const funnel = await getFunnel(id, { days: 30 });
+      expect(funnel.daily).toHaveLength(30);
+      const dates = funnel.daily.map((point) => point.date);
+      expect(dates).toEqual([...dates].sort());
+      const today = new Date().toISOString().slice(0, 10);
+      expect(dates[dates.length - 1]).toBe(today);
+      for (const point of funnel.daily) {
+        expect(point.visits).toBe(0);
+        expect(point.signups).toBe(0);
+        expect(point.purchases).toBe(0);
+        expect(point.revenueCents).toBe(0);
+        expect(point.aiCostMicros).toBe(0);
+      }
+
+      await cleanupProduct(id);
+    });
+
+    it("buckets an event just after midnight UTC into today, and one just before into yesterday", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id } = await createTempProduct({ name: "Boundary daily P" });
+      const now = new Date();
+      const startOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      const justInside = new Date(startOfToday.getTime() + 60_000);
+      const justBeforeMidnight = new Date(startOfToday.getTime() - 60_000);
+
+      await db.insert(events).values([
+        { productId: id, type: "visit", anonymousId: randomUUID(), createdAt: justInside },
+        { productId: id, type: "visit", anonymousId: randomUUID(), createdAt: justBeforeMidnight },
+      ]);
+
+      // Both events fall within the 30-day range: `since` is truncated to a whole UTC day, so a
+      // "just before midnight" timestamp still passes the `created_at >= since` filter — it is
+      // the bucketing itself, not the range, that this test exercises.
+      const { getFunnel } = await import("./metrics");
+      const funnel = await getFunnel(id, { days: 30 });
+      const today = startOfToday.toISOString().slice(0, 10);
+      const yesterday = new Date(startOfToday.getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const todayPoint = funnel.daily.find((point) => point.date === today);
+      const yesterdayPoint = funnel.daily.find((point) => point.date === yesterday);
+      expect(todayPoint!.visits).toBe(1);
+      expect(yesterdayPoint!.visits).toBe(1);
+
+      await cleanupProduct(id);
+    });
+
+    it("sums to the same totals as `metrics`, over the same range", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id } = await createTempProduct({ name: "Daily sums P", costPerGeneration: 1 });
+      const { buyerIds } = await seedFunnelStory(id, { visits: 9, signups: 3, buyers: 2, succeededGenerations: 4 });
+
+      const { getFunnel } = await import("./metrics");
+      const funnel = await getFunnel(id, { days: 30 });
+      const dailyVisits = funnel.daily.reduce((sum, point) => sum + point.visits, 0);
+      const dailySignups = funnel.daily.reduce((sum, point) => sum + point.signups, 0);
+      const dailyPurchases = funnel.daily.reduce((sum, point) => sum + point.purchases, 0);
+      const dailyRevenue = funnel.daily.reduce((sum, point) => sum + point.revenueCents, 0);
+      const dailyAiCost = funnel.daily.reduce((sum, point) => sum + point.aiCostMicros, 0);
+      expect(dailyVisits).toBe(funnel.metrics.visits);
+      expect(dailySignups).toBe(funnel.metrics.signups);
+      expect(dailyPurchases).toBe(funnel.metrics.purchases);
+      expect(dailyRevenue).toBe(funnel.metrics.revenueCents);
+      expect(dailyAiCost).toBe(funnel.metrics.aiCostMicros);
+
+      await cleanupProduct(id);
+      if (buyerIds.length) await db.delete(users).where(inArray(users.id, buyerIds));
+    });
+
+    it("excludes another product's events, purchases and generations", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id: idA } = await createTempProduct({ name: "Daily A" });
+      const { id: idB } = await createTempProduct({ name: "Daily B" });
+      await db.insert(events).values({ productId: idB, type: "visit", anonymousId: randomUUID() });
+
+      const { getFunnel } = await import("./metrics");
+      const funnel = await getFunnel(idA, { days: 30 });
+      const totalVisits = funnel.daily.reduce((sum, point) => sum + point.visits, 0);
+      expect(totalVisits).toBe(0);
+
+      await cleanupProduct(idA);
+      await cleanupProduct(idB);
+    });
+
+    it("caps daily points to the requested range", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id } = await createTempProduct({ name: "Range daily P" });
+
+      const { getFunnel } = await import("./metrics");
+      const funnel = await getFunnel(id, { days: 7 });
+      expect(funnel.daily).toHaveLength(7);
+
+      await cleanupProduct(id);
+    });
+  });
 });
 
 /**

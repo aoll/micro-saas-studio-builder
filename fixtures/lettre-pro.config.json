@@ -38,6 +38,7 @@
   ],
   "generation": {
     "model": "anthropic/claude-haiku-4.5",
+    "systemPrompt": "Tu es un conseiller en recrutement. Tu rédiges des lettres de motivation concrètes, ancrées dans l'expérience réellement fournie par le candidat, sans formule creuse ni promesse invérifiable.",
     "promptTemplate": "Rédige une lettre de motivation pour le poste de {{poste}} chez {{entreprise}}. Expérience du candidat : {{experience}}. Ton : {{ton}}.",
     "outputType": "markdown"
   },

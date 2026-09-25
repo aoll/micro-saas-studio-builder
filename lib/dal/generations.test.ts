@@ -593,20 +593,31 @@ describe("countRecentGenerations", () => {
   }
 
   it("counts rows inside the 60 s window and excludes older ones, by user and by ip", async () => {
-    const randomUser = await db.query.users.findFirst();
-    getSession.mockResolvedValue({ user: { id: randomUser!.id } });
+    // freshUserId(), not a shared db.query.users.findFirst() row (review
+    // round, HIGH): app/(products)/[app]/api/generate/route.test.ts also
+    // grabs "a" user this way and, unmocked, writes real generations for it
+    // through the real POST handler. Both files run concurrently under
+    // Vitest against the same worktree DB; a concurrent write landing for
+    // the shared user between this test's inserts and its
+    // countRecentGenerations call pushed `byUser` to 3 instead of 2.
+    // Reproduced directly: looping the two files together failed `expect(
+    // byUser).toBe(2)` with `byUser` off by one in 4 of 5 runs before this
+    // fix. A fresh, never-shared user removes any other suite from the
+    // count.
+    const userId = await freshUserId();
+    getSession.mockResolvedValue({ user: { id: userId } });
     const { countRecentGenerations } = await import("./generations");
     const productId = await lettreProId();
     const ipHash = `ip-${randomUUID()}`;
     const ids = [
-      await insertAt({ productId, userId: randomUser!.id, ipHash, secondsAgo: 0 }),
-      await insertAt({ productId, userId: randomUser!.id, ipHash, secondsAgo: 30 }),
+      await insertAt({ productId, userId, ipHash, secondsAgo: 0 }),
+      await insertAt({ productId, userId, ipHash, secondsAgo: 30 }),
       // Outside the window: must not be counted.
-      await insertAt({ productId, userId: randomUser!.id, ipHash, secondsAgo: 61 }),
+      await insertAt({ productId, userId, ipHash, secondsAgo: 61 }),
     ];
 
     try {
-      const { byUser, byIp } = await countRecentGenerations({ userId: randomUser!.id, ipHash, windowSeconds: 60 });
+      const { byUser, byIp } = await countRecentGenerations({ userId, ipHash, windowSeconds: 60 });
       expect(byUser).toBe(2);
       expect(byIp).toBe(2);
     } finally {

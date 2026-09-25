@@ -53,49 +53,11 @@ export type DailyPoint = {
 
 export type Funnel = { metrics: ProductMetrics; steps: FunnelStep[]; daily: DailyPoint[] };
 
-// V1 stub numbers (docs/11 › Les contrats gelés en V1: "chiffres fixes
-// plausibles"): a funnel that tells LettrePro's "it works" story (scale
-// status, positive margin), replaced by TRACKING's real aggregation over
-// `events`. Internally consistent: each step is smaller than the last, the
-// margin is positive, and the totals below simply sum this one product
-// (there is only one seeded product with metrics in V1).
-const FIXTURE = {
-  visits: 4200,
-  firstGenerations: 1260,
-  signups: 520,
-  creditsExhausted: 180,
-  purchases: 36,
-  generations: 2900,
-  revenueCents: 29640,
-  costMicrosPerGeneration: 4000,
-};
-
 const FUNNEL_STEP_TYPES = ["visit", "first_generation", "signup", "credits_exhausted", "purchase"] as const;
 
-async function buildProductMetrics(productId: string): Promise<ProductMetrics> {
-  const aiCostMicros = FIXTURE.generations * FIXTURE.costMicrosPerGeneration;
-  const revenueMicros = FIXTURE.revenueCents * 10_000;
-  return {
-    productId,
-    slug: "lettre-pro",
-    name: "LettrePro",
-    status: "scale",
-    visits: FIXTURE.visits,
-    firstGenerations: FIXTURE.firstGenerations,
-    signups: FIXTURE.signups,
-    creditsExhausted: FIXTURE.creditsExhausted,
-    purchases: FIXTURE.purchases,
-    generations: FIXTURE.generations,
-    revenueCents: FIXTURE.revenueCents,
-    aiCostMicros,
-    // FIXTURE.signups and FIXTURE.generations are hardcoded positive
-    // constants (never 0): no `null` branch to guard here, unlike
-    // buildSteps' rateFromPrevious below, whose denominator does vary.
-    signupToPurchaseRate: FIXTURE.purchases / FIXTURE.signups,
-    marginPerGenerationMicros: Math.round(revenueMicros / FIXTURE.generations) - FIXTURE.costMicrosPerGeneration,
-  };
-}
-
+// The 5 funnel steps (BO-03) and their pass rate from the previous step, from one product's
+// ProductMetrics: `null` for the first step (no previous step) and whenever the previous step's
+// count is 0 (nothing to divide by).
 function buildSteps(metrics: ProductMetrics): FunnelStep[] {
   const counts: Record<(typeof FUNNEL_STEP_TYPES)[number], number> = {
     visit: metrics.visits,

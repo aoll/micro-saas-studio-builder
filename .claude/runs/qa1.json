@@ -30,9 +30,9 @@
   "specs": {
     "QA1-P1-L1-lot-leger": {
       "dependsOn": [],
-      "status": "dispatched",
-      "worktree": "qa1-p1-l1-lot-leger",
-      "pr": null,
+      "status": "merged",
+      "worktree": null,
+      "pr": 55,
       "mode": "léger"
     },
     "QA1-P1-B3-paiement-pricing": {
@@ -43,15 +43,15 @@
     },
     "QA1-P1-B4-visite-double": {
       "dependsOn": [],
-      "status": "dispatched",
-      "worktree": "qa1-p1-b4-visite-double",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 61
     },
     "QA1-P1-B5-premiere-generation": {
       "dependsOn": [],
-      "status": "dispatched",
-      "worktree": "qa1-p1-b5-premiere-generation",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 56
     },
     "QA1-P1-B12-statut-http": {
       "dependsOn": [
@@ -59,17 +59,16 @@
       ],
       "status": "dispatched",
       "worktree": "qa1-p1-b12-statut-http",
-      "pr": null,
-      "note": "plan committed; TDD starts once B4 (proxy.ts) is merged"
+      "pr": null
     },
     "QA1-P1-B7-refus-402-activite": {
       "dependsOn": [
         "QA1-P1-B5-premiere-generation",
         "QA1-P1-L1-lot-leger"
       ],
-      "status": "dispatched",
-      "worktree": "qa1-p1-b7-refus-402-activite",
-      "pr": null,
+      "status": "merged",
+      "worktree": null,
+      "pr": 58,
       "note": "planning early to use free worktree slots; TDD starts once dependsOn are merged"
     },
     "QA1-P1-B14-cache-components": {
@@ -96,14 +95,13 @@
       ],
       "status": "dispatched",
       "worktree": "qa1-p1-q2-inscription-par-produit",
-      "pr": null,
-      "note": "planning early to use free worktree slots; TDD starts once dependsOn are merged"
+      "pr": null
     },
     "QA1-P1-Q5-funnel-personnes": {
       "dependsOn": [],
-      "status": "dispatched",
-      "worktree": "qa1-p1-q5-funnel-personnes",
-      "pr": null,
+      "status": "merged",
+      "worktree": null,
+      "pr": 57,
       "note": "B4/B5 dependency was semantic only (no shared file): dispatched early"
     }
   },

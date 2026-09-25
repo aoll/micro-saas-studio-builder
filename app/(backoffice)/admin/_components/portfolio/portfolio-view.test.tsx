@@ -21,8 +21,8 @@ function row(overrides: Partial<PortfolioRow> = {}): PortfolioRow {
     signupToPurchaseRate: 0.07,
     revenueCents: 2470,
     aiCostMicros: 80000,
-    marginPerGenerationMicros: 1000,
-    display: { visits: "1 200", conversion: "7 %", revenue: "24,70 €", aiCost: "0,08 €", margin: "0,00 €" },
+    marginRate: 0.99,
+    display: { visits: "1 200", conversion: "7 %", revenue: "24,70 €", aiCost: "0,08 €", margin: "99 %" },
     ...overrides,
   };
 }

@@ -6,6 +6,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vites
 import { magicLinkOutbox, users } from "@/lib/db/auth-schema";
 import { requireDatabaseUrl } from "@/lib/require-database-url";
 import { SEED_ADMIN } from "@/scripts/seed";
+import { initialSignupState } from "./_state";
 
 // SA-03 (specs/SA-03-inscription.md), plan tasks 2-4: requestMagicLink
 // against the real DB (getProduct reads the seeded lettre-pro, getLatestMagicLink
@@ -61,12 +62,24 @@ function formData(fields: Record<string, string>): FormData {
   return data;
 }
 
+// A "use server" file may only export async functions: any other export
+// (the initial state object did) fails every submission with a 500 (QA1 B2).
+describe("signup/_actions module", () => {
+  it("exports only async functions", async () => {
+    const actions: Record<string, unknown> = await import("./_actions");
+    for (const [name, value] of Object.entries(actions)) {
+      expect(value, name).toBeTypeOf("function");
+      expect((value as () => unknown).constructor.name, name).toBe("AsyncFunction");
+    }
+  });
+});
+
 describe("requestMagicLink: invalid input", () => {
   it("rejects an invalid email without calling the guard or sending anything", async () => {
     guardRequest.mockResolvedValue({ ok: true });
     const { auth } = await import("@/lib/auth");
     const spy = vi.spyOn(auth.api, "signInMagicLink");
-    const { requestMagicLink, initialSignupState } = await import("./_actions");
+    const { requestMagicLink } = await import("./_actions");
 
     const result = await requestMagicLink("lettre-pro", initialSignupState, formData({ email: "not-an-email" }));
 
@@ -80,7 +93,7 @@ describe("requestMagicLink: invalid input", () => {
     guardRequest.mockResolvedValue({ ok: true });
     const { auth } = await import("@/lib/auth");
     const spy = vi.spyOn(auth.api, "signInMagicLink");
-    const { requestMagicLink, initialSignupState } = await import("./_actions");
+    const { requestMagicLink } = await import("./_actions");
 
     const result = await requestMagicLink(
       "Not A Valid Slug!",
@@ -101,7 +114,7 @@ describe("requestMagicLink: unknown or killed product", () => {
     getProduct.mockResolvedValue(null);
     const { auth } = await import("@/lib/auth");
     const spy = vi.spyOn(auth.api, "signInMagicLink");
-    const { requestMagicLink, initialSignupState } = await import("./_actions");
+    const { requestMagicLink } = await import("./_actions");
 
     const result = await requestMagicLink(
       "unknown-product",
@@ -119,7 +132,7 @@ describe("requestMagicLink: unknown or killed product", () => {
     getProduct.mockResolvedValue({ ...LETTRE_PRO, status: "killed" });
     const { auth } = await import("@/lib/auth");
     const spy = vi.spyOn(auth.api, "signInMagicLink");
-    const { requestMagicLink, initialSignupState } = await import("./_actions");
+    const { requestMagicLink } = await import("./_actions");
 
     const result = await requestMagicLink(
       "lettre-pro",
@@ -138,7 +151,7 @@ describe("requestMagicLink: guard refusal", () => {
     guardRequest.mockResolvedValue({ ok: false, reason: "bot" });
     const { auth } = await import("@/lib/auth");
     const spy = vi.spyOn(auth.api, "signInMagicLink");
-    const { requestMagicLink, initialSignupState } = await import("./_actions");
+    const { requestMagicLink } = await import("./_actions");
 
     const result = await requestMagicLink(
       "lettre-pro",
@@ -153,7 +166,7 @@ describe("requestMagicLink: guard refusal", () => {
 
   it("returns the rate_limited reason and calls the guard once with 'signup' before signInMagicLink", async () => {
     guardRequest.mockResolvedValue({ ok: false, reason: "rate_limited" });
-    const { requestMagicLink, initialSignupState } = await import("./_actions");
+    const { requestMagicLink } = await import("./_actions");
 
     const result = await requestMagicLink(
       "lettre-pro",
@@ -171,7 +184,7 @@ describe("requestMagicLink: happy path", () => {
   it("sends the link and returns a relative verify URL read from the outbox", async () => {
     guardRequest.mockResolvedValue({ ok: true });
     const email = uniqueEmail("happy");
-    const { requestMagicLink, initialSignupState } = await import("./_actions");
+    const { requestMagicLink } = await import("./_actions");
 
     const result = await requestMagicLink("lettre-pro", initialSignupState, formData({ email }));
 
@@ -187,7 +200,7 @@ describe("requestMagicLink: happy path", () => {
     const email = uniqueEmail("readonce");
     const magicLinkModule = await import("@/lib/dal/magic-link");
     const spy = vi.spyOn(magicLinkModule, "getLatestMagicLink");
-    const { requestMagicLink, initialSignupState } = await import("./_actions");
+    const { requestMagicLink } = await import("./_actions");
 
     await requestMagicLink("lettre-pro", initialSignupState, formData({ email }));
 
@@ -198,7 +211,7 @@ describe("requestMagicLink: happy path", () => {
 
   it("returns a null magicLinkUrl for the admin email (no outbox row, no elevation)", async () => {
     guardRequest.mockResolvedValue({ ok: true });
-    const { requestMagicLink, initialSignupState } = await import("./_actions");
+    const { requestMagicLink } = await import("./_actions");
 
     const result = await requestMagicLink("lettre-pro", initialSignupState, formData({ email: SEED_ADMIN.email }));
 
@@ -210,7 +223,7 @@ describe("requestMagicLink: happy path", () => {
     const email = uniqueEmail("callbacks");
     const { auth } = await import("@/lib/auth");
     const spy = vi.spyOn(auth.api, "signInMagicLink");
-    const { requestMagicLink, initialSignupState } = await import("./_actions");
+    const { requestMagicLink } = await import("./_actions");
 
     await requestMagicLink("lettre-pro", initialSignupState, formData({ email }));
 
@@ -233,7 +246,7 @@ describe("requestMagicLink: happy path", () => {
     const infraError = new Error("ECONNREFUSED: could not reach Postgres");
     const authSpy = vi.spyOn(auth.api, "signInMagicLink").mockRejectedValueOnce(infraError);
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    const { requestMagicLink, initialSignupState } = await import("./_actions");
+    const { requestMagicLink } = await import("./_actions");
 
     const result = await requestMagicLink("lettre-pro", initialSignupState, formData({ email }));
 

@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import type { z } from "zod";
 import { productConfigSchema, type ProductConfig } from "@/lib/schemas/product-config";
 import { DEFAULT_GENERATION, DEFAULT_PRICING } from "./form-values";
@@ -40,7 +39,7 @@ const VALID_BASELINE: ProductConfig = {
   slug: "produit-exemple",
   name: "Produit exemple",
   status: "test",
-  themeId: randomUUID(),
+  themeId: crypto.randomUUID(),
   locale: "fr",
   branding: {},
   landing: {

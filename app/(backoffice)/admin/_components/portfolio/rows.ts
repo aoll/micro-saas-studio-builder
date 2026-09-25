@@ -17,7 +17,7 @@ export type PortfolioRow = {
   signupToPurchaseRate: number | null;
   revenueCents: number;
   aiCostMicros: number;
-  marginPerGenerationMicros: number | null;
+  marginRate: number | null;
   display: {
     visits: string;
     conversion: string;
@@ -26,6 +26,16 @@ export type PortfolioRow = {
     margin: string;
   };
 };
+
+// The "Marge" column is the product's 30-day gross margin, (revenue − AI
+// cost) / revenue, a rate like the "Marge brute" KPI and the BO-02 mockup
+// (QA1 B6): the per-generation margin only feeds evaluate(). Revenue is in
+// euro cents, AI cost in micros at USD = EUR 1:1 (plan design decision 6);
+// no revenue → null ("—").
+function marginRate(product: ProductMetrics): number | null {
+  const revenueMicros = product.revenueCents * 10_000;
+  return revenueMicros > 0 ? (revenueMicros - product.aiCostMicros) / revenueMicros : null;
+}
 
 function toRow(product: ProductMetrics, thresholds: Thresholds | undefined): PortfolioRow {
   const decision = thresholds
@@ -38,6 +48,7 @@ function toRow(product: ProductMetrics, thresholds: Thresholds | undefined): Por
         thresholds,
       )
     : null;
+  const rate = marginRate(product);
   return {
     productId: product.productId,
     slug: product.slug,
@@ -48,13 +59,13 @@ function toRow(product: ProductMetrics, thresholds: Thresholds | undefined): Por
     signupToPurchaseRate: product.signupToPurchaseRate,
     revenueCents: product.revenueCents,
     aiCostMicros: product.aiCostMicros,
-    marginPerGenerationMicros: product.marginPerGenerationMicros,
+    marginRate: rate,
     display: {
       visits: formatNumber(product.visits),
       conversion: formatPercent(product.signupToPurchaseRate),
       revenue: formatEuroCents(product.revenueCents),
       aiCost: formatEuroMicros(product.aiCostMicros),
-      margin: product.marginPerGenerationMicros === null ? "—" : formatEuroMicros(product.marginPerGenerationMicros),
+      margin: formatPercent(rate),
     },
   };
 }

@@ -39,13 +39,15 @@ export type FunnelRow = { type: FunnelStep["type"]; label: string; count: string
 
 // docs/02-ecrans.md › Funnel: "5 étapes avec volumes et taux de passage" — a bar per step, width
 // proportional to `visits` (the first step, always 100 unless visits is 0), clamped to [0, 100]
-// so a data inconsistency can never overflow the bar.
+// so a data inconsistency can never overflow the bar. The rate itself is clamped to [0, 1]
+// (QA1-P1-Q5), independently of lib/dal/metrics.ts's own clamp: no step's pass rate is ever
+// displayed above 100%, whatever `rateFromPrevious` carries.
 export function toFunnelRows(steps: FunnelStep[], visits: number): FunnelRow[] {
   return steps.map((step) => ({
     type: step.type,
     label: STEP_LABELS[step.type],
     count: formatNumber(step.count),
-    rate: formatPercent(step.rateFromPrevious),
+    rate: formatPercent(step.rateFromPrevious === null ? null : Math.min(1, step.rateFromPrevious)),
     widthPercent: visits > 0 ? Math.min(100, Math.max(0, (step.count / visits) * 100)) : 0,
   }));
 }

@@ -370,8 +370,10 @@ describe("uploadLogo", () => {
   });
 });
 
-const testInputsFixture = [{ key: "poste", label: "Poste visé", type: "text", required: true }];
-const testGenerationFixture = {
+const testInputsFixture: ProductConfig["inputs"] = [
+  { key: "poste", label: "Poste visé", type: "text", required: true },
+];
+const testGenerationFixture: ProductConfig["generation"] = {
   model: "anthropic/claude-haiku-4.5",
   promptTemplate: "Rédige un texte pour {{poste}}",
   outputType: "markdown",

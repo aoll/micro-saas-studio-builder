@@ -17,8 +17,13 @@ function toDraft(config: ProductConfig): ProductDraft {
 // shape as the `new` page (plan's orchestrator decision 6). `notFound()`
 // for an unknown slug (docs/02-ecrans.md), `readOnly` for a seeded,
 // demo-locked product (docs/01-produit.md › Mode démo public).
-async function EditProductForm({ slug }: { slug: string }) {
+//
+// `params` is awaited inside this Suspense-wrapped component, not in the
+// page itself: reading it outside `<Suspense>` blocks the whole route from
+// being prerendered (docs/04-nextjs.md's Cache Components model).
+async function EditProductForm({ params }: { params: Promise<{ slug: string }> }) {
   await requireAdmin();
+  const { slug } = await params;
   const [draft, themes] = await Promise.all([getProductDraft(slug), listThemeOptions()]);
   if (!draft) notFound();
 
@@ -35,13 +40,12 @@ async function EditProductForm({ slug }: { slug: string }) {
   );
 }
 
-export default async function EditProductPage({ params }: PageProps<"/admin/products/[slug]/edit">) {
-  const { slug } = await params;
+export default function EditProductPage({ params }: PageProps<"/admin/products/[slug]/edit">) {
   return (
     <main className="p-6">
       <h1 className="mb-6 text-xl font-semibold">Modifier le produit</h1>
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>
-        <EditProductForm slug={slug} />
+        <EditProductForm params={params} />
       </Suspense>
     </main>
   );

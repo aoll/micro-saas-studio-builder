@@ -1,0 +1,12 @@
+{
+  "title": "Plus de crédits ?",
+  "titleAccent": "Rechargez.",
+  "subtitle": "Paiement unique, pas d'abonnement. Vos crédits n'expirent pas.",
+  "buy": "Acheter",
+  "buyLabel": "Acheter {count, plural, one {# crédit} other {# crédits}} · {price}",
+  "note": "Paiement unique · crédits ajoutés immédiatement",
+  "benefits": {
+    "history": "Historique illimité",
+    "refund": "Remboursé si la génération échoue"
+  }
+}

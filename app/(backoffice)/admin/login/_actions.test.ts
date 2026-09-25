@@ -120,4 +120,25 @@ describe("login action", () => {
     authSpy.mockRestore();
     consoleSpy.mockRestore();
   });
+
+  it("returns the same generic error for an unknown email", async () => {
+    const { login } = await import("./_actions");
+    const result = await login({}, formData({ email: uniqueEmail("unknown"), password: "whatever-password" }));
+    expect(result.error).toBe("Identifiants invalides");
+  });
+
+  it("never names the faulty field: wrong password, unknown email and invalid input give the exact same error", async () => {
+    const { login } = await import("./_actions");
+
+    const wrongPassword = await login({}, formData({ email: SEED_ADMIN.email, password: "not-the-password" }));
+    const unknownEmail = await login({}, formData({ email: uniqueEmail("unknown"), password: "whatever-password" }));
+    const invalidInput = await login({}, formData({ email: "not-an-email", password: "whatever" }));
+
+    expect(wrongPassword.error).toBe(unknownEmail.error);
+    expect(unknownEmail.error).toBe(invalidInput.error);
+    for (const result of [wrongPassword, unknownEmail, invalidInput]) {
+      expect(result.error).toBeTruthy();
+      expect(result.error).not.toMatch(/email|mot de passe|password/i);
+    }
+  });
 });

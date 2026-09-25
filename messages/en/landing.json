@@ -1,0 +1,20 @@
+{
+  "hero": {
+    "cta": "Try it free",
+    "freeHint": "{count, plural, one {1 free generation} other {# free generations}} · no account needed"
+  },
+  "example": {
+    "title": "Example result"
+  },
+  "steps": {
+    "title": "How it works"
+  },
+  "pricing": {
+    "title": "Pricing",
+    "signupBonus": "{count, plural, one {# credit} other {# credits}} on signup",
+    "cta": "Get started"
+  },
+  "faq": {
+    "title": "Frequently asked questions"
+  }
+}

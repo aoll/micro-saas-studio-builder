@@ -1,4 +1,10 @@
+import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
+import { desc, eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import { magicLinkOutbox, users } from "../lib/db/auth-schema";
+import { requireDatabaseUrl } from "../lib/require-database-url";
 import { SEED_ADMIN, SEED_OWNER } from "../scripts/seed";
 
 // QA1-P1-B12 (.claude/qa/reports/2026-09-25-full.md, specs/qa/QA1-P1-B12-statut-http.md).
@@ -62,5 +68,44 @@ test.describe("QA1-P1-B12 · signed-in visitors", () => {
     await signInAs(page.request, SEED_ADMIN);
     const response = await page.request.get("/admin", { maxRedirects: 0 });
     expect(response.status()).toBe(200);
+  });
+
+  test("a role=user session (signed in through a magic link) also gets a real 404 on /admin/ops", async ({
+    page,
+    baseURL,
+  }) => {
+    const sql = postgres(requireDatabaseUrl(), { max: 1, onnotice: () => {} });
+    const db = drizzle(sql, { schema: { users, magicLinkOutbox } });
+    const email = `plain-user-b12-${randomUUID()}@example.test`;
+    const userId = randomUUID();
+
+    try {
+      await db.insert(users).values({ id: userId, name: "Plain user", email, role: "user" });
+
+      const signInResponse = await page.request.post(`${baseURL}/api/auth/sign-in/magic-link`, {
+        data: { email, callbackURL: "/admin" },
+      });
+      expect(signInResponse.ok()).toBe(true);
+
+      const [outboxRow] = await db
+        .select()
+        .from(magicLinkOutbox)
+        .where(eq(magicLinkOutbox.email, email))
+        .orderBy(desc(magicLinkOutbox.createdAt))
+        .limit(1);
+      if (!outboxRow) throw new Error("No magic link recorded for the role=user account");
+      await page.request.get(outboxRow.url);
+
+      const response = await page.request.get("/admin/ops", { maxRedirects: 0 });
+      expect(response.status()).toBe(404);
+      const body = await response.text();
+      expect(body).not.toContain("NEXT_HTTP_ERROR_FALLBACK");
+      expect(body).not.toContain("This page could not be found");
+      expect(body).toContain("Page introuvable");
+    } finally {
+      await db.delete(magicLinkOutbox).where(eq(magicLinkOutbox.email, email));
+      await db.delete(users).where(eq(users.id, userId));
+      await sql.end({ timeout: 5 });
+    }
   });
 });

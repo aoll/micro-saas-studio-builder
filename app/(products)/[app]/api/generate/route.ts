@@ -7,6 +7,7 @@ import { debit, refund } from "@/lib/dal/credits";
 import { track } from "@/lib/dal/events";
 import {
   countPriorGenerations,
+  deleteGeneration,
   findGenerationByKey,
   hashIp,
   markGenerationFailed,
@@ -134,7 +135,11 @@ export async function POST(request: Request, { params }: RouteContext<"/[app]/ap
       idempotencyKey,
     });
     if (!debitResult.ok) {
-      await markGenerationFailed(generationId);
+      // QA1-P1-B7: a refusal is not a generation (BO-04's activity must
+      // list only served or genuinely failed-then-refunded attempts). The
+      // row `recordGeneration` wrote above is still `pending` — never ran,
+      // never refunded — so it is deleted, not marked failed.
+      await deleteGeneration(generationId);
       after(() => track({ type: "credits_exhausted", productId: product.id, userId, anonymousId: null }));
       return jsonError("insufficient_balance", 402);
     }

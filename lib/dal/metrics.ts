@@ -1,7 +1,6 @@
 import "server-only";
-import { eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { products } from "@/lib/db/schema";
 import type { EventType } from "@/lib/schemas/event-type";
 import type { ProductStatus } from "@/lib/schemas/product-config";
 import { requireAdmin } from "./session";
@@ -11,8 +10,11 @@ import { requireAdmin } from "./session";
 // docs/02-ecrans.md, since docs/11's contract table only names the two
 // functions. Money in cents, AI cost in micros (`cost_micros`, docs/07), a
 // conversion rate is `null` when its denominator is 0. All read `events`
-// (docs/01-produit.md), cached `metrics:{slug}` with `cacheLife("minutes")`
-// (docs/04-nextjs.md).
+// (docs/01-produit.md). `getPortfolioMetrics` calls `requireAdmin()`
+// (reads `headers()`) and is never cached, unlike docs/04's
+// `metrics:{slug}` sketch (specs/BO-02-portefeuille.md plan, design
+// decision 1): admin data streams under `<Suspense>` instead, like every
+// other session-gated read in this file.
 export type MetricsRange = { days: number };
 
 export type ProductMetrics = {
@@ -132,11 +134,154 @@ function buildDaily(range: MetricsRange, metrics: ProductMetrics): DailyPoint[] 
   });
 }
 
-// Powers the portfolio (BO-02); calls `requireAdmin()` inside.
-export const getPortfolioMetrics: (range: MetricsRange) => Promise<PortfolioMetrics> = async () => {
+const MIN_RANGE_DAYS = 1;
+const MAX_RANGE_DAYS = 365;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+// `{ days: 1 }` means "today only", `{ days: 30 }` the last 30 UTC calendar
+// days, today included: `since` is 00:00 UTC of the day `days - 1` days ago
+// (specs/BO-02-portefeuille.md plan, design decision 3).
+function computeSince(days: number, now: Date = new Date()): Date {
+  const startOfToday = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  return new Date(startOfToday - (days - 1) * MS_PER_DAY);
+}
+
+function validateRangeDays(range: MetricsRange): number {
+  const { days } = range;
+  if (!Number.isInteger(days) || days < MIN_RANGE_DAYS || days > MAX_RANGE_DAYS) {
+    throw new RangeError(
+      `MetricsRange.days must be an integer between ${MIN_RANGE_DAYS} and ${MAX_RANGE_DAYS}, got ${days}`,
+    );
+  }
+  return days;
+}
+
+export type PortfolioRow = {
+  product_id: string;
+  slug: string;
+  name: string | null;
+  status: ProductStatus;
+  visits: number;
+  first_generations: number;
+  signups: number;
+  credits_exhausted: number;
+  purchases: number;
+  generations: number;
+  revenue_cents: number | string;
+  ai_cost_micros: number | string;
+  buyers: number;
+  credits_sold: number;
+  cost_per_generation: number | null;
+};
+
+// The pure row → ProductMetrics mapping (exported for lib/dal/metrics.test.ts to exercise
+// directly with a fabricated row, instead of inserting a schema-invalid product_versions row
+// into the shared test DB — specs/BO-02-portefeuille.md review round). Two defensive
+// fallbacks, both driven by data SQL alone cannot guarantee (a product's config could, in
+// theory, be missing `name` or `pricing.costPerGeneration`):
+// - `name`: `null` (config has no `name`) falls back to `slug`.
+// - `marginPerGenerationMicros`: a price per credit (in micros, from the pack revenue
+//   actually collected in range) times the product's `costPerGeneration`, minus the average
+//   AI cost of a succeeded generation (specs/BO-02-portefeuille.md plan, design decision 2).
+//   `null` when there is nothing to divide by: no credits sold, no succeeded generation, or no
+//   `costPerGeneration` in the product's config.
+export function toProductMetrics(row: PortfolioRow): ProductMetrics {
+  const revenueCents = Number(row.revenue_cents);
+  const aiCostMicros = Number(row.ai_cost_micros);
+  const signupToPurchaseRate = row.signups > 0 ? row.buyers / row.signups : null;
+  const marginPerGenerationMicros =
+    row.credits_sold > 0 && row.generations > 0 && row.cost_per_generation !== null
+      ? Math.round(((revenueCents * 10_000) / row.credits_sold) * row.cost_per_generation) -
+        Math.round(aiCostMicros / row.generations)
+      : null;
+  return {
+    productId: row.product_id,
+    slug: row.slug,
+    name: row.name ?? row.slug,
+    status: row.status,
+    visits: row.visits,
+    firstGenerations: row.first_generations,
+    signups: row.signups,
+    creditsExhausted: row.credits_exhausted,
+    purchases: row.purchases,
+    generations: row.generations,
+    revenueCents,
+    aiCostMicros,
+    signupToPurchaseRate,
+    marginPerGenerationMicros,
+  };
+}
+
+// Powers the portfolio (BO-02); calls `requireAdmin()` inside, before
+// validating the range. One own SQL statement rather than `listProducts()`
+// (specs/BO-02-portefeuille.md plan, design decision 2): `products` joined
+// to its current `product_versions` row (for `name` and
+// `pricing.costPerGeneration`), left-joined to three subqueries grouped by
+// `product_id` — `events` (the 5 funnel-step counts), `purchases`
+// (revenue, credits sold, distinct buyers) and `generations` (succeeded
+// count, AI cost over every status) — so no product fans out into
+// duplicate rows. Every product is returned, `killed` included, with
+// zeros and `null` rates when idle.
+export const getPortfolioMetrics: (range: MetricsRange) => Promise<PortfolioMetrics> = async (range) => {
   await requireAdmin();
-  const lettrePro = await db.query.products.findFirst({ where: eq(products.slug, "lettre-pro") });
-  const productMetrics = lettrePro ? [await buildProductMetrics(lettrePro.id)] : [];
+  const days = validateRangeDays(range);
+  // `postgres` (the driver) refuses a bare `Date` as a bind parameter; an
+  // ISO string round-trips through `timestamptz` correctly.
+  const since = computeSince(days).toISOString();
+
+  const result = await db.execute<PortfolioRow>(sql`
+    select
+      p.id as product_id,
+      p.slug as slug,
+      pv.config ->> 'name' as name,
+      p.status as status,
+      coalesce(ev.visits, 0)::int as visits,
+      coalesce(ev.first_generations, 0)::int as first_generations,
+      coalesce(ev.signups, 0)::int as signups,
+      coalesce(ev.credits_exhausted, 0)::int as credits_exhausted,
+      coalesce(ev.purchases, 0)::int as purchases,
+      coalesce(gen.generations, 0)::int as generations,
+      coalesce(pu.revenue_cents, 0)::bigint as revenue_cents,
+      coalesce(gen.ai_cost_micros, 0)::bigint as ai_cost_micros,
+      coalesce(pu.buyers, 0)::int as buyers,
+      coalesce(pu.credits_sold, 0)::int as credits_sold,
+      (pv.config -> 'pricing' ->> 'costPerGeneration')::int as cost_per_generation
+    from products p
+    inner join product_versions pv
+      on pv.product_id = p.id and pv.version = p.current_version
+    left join (
+      select
+        product_id,
+        count(*) filter (where type = 'visit') as visits,
+        count(*) filter (where type = 'first_generation') as first_generations,
+        count(*) filter (where type = 'signup') as signups,
+        count(*) filter (where type = 'credits_exhausted') as credits_exhausted,
+        count(*) filter (where type = 'purchase') as purchases
+      from events
+      where created_at >= ${since}
+      group by product_id
+    ) ev on ev.product_id = p.id
+    left join (
+      select
+        product_id,
+        sum(amount_cents) as revenue_cents,
+        sum(credits) as credits_sold,
+        count(distinct user_id) as buyers
+      from purchases
+      where created_at >= ${since}
+      group by product_id
+    ) pu on pu.product_id = p.id
+    left join (
+      select
+        product_id,
+        count(*) filter (where status = 'succeeded') as generations,
+        coalesce(sum(cost_micros), 0) as ai_cost_micros
+      from generations
+      where created_at >= ${since}
+      group by product_id
+    ) gen on gen.product_id = p.id
+  `);
+  const productMetrics = [...result].map(toProductMetrics);
   return {
     totals: {
       visits: productMetrics.reduce((sum, product) => sum + product.visits, 0),

@@ -27,6 +27,19 @@ async function anyUserId(): Promise<string> {
   return row!.id;
 }
 
+/**
+ * Inserts `count` throwaway, distinct `users` rows and returns their ids — for `signup`,
+ * `credits_exhausted` and `purchase` events, which (QA1-P1-Q5, D1) are always identified by
+ * `user_id` in production (`track()` requires a session for all three), never `anonymous_id`.
+ * Caller cleans them up (`db.delete(users).where(inArray(users.id, ids))`).
+ */
+async function distinctUserIds(count: number): Promise<string[]> {
+  const ids = Array.from({ length: count }, () => randomUUID());
+  if (ids.length === 0) return ids;
+  await db.insert(users).values(ids.map((id) => ({ id, name: `Test user ${id}`, email: `${id}@example.test` })));
+  return ids;
+}
+
 async function editorialThemeId(): Promise<string> {
   const row = await db.query.themes.findFirst({ where: eq(themes.slug, "editorial") });
   return row!.id;
@@ -189,6 +202,12 @@ describe("getPortfolioMetrics", () => {
       requireAdmin.mockResolvedValue({ user: { role: "admin" } });
       const { id, slug } = await createTempProduct({ name: "Metrics P", costPerGeneration: 1 }, { status: "learn" });
 
+      // QA1-P1-Q5 (D1): signup, credits_exhausted and purchase are always identified by a real,
+      // distinct user_id in production — an anonymousId-only fixture here would now read back as
+      // 0 for all three once the query counts `distinct user_id`.
+      const signupUserIds = await distinctUserIds(4);
+      const exhaustedUserIds = await distinctUserIds(2);
+      const purchaseUserIds = await distinctUserIds(1);
       await db.insert(events).values([
         ...Array.from({ length: 12 }, () => ({ productId: id, type: "visit" as const, anonymousId: randomUUID() })),
         ...Array.from({ length: 5 }, () => ({
@@ -196,13 +215,14 @@ describe("getPortfolioMetrics", () => {
           type: "first_generation" as const,
           anonymousId: randomUUID(),
         })),
-        ...Array.from({ length: 4 }, () => ({ productId: id, type: "signup" as const, anonymousId: randomUUID() })),
-        ...Array.from({ length: 2 }, () => ({
+        ...signupUserIds.map((userId) => ({ productId: id, type: "signup" as const, userId, anonymousId: null })),
+        ...exhaustedUserIds.map((userId) => ({
           productId: id,
           type: "credits_exhausted" as const,
-          anonymousId: randomUUID(),
+          userId,
+          anonymousId: null,
         })),
-        { productId: id, type: "purchase" as const, anonymousId: randomUUID() },
+        ...purchaseUserIds.map((userId) => ({ productId: id, type: "purchase" as const, userId, anonymousId: null })),
       ]);
       await db.insert(generations).values(
         Array.from({ length: 3 }, () => ({
@@ -230,6 +250,7 @@ describe("getPortfolioMetrics", () => {
       expect(product!.generations).toBe(3);
 
       await cleanupProduct(id);
+      await db.delete(users).where(inArray(users.id, [...signupUserIds, ...exhaustedUserIds, ...purchaseUserIds]));
     });
 
     it("returns zero counts and null rates for an idle product (no events, purchases or generations)", async () => {
@@ -261,12 +282,12 @@ describe("getPortfolioMetrics", () => {
       requireAdmin.mockResolvedValue({ user: { role: "admin" } });
       const { id } = await createTempProduct({ name: "Margin P", costPerGeneration: 1 });
 
-      // 4 signups, 2 distinct buyers (one buys twice) → conversion 2/4 = 0.5
+      // QA1-P1-Q5 (D1): signup is always identified by a real, distinct user_id in production.
+      // 4 distinct signups, 2 distinct buyers (one buys twice) → conversion 2/4 = 0.5
+      const signupUserIds = await distinctUserIds(4);
       await db
         .insert(events)
-        .values(
-          Array.from({ length: 4 }, () => ({ productId: id, type: "signup" as const, anonymousId: randomUUID() })),
-        );
+        .values(signupUserIds.map((userId) => ({ productId: id, type: "signup" as const, userId, anonymousId: null })));
 
       const buyerA = randomUUID();
       const buyerB = randomUUID();
@@ -356,6 +377,7 @@ describe("getPortfolioMetrics", () => {
       await cleanupProduct(id);
       await db.delete(users).where(eq(users.id, buyerA));
       await db.delete(users).where(eq(users.id, buyerB));
+      await db.delete(users).where(inArray(users.id, signupUserIds));
     });
 
     it("returns null margin when no credits were sold, even with succeeded generations", async () => {
@@ -724,6 +746,12 @@ describe("getFunnel", () => {
     it("builds counts and pass rates from 12/5/4/2/1 funnel-step events, step 1's rate null", async () => {
       requireAdmin.mockResolvedValue({ user: { role: "admin" } });
       const { id } = await createTempProduct({ name: "Steps P" });
+      // QA1-P1-Q5 (D1): signup, credits_exhausted and purchase are always identified by a real,
+      // distinct user_id in production — an anonymousId-only fixture here would now read back as
+      // 0 for all three.
+      const signupUserIds = await distinctUserIds(4);
+      const exhaustedUserIds = await distinctUserIds(2);
+      const purchaseUserIds = await distinctUserIds(1);
       await db.insert(events).values([
         ...Array.from({ length: 12 }, () => ({ productId: id, type: "visit" as const, anonymousId: randomUUID() })),
         ...Array.from({ length: 5 }, () => ({
@@ -731,13 +759,14 @@ describe("getFunnel", () => {
           type: "first_generation" as const,
           anonymousId: randomUUID(),
         })),
-        ...Array.from({ length: 4 }, () => ({ productId: id, type: "signup" as const, anonymousId: randomUUID() })),
-        ...Array.from({ length: 2 }, () => ({
+        ...signupUserIds.map((userId) => ({ productId: id, type: "signup" as const, userId, anonymousId: null })),
+        ...exhaustedUserIds.map((userId) => ({
           productId: id,
           type: "credits_exhausted" as const,
-          anonymousId: randomUUID(),
+          userId,
+          anonymousId: null,
         })),
-        { productId: id, type: "purchase" as const, anonymousId: randomUUID() },
+        ...purchaseUserIds.map((userId) => ({ productId: id, type: "purchase" as const, userId, anonymousId: null })),
       ]);
 
       const { getFunnel } = await import("./metrics");
@@ -751,6 +780,7 @@ describe("getFunnel", () => {
       ]);
 
       await cleanupProduct(id);
+      await db.delete(users).where(inArray(users.id, [...signupUserIds, ...exhaustedUserIds, ...purchaseUserIds]));
     });
 
     it("returns zero counts and null rates for an idle product", async () => {
@@ -773,11 +803,10 @@ describe("getFunnel", () => {
     it("leaves the signup step's rate null when there are 0 first generations", async () => {
       requireAdmin.mockResolvedValue({ user: { role: "admin" } });
       const { id } = await createTempProduct({ name: "No first-gen P" });
+      const signupUserIds = await distinctUserIds(3);
       await db
         .insert(events)
-        .values(
-          Array.from({ length: 3 }, () => ({ productId: id, type: "signup" as const, anonymousId: randomUUID() })),
-        );
+        .values(signupUserIds.map((userId) => ({ productId: id, type: "signup" as const, userId, anonymousId: null })));
 
       const { getFunnel } = await import("./metrics");
       const funnel = await getFunnel(id, { days: 30 });
@@ -786,6 +815,7 @@ describe("getFunnel", () => {
       expect(signupStep!.rateFromPrevious).toBeNull();
 
       await cleanupProduct(id);
+      await db.delete(users).where(inArray(users.id, signupUserIds));
     });
   });
 
@@ -911,9 +941,12 @@ describe("getFunnel", () => {
 
 /**
  * Inserts a small "funnel story" for one product: `visits` visit events, `signups` signup
- * events, `buyers` distinct users each buying one 10-credit pack at 490 cents, and
- * `succeededGenerations` succeeded generations at 4000 µ$ each. Returns the ids of the users
- * it created, for the caller to clean up alongside the product.
+ * events (each a real, distinct `users` row — QA1-P1-Q5: `getFunnel`'s signup count is
+ * `count(distinct user_id)`, and production's `track()` never writes a `signup` event without a
+ * `userId`, so an `anonymousId`-only fixture would silently read back as 0 signups), `buyers`
+ * distinct users each buying one 10-credit pack at 490 cents, and `succeededGenerations`
+ * succeeded generations at 4000 µ$ each. Returns the ids of every user it created (signups and
+ * buyers), for the caller to clean up alongside the product.
  */
 async function seedFunnelStory(
   productId: string,
@@ -925,14 +958,15 @@ async function seedFunnelStory(
       .insert(events)
       .values(Array.from({ length: story.visits }, () => ({ productId, type: "visit" as const, anonymousId: anon() })));
   }
-  if (story.signups > 0) {
-    await db
-      .insert(events)
-      .values(
-        Array.from({ length: story.signups }, () => ({ productId, type: "signup" as const, anonymousId: anon() })),
-      );
-  }
   const buyerIds: string[] = [];
+  if (story.signups > 0) {
+    for (let index = 0; index < story.signups; index += 1) {
+      const signedUpId = randomUUID();
+      buyerIds.push(signedUpId);
+      await db.insert(users).values({ id: signedUpId, name: `Signup ${index}`, email: `${signedUpId}@example.test` });
+      await db.insert(events).values({ productId, type: "signup" as const, userId: signedUpId, anonymousId: null });
+    }
+  }
   for (let index = 0; index < story.buyers; index += 1) {
     const buyerId = randomUUID();
     buyerIds.push(buyerId);

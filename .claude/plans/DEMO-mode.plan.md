@@ -85,3 +85,15 @@ Final: `pnpm check`, `pnpm test:coverage`, `flock /tmp/msb-queue/build.lock pnpm
 - [ ] `DEMO_MODE=false` makes everything editable: tasks 1–3
 - [ ] Contract tests unchanged and green; `pnpm check` and build green
 - [ ] PR title `feat(bo): DEMO-mode seeded story, demo locks and owner reset`
+
+## Human decision, round 2 (2026-09-25, binding, overrides the above)
+
+- **No demo lock on seeded rows.** The human resets the demo before presenting, so locking the seeded products has no value.
+  - `assertEditable` and `isEditable` stay the V1 no-op stubs (frozen signatures unchanged).
+  - Planner steps 1–3 are dropped.
+  - The acceptance bullet « DEMO_MODE=true : … non modifiables » is waived by the human.
+  - Item (b), disabling the BO-06 trigger, is moot.
+- **`.env.example`** is in the Périmètre: document the `SEED_ADMIN_*` and `SEED_OWNER_*` variables there. The seed still refuses to run with the dev credentials when `DEMO_MODE=true`.
+- **Still pending with the human:**
+  - (a) the limit of 10 visitor products;
+  - (c) the `lib/ai/model.ts` mock fixtures.

@@ -6,11 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/components/utils";
+import { moveItem } from "./form-values";
 
 const SEO_TITLE_MAX = 60;
 const SEO_DESCRIPTION_MAX = 160;
 
 type Landing = ProductConfig["landing"];
+type LandingStepEntry = NonNullable<Landing["steps"]>[number];
 
 function CharCounter({ value, max }: { value: string; max: number }) {
   const over = value.length > max;
@@ -40,6 +42,20 @@ export function LandingStep({
     onChange({ faq: landing.faq.filter((_entry, i) => i !== index) });
   }
 
+  const steps = landing.steps ?? [];
+
+  function updateStep(index: number, patch: Partial<LandingStepEntry>) {
+    onChange({ steps: steps.map((step, i) => (i === index ? { ...step, ...patch } : step)) });
+  }
+
+  function addStep() {
+    onChange({ steps: [...steps, { title: "", description: "" }] });
+  }
+
+  function removeStep(index: number) {
+    onChange({ steps: steps.filter((_step, i) => i !== index) });
+  }
+
   return (
     <div className="grid gap-4">
       <div className="grid gap-1.5">
@@ -64,6 +80,67 @@ export function LandingStep({
         {errors["landing.subheadline"] ? (
           <p className="text-sm text-destructive">{errors["landing.subheadline"]}</p>
         ) : null}
+      </div>
+
+      <div className="grid gap-1.5">
+        <Label htmlFor="landing-example-output">Exemple de résultat</Label>
+        <Textarea
+          id="landing-example-output"
+          value={landing.exampleOutput ?? ""}
+          onChange={(event) => onChange({ exampleOutput: event.target.value })}
+        />
+      </div>
+
+      <div className="grid gap-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium">Comment ça marche</span>
+          <Button type="button" variant="outline" size="sm" onClick={addStep}>
+            Ajouter une étape
+          </Button>
+        </div>
+        {steps.map((step, index) => (
+          <div key={index} className="grid gap-2 rounded-md border p-3">
+            <div className="grid gap-1.5">
+              <Label htmlFor={`landing-step-title-${index}`}>{`Titre de l'étape ${index + 1}`}</Label>
+              <Input
+                id={`landing-step-title-${index}`}
+                value={step.title}
+                onChange={(event) => updateStep(index, { title: event.target.value })}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor={`landing-step-description-${index}`}>{`Description de l'étape ${index + 1}`}</Label>
+              <Textarea
+                id={`landing-step-description-${index}`}
+                value={step.description}
+                onChange={(event) => updateStep(index, { description: event.target.value })}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={index === 0}
+                onClick={() => onChange({ steps: moveItem(steps, index, "up") })}
+              >
+                Monter
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={index === steps.length - 1}
+                onClick={() => onChange({ steps: moveItem(steps, index, "down") })}
+              >
+                Descendre
+              </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => removeStep(index)}>
+                Supprimer cette étape
+              </Button>
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="grid gap-2">

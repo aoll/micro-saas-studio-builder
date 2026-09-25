@@ -58,4 +58,61 @@ describe("LandingStep", () => {
     setup({ ...baseLanding, faq: [{ question: "Q", answer: "" }] }, { "landing.faq.0.answer": "Ce champ est requis" });
     expect(screen.getByText("Ce champ est requis")).toBeTruthy();
   });
+
+  it("edits the example output", () => {
+    const { onChange } = setup();
+    fireEvent.change(screen.getByLabelText("Exemple de résultat"), { target: { value: "✨ Une bio" } });
+    expect(onChange).toHaveBeenLastCalledWith({ exampleOutput: "✨ Une bio" });
+  });
+
+  it("adds a 'how it works' step with empty title and description", () => {
+    const { onChange } = setup();
+    fireEvent.click(screen.getByRole("button", { name: "Ajouter une étape" }));
+    expect(onChange).toHaveBeenLastCalledWith({ steps: [{ title: "", description: "" }] });
+  });
+
+  it("edits a 'how it works' step's title and description", () => {
+    const withSteps = { ...baseLanding, steps: [{ title: "Titre", description: "Description" }] };
+    const { onChange } = setup(withSteps);
+    fireEvent.change(screen.getByLabelText("Titre de l'étape 1"), { target: { value: "Nouveau titre" } });
+    expect(onChange).toHaveBeenLastCalledWith({ steps: [{ title: "Nouveau titre", description: "Description" }] });
+    fireEvent.change(screen.getByLabelText("Description de l'étape 1"), { target: { value: "Nouvelle description" } });
+    expect(onChange).toHaveBeenLastCalledWith({ steps: [{ title: "Titre", description: "Nouvelle description" }] });
+  });
+
+  it("removes a 'how it works' step", () => {
+    const withSteps = {
+      ...baseLanding,
+      steps: [
+        { title: "Étape 1", description: "Description 1" },
+        { title: "Étape 2", description: "Description 2" },
+      ],
+    };
+    const { onChange } = setup(withSteps);
+    fireEvent.click(screen.getAllByRole("button", { name: "Supprimer cette étape" })[0]!);
+    expect(onChange).toHaveBeenLastCalledWith({ steps: [{ title: "Étape 2", description: "Description 2" }] });
+  });
+
+  it("reorders 'how it works' steps with Monter and Descendre", () => {
+    const withSteps = {
+      ...baseLanding,
+      steps: [
+        { title: "Étape 1", description: "Description 1" },
+        { title: "Étape 2", description: "Description 2" },
+      ],
+    };
+    const { onChange } = setup(withSteps);
+    fireEvent.click(screen.getAllByRole("button", { name: "Descendre" })[0]!);
+    expect(onChange).toHaveBeenLastCalledWith({
+      steps: [
+        { title: "Étape 2", description: "Description 2" },
+        { title: "Étape 1", description: "Description 1" },
+      ],
+    });
+  });
+
+  it("shows the preview when the steps list is rendered even if empty", () => {
+    setup();
+    expect(screen.getByRole("button", { name: "Ajouter une étape" })).toBeTruthy();
+  });
 });

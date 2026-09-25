@@ -84,6 +84,7 @@ describe("SignupFlow: expired link and resend", () => {
     const { SignupFlow } = await import("./signup-flow");
     renderUi(<SignupFlow slug="lettre-pro" expired />, "fr");
 
+    expect(screen.getByRole("heading", { name: "Lien expiré" })).toBeTruthy();
     expect(screen.getByRole("alert").textContent).toBe("Ce lien a expiré ou a déjà été utilisé.");
     expect(screen.getByRole("button", { name: "Recevoir un nouveau lien" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Recevoir mon lien de connexion" })).toBeNull();
@@ -94,6 +95,7 @@ describe("SignupFlow: expired link and resend", () => {
     const { SignupFlow } = await import("./signup-flow");
     renderUi(<SignupFlow slug="lettre-pro" expired />, "en");
 
+    expect(screen.getByRole("heading", { name: "Link expired" })).toBeTruthy();
     expect(screen.getByRole("alert").textContent).toBe("This link has expired or was already used.");
     expect(screen.getByRole("button", { name: "Get a new link" })).toBeTruthy();
   });
@@ -121,6 +123,7 @@ describe("SignupFlow: expired link and resend", () => {
     renderUi(<SignupFlow slug="lettre-pro" />);
 
     expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Lien expiré" })).toBeNull();
     expect(screen.getByRole("button", { name: "Recevoir mon lien de connexion" })).toBeTruthy();
   });
 });

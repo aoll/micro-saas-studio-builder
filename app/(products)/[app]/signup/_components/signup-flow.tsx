@@ -18,7 +18,8 @@ import { initialSignupState } from "../_state";
 //   `<a>` to the real verify URL, or an empty-inbox message when there is
 //   none (admin/owner email, or a send that produced no outbox row);
 // - `expired` (from the page's `?error=` search param, not from
-//   `SignupState`) shows one message above the same form, so resending
+//   `SignupState`) shows the "Lien expiré" title and its message, in place
+//   of the subtitle, above the same form, so resending
 //   only ever asks for the email again (plan's decision 2: no email in
 //   URLs or cookies).
 //
@@ -58,12 +59,16 @@ export function SignupFlow({ slug, expired = false }: { slug: string; expired?: 
 
   return (
     <div className="grid gap-4">
-      <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       {expired ? (
-        <p role="alert" className="text-sm text-destructive">
-          {t("expired.message")}
-        </p>
-      ) : null}
+        <div className="grid gap-1">
+          <h2 className="text-lg font-semibold">{t("expired.title")}</h2>
+          <p role="alert" className="text-sm text-destructive">
+            {t("expired.message")}
+          </p>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
+      )}
       <form action={formAction} className="grid gap-3">
         <div className="grid gap-2">
           <Label htmlFor="email">{t("emailLabel")}</Label>

@@ -1,5 +1,4 @@
 import { useTranslations } from "next-intl";
-import type { Route } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
@@ -32,9 +31,8 @@ export function Hero({
       <h1 className="text-4xl font-bold tracking-tight text-balance">{headline}</h1>
       <p className="mt-4 text-lg text-balance text-muted-foreground">{subheadline}</p>
       <div className="mt-6 flex flex-col items-start gap-2">
-        {/* /{slug}/tool does not exist yet (SA-02); drop the cast once it ships. */}
         <Button asChild size="lg">
-          <Link href={`/${slug}/tool` as Route}>{t("hero.cta")}</Link>
+          <Link href={`/${slug}/tool`}>{t("hero.cta")}</Link>
         </Button>
         {anonymousFreeGenerations > 0 ? (
           <p className="text-sm text-muted-foreground">{t("hero.freeHint", { count: anonymousFreeGenerations })}</p>

@@ -7,7 +7,7 @@ import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/auth-schema";
-import type { ProductConfig } from "@/lib/schemas/product-config";
+import { productConfigSchema, type ProductConfig } from "@/lib/schemas/product-config";
 import type { ThemeTokens } from "@/lib/schemas/theme-tokens";
 import {
   balances,
@@ -57,15 +57,47 @@ beforeAll(async () => {
 
   productId = randomUUID();
   createdProductIds.push(productId);
+  const productSlug = slug("schema-product");
   await db.insert(products).values({
     id: productId,
-    slug: slug("schema-product"),
+    slug: productSlug,
     themeId,
     currentVersion: 1,
     locale: "fr",
     createdBy: ownerId,
   });
-  await db.insert(productVersions).values({ productId, version: 1, config: {} as ProductConfig, createdBy: ownerId });
+  // A schema-valid config, not `{} as ProductConfig`: `listProducts()`
+  // (lib/dal/products.ts) Zod-parses every product row, so an empty config
+  // here would fail a concurrently running lib/dal/products.test.ts with a
+  // ZodError for the whole life of this suite (beforeAll/afterAll).
+  const config: ProductConfig = productConfigSchema.parse({
+    slug: productSlug,
+    name: "Schema test product",
+    status: "test",
+    themeId,
+    locale: "fr",
+    branding: {},
+    landing: {
+      headline: "Headline",
+      subheadline: "Subheadline",
+      faq: [],
+      seoTitle: "Title",
+      seoDescription: "Description",
+    },
+    inputs: [{ key: "topic", label: "Topic", type: "text", required: true }],
+    generation: {
+      model: "anthropic/claude-haiku-4.5",
+      promptTemplate: "Write about {{topic}}",
+      outputType: "markdown",
+    },
+    pricing: {
+      freeCreditsOnSignup: 3,
+      anonymousFreeGenerations: 1,
+      costPerGeneration: 1,
+      packs: [{ id: "pack-10", credits: 10, priceCents: 490 }],
+    },
+  });
+  await db.insert(productVersions).values({ productId, version: 1, config, createdBy: ownerId });
 });
 
 afterAll(async () => {

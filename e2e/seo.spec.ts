@@ -174,6 +174,11 @@ test.describe("Icon and Open Graph image", () => {
 
     await page.goto("/lettre-pro");
 
+    // Follow-up (SEO metadata, docs/04-nextjs.md): the landing's canonical
+    // URL, resolved against [app]/layout.tsx's metadataBase.
+    const canonicalHref = await page.locator('link[rel="canonical"]').first().getAttribute("href");
+    expect(canonicalHref).toMatch(/\/lettre-pro$/);
+
     const iconHref = await page.locator('link[rel="icon"]').first().getAttribute("href");
     expect(iconHref).toBeTruthy();
     const iconResponse = await request.get(iconHref!);

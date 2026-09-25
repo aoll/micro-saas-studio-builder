@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { redirect } from "next/navigation";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 class RedirectMarker extends Error {
@@ -129,6 +130,30 @@ describe("setProductStatus", () => {
     expect(result.formError).toBe("Le statut n'a pas pu être changé");
     expect(updateTag).not.toHaveBeenCalled();
     expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it("rethrows a Next redirect/notFound error from the DAL untouched: no formError, no log, no tags", async () => {
+    currentAdmin();
+    const productId = randomUUID();
+    getProduct.mockResolvedValue({ id: productId });
+
+    // A real Next.js internal control-flow error (digest `NEXT_REDIRECT;...`), the kind
+    // `updateStatus`'s row lock or `assertEditable` could throw; `unstable_rethrow` must let it
+    // through unchanged, not treat it as a plain DAL failure (plan design "Errors").
+    let redirectError: unknown;
+    try {
+      redirect("/admin/login");
+    } catch (err) {
+      redirectError = err;
+    }
+    updateStatus.mockRejectedValue(redirectError);
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { setProductStatus } = await import("./_actions");
+
+    await expect(setProductStatus("my-product", {}, formDataFor({ status: "killed" }))).rejects.toBe(redirectError);
+    expect(consoleError).not.toHaveBeenCalled();
+    expect(updateTag).not.toHaveBeenCalled();
     consoleError.mockRestore();
   });
 });

@@ -30,33 +30,33 @@
   "specs": {
     "QA1-P1-L1-lot-leger": {
       "dependsOn": [],
-      "status": "ready",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "qa1-p1-l1-lot-leger",
       "pr": null,
       "mode": "léger"
     },
     "QA1-P1-B3-paiement-pricing": {
       "dependsOn": [],
-      "status": "ready",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "qa1-p1-b3-paiement-pricing",
       "pr": null
     },
     "QA1-P1-B4-visite-double": {
       "dependsOn": [],
-      "status": "ready",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "qa1-p1-b4-visite-double",
       "pr": null
     },
     "QA1-P1-B5-premiere-generation": {
       "dependsOn": [],
-      "status": "ready",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "qa1-p1-b5-premiere-generation",
       "pr": null
     },
     "QA1-P1-B12-statut-http": {
       "dependsOn": [],
-      "status": "ready",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "qa1-p1-b12-statut-http",
       "pr": null
     },
     "QA1-P1-B7-refus-402-activite": {

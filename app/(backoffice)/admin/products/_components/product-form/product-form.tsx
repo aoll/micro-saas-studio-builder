@@ -49,7 +49,13 @@ function stepPatch(step: number, draft: ProductDraft) {
     case 4:
       return { inputs: toConfig(draft).inputs };
     case 5:
-      return { generation: draft.generation };
+      // B-N1 (.claude/qa/reports/2026-09-25-full-3.md): the cross-field
+      // {{variable}} check lives in `productConfigSchema`'s `.superRefine`,
+      // which compares the template to `inputs` — so this step's patch must
+      // carry the draft's own step-4 inputs, or `validateStep` falls back to
+      // `VALID_BASELINE`'s single example field ("sujet") and flags every
+      // real variable as unmatched.
+      return { generation: draft.generation, inputs: toConfig(draft).inputs };
     case 6:
       return { pricing: draft.pricing };
     default:

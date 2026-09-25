@@ -97,3 +97,8 @@ Final: `pnpm check`, `pnpm test:coverage`, `flock /tmp/msb-queue/build.lock pnpm
 - **Still pending with the human:**
   - (a) the limit of 10 visitor products;
   - (c) the `lib/ai/model.ts` mock fixtures.
+
+## Human decision, round 3 (2026-09-25, binding)
+
+- (a) There is no limit on visitor products. The human waived that acceptance bullet, so no file outside the Périmètre is touched for it.
+- (c) The Périmètre is extended to `lib/ai/model.ts` and its test. It registers mock fixtures for `descri-pro`, `nom-de-marque` and `bio-instagram`, so that each product streams its own mock content.

@@ -19,9 +19,42 @@ function reject(status: number): NextResponse {
   return new NextResponse(null, { status });
 }
 
+// Reads the body without ever buffering more than `limit` bytes (+ one
+// pending chunk): a declared `Content-Length` over the cap rejects before
+// the stream is touched at all; otherwise the stream is read chunk by
+// chunk and cancelled — not drained — the moment the running total crosses
+// the cap. `await request.text()` alone would buffer a chunked body with no
+// Content-Length in full before the length check ever ran.
+async function readBodyWithLimit(
+  request: NextRequest,
+  limit: number,
+): Promise<{ ok: true; text: string } | { ok: false }> {
+  const contentLength = request.headers.get("content-length");
+  if (contentLength && Number(contentLength) > limit) return { ok: false };
+
+  const body = request.body;
+  if (!body) return { ok: true, text: "" };
+
+  const reader = body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > limit) {
+      await reader.cancel();
+      return { ok: false };
+    }
+    chunks.push(value);
+  }
+  return { ok: true, text: Buffer.concat(chunks).toString("utf8") };
+}
+
 export async function POST(request: NextRequest, { params }: RouteContext<"/[app]/api/events">): Promise<NextResponse> {
-  const rawBody = await request.text();
-  if (Buffer.byteLength(rawBody, "utf8") > MAX_BODY_BYTES) return reject(413);
+  const bodyResult = await readBodyWithLimit(request, MAX_BODY_BYTES);
+  if (!bodyResult.ok) return reject(413);
+  const rawBody = bodyResult.text;
 
   // sendBeacon never sets an Origin header for a same-origin request in
   // most browsers; when it is present, it must match (docs/04-nextjs.md's

@@ -99,6 +99,71 @@ describe("POST /[app]/api/events", () => {
       expect(getProduct).not.toHaveBeenCalled();
     });
 
+    it("rejects via a declared Content-Length over the cap without reading the stream", async () => {
+      // The Streams spec eagerly pulls once at construction to fill the
+      // queue to its default highWaterMark, before anyone calls
+      // getReader().read() — that single pull is unavoidable and happens
+      // whether or not the route ever looks at the body. What the route
+      // must never do is call read() itself: pulls stays at that one
+      // baseline call instead of growing with every read().
+      let pulls = 0;
+      const stream = new ReadableStream<Uint8Array>({
+        pull(controller) {
+          pulls++;
+          controller.enqueue(new TextEncoder().encode("x"));
+        },
+      });
+      const request = new NextRequest("http://demo.example/lettre-pro/api/events", {
+        method: "POST",
+        headers: new Headers({ "content-type": "application/json", "content-length": "3000" }),
+        body: stream,
+        duplex: "half",
+      } as RequestInit);
+
+      const response = await callPost(request);
+
+      expect(response.status).toBe(413);
+      expect(pulls).toBeLessThanOrEqual(1);
+      expect(track).not.toHaveBeenCalled();
+    });
+
+    it("cancels a streamed body without Content-Length once it exceeds the cap", async () => {
+      // Finite source (never an infinite stream, docs/11's monitoring
+      // guardrail): at most 1 MB total in 1 KB chunks, well over
+      // MAX_BODY_BYTES (2 KB), so the route must cancel long before the
+      // source closes on its own.
+      const MAX_CHUNKS = 1024;
+      let pulls = 0;
+      let cancelled = false;
+      const chunk = new TextEncoder().encode("x".repeat(1024));
+      const stream = new ReadableStream<Uint8Array>({
+        pull(controller) {
+          pulls++;
+          if (pulls > MAX_CHUNKS) {
+            controller.close();
+            return;
+          }
+          controller.enqueue(chunk);
+        },
+        cancel() {
+          cancelled = true;
+        },
+      });
+      const request = new NextRequest("http://demo.example/lettre-pro/api/events", {
+        method: "POST",
+        headers: new Headers({ "content-type": "application/json" }),
+        body: stream,
+        duplex: "half",
+      } as RequestInit);
+
+      const response = await callPost(request);
+
+      expect(response.status).toBe(413);
+      expect(cancelled).toBe(true);
+      expect(pulls).toBeLessThanOrEqual(4);
+      expect(track).not.toHaveBeenCalled();
+    });
+
     it("rejects a foreign Origin with 403", async () => {
       const response = await callPost(
         post({ body: { type: "visit", anonymousId: randomUUID() }, origin: "https://evil.example" }),

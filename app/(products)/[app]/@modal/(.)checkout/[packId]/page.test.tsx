@@ -21,7 +21,7 @@ vi.mock("next/navigation", () => ({
   notFound: () => {
     throw new Error("NEXT_NOT_FOUND");
   },
-  useRouter: () => ({ back, replace: vi.fn() }),
+  useRouter: () => ({ back, replace: vi.fn(), refresh: vi.fn() }),
 }));
 
 const purchase = vi.fn();

@@ -28,6 +28,18 @@ describe("resolveModel", () => {
     expect(usage.outputTokens).toBe(firstFixture!.usage.outputTokens);
   });
 
+  it("in AI_MODE=mock, spaces the chunks about 30 ms apart so the UI visibly streams (docs/05)", async () => {
+    const { resolveModel } = await import("./model");
+    const arrivals: number[] = [];
+    const result = streamText({ model: resolveModel("anthropic/claude-haiku-4.5", "lettre-pro"), prompt: "x" });
+    for await (const delta of result.textStream) if (delta) arrivals.push(performance.now());
+    const gaps = arrivals.slice(1).map((at, i) => at - arrivals[i]!);
+    const averageGap = gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length;
+    // Lenient lower bound: timers never fire early, and the former 5 ms
+    // delay (QA1 B15) stays well under it.
+    expect(averageGap).toBeGreaterThanOrEqual(20);
+  });
+
   it("generateText returns the full fixture text", async () => {
     const { resolveModel } = await import("./model");
     const result = await generateText({ model: resolveModel("anthropic/claude-haiku-4.5", "lettre-pro"), prompt: "x" });

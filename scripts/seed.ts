@@ -21,12 +21,12 @@ import { hashPassword } from "better-auth/crypto";
 import { eq, inArray, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import descriProConfig from "../fixtures/descri-pro.config.json";
-import descriProGenerations from "../fixtures/descri-pro.json";
-import lettreProConfig from "../fixtures/lettre-pro.config.json";
-import lettreProGenerations from "../fixtures/lettre-pro.json";
-import nomDeMarqueConfig from "../fixtures/nom-de-marque.config.json";
-import nomDeMarqueGenerations from "../fixtures/nom-de-marque.json";
+import descriProConfig from "../fixtures/descri-pro.config.json" with { type: "json" };
+import descriProGenerations from "../fixtures/descri-pro.json" with { type: "json" };
+import lettreProConfig from "../fixtures/lettre-pro.config.json" with { type: "json" };
+import lettreProGenerations from "../fixtures/lettre-pro.json" with { type: "json" };
+import nomDeMarqueConfig from "../fixtures/nom-de-marque.config.json" with { type: "json" };
+import nomDeMarqueGenerations from "../fixtures/nom-de-marque.json" with { type: "json" };
 import { accounts, users } from "../lib/db/auth-schema";
 import {
   balances,

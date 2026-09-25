@@ -4,7 +4,7 @@ import { track } from "@/lib/dal/events";
 import { getProduct } from "@/lib/dal/products";
 import { trackEventInputSchema } from "@/lib/schemas/inputs";
 import { slugSchema } from "@/lib/schemas/product-config";
-import { ANONYMOUS_ID_COOKIE, anonymousIdCookie, readAnonymousId } from "./anonymous-id";
+import { ANONYMOUS_ID_COOKIE, readAnonymousId } from "./anonymous-id";
 
 // The public endpoint `<TrackVisit>` beacons to (docs/04-nextjs.md): a
 // static landing cannot call `track()` itself, so this Route Handler does
@@ -83,8 +83,14 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[app
   const product = await getProduct(slugResult.data);
   if (!product || product.status === "killed") return reject(404);
 
-  const existingCookie = readAnonymousId(request.cookies.get(ANONYMOUS_ID_COOKIE)?.value);
-  const anonymousId = existingCookie ?? parsed.data.anonymousId;
+  // QA1-P1-B4: identity only ever comes from the cookie `proxy.ts` sets on
+  // the first GET of a product page, never from the request body. Trusting
+  // the body let two concurrent cookieless beacons (StrictMode's doubled
+  // effect, or two tabs) each mint their own id and both reach track(),
+  // writing two visitors for one visit. `parsed.data.anonymousId` is still
+  // validated by the frozen schema above but is otherwise ignored here.
+  const anonymousId = readAnonymousId(request.cookies.get(ANONYMOUS_ID_COOKIE)?.value);
+  if (!anonymousId) return reject(204);
 
   await track({
     type: parsed.data.type,
@@ -94,10 +100,5 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[app
     metadata: parsed.data.metadata,
   });
 
-  const response = new NextResponse(null, { status: 204 });
-  if (!existingCookie) {
-    const secure = request.nextUrl.protocol === "https:";
-    response.cookies.set(anonymousIdCookie(anonymousId, secure));
-  }
-  return response;
+  return reject(204);
 }

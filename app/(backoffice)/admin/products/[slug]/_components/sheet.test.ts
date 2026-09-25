@@ -108,6 +108,14 @@ describe("toFunnelRows", () => {
     expect(rows[0]!.widthPercent).toBe(0);
     expect(rows[1]!.widthPercent).toBe(0);
   });
+
+  // QA1-P1-Q5: a second, independent clamp at the display boundary, so this acceptance bullet
+  // ("aucun taux n'est affiché au-dessus de 100 %") holds even if a future regression at the DAL
+  // layer (lib/dal/metrics.ts's own clamp) ever let a rate above 1 through.
+  it("never displays a rate above 100%, even if a step's rateFromPrevious is above 1", () => {
+    const rows = toFunnelRows([step("visit", 2, null), step("first_generation", 3, 1.5)], 2);
+    expect(rows[1]!.rate).toBe("100 %");
+  });
 });
 
 describe("toTrendPoints", () => {

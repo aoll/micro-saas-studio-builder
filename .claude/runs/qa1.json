@@ -54,19 +54,23 @@
       "pr": null
     },
     "QA1-P1-B12-statut-http": {
-      "dependsOn": [],
+      "dependsOn": [
+        "QA1-P1-B4-visite-double"
+      ],
       "status": "dispatched",
       "worktree": "qa1-p1-b12-statut-http",
-      "pr": null
+      "pr": null,
+      "note": "plan committed; TDD starts once B4 (proxy.ts) is merged"
     },
     "QA1-P1-B7-refus-402-activite": {
       "dependsOn": [
         "QA1-P1-B5-premiere-generation",
         "QA1-P1-L1-lot-leger"
       ],
-      "status": "pending",
-      "worktree": null,
-      "pr": null
+      "status": "dispatched",
+      "worktree": "qa1-p1-b7-refus-402-activite",
+      "pr": null,
+      "note": "planning early to use free worktree slots; TDD starts once dependsOn are merged"
     },
     "QA1-P1-B14-cache-components": {
       "dependsOn": [
@@ -80,27 +84,27 @@
       "dependsOn": [
         "QA1-P1-L1-lot-leger"
       ],
-      "status": "pending",
-      "worktree": null,
-      "pr": null
+      "status": "dispatched",
+      "worktree": "qa1-p1-m1-config-complete",
+      "pr": null,
+      "note": "planning early to use free worktree slots; TDD starts once dependsOn are merged"
     },
     "QA1-P1-Q2-inscription-par-produit": {
       "dependsOn": [
         "QA1-P1-L1-lot-leger",
         "QA1-P1-B4-visite-double"
       ],
-      "status": "pending",
-      "worktree": null,
-      "pr": null
+      "status": "dispatched",
+      "worktree": "qa1-p1-q2-inscription-par-produit",
+      "pr": null,
+      "note": "planning early to use free worktree slots; TDD starts once dependsOn are merged"
     },
     "QA1-P1-Q5-funnel-personnes": {
-      "dependsOn": [
-        "QA1-P1-B4-visite-double",
-        "QA1-P1-B5-premiere-generation"
-      ],
-      "status": "pending",
-      "worktree": null,
-      "pr": null
+      "dependsOn": [],
+      "status": "dispatched",
+      "worktree": "qa1-p1-q5-funnel-personnes",
+      "pr": null,
+      "note": "B4/B5 dependency was semantic only (no shared file): dispatched early"
     }
   },
   "pendingIntegrations": []

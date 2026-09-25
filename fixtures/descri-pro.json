@@ -1,0 +1,52 @@
+[
+  {
+    "input": {
+      "produit": "Gourde isotherme 500ml",
+      "caracteristiques": "Inox brossé, garde le froid 24h et le chaud 12h, bouchon anti-fuite, sans BPA",
+      "public_cible": "Sportifs et citadins actifs",
+      "ton": "lifestyle"
+    },
+    "text": "**Gourde isotherme 500ml — Inox brossé**\n\nGardez vos boissons fraîches 24h ou chaudes 12h avec cette gourde isotherme premium en inox brossé. Son bouchon anti-fuite l'accompagne partout, du sac de sport au bureau, sans craindre les fuites.\n\nSans BPA, elle se glisse dans tous vos porte-bouteilles et devient vite votre compagnon du quotidien, entre deux séances de sport et deux réunions.",
+    "usage": { "inputTokens": 190, "outputTokens": 120, "cachedInputTokens": 0 }
+  },
+  {
+    "input": {
+      "produit": "Chaise de bureau ergonomique",
+      "caracteristiques": "Support lombaire réglable, accoudoirs 3D, assise respirante, garantie 5 ans",
+      "public_cible": "Télétravailleurs",
+      "ton": "sobre"
+    },
+    "text": "**Chaise de bureau ergonomique**\n\nConçue pour les longues journées de télétravail, cette chaise associe un support lombaire réglable et des accoudoirs 3D pour un maintien précis, quelle que soit votre morphologie.\n\nL'assise respirante limite l'échauffement pendant les journées chargées, et la garantie 5 ans protège votre investissement sur la durée.",
+    "usage": { "inputTokens": 185, "outputTokens": 110, "cachedInputTokens": 0 }
+  },
+  {
+    "input": {
+      "produit": "Casque audio sans fil",
+      "caracteristiques": "Réduction de bruit active, autonomie 30h, pliable, compatible Bluetooth 5.3",
+      "public_cible": "Voyageurs et télétravailleurs",
+      "ton": "lifestyle"
+    },
+    "text": "**Casque audio sans fil**\n\n30 heures d'autonomie et une réduction de bruit active qui coupe le monde extérieur dès que vous en avez besoin, en open space comme en avion.\n\nPliable et léger, il se glisse dans n'importe quel sac, et le Bluetooth 5.3 assure une connexion stable avec tous vos appareils.",
+    "usage": { "inputTokens": 195, "outputTokens": 115, "cachedInputTokens": 0 }
+  },
+  {
+    "input": {
+      "produit": "Kit de jardinage débutant",
+      "caracteristiques": "5 outils en acier inoxydable, sac de rangement inclus, manches ergonomiques",
+      "public_cible": "Nouveaux jardiniers en appartement ou maison",
+      "ton": "sobre"
+    },
+    "text": "**Kit de jardinage débutant**\n\nCinq outils essentiels en acier inoxydable, pensés pour durer, avec des manches ergonomiques qui limitent la fatigue des mains lors des sessions prolongées.\n\nLe sac de rangement inclus garde chaque outil à sa place, idéal pour se lancer sereinement, en appartement comme en maison.",
+    "usage": { "inputTokens": 180, "outputTokens": 105, "cachedInputTokens": 0 }
+  },
+  {
+    "input": {
+      "produit": "Lampe de bureau LED",
+      "caracteristiques": "3 températures de couleur, port USB intégré, bras articulé, tactile",
+      "public_cible": "Étudiants et télétravailleurs",
+      "ton": "lifestyle"
+    },
+    "text": "**Lampe de bureau LED**\n\nTrois températures de couleur pour s'adapter à chaque moment de la journée, du réveil studieux à la session de fin de soirée, avec un simple effleurement tactile.\n\nLe bras articulé oriente la lumière exactement où il faut, et le port USB intégré fait de cette lampe le point de charge central de votre bureau.",
+    "usage": { "inputTokens": 188, "outputTokens": 112, "cachedInputTokens": 0 }
+  }
+]

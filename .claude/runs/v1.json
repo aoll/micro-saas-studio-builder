@@ -204,10 +204,9 @@
         "BO-05b-generation-publication",
         "BO-07-themes"
       ],
-      "status": "dispatched",
-      "worktree": "demo-mode",
-      "pr": null,
-      "step": "tdd",
+      "status": "merged",
+      "worktree": null,
+      "pr": 45,
       "humanDecision": {
         "pending": false,
         "question": "Périmètre extension: (a) visitor limit 10: lib/dal/product-editor.ts(+test), admin/products/_actions.ts(+test), additive guards export; (b) BO-06 trigger disabled on seeded products: admin/products/[slug]/page.tsx, sheet.ts, product-sheet-view.tsx, sheet-header.tsx, status/status-change.tsx(+tests); (c) lib/ai/model.ts mock fixtures for descri-pro, nom-de-marque, bio-instagram; (d) .env.example SEED_* credential vars",

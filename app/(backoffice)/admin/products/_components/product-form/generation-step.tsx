@@ -55,6 +55,16 @@ export function GenerationStep({
   return (
     <div className="grid gap-4">
       <div className="grid gap-1.5">
+        <Label htmlFor="generation-system-prompt">Prompt système</Label>
+        <Textarea
+          id="generation-system-prompt"
+          rows={3}
+          value={generation.systemPrompt ?? ""}
+          onChange={(event) => onChange({ systemPrompt: event.target.value })}
+        />
+      </div>
+
+      <div className="grid gap-1.5">
         <Label htmlFor="generation-model">Modèle</Label>
         <select
           id="generation-model"

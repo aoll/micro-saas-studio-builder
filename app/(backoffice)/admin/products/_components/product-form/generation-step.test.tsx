@@ -88,6 +88,12 @@ describe("GenerationStep", () => {
     expect(image.hasAttribute("disabled")).toBe(true);
   });
 
+  it("edits the system prompt", () => {
+    const { onChange } = setup();
+    fireEvent.change(screen.getByLabelText("Prompt système"), { target: { value: "Tu es un assistant." } });
+    expect(onChange).toHaveBeenCalledWith({ systemPrompt: "Tu es un assistant." });
+  });
+
   it("shows the server-side error message when given one", () => {
     setup({ errors: { "generation.promptTemplate": "Ce champ est requis" } });
     expect(screen.getByText("Ce champ est requis")).toBeTruthy();

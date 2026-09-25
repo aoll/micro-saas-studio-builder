@@ -1,0 +1,12 @@
+{
+  "title": "Need more credits?",
+  "titleAccent": "Top up.",
+  "subtitle": "One-time payment, no subscription. Your credits never expire.",
+  "buy": "Buy",
+  "buyLabel": "Buy {count, plural, one {# credit} other {# credits}} · {price}",
+  "note": "One-time payment · credits added instantly",
+  "benefits": {
+    "history": "Unlimited history",
+    "refund": "Refunded if a generation fails"
+  }
+}

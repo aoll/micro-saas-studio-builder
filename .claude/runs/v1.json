@@ -27,9 +27,9 @@
       "dependsOn": [
         "CONTRACT-types"
       ],
-      "status": "dispatched",
-      "worktree": "contract-ui",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 13
     },
     "SA-01-landing": {
       "dependsOn": [
@@ -37,9 +37,9 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "pending",
+      "status": "merged",
       "worktree": null,
-      "pr": null
+      "pr": 16
     },
     "SA-08-introuvable": {
       "dependsOn": [
@@ -47,9 +47,10 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "pending",
-      "worktree": null,
-      "pr": null
+      "status": "dispatched",
+      "worktree": "sa-08-introuvable",
+      "pr": null,
+      "humanDecision": "2026-09-25: human approved (OK SA-08) extending Périmètre to app/(products)/not-found.tsx (full <html> document) + a shared SA-08 content component used by both not-found files."
     },
     "SA-02-outil": {
       "dependsOn": [
@@ -57,17 +58,17 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "pending",
+      "status": "merged",
       "worktree": null,
-      "pr": null
+      "pr": 19
     },
     "SA-06-historique": {
       "dependsOn": [
         "SA-02-outil"
       ],
-      "status": "pending",
+      "status": "merged",
       "worktree": null,
-      "pr": null
+      "pr": 24
     },
     "LEDGER": {
       "dependsOn": [
@@ -75,16 +76,16 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "pending",
+      "status": "merged",
       "worktree": null,
-      "pr": null
+      "pr": 28
     },
     "SA-03-inscription": {
       "dependsOn": [
         "LEDGER"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "sa-03-inscription",
       "pr": null
     },
     "SA-04-tarifs": {
@@ -93,25 +94,25 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "pending",
+      "status": "merged",
       "worktree": null,
-      "pr": null
+      "pr": 15
     },
     "SA-05-paiement": {
       "dependsOn": [
         "LEDGER",
         "SA-04-tarifs"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "sa-05-paiement",
       "pr": null
     },
     "SA-07-compte": {
       "dependsOn": [
         "LEDGER"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "sa-07-compte",
       "pr": null
     },
     "BO-01-connexion": {
@@ -120,9 +121,9 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "pending",
+      "status": "merged",
       "worktree": null,
-      "pr": null
+      "pr": 14
     },
     "TRACKING": {
       "dependsOn": [
@@ -130,24 +131,24 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "pending",
+      "status": "merged",
       "worktree": null,
-      "pr": null
+      "pr": 17
     },
     "BO-02-portefeuille": {
       "dependsOn": [
         "TRACKING"
       ],
-      "status": "pending",
+      "status": "merged",
       "worktree": null,
-      "pr": null
+      "pr": 25
     },
     "BO-03-fiche": {
       "dependsOn": [
         "BO-02-portefeuille"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "bo-03-fiche",
       "pr": null
     },
     "BO-05a-formulaire": {
@@ -156,28 +157,29 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "pending",
+      "status": "merged",
       "worktree": null,
-      "pr": null
+      "pr": 18
     },
     "BO-05b-generation-publication": {
       "dependsOn": [
         "BO-05a-formulaire",
         "SA-02-outil"
       ],
-      "status": "pending",
+      "status": "merged",
       "worktree": null,
-      "pr": null
+      "pr": 27
     },
     "BO-07-themes": {
       "dependsOn": [
         "CONTRACT-types",
         "CONTRACT-data",
-        "CONTRACT-ui"
+        "CONTRACT-ui",
+        "BO-05a-formulaire"
       ],
-      "status": "pending",
+      "status": "merged",
       "worktree": null,
-      "pr": null
+      "pr": 21
     },
     "DEMO-mode": {
       "dependsOn": [
@@ -283,17 +285,17 @@
       "dependsOn": [
         "BO-02-portefeuille"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "bo-09-seuils",
       "pr": null
     },
     "BO-08-editeur-theme": {
       "dependsOn": [
         "BO-07-themes"
       ],
-      "status": "pending",
+      "status": "merged",
       "worktree": null,
-      "pr": null
+      "pr": 26
     },
     "E2E-demo": {
       "dependsOn": [
@@ -330,5 +332,113 @@
       "pr": null
     }
   },
-  "pendingIntegrations": []
+  "pendingIntegrations": [
+    {
+      "spec": "SA-02-outil",
+      "blockedOn": "TRACKING",
+      "what": "api/generate: use TRACKING anonymous-id helper (ANONYMOUS_ID_COOKIE, readAnonymousId, anonymousIdCookie) instead of inline cookie code",
+      "resolved": true
+    },
+    {
+      "spec": "SA-01-landing",
+      "blockedOn": "SA-02-outil",
+      "what": "drop the `/${slug}/tool` as Route casts in [app]/_components/landing/hero.tsx and landing-pricing.tsx once [app]/tool/page.tsx exists",
+      "resolved": true,
+      "pr": 20
+    },
+    {
+      "spec": "SA-04-tarifs",
+      "blockedOn": "SA-05-paiement",
+      "what": "drop the `/${slug}/checkout/${packId}` as Route cast in [app]/pricing/_components/pricing-content.tsx once the checkout route exists; un-fixme e2e/pricing.spec.ts journey 3 once SA-02 and LEDGER are merged",
+      "resolved": false
+    },
+    {
+      "spec": "BO-07-themes",
+      "blockedOn": "BO-08-editeur-theme",
+      "what": "wrap ThemeCard (admin/themes/_components/theme-card.tsx) in a <Link> to /admin/themes/[id] once the editor route exists",
+      "resolved": false
+    },
+    {
+      "spec": "CONTRACT-ui",
+      "blockedOn": "BO-07-themes",
+      "what": "drop the \"/admin/themes\" as Route cast (and comment) in components/backoffice/admin-sidebar.tsx once /admin/themes exists",
+      "resolved": true,
+      "pr": 22
+    },
+    {
+      "spec": "SA-06-historique",
+      "blockedOn": "SA-07-compte",
+      "what": "entry point to /[app]/history: SA-07 account page links to it (inside [app]/account/**); a header/tool link would need a CONTRACT-ui/SA-02 follow-up",
+      "resolved": false
+    },
+    {
+      "spec": "CONTRACT-ui",
+      "blockedOn": "BO-09-seuils",
+      "what": "drop the \"/admin/settings\" as Route cast in components/backoffice/admin-sidebar.tsx once BO-09 ships /admin/settings",
+      "resolved": false
+    },
+    {
+      "spec": "TRACKING",
+      "blockedOn": "TRACKING",
+      "what": "flaky: lib/dal/events.test.ts createTempProduct inserts product_versions with config {} which breaks concurrent listProducts() tests (Zod parse); give it a schema-valid config",
+      "resolved": true,
+      "pr": 23
+    },
+    {
+      "spec": "SETUP-skeleton",
+      "blockedOn": "SETUP-skeleton",
+      "what": "intermittent: lib/dal/session.test.ts \"redirects to /admin/login for a role=user session\" failed once (session!.id undefined at line 80) under full-suite parallelism; find the concurrent file that mutates admin sessions and isolate it",
+      "resolved": false
+    },
+    {
+      "spec": "BO-05a-formulaire",
+      "blockedOn": "BO-05b-generation-publication",
+      "what": "admin/products/_actions.ts isUniqueSlugViolation reads err.code but drizzle puts the PG code on err.cause (lib/db/schema.test.ts:24-31): the slug race throws instead of returning a slug error; fix + a test with a real duplicate insert",
+      "resolved": false
+    }
+  ],
+  "notes": [
+    "SECURITY: lib/auth.ts before-hook rejects unknown/non-admin emails without hashing (timing side-channel to enumerate the admin email); pad the fast path with a dummy hash (BO-01 security review).",
+    "SECURITY: public login and events beacon have no rate limit yet; hashIp from lib/dal/generations.ts (SA-02) is the shared IP key.",
+    {
+      "for": "CONTRACT follow-up",
+      "note": "events: index covering (product_id, anonymous_id, type, created_at) for the visit dedupe (TRACKING database review)"
+    },
+    {
+      "for": "SECURITY",
+      "note": "api/generate trusts the first X-Forwarded-For entry for the anonymous free-try key: fine behind Vercel (edge overwrites XFF), self-hosting must strip inbound XFF at its proxy (SA-02 security review)."
+    },
+    {
+      "for": "DEMO-mode",
+      "note": "seed must give each demo product >= 1000 visits in the last 30 UTC days; LettrePro >= 5% distinct-buyer signup->purchase conversion and positive margin, NomDeMarque < 2%, DescriPro in between (BO-02 bullet 4, checked by E2E-demo)."
+    },
+    {
+      "for": "BO-03, BO-09",
+      "note": "lib/decision.ts (BO-02): evaluate(metrics: DecisionMetrics, thresholds: Thresholds): \"kill\"|\"scale\"|null; metric definitions in lib/dal/metrics.ts header; admin/loading.tsx wraps nested admin routes."
+    },
+    {
+      "for": "BO-05b",
+      "note": "publishProduct must updateTag(\"products\") (and product:<slug>) when theme_id/locale change, else BO-07 counts and layouts stay stale; sync products.theme_id/locale from the published config (BO-05a)."
+    },
+    {
+      "for": "CONTRACT follow-up",
+      "note": "no index serves created_at >= since range filters on events/purchases/generations in getPortfolioMetrics (full scans at volume, measured by the BO-02 database review); consider covering (created_at, product_id) indexes or pruning/archival."
+    },
+    {
+      "for": "CONTRACT follow-up",
+      "note": "generations has no index covering anonymous_id: the anonymous /history list and count do full scans at volume (SA-06 security review); add (product_id, anonymous_id, created_at). Also consider rate-limiting public history page views (SECURITY)."
+    },
+    {
+      "for": "human (open question)",
+      "note": "themeTokensSchema lacks typography scale, shadows and density listed in docs/01; a contract PR would be needed. DEMO-mode will make BO-08 read-only for seeded themes on the public demo."
+    },
+    {
+      "for": "DEMO-mode",
+      "note": "verify end to end that /admin/settings shows the default thresholds locked and seeded products overrides locked when DEMO_MODE=true, visitor products editable (BO-09)."
+    },
+    {
+      "for": "E2E-demo",
+      "note": "instant() portfolio -> fiche: name and status cannot be in the static shell while each boundary calls requireAdmin() (BO-03)."
+    }
+  ]
 }

@@ -10,6 +10,7 @@ import { loadMessages } from "@/i18n/load-messages";
 import { env } from "@/lib/env";
 import { getProduct, listProductSlugs } from "@/lib/dal/products";
 import { getTheme } from "@/lib/dal/themes";
+import { drawable } from "./_lib/og-colors";
 import { BalanceBadgeSkeleton, BalanceProvider } from "@/components/product/balance";
 import { DemoBanner } from "@/components/product/demo-banner";
 import { HeaderBalance } from "@/components/product/header-balance";
@@ -36,23 +37,32 @@ export const metadata: Metadata = {
 // docs/04-nextjs.md › SEO par produit: the mobile browser bar's
 // `theme-color`, from the product's resolved primary colour (branding
 // override, same precedence as theme-vars.ts's `themeCssVars`). Cached
-// under the same `product:{slug}` tag as the rest of the product's
-// metadata and config, so a backoffice save invalidates it too. An
-// unknown product, a missing root param or a missing theme row all
-// resolve to an empty viewport: the default export below is what 404s or
-// throws.
+// under the same `product:{slug}` and `theme:{id}` tags as the rest of
+// the product's and theme's own metadata, so either a backoffice product
+// save or a theme edit invalidates it. An unknown or killed product, a
+// missing root param, or a missing theme row all resolve to an empty
+// viewport, the same way the default export below 404s or throws.
+// `<meta name="theme-color">` only parses a subset of CSS colour syntax
+// reliably across mobile browsers (`#hex`, `rgb()`, `hsl()`); `drawable()`
+// (app/(products)/[app]/_lib/og-colors.ts) already draws that line for
+// the OG image, reused here with no fallback colour: an unsupported
+// syntax (e.g. `oklch()`) just omits `themeColor` rather than showing the
+// wrong colour.
 export async function generateViewport(): Promise<Viewport> {
   "use cache";
   cacheLife("max");
   const slug = await app();
   const product = slug ? await getProduct(slug) : null;
-  if (!product) return {};
+  if (!product || product.status === "killed") return {};
   cacheTag(`product:${product.slug}`);
 
   const theme = await getTheme(product.themeId);
   if (!theme) return {};
+  cacheTag(`theme:${theme.id}`);
 
-  return { themeColor: product.branding.primaryColor ?? theme.tokens.light.primary };
+  const primary = product.branding.primaryColor ?? theme.tokens.light.primary;
+  const themeColor = drawable(primary, "");
+  return themeColor ? { themeColor } : {};
 }
 
 // The layout that renders <html> for every sub-app: [app] is a root param

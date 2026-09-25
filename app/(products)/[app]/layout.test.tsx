@@ -118,7 +118,7 @@ describe("metadata", () => {
 });
 
 describe("generateViewport", () => {
-  it("returns the resolved primary color as themeColor, cached and tagged", async () => {
+  it("returns the resolved primary color as themeColor, cached and tagged by product and theme", async () => {
     appRootParam.mockResolvedValue("lettre-pro");
     getProduct.mockResolvedValue(ACTIVE_PRODUCT);
     getTheme.mockResolvedValue(THEME);
@@ -127,6 +127,7 @@ describe("generateViewport", () => {
     expect(viewport).toEqual({ themeColor: "#112233" });
     expect(cacheLife).toHaveBeenCalledWith("max");
     expect(cacheTag).toHaveBeenCalledWith("product:lettre-pro");
+    expect(cacheTag).toHaveBeenCalledWith("theme:theme-1");
   });
 
   it("prefers the branding primary color override over the theme's primary", async () => {
@@ -154,10 +155,31 @@ describe("generateViewport", () => {
     expect(viewport).toEqual({});
   });
 
+  it("returns an empty object for a killed product, without calling getTheme", async () => {
+    appRootParam.mockResolvedValue("killed-product");
+    getProduct.mockResolvedValue({ ...ACTIVE_PRODUCT, slug: "killed-product", status: "killed" });
+    const { generateViewport } = await import("./layout");
+    const viewport = await generateViewport();
+    expect(viewport).toEqual({});
+    expect(getTheme).not.toHaveBeenCalled();
+  });
+
   it("returns an empty object when the product's theme row is missing", async () => {
     appRootParam.mockResolvedValue("lettre-pro");
     getProduct.mockResolvedValue(ACTIVE_PRODUCT);
     getTheme.mockResolvedValue(null);
+    const { generateViewport } = await import("./layout");
+    const viewport = await generateViewport();
+    expect(viewport).toEqual({});
+  });
+
+  it("omits themeColor and returns an empty object when the resolved primary colour is not drawable (oklch)", async () => {
+    appRootParam.mockResolvedValue("lettre-pro");
+    getProduct.mockResolvedValue(ACTIVE_PRODUCT);
+    getTheme.mockResolvedValue({
+      ...THEME,
+      tokens: { ...THEME.tokens, light: { primary: "oklch(0.7 0.15 250)" } },
+    });
     const { generateViewport } = await import("./layout");
     const viewport = await generateViewport();
     expect(viewport).toEqual({});

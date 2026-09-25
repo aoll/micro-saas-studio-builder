@@ -139,16 +139,16 @@
       "dependsOn": [
         "TRACKING"
       ],
-      "status": "dispatched",
-      "worktree": "bo-02-portefeuille",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 25
     },
     "BO-03-fiche": {
       "dependsOn": [
         "BO-02-portefeuille"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "bo-03-fiche",
       "pr": null
     },
     "BO-05a-formulaire": {
@@ -285,8 +285,8 @@
       "dependsOn": [
         "BO-02-portefeuille"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "bo-09-seuils",
       "pr": null
     },
     "BO-08-editeur-theme": {
@@ -383,6 +383,12 @@
       "what": "flaky: lib/dal/events.test.ts createTempProduct inserts product_versions with config {} which breaks concurrent listProducts() tests (Zod parse); give it a schema-valid config",
       "resolved": true,
       "pr": 23
+    },
+    {
+      "spec": "SETUP-skeleton",
+      "blockedOn": "SETUP-skeleton",
+      "what": "intermittent: lib/dal/session.test.ts \"redirects to /admin/login for a role=user session\" failed once (session!.id undefined at line 80) under full-suite parallelism; find the concurrent file that mutates admin sessions and isolate it",
+      "resolved": false
     }
   ],
   "notes": [

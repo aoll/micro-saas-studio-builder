@@ -1,9 +1,21 @@
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { ProductSheetViewModel } from "./sheet";
 import { ProductSheetView } from "./product-sheet-view";
+
+// `ProductSheetView` renders `SheetHeader` and `DecisionPanel`, both of
+// which statically import `StatusChange`, which statically imports
+// `setProductStatus` from `../_actions` (CLAUDE.md: every other
+// `_actions.ts` consumer does the same). `_actions.ts` transitively imports
+// the DAL (session → lib/auth → lib/db, products, product-status), which
+// eagerly touches `env.DATABASE_URL` at module load: mocked at this
+// boundary so this render-only test never needs a real database, without
+// weakening anything it asserts.
+vi.mock("@/lib/dal/session", () => ({ requireAdmin: vi.fn() }));
+vi.mock("@/lib/dal/products", () => ({ getProduct: vi.fn() }));
+vi.mock("@/lib/dal/product-status", () => ({ updateStatus: vi.fn() }));
 
 beforeAll(() => {
   class ResizeObserverStub {

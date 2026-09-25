@@ -111,9 +111,9 @@
       "dependsOn": [
         "LEDGER"
       ],
-      "status": "dispatched",
-      "worktree": "sa-07-compte",
-      "pr": null,
+      "status": "merged",
+      "worktree": null,
+      "pr": 38,
       "mergeAfter": [
         "SA-03-inscription"
       ],
@@ -204,9 +204,16 @@
         "BO-05b-generation-publication",
         "BO-07-themes"
       ],
-      "status": "pending",
-      "worktree": null,
-      "pr": null
+      "status": "dispatched",
+      "worktree": "demo-mode",
+      "pr": null,
+      "step": "tdd",
+      "humanDecision": {
+        "pending": false,
+        "question": "Périmètre extension: (a) visitor limit 10: lib/dal/product-editor.ts(+test), admin/products/_actions.ts(+test), additive guards export; (b) BO-06 trigger disabled on seeded products: admin/products/[slug]/page.tsx, sheet.ts, product-sheet-view.tsx, sheet-header.tsx, status/status-change.tsx(+tests); (c) lib/ai/model.ts mock fixtures for descri-pro, nom-de-marque, bio-instagram; (d) .env.example SEED_* credential vars",
+        "round2": "No seeded-row lock (guards stay no-op; acceptance lock bullet waived; BO-06 trigger item moot); .env.example allowed. Pending: (a) 10 visitor limit, (c) lib/ai/model.ts mock fixtures",
+        "round3": "(a) visitor limit dropped (bullet waived); (c) lib/ai/model.ts(+test) mock fixtures approved"
+      }
     },
     "SECURITY": {
       "dependsOn": [
@@ -227,9 +234,15 @@
         "BO-05b-generation-publication",
         "BO-07-themes"
       ],
-      "status": "pending",
-      "worktree": null,
-      "pr": null
+      "status": "dispatched",
+      "worktree": "security",
+      "pr": null,
+      "step": "tdd",
+      "humanDecision": {
+        "pending": false,
+        "answer": "OK SECURITY (2026-09-25)",
+        "extension": "package.json, pnpm-lock.yaml, lib/env.ts(+test), .env.example, lib/dal/generations.ts(+test) additive countRecentGenerations, README.md, lib/dal/contract-shape.test.ts mocks only"
+      }
     },
     "I18N-SEO": {
       "dependsOn": [
@@ -250,9 +263,15 @@
         "BO-05b-generation-publication",
         "BO-07-themes"
       ],
-      "status": "pending",
-      "worktree": null,
-      "pr": null
+      "status": "dispatched",
+      "worktree": "i18n-seo",
+      "pr": null,
+      "step": "tdd",
+      "humanDecision": {
+        "pending": false,
+        "answer": "go fichier partagé (2026-09-25)",
+        "extension": "app/(products)/[app]/_lib/og-colors.ts(+test)"
+      }
     },
     "BO-04-activite": {
       "dependsOn": [
@@ -273,9 +292,10 @@
         "BO-05b-generation-publication",
         "BO-07-themes"
       ],
-      "status": "pending",
-      "worktree": null,
-      "pr": null
+      "status": "dispatched",
+      "worktree": "bo-04-activite",
+      "pr": null,
+      "step": "review"
     },
     "BO-06-statut": {
       "dependsOn": [
@@ -354,7 +374,9 @@
       "spec": "SA-04-tarifs",
       "blockedOn": "SA-05-paiement",
       "what": "drop the `/${slug}/checkout/${packId}` as Route cast in [app]/pricing/_components/pricing-content.tsx once the checkout route exists; un-fixme e2e/pricing.spec.ts journey 3 once SA-02 and LEDGER are merged",
-      "resolved": false
+      "resolved": true,
+      "pr": 40,
+      "resolution": "cast dropped; pricing e2e journey 3 un-fixme deferred to the E2E phase (noted)"
     },
     {
       "spec": "BO-07-themes",
@@ -374,14 +396,16 @@
       "spec": "SA-06-historique",
       "blockedOn": "SA-07-compte",
       "what": "entry point to /[app]/history: SA-07 account page links to it (inside [app]/account/**); a header/tool link would need a CONTRACT-ui/SA-02 follow-up",
-      "resolved": false,
-      "note": "handled inside SA-07 (history link in the account page)"
+      "resolved": true,
+      "note": "handled inside SA-07 (history link in the account page)",
+      "resolution": "SA-07 account page links to /history (#38)"
     },
     {
       "spec": "CONTRACT-ui",
       "blockedOn": "BO-09-seuils",
       "what": "drop the \"/admin/settings\" as Route cast in components/backoffice/admin-sidebar.tsx once BO-09 ships /admin/settings",
-      "resolved": false
+      "resolved": true,
+      "pr": 40
     },
     {
       "spec": "TRACKING",
@@ -407,25 +431,30 @@
       "spec": "CONTRACT-ui",
       "blockedOn": "SA-07-compte",
       "what": "header entry point to /[app]/account (components/product/header-balance.tsx: link the balance badge to /${slug}/account)",
-      "resolved": false
+      "resolved": true,
+      "pr": 40
     },
     {
       "spec": "SA-03-inscription",
       "blockedOn": "SA-03-inscription",
       "what": "after SA-03 merges: drop the /${slug}/signup as Route casts in [app]/tool/_components/tool-form.tsx and components/product/header-balance.tsx; update e2e/tool.spec.ts notes; SA-07 account signup cast + un-fixme its anonymous journey",
-      "resolved": false
+      "resolved": true,
+      "pr": 40
     },
     {
       "spec": "TRACKING",
       "blockedOn": "SA-03-inscription",
       "what": "dedupe signup events per (product, user) in the body of track() (signature unchanged), like visit, so a returning user re-login does not inflate the funnel; also dedupe purchase events by metadata.purchaseKey (SA-05 puts the idempotency key there)",
-      "resolved": false
+      "resolved": true,
+      "pr": 40
     },
     {
       "spec": "CONTRACT-ui",
       "blockedOn": "SA-05-paiement",
       "what": "optional onClose prop on components/product/route-modal.tsx so the confirmed checkout closes to /tool instead of router.back() into the pricing modal",
-      "resolved": false
+      "resolved": true,
+      "pr": 40,
+      "resolution": "cast dropped; pricing e2e journey 3 un-fixme deferred to the E2E phase (noted)"
     },
     {
       "spec": "BO-05b-generation-publication",
@@ -450,18 +479,39 @@
       "spec": "BO-02-portefeuille",
       "blockedOn": "BO-03-fiche",
       "what": "drop the /admin/products/[slug] as Route cast in portfolio-table.tsx; make e2e/portfolio.spec.ts:50 temp product config schema-valid",
-      "resolved": false
+      "resolved": true,
+      "pr": 40,
+      "resolution": "e2e config fixed; cast kept with reason (typedRoutes, string outside JSX href)"
     },
     {
       "spec": "BO-03-fiche",
       "blockedOn": "BO-06-statut",
       "what": "after BO-06: mount StatusChange also in decision-panel.tsx and move the header trigger next to « Modifier la config » (mockup BO-06), in BO-03 files; also mock the DAL boundary (@/lib/dal/products and the session/product-status chain) in sheet-header.test.tsx and product-sheet-view.test.tsx, then replace the dynamic import() of setProductStatus in status-change.tsx by a plain static import + .bind(null, slug) (BO-06 Next review MEDIUM)",
-      "resolved": false
+      "resolved": true,
+      "pr": 39
     },
     {
       "spec": "CONTRACT-data",
       "blockedOn": "CONTRACT-data",
       "what": "lib/dal/contract.test.ts « debit takes a single Debit argument » hit the 5000 ms timeout once under heavy load (sa-03 coverage run); root-cause before end of run",
+      "resolved": false
+    },
+    {
+      "spec": "SA-01-landing",
+      "blockedOn": "I18N-SEO",
+      "what": "docs/04 SEO par produit: metadataBase, canonical, Open Graph title/description in [app]/page.tsx generateMetadata, generateViewport themeColor in [app]/layout.tsx (outside I18N-SEO Périmètre; SA-01 plan deferred it)",
+      "resolved": false
+    },
+    {
+      "spec": "BO-03-fiche",
+      "blockedOn": "BO-04-activite",
+      "what": "link the BO-03 product sheet to /admin/products/[slug]/activity (reuse BO-04 ProductTabs in sheet-header or a [slug]/layout.tsx)",
+      "resolved": false
+    },
+    {
+      "spec": "SA-02-outil",
+      "blockedOn": "SECURITY",
+      "what": "api/generate/route.ts should import clientIp from lib/rate-limit.ts instead of its private copy (parity test meanwhile)",
       "resolved": false
     }
   ],
@@ -501,10 +551,6 @@
       "note": "themeTokensSchema lacks typography scale, shadows and density listed in docs/01; a contract PR would be needed. DEMO-mode will make BO-08 read-only for seeded themes on the public demo."
     },
     {
-      "for": "DEMO-mode",
-      "note": "verify end to end that /admin/settings shows the default thresholds locked and seeded products overrides locked when DEMO_MODE=true, visitor products editable (BO-09)."
-    },
-    {
       "for": "E2E-demo",
       "note": "instant() portfolio -> fiche: name and status cannot be in the static shell while each boundary calls requireAdmin() (BO-03)."
     },
@@ -521,16 +567,20 @@
       "note": "purchases has no index at all: add (product_id, created_at) and (user_id, product_id, created_at); used by getPortfolioMetrics, getFunnel daily, SA-07 listPurchases. Flagged HIGH by the BO-03 database review as a pre-existing frozen-schema gap, not fixable in BO-03."
     },
     {
-      "for": "DEMO-mode",
-      "note": "BO-06: StatusChange trigger is not disabled for locked seeded products (needs isEditable passed from sheet.ts → sheet-header.tsx); the DAL guard + in-modal formError cover it meanwhile"
-    },
-    {
       "for": "E2E-demo",
       "note": "SA-05: e2e/checkout.spec.ts journey « opens as a nested modal from the tool paywall » is test.fixme; finish it in the E2E phase with SA-04 pricing journey 3"
     },
     {
       "for": "CONTRACT (human)",
       "note": "events: track() dedupe (follow-up SA-03/SA-05) filters signup by user_id and purchase by metadata->>purchaseKey on top of the (product_id, type, created_at) index; add (product_id, type, user_id) and a purchase_key column or expression index on metadata->>purchaseKey when volume grows"
+    },
+    {
+      "for": "CONTRACT (human)",
+      "note": "SECURITY follow-ups: raw Better Auth /api/auth/sign-in/magic-link not behind guardRequest; login timing side-channel in lib/auth.ts (dummy verifyPassword on reject path); a shared Postgres limiter (rate_limit_hits table or Better Auth rateLimit storage database) for test-prompt, signup, login and events"
+    },
+    {
+      "for": "CONTRACT (human)",
+      "note": "BO-04 activity: add indexes purchases(product_id, created_at) and credit_transactions(product_id, created_at) for the product-wide activity lists (seq scans today, fine at demo volume)"
     }
   ]
 }

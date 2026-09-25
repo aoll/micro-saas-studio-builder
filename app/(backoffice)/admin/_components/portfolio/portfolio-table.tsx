@@ -28,9 +28,8 @@ function ariaSortFor(
   return direction === "asc" ? "ascending" : "descending";
 }
 
-// BO-03 (the product sheet at /admin/products/[slug]) has not landed yet:
-// `as Route` dropped once it does (specs/BO-02-portefeuille.md plan,
-// pattern: "Links to routes not merged yet").
+// typedRoutes cannot prove a plain `string` slug fits the dynamic segment
+// outside a JSX href, hence the cast; the route itself exists (BO-03).
 function productHref(slug: string): Route {
   return `/admin/products/${slug}` as Route;
 }

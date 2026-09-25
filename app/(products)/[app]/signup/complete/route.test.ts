@@ -220,7 +220,7 @@ describe("GET [app]/signup/complete: real ledger and events (GET twice)", () => 
     return { id: product!.id, slug };
   }
 
-  it("granting the bonus twice only credits +3 once, writes one signup_bonus row, and tracks one signup event", async () => {
+  it("granting the bonus twice only credits +3 once, writes one signup_bonus row, and tracks a signup event on each completed sign-in (2)", async () => {
     vi.doUnmock("@/lib/dal/credits");
     vi.doUnmock("@/lib/dal/events");
     vi.resetModules();

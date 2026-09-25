@@ -94,7 +94,7 @@ if (!product || product.status === 'killed') notFound()
 - Avec Cache Components, un root param doit avoir **au moins une valeur** dans `generateStaticParams`, sinon le build échoue. On y renvoie les slugs des produits existants ; un produit créé après le build sert d'abord un shell instantané, puis sa version prérendue (le nouvel ISR de la 16.3).
 - `next/root-params` n'est pas disponible dans les **Server Actions** : elles reçoivent le slug en argument.
 - Passer du backoffice à une sub-app change de root layout, donc provoque un chargement complet. C'est sans conséquence ici : ce sont deux applications distinctes pour l'utilisateur.
-- `proxy.ts` (ex-`middleware.ts`) ne sert qu'au bonus des sous-domaines : une simple réécriture, jamais d'accès base ni de contrôle d'autorisation dedans.
+- `proxy.ts` (ex-`middleware.ts`) sert au bonus des sous-domaines (simple réécriture) et, depuis QA1-P1-B4, à poser le cookie `anonymous_id` sur la première requête GET d'une page produit, avant que `<TrackVisit>` n'envoie son beacon, et, depuis QA1-P1-B12, de garde de session optimiste sur `/admin` (présence du cookie de session seulement : 307 vers `/admin/login`, vrai 404 sur `/admin/ops`, sans lire le rôle) : jamais d'accès base ni de contrôle d'autorisation dedans, la vraie vérification reste `requireAdmin()` et le contrôle du rôle owner côté serveur.
 - `typedRoutes: true` type les `href` et `router.push` : une faute dans une route casse la compilation.
 
 ## Rendu et cache

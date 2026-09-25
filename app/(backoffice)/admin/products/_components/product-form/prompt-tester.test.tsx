@@ -7,8 +7,8 @@ import { PromptTester } from "./prompt-tester";
 afterEach(cleanup);
 
 const fields = [
-  { key: "poste", label: "Poste visé", required: true },
-  { key: "ton", label: "Ton", required: false },
+  { id: "input-poste", key: "poste", label: "Poste visé", required: true },
+  { id: "input-ton", key: "ton", label: "Ton", required: false },
 ];
 
 function setup(overrides: Partial<React.ComponentProps<typeof PromptTester>> = {}) {
@@ -71,5 +71,22 @@ describe("PromptTester", () => {
     fireEvent.click(screen.getByRole("button", { name: "Tester le prompt" }));
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toBe("La génération de test a échoué");
+  });
+
+  // B-N2 (.claude/qa/reports/2026-09-25-full-3.md): same reasoning as
+  // generation-step.test.tsx — two step-4 fields can transiently share the
+  // same `key` while the admin is editing it; `key={field.key}` produced
+  // React's "two children with the same key" console.error here too.
+  it("does not warn React about duplicate keys when two fields share the same key", () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    setup({
+      fields: [
+        { id: "input-a", key: "niche", label: "Niche A", required: false },
+        { id: "input-b", key: "niche", label: "Niche B", required: false },
+      ],
+    });
+    const duplicateKeyWarning = consoleError.mock.calls.some((call) => String(call[0]).includes("same key"));
+    consoleError.mockRestore();
+    expect(duplicateKeyWarning).toBe(false);
   });
 });

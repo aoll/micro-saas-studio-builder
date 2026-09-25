@@ -6,6 +6,7 @@
   "page": {
     "title": "Paiement"
   },
+  "loading": "Chargement du paiement…",
   "packLine": "{name} · pack",
   "notice": "Paiement simulé pour la démo · aucun montant n'est débité",
   "card": {

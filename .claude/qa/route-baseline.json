@@ -1,0 +1,860 @@
+{
+  "commitSha": "d7df15c8db0d769b66228f0b8e7032f6bc37de1c",
+  "branch": "integration/qa1",
+  "generatedAt": "2026-09-25",
+  "note": "qa1, 2026-09-25, after pass 7 (full, complet, no finding) at d7df15c",
+  "entries": [
+    {
+      "hash": "d5399ee33576ff8c0aaa1615b8ff28dee14d3012",
+      "path": "app/(backoffice)/admin/_components/portfolio/decision-badge.tsx"
+    },
+    {
+      "hash": "05d440961a179ed7e48188f1c6e64fcc7c48b7b5",
+      "path": "app/(backoffice)/admin/_components/portfolio/format.ts"
+    },
+    {
+      "hash": "eea6fce9a05285ce47be364ebc5a4dc8dfcc7111",
+      "path": "app/(backoffice)/admin/_components/portfolio/portfolio-kpis.tsx"
+    },
+    {
+      "hash": "65da11313ddc81e8a81b089422b9f1cb2d549373",
+      "path": "app/(backoffice)/admin/_components/portfolio/portfolio-skeleton.tsx"
+    },
+    {
+      "hash": "b777b37a2f1d23b3b1cbdc2b374a7f7d490727bd",
+      "path": "app/(backoffice)/admin/_components/portfolio/portfolio-table.tsx"
+    },
+    {
+      "hash": "53cb514dd56b3d3ab677e92ceac06d314b5fd589",
+      "path": "app/(backoffice)/admin/_components/portfolio/portfolio-view.tsx"
+    },
+    {
+      "hash": "f91f4a57ccf166ebfb26ed877332c34a40ec23e9",
+      "path": "app/(backoffice)/admin/_components/portfolio/rows.ts"
+    },
+    {
+      "hash": "8aa629e147bd06d2f74ec2b7f58f063bde818a35",
+      "path": "app/(backoffice)/admin/_components/portfolio/sort.ts"
+    },
+    {
+      "hash": "2559e09535d72c87b4925e09443f4e16c379510c",
+      "path": "app/(backoffice)/admin/loading.tsx"
+    },
+    {
+      "hash": "909c3d5b9702b45bf469ba10ae0df3fde229903a",
+      "path": "app/(backoffice)/admin/login/_actions.ts"
+    },
+    {
+      "hash": "0c5bffd3066fd2a95f3c9e9a3d2b4d3ccc4852c9",
+      "path": "app/(backoffice)/admin/login/_components/login-form.tsx"
+    },
+    {
+      "hash": "bc5a5dca7034adc5604597ace5828db6d571795a",
+      "path": "app/(backoffice)/admin/login/page.tsx"
+    },
+    {
+      "hash": "8c172ebe05749cc56d7dd7c73f355b4c6bfd159c",
+      "path": "app/(backoffice)/admin/ops/_actions.ts"
+    },
+    {
+      "hash": "265935fc036fccf5f8b96bc232ee56d3c1f92054",
+      "path": "app/(backoffice)/admin/ops/_components/reset-form.tsx"
+    },
+    {
+      "hash": "f14e7248a77b13b012c59206e049def246299016",
+      "path": "app/(backoffice)/admin/ops/not-found.tsx"
+    },
+    {
+      "hash": "f44a8ddbeb6a8a5d12f28a8ec08dd7a65a55f6b3",
+      "path": "app/(backoffice)/admin/ops/page.tsx"
+    },
+    {
+      "hash": "964c42bef37423abb7966bc7223c39bfe1eca3b9",
+      "path": "app/(backoffice)/admin/page.tsx"
+    },
+    {
+      "hash": "bcb37463155a546c5f94f0d4a37141ef1b6b26b9",
+      "path": "app/(backoffice)/admin/products/_actions.ts"
+    },
+    {
+      "hash": "ab29193126264d4fc5566f23092f577e08a5032c",
+      "path": "app/(backoffice)/admin/products/_components/product-form/fields-step.tsx"
+    },
+    {
+      "hash": "cbdaffb7f8a09aaa4b297709dc4e049a2c158d2d",
+      "path": "app/(backoffice)/admin/products/_components/product-form/form-values.ts"
+    },
+    {
+      "hash": "8f45e83bed81baa6877380924f7dc99fc54cee34",
+      "path": "app/(backoffice)/admin/products/_components/product-form/generation-step.tsx"
+    },
+    {
+      "hash": "49e31c4a3dfdda3ca5a90e7ef273cec4b981049d",
+      "path": "app/(backoffice)/admin/products/_components/product-form/identity-step.tsx"
+    },
+    {
+      "hash": "bbb03414d786be2024762f9cefcb86c60a6c4632",
+      "path": "app/(backoffice)/admin/products/_components/product-form/image-signature.ts"
+    },
+    {
+      "hash": "6770e64001ad6328632e98da82dacd377fdc295e",
+      "path": "app/(backoffice)/admin/products/_components/product-form/import-config-panel.tsx"
+    },
+    {
+      "hash": "902f4548604050bf96401f6bc2ff916c029c468f",
+      "path": "app/(backoffice)/admin/products/_components/product-form/import-config.ts"
+    },
+    {
+      "hash": "0ca44b5e366f21d0b9774b087618000c0bdbae7d",
+      "path": "app/(backoffice)/admin/products/_components/product-form/landing-preview.tsx"
+    },
+    {
+      "hash": "d9969b1d1478c3152cdba2b54b19d188166b7b18",
+      "path": "app/(backoffice)/admin/products/_components/product-form/landing-step.tsx"
+    },
+    {
+      "hash": "bf607d88a6bca79f6075be403eb85517b48954fa",
+      "path": "app/(backoffice)/admin/products/_components/product-form/margin.ts"
+    },
+    {
+      "hash": "b3443a91dce7de8e58eb352d96235ad5216ef114",
+      "path": "app/(backoffice)/admin/products/_components/product-form/model-catalogue.ts"
+    },
+    {
+      "hash": "aac9b4c6ce58b7b27796e350deae59193baa3f87",
+      "path": "app/(backoffice)/admin/products/_components/product-form/pricing-step.tsx"
+    },
+    {
+      "hash": "dc0f2212b4878e37289f70179a4b1dac5da9d3e3",
+      "path": "app/(backoffice)/admin/products/_components/product-form/product-form.tsx"
+    },
+    {
+      "hash": "9960a9bbf99367d0fda01fb1c7f4c9027522c71b",
+      "path": "app/(backoffice)/admin/products/_components/product-form/prompt-tester.tsx"
+    },
+    {
+      "hash": "414c676ee98dba157e851822308fc9899bf6f017",
+      "path": "app/(backoffice)/admin/products/_components/product-form/prompt-variables.ts"
+    },
+    {
+      "hash": "df305ccdf3b97ca56deb80a0f26dcc74c4c10bf9",
+      "path": "app/(backoffice)/admin/products/_components/product-form/slugify.ts"
+    },
+    {
+      "hash": "b4ceadeadaf6d101fa58ab6362fb608eddbf6c01",
+      "path": "app/(backoffice)/admin/products/_components/product-form/step-nav.tsx"
+    },
+    {
+      "hash": "1b874b58704ec3127680912279c246c73b6fdf0e",
+      "path": "app/(backoffice)/admin/products/_components/product-form/summary-step.tsx"
+    },
+    {
+      "hash": "dd3550acdac893c57fb49a3caf18fb32e048162a",
+      "path": "app/(backoffice)/admin/products/_components/product-form/theme-step.tsx"
+    },
+    {
+      "hash": "618e1a99bd17d19f24fa1e1db4aed735fd5a68b0",
+      "path": "app/(backoffice)/admin/products/_components/product-form/validation.ts"
+    },
+    {
+      "hash": "ddb0a7c807c98db3c95d37990b336a6100b2b35e",
+      "path": "app/(backoffice)/admin/products/[slug]/_actions.ts"
+    },
+    {
+      "hash": "a9bffe41e97f2be322ceb4692a718b7765572918",
+      "path": "app/(backoffice)/admin/products/[slug]/_components/decision-copy.ts"
+    },
+    {
+      "hash": "ec174c526710a72a24080dfc262e819adee5aa7c",
+      "path": "app/(backoffice)/admin/products/[slug]/_components/decision-panel.tsx"
+    },
+    {
+      "hash": "fdafc8bc6ff70d0db88ed901eee154c318c511eb",
+      "path": "app/(backoffice)/admin/products/[slug]/_components/funnel-card.tsx"
+    },
+    {
+      "hash": "a6b3e50a3ed95a67223910cff599dcd2fea11b47",
+      "path": "app/(backoffice)/admin/products/[slug]/_components/product-sheet-skeleton.tsx"
+    },
+    {
+      "hash": "d67d029612fd4cc079ee97dc9672d97122265e79",
+      "path": "app/(backoffice)/admin/products/[slug]/_components/product-sheet-view.tsx"
+    },
+    {
+      "hash": "1a90fcae40d931e2ed5eec5fbb3908ea091842e3",
+      "path": "app/(backoffice)/admin/products/[slug]/_components/product-tabs.tsx"
+    },
+    {
+      "hash": "20fdfcd1c541cc9b1cf9d08b32bdd351bd157498",
+      "path": "app/(backoffice)/admin/products/[slug]/_components/sheet-header.tsx"
+    },
+    {
+      "hash": "70a87f2339ce1abf4b2f4e3322bfa41531a015ca",
+      "path": "app/(backoffice)/admin/products/[slug]/_components/sheet-kpis.tsx"
+    },
+    {
+      "hash": "b8f5db34e9ffad8ddfc1bd389cf422602b6443b2",
+      "path": "app/(backoffice)/admin/products/[slug]/_components/sheet.ts"
+    },
+    {
+      "hash": "626b159b84839996cef3c2638cd7d89ead2c73ee",
+      "path": "app/(backoffice)/admin/products/[slug]/_components/status/status-change.tsx"
+    },
+    {
+      "hash": "ec70da1bb6f16f376eb6700838e58d4604f01e06",
+      "path": "app/(backoffice)/admin/products/[slug]/_components/trend-chart.tsx"
+    },
+    {
+      "hash": "b1baf749d1ce5496a30ea69c9bd4630ff3f1ff60",
+      "path": "app/(backoffice)/admin/products/[slug]/activity/_components/activity-header.tsx"
+    },
+    {
+      "hash": "c63e73e85400b232a3c749fee49a4eae47a4a7e9",
+      "path": "app/(backoffice)/admin/products/[slug]/activity/_components/activity-skeleton.tsx"
+    },
+    {
+      "hash": "64fa90988b8c7ae6e6e939e53f4a43e9fe28c9cf",
+      "path": "app/(backoffice)/admin/products/[slug]/activity/_components/activity-view.tsx"
+    },
+    {
+      "hash": "c535d8099972a796b40569119c59207c5bb0bc04",
+      "path": "app/(backoffice)/admin/products/[slug]/activity/_components/generations-table.tsx"
+    },
+    {
+      "hash": "b5613ba1aafadbfb7df31c75b0b17eb31750fc0c",
+      "path": "app/(backoffice)/admin/products/[slug]/activity/_components/movements-card.tsx"
+    },
+    {
+      "hash": "e23ddced64b7eeaf9c598fe4f7f718279b68e0c2",
+      "path": "app/(backoffice)/admin/products/[slug]/activity/_components/pagination-nav.tsx"
+    },
+    {
+      "hash": "6895e7e6597b5c98a7cad9643d5372a582f420c8",
+      "path": "app/(backoffice)/admin/products/[slug]/activity/_components/purchases-card.tsx"
+    },
+    {
+      "hash": "1a5188515fd42ce9dcf9c794502b4cdc09b36934",
+      "path": "app/(backoffice)/admin/products/[slug]/activity/_lib/activity-format.ts"
+    },
+    {
+      "hash": "828ddab38f0f72da8ea9b706e59016f5e161c7b5",
+      "path": "app/(backoffice)/admin/products/[slug]/activity/_lib/pagination.ts"
+    },
+    {
+      "hash": "6c5090a51c10d9d780f17f2dea4f5bf171c1bc24",
+      "path": "app/(backoffice)/admin/products/[slug]/activity/page.tsx"
+    },
+    {
+      "hash": "a175a25934bbc0f22254ace96ce6da6bb13403f7",
+      "path": "app/(backoffice)/admin/products/[slug]/edit/page.tsx"
+    },
+    {
+      "hash": "dd5ff573de099049dc9a9ee19226b62c650d7859",
+      "path": "app/(backoffice)/admin/products/[slug]/page.tsx"
+    },
+    {
+      "hash": "b4921d8b2978e1ac6e36bf3fab2e90797ff1e9ad",
+      "path": "app/(backoffice)/admin/products/new/page.tsx"
+    },
+    {
+      "hash": "0ffad73bfeac39bef3956e06d9c68888638a263c",
+      "path": "app/(backoffice)/admin/settings/_actions.ts"
+    },
+    {
+      "hash": "58682fcf97549cf06f73cc1e7bb8957e3a6c0961",
+      "path": "app/(backoffice)/admin/settings/_components/percent.ts"
+    },
+    {
+      "hash": "15ff6338b0d4fed1670b5a9b0a483723e270a934",
+      "path": "app/(backoffice)/admin/settings/_components/preview.ts"
+    },
+    {
+      "hash": "e5fbc5249c7b5d9cc572059a99bad252e8b60efd",
+      "path": "app/(backoffice)/admin/settings/_components/settings-skeleton.tsx"
+    },
+    {
+      "hash": "d43d76e6362ac6e7c5f5e4535a79a4aadae8607a",
+      "path": "app/(backoffice)/admin/settings/_components/settings-view.ts"
+    },
+    {
+      "hash": "3157e7c086f8529f24dd84c711a13c1159e13cfa",
+      "path": "app/(backoffice)/admin/settings/_components/thresholds-form.tsx"
+    },
+    {
+      "hash": "cfce25b6e674667483fe4a7d7f382e0a25f3c4ff",
+      "path": "app/(backoffice)/admin/settings/_components/thresholds-settings.tsx"
+    },
+    {
+      "hash": "ddaf64912f2942ed49dc77dcce584758bfcc76b2",
+      "path": "app/(backoffice)/admin/settings/_components/validation.ts"
+    },
+    {
+      "hash": "b875f3e3a40a690aea3f108c5903f78e54ab5a83",
+      "path": "app/(backoffice)/admin/settings/loading.tsx"
+    },
+    {
+      "hash": "6de022870e842aab6d97aabf52d0686d51239aac",
+      "path": "app/(backoffice)/admin/settings/page.tsx"
+    },
+    {
+      "hash": "f8f47d2e69ec7b11f275945253341b53eed15160",
+      "path": "app/(backoffice)/admin/themes/_components/landing-variant-labels.ts"
+    },
+    {
+      "hash": "e7f2d90980e662ebb73bab0e386397754430780b",
+      "path": "app/(backoffice)/admin/themes/_components/theme-card.tsx"
+    },
+    {
+      "hash": "2ae044fbc4732df2387699024ab6a0307bcb649d",
+      "path": "app/(backoffice)/admin/themes/_components/theme-library.tsx"
+    },
+    {
+      "hash": "04c03463fe1e23b0075d0a06d6c77bc64d15ec19",
+      "path": "app/(backoffice)/admin/themes/_components/theme-usage.ts"
+    },
+    {
+      "hash": "2709f5efcf4a4fb1702fbdd5ca3144387a83c0bd",
+      "path": "app/(backoffice)/admin/themes/[id]/_actions.ts"
+    },
+    {
+      "hash": "51445134ec3deeabdaaa1705d7929c8b5a707bba",
+      "path": "app/(backoffice)/admin/themes/[id]/_components/font-labels.ts"
+    },
+    {
+      "hash": "a03897bf4f1c323ba97165ef8500767c8275b45d",
+      "path": "app/(backoffice)/admin/themes/[id]/_components/preview-vars.ts"
+    },
+    {
+      "hash": "7643f06da03126b80c047bad0044f922e43810a6",
+      "path": "app/(backoffice)/admin/themes/[id]/_components/radius.ts"
+    },
+    {
+      "hash": "f05b4cd7da9d97ae39ad6bee810156ffd9fc3e10",
+      "path": "app/(backoffice)/admin/themes/[id]/_components/theme-editor-loader.tsx"
+    },
+    {
+      "hash": "4e8abcea1ccac7d40f10b8fc34de324ce4938f1b",
+      "path": "app/(backoffice)/admin/themes/[id]/_components/theme-editor.tsx"
+    },
+    {
+      "hash": "e3533ce1056101430c2f8c4ceb36bec80082ded6",
+      "path": "app/(backoffice)/admin/themes/[id]/_components/theme-errors.ts"
+    },
+    {
+      "hash": "61732ffffe548cb877235fe40a9d1533eff77da0",
+      "path": "app/(backoffice)/admin/themes/[id]/_components/theme-preview.tsx"
+    },
+    {
+      "hash": "2c333e17a42825133471a44832029cc4f23f19c8",
+      "path": "app/(backoffice)/admin/themes/[id]/_components/usage-warning.tsx"
+    },
+    {
+      "hash": "71707587830772be8f44040cb28b183e4d2fb5bd",
+      "path": "app/(backoffice)/admin/themes/[id]/page.tsx"
+    },
+    {
+      "hash": "7740f1f67ac3aed9c48e69304a34f151b6b3ee37",
+      "path": "app/(backoffice)/admin/themes/page.tsx"
+    },
+    {
+      "hash": "8c09e0cf1a3125ccbab29eee69fe71b1993b43fe",
+      "path": "app/(backoffice)/layout.tsx"
+    },
+    {
+      "hash": "ab1078b67c9c6c7e998b5fe7d029ef86617a91fa",
+      "path": "app/(products)/_components/product-not-found.tsx"
+    },
+    {
+      "hash": "3e66a6ff96b8d42d63f561e35674981e7f8f0eee",
+      "path": "app/(products)/[app]/_components/landing/example-result.tsx"
+    },
+    {
+      "hash": "fed09a9277960c6bd7a90aaba6b9067795a8953a",
+      "path": "app/(products)/[app]/_components/landing/faq.tsx"
+    },
+    {
+      "hash": "2de356dc5bcae88b4ec0a1cba098a6b4ef2f7150",
+      "path": "app/(products)/[app]/_components/landing/hero.tsx"
+    },
+    {
+      "hash": "1c2edfd2705cf3220d72c91462935da2f1829d96",
+      "path": "app/(products)/[app]/_components/landing/how-it-works.tsx"
+    },
+    {
+      "hash": "9f5a6f35f72c7e60c35b426458dbe25b904f5b22",
+      "path": "app/(products)/[app]/_components/landing/landing-pricing.tsx"
+    },
+    {
+      "hash": "34308b182d9799c50413c020c9a7bd8728dd8fd9",
+      "path": "app/(products)/[app]/_components/landing/landing.tsx"
+    },
+    {
+      "hash": "c31dbce43b28215498447ab8af86484135dfe577",
+      "path": "app/(products)/[app]/_lib/og-colors.ts"
+    },
+    {
+      "hash": "25da6fd8465085237f2f0031605139280193528d",
+      "path": "app/(products)/[app]/@modal/(.)checkout/[packId]/page.tsx"
+    },
+    {
+      "hash": "ca9e5050f14e62f67423cddb71541fe5fb4bcb0c",
+      "path": "app/(products)/[app]/@modal/(.)pricing/page.tsx"
+    },
+    {
+      "hash": "ea7e9bf089ca55b9e8be58fb786ded77071fde05",
+      "path": "app/(products)/[app]/@modal/(.)signup/page.tsx"
+    },
+    {
+      "hash": "bd5b751a030c032726f97f08d3e9588c57c6bc60",
+      "path": "app/(products)/[app]/@modal/[...catchAll]/page.tsx"
+    },
+    {
+      "hash": "7957ec9e5744713fc5928047cba94c3fbda030ac",
+      "path": "app/(products)/[app]/@modal/default.tsx"
+    },
+    {
+      "hash": "72427bfc1ff19419ca2f6f4ec470b7591116c408",
+      "path": "app/(products)/[app]/account/_components/account-content.tsx"
+    },
+    {
+      "hash": "0f23860d8a893dfba2f440ec9bf4c744a10aae27",
+      "path": "app/(products)/[app]/account/_components/account-skeleton.tsx"
+    },
+    {
+      "hash": "d5a71e14ca5011041e9c1c378432184f05101f9a",
+      "path": "app/(products)/[app]/account/_components/movement-list.tsx"
+    },
+    {
+      "hash": "665f10f7bd226b43c10ce88fe521abc409f22ec9",
+      "path": "app/(products)/[app]/account/_components/open-signup-modal.tsx"
+    },
+    {
+      "hash": "7fbef0cb533b00f4d48194b21d4c7fffc643a921",
+      "path": "app/(products)/[app]/account/_components/purchase-list.tsx"
+    },
+    {
+      "hash": "6f579bad56f33af76461d4264df70449275ee718",
+      "path": "app/(products)/[app]/account/_components/sign-out-button.tsx"
+    },
+    {
+      "hash": "0cbfee543def6314c51594fe0a882c61cb812faf",
+      "path": "app/(products)/[app]/account/_components/signup-prompt.tsx"
+    },
+    {
+      "hash": "84600f1b6e8cf258d8e2164444ed52ef56caad17",
+      "path": "app/(products)/[app]/account/page.tsx"
+    },
+    {
+      "hash": "c93d1e42d942f7879bf23cb9ec484e4ea19da5a8",
+      "path": "app/(products)/[app]/api/events/anonymous-id.ts"
+    },
+    {
+      "hash": "b4cba47a5f7ede3d57168f81a7cf004291f79371",
+      "path": "app/(products)/[app]/api/events/route.ts"
+    },
+    {
+      "hash": "203a120af93cb50be265c13e729260a4aec98821",
+      "path": "app/(products)/[app]/api/generate/route.ts"
+    },
+    {
+      "hash": "4f23511b59e12f46182040c92ad3082dfd19c4ae",
+      "path": "app/(products)/[app]/checkout/_actions.ts"
+    },
+    {
+      "hash": "e668c639a40f7a9529b384c2819217cd7a4b2425",
+      "path": "app/(products)/[app]/checkout/_components/checkout-flow.tsx"
+    },
+    {
+      "hash": "abc5560f72cc72953509f188258c67d1e2b4a0fc",
+      "path": "app/(products)/[app]/checkout/_components/pack-summary.tsx"
+    },
+    {
+      "hash": "e21546fa2b904cbbc513343d31cc95530e6a89e0",
+      "path": "app/(products)/[app]/checkout/_components/purchase-confirmation.tsx"
+    },
+    {
+      "hash": "b7775befd6ab7a7edf74a3305324d7198ebf20eb",
+      "path": "app/(products)/[app]/checkout/_components/test-card-fields.tsx"
+    },
+    {
+      "hash": "83da1f2c95f6417b3109fe940d9aa19e9aa5b3b2",
+      "path": "app/(products)/[app]/checkout/[packId]/_components/checkout-skeleton.tsx"
+    },
+    {
+      "hash": "690605eb43f332ac9baa5baeb60e6a26819ae17a",
+      "path": "app/(products)/[app]/checkout/[packId]/page.tsx"
+    },
+    {
+      "hash": "73b8de6e728dc42f5635b2e437151bd7eb5ca1d9",
+      "path": "app/(products)/[app]/history/_components/history-list.tsx"
+    },
+    {
+      "hash": "750e989a2cb4b1c434d4d66c09fc9e5959c9b26f",
+      "path": "app/(products)/[app]/history/_components/history-skeleton.tsx"
+    },
+    {
+      "hash": "c564c959ba801a0609b75adedb636701344b6113",
+      "path": "app/(products)/[app]/history/_lib/summarize.ts"
+    },
+    {
+      "hash": "bce23e1a5c75468932629bd3b72b1cef7deaa6bc",
+      "path": "app/(products)/[app]/history/page.tsx"
+    },
+    {
+      "hash": "b8aaa98410436e87443b78941ea2d147ec908624",
+      "path": "app/(products)/[app]/icon.tsx"
+    },
+    {
+      "hash": "662bcf2bf84fd5b7551153c2bc2ca583ca082b36",
+      "path": "app/(products)/[app]/layout.tsx"
+    },
+    {
+      "hash": "4d4f2d6d27218c632f111e14dd2e881995a971c0",
+      "path": "app/(products)/[app]/not-found.tsx"
+    },
+    {
+      "hash": "5883150c90a76c6e6627dbd770a74ac23f13eaa2",
+      "path": "app/(products)/[app]/opengraph-image.tsx"
+    },
+    {
+      "hash": "19e8480514c31dc491254efe421a95f3df10f936",
+      "path": "app/(products)/[app]/page.tsx"
+    },
+    {
+      "hash": "a0988da60ec4f56f3871dbbf23c0dfed97ac22c5",
+      "path": "app/(products)/[app]/pricing/_components/pricing-content.tsx"
+    },
+    {
+      "hash": "ca31185ec2f96851e5408e84099d820d19de337e",
+      "path": "app/(products)/[app]/pricing/page.tsx"
+    },
+    {
+      "hash": "1abe83e1d02132b8ecf64606a4616ce485d66f39",
+      "path": "app/(products)/[app]/signup/_actions.ts"
+    },
+    {
+      "hash": "2f31168785f54d6eba48c9fb1012b7ea14bbb79d",
+      "path": "app/(products)/[app]/signup/_components/claim-cross-product-bonus.tsx"
+    },
+    {
+      "hash": "829846920ab88ff9d155cace65b2ba5411935880",
+      "path": "app/(products)/[app]/signup/_components/cross-product-signup-bonus.tsx"
+    },
+    {
+      "hash": "73858d21d261c12451eed9266bcb064dbd491541",
+      "path": "app/(products)/[app]/signup/_components/signup-flow.tsx"
+    },
+    {
+      "hash": "fa1881fa44f60f11f1f5354513066f72cf178a83",
+      "path": "app/(products)/[app]/signup/_components/signup-panel.tsx"
+    },
+    {
+      "hash": "61442a33c313b575ba4f72abb03e036a6b9be165",
+      "path": "app/(products)/[app]/signup/_state.ts"
+    },
+    {
+      "hash": "60acca49f773c2d72fbaf5d04aaeaad7c6582f7d",
+      "path": "app/(products)/[app]/signup/complete/_actions.ts"
+    },
+    {
+      "hash": "0b5a4a99f349e553d57c9734222aae7eb518aef2",
+      "path": "app/(products)/[app]/signup/complete/_lib/claim.ts"
+    },
+    {
+      "hash": "2b555955f2858695ae5e2db5b48c877090322b48",
+      "path": "app/(products)/[app]/signup/complete/route.ts"
+    },
+    {
+      "hash": "ec3fbc09142be5ae6c2484e9135aa2e6215703b9",
+      "path": "app/(products)/[app]/signup/page.tsx"
+    },
+    {
+      "hash": "62b512db1d0356d29b839ff3ff9c76dfe9d48613",
+      "path": "app/(products)/[app]/tool/_components/read-ui-message-stream.ts"
+    },
+    {
+      "hash": "c8ebc0ccff01b1402b6f3d1d5d634b515a045331",
+      "path": "app/(products)/[app]/tool/_components/tool-form.tsx"
+    },
+    {
+      "hash": "5725522524c2ccb1364900287e37d69ed8f18bc6",
+      "path": "app/(products)/[app]/tool/_lib/tool-input-schema.ts"
+    },
+    {
+      "hash": "980c061172718f93849ebd13d8ac6b64fd0b2977",
+      "path": "app/(products)/[app]/tool/page.tsx"
+    },
+    {
+      "hash": "c686b8c793b23807ddbdb819f552d42889941aa5",
+      "path": "app/(products)/not-found.tsx"
+    },
+    {
+      "hash": "83ab371a718cdba9d896fef07253deacc13a1350",
+      "path": "app/api/auth/[...all]/route.ts"
+    },
+    {
+      "hash": "d3205707adb81a83b9ce3be611f335ab58f13d2e",
+      "path": "app/globals.css"
+    },
+    {
+      "hash": "2cf95184636d4f71bee08af477ecaf7cb88b076c",
+      "path": "app/robots.ts"
+    },
+    {
+      "hash": "bca1819ac101b64a36160a0b62cc7d15abbf5e08",
+      "path": "app/sitemap.ts"
+    },
+    {
+      "hash": "008c22847791c8ce2fe0066a4f0329a40885227e",
+      "path": "fixtures/bio-instagram.config.json"
+    },
+    {
+      "hash": "d96044ac913461ffa204cd9c395ff1edffc4a49f",
+      "path": "fixtures/bio-instagram.json"
+    },
+    {
+      "hash": "7fdd8b42207d8ed565fedabc717c2365924668e4",
+      "path": "fixtures/descri-pro.config.json"
+    },
+    {
+      "hash": "b8f2de15b77ed26229e4d607e9a8d0d11fbd9520",
+      "path": "fixtures/descri-pro.json"
+    },
+    {
+      "hash": "f26591bca6765bd2ca09974fb76f212dfa24f0e4",
+      "path": "fixtures/lettre-pro.config.json"
+    },
+    {
+      "hash": "dff33994846b446e2fdf2f4c773dcbe81d671ad9",
+      "path": "fixtures/lettre-pro.json"
+    },
+    {
+      "hash": "1797cb2748c757100138293a336624175fd4dc22",
+      "path": "fixtures/nom-de-marque.config.json"
+    },
+    {
+      "hash": "3f534d629633621fbecccb93b1a5ea0020eb62f9",
+      "path": "fixtures/nom-de-marque.json"
+    },
+    {
+      "hash": "82d6dea4cd4598d3e649c5b17ddaa64de13ec309",
+      "path": "lib/ai/generate.ts"
+    },
+    {
+      "hash": "d593e8bab118e134d24e53fdec5b98d5f3b99411",
+      "path": "lib/ai/model.ts"
+    },
+    {
+      "hash": "c75933e8d96ad4f7e6ec6b10196bf40043520857",
+      "path": "lib/ai/prompt.ts"
+    },
+    {
+      "hash": "876808e45e4be30603abd3b352ce7eac7eb8c6ac",
+      "path": "lib/auth-client.ts"
+    },
+    {
+      "hash": "dc446c655af6adb7885b84b87d537588959dd42b",
+      "path": "lib/auth.ts"
+    },
+    {
+      "hash": "bc48f43825fefd20a506ec993c89fc5153bd0702",
+      "path": "lib/dal/account.ts"
+    },
+    {
+      "hash": "0175758dc8833adb9b5235f0961898f3f31e9781",
+      "path": "lib/dal/activity.ts"
+    },
+    {
+      "hash": "3758c96091ff83aa76207eda61791a121d58e0cc",
+      "path": "lib/dal/credits.ts"
+    },
+    {
+      "hash": "4943f719790e997073d5b1b507d824de466fc246",
+      "path": "lib/dal/events.ts"
+    },
+    {
+      "hash": "30f9f0e4aae69fafa06ec10c1f297d273f617a2a",
+      "path": "lib/dal/generations.ts"
+    },
+    {
+      "hash": "3aa36ba02cedd480d4eec308916b655c5099887b",
+      "path": "lib/dal/history.ts"
+    },
+    {
+      "hash": "f95f6faa6111fc2fb5785647c468732d9b43ee9b",
+      "path": "lib/dal/magic-link.ts"
+    },
+    {
+      "hash": "c24e2cc849172923d72e57b3bd8aa594c2cc51e2",
+      "path": "lib/dal/metrics.ts"
+    },
+    {
+      "hash": "0d3ea2fd1b37fd6a51b8e7eab6ba2e39983b99d8",
+      "path": "lib/dal/product-editor.ts"
+    },
+    {
+      "hash": "0e21485ed29c6f597c55033fa333f53dc9665cd6",
+      "path": "lib/dal/product-status.ts"
+    },
+    {
+      "hash": "10c85d45b6653cb8abf9444481f5247b5c47cb91",
+      "path": "lib/dal/products.ts"
+    },
+    {
+      "hash": "c54b7d3aa244409d7797f32f5f8ed42b182523fd",
+      "path": "lib/dal/session.ts"
+    },
+    {
+      "hash": "6a06895c29d75da1ba1516293393131d328ef32c",
+      "path": "lib/dal/themes.ts"
+    },
+    {
+      "hash": "eaf0d1083f7ef3c3211dbe4e975f1fa55f55d77b",
+      "path": "lib/dal/thresholds.ts"
+    },
+    {
+      "hash": "b6c6f49a0530548114dd319e2721840f3dc249d4",
+      "path": "lib/db/auth-schema.ts"
+    },
+    {
+      "hash": "c0968bb6a9b17f4b75cd0d0fbe9563984f08b40b",
+      "path": "lib/db/index.ts"
+    },
+    {
+      "hash": "60c20b3be7c75fee11a7ab1f705a251c77c6939f",
+      "path": "lib/db/schema.ts"
+    },
+    {
+      "hash": "a927576a2d0eb20422afac85a3cc353b0ffcda2a",
+      "path": "lib/db/test-transaction.ts"
+    },
+    {
+      "hash": "7e9fd6b57d4a069c53ee9f296225f62cdcc44c1b",
+      "path": "lib/decision.ts"
+    },
+    {
+      "hash": "c6b770d5ae6dd094a353d905a7f140e3e3d09e45",
+      "path": "lib/env.ts"
+    },
+    {
+      "hash": "ebd33171232e3873e389c655043e66fce7954769",
+      "path": "lib/fonts.ts"
+    },
+    {
+      "hash": "13e4895491f5e4d4ee780da21d0a534eb574deac",
+      "path": "lib/rate-limit.ts"
+    },
+    {
+      "hash": "2a74bf5df36aab308f760c54bfa627fd983a9798",
+      "path": "lib/require-database-url.ts"
+    },
+    {
+      "hash": "dd4f4a4ab07679669feb5858814d8baf42a790c3",
+      "path": "lib/schemas/admin-login.ts"
+    },
+    {
+      "hash": "cf158d1397825fb68ba26a708e9eb83ce65c7e15",
+      "path": "lib/schemas/event-type.ts"
+    },
+    {
+      "hash": "56f3787a3fda93181fac4aa4baf1c7ae484f7609",
+      "path": "lib/schemas/inputs.ts"
+    },
+    {
+      "hash": "8a5675bbf8963bdb61f065be50b9a1f50f071800",
+      "path": "lib/schemas/pack.ts"
+    },
+    {
+      "hash": "f5c1431cae95459caf129f25e92014f3c47cc31d",
+      "path": "lib/schemas/product-config.ts"
+    },
+    {
+      "hash": "d3c706146bd0619c90b579755f3ecc3d4e2409d4",
+      "path": "lib/schemas/theme-tokens.ts"
+    },
+    {
+      "hash": "ac990a4e39f35440d349f5e46cbac17d3d71c28b",
+      "path": "lib/security.ts"
+    },
+    {
+      "hash": "efc0604c65b3d703c5f408d10fa4bbc7251e08b4",
+      "path": "messages/en/account.json"
+    },
+    {
+      "hash": "ef50ace63d4eb37392bb3004bb4e55a2091934c3",
+      "path": "messages/en/auth.json"
+    },
+    {
+      "hash": "1d8ff0aa4720a14608cb1b5d6fca4b7dc30356eb",
+      "path": "messages/en/checkout.json"
+    },
+    {
+      "hash": "be9bbaf925726add38d3ce64700a43db0064786c",
+      "path": "messages/en/common.json"
+    },
+    {
+      "hash": "08514cfdc1ac3a92162774ec915ed0d279efbf7a",
+      "path": "messages/en/history.json"
+    },
+    {
+      "hash": "8c4bc4a85309c7a666c513033a0a8e5f83405066",
+      "path": "messages/en/landing.json"
+    },
+    {
+      "hash": "ca43cac4a545fc1e877f93d1ae9a9b6cff610a00",
+      "path": "messages/en/not-found.json"
+    },
+    {
+      "hash": "e98c58a33ba59eaa92fbfa76c3ae8cce8e88266b",
+      "path": "messages/en/pricing.json"
+    },
+    {
+      "hash": "6ef490cafdf38f4d911250281c96c454d8b92525",
+      "path": "messages/en/tool.json"
+    },
+    {
+      "hash": "087e0952658258564bee3a3ad482fa69eff28722",
+      "path": "messages/fr/account.json"
+    },
+    {
+      "hash": "57f912937eabb2c1389f88a6bdc0699894be37b4",
+      "path": "messages/fr/auth.json"
+    },
+    {
+      "hash": "6f5dc0df8d520e6fff2a6d290c10b2f2e63e3534",
+      "path": "messages/fr/checkout.json"
+    },
+    {
+      "hash": "5ccab06c040732ddf73f6399a6824e4411a81412",
+      "path": "messages/fr/common.json"
+    },
+    {
+      "hash": "e270be083b00ed753d6fa69c49dd22f037296d98",
+      "path": "messages/fr/history.json"
+    },
+    {
+      "hash": "d9f6d27ef24e508f035be89cca2d9acb6620b5dc",
+      "path": "messages/fr/landing.json"
+    },
+    {
+      "hash": "557f1a8465d24a520bf4df119bdb8818206d4dcc",
+      "path": "messages/fr/not-found.json"
+    },
+    {
+      "hash": "06c1e059aa098811afd8598e520c120a633c0bac",
+      "path": "messages/fr/pricing.json"
+    },
+    {
+      "hash": "f91f76290343eb5b9b99840871dca02775688d12",
+      "path": "messages/fr/tool.json"
+    },
+    {
+      "hash": "716139b6b5f4a38098254a421fce8b0b3b0c87bc",
+      "path": "messages/manifest.ts"
+    },
+    {
+      "hash": "1769e8f1069a10a38812fc5fcad6e0c2b447cff8",
+      "path": "proxy.ts"
+    }
+  ]
+}

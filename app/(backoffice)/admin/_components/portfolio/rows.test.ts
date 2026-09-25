@@ -60,14 +60,20 @@ describe("toPortfolioRows", () => {
     expect(row.display.conversion).toContain("%");
     expect(row.display.revenue).toContain("€");
     expect(row.display.aiCost).toContain("€");
-    expect(row.display.margin).toContain("€");
+    expect(row.display.margin).toContain("%");
   });
 
-  it("shows an em dash for a null conversion or margin", () => {
-    const rows = toPortfolioRows(
-      metrics(product({ productId: "p1", signupToPurchaseRate: null, marginPerGenerationMicros: null })),
-      { p1: DEFAULT_THRESHOLDS },
-    );
+  it("shows the 30-day margin, (revenue − AI cost) / revenue, not the per-generation margin", () => {
+    // 24,70 € of revenue, 0,08 $ of AI cost (1:1): (24.70 − 0.08) / 24.70 ≈ 99,7 %.
+    const rows = toPortfolioRows(metrics(product({ productId: "p1" })), { p1: DEFAULT_THRESHOLDS });
+    expect(rows[0]!.marginRate).toBeCloseTo((24_700_000 - 80_000) / 24_700_000);
+    expect(rows[0]!.display.margin).toBe("99,7\u00a0%");
+  });
+
+  it("shows an em dash for a null conversion or a margin without revenue", () => {
+    const rows = toPortfolioRows(metrics(product({ productId: "p1", signupToPurchaseRate: null, revenueCents: 0 })), {
+      p1: DEFAULT_THRESHOLDS,
+    });
     const row = rows[0]!;
     expect(row.display.conversion).toBe("—");
     expect(row.display.margin).toBe("—");

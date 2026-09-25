@@ -14,7 +14,13 @@ export function PricingContent({ slug, pricing }: { slug: string; pricing: Produ
   const format = useFormatter();
 
   return (
-    <div className="grid gap-6">
+    // QA1-P1-B3 (.claude/plans/QA1-P1-B3.plan.md, step 4): the marker
+    // CheckoutFlow looks for (main [data-slot="pricing-content"]) to tell
+    // whether the checkout modal sits over the full /pricing page — the one
+    // background where a router refresh mid-modal reproduces B3 (see
+    // checkout-flow.tsx). Present only when this component renders inside
+    // the layout's <main>, i.e. the full page, not the (.)pricing modal.
+    <div data-slot="pricing-content" className="grid gap-6">
       <p className="text-muted-foreground">{t("subtitle")}</p>
       <div className="grid gap-4">
         {pricing.packs.map((pack) => (

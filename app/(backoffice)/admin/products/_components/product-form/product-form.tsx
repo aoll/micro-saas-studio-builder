@@ -5,6 +5,7 @@ import { Activity, useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Theme } from "@/lib/dal/themes";
+import type { ProductConfig } from "@/lib/schemas/product-config";
 import { Button } from "@/components/ui/button";
 import {
   checkSlug,
@@ -17,9 +18,10 @@ import {
   uploadLogo,
 } from "../../_actions";
 import { FieldsStep } from "./fields-step";
-import { toConfig, type ProductDraft } from "./form-values";
+import { fromConfig, toConfig, type ProductDraft } from "./form-values";
 import { GenerationStep, type GenerationPatch } from "./generation-step";
 import { IdentityStep, type IdentityPatch } from "./identity-step";
+import { ImportConfigPanel } from "./import-config-panel";
 import { LandingPreview } from "./landing-preview";
 import { LandingStep } from "./landing-step";
 import { estimateMargins } from "./margin";
@@ -47,7 +49,13 @@ function stepPatch(step: number, draft: ProductDraft) {
     case 4:
       return { inputs: toConfig(draft).inputs };
     case 5:
-      return { generation: draft.generation };
+      // B-N1 (.claude/qa/reports/2026-09-25-full-3.md): the cross-field
+      // {{variable}} check lives in `productConfigSchema`'s `.superRefine`,
+      // which compares the template to `inputs` — so this step's patch must
+      // carry the draft's own step-4 inputs, or `validateStep` falls back to
+      // `VALID_BASELINE`'s single example field ("sujet") and flags every
+      // real variable as unmatched.
+      return { generation: draft.generation, inputs: toConfig(draft).inputs };
     case 6:
       return { pricing: draft.pricing };
     default:
@@ -81,6 +89,11 @@ export function ProductForm({
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [banner, setBanner] = useState<string | undefined>(undefined);
+  // QA1-P2-S1 review (MEDIUM): true only while `handleNext`'s own
+  // `checkSlug` call (step 1, create mode) is in flight, so Suivant can be
+  // disabled for that one round trip and a second click during it is a
+  // no-op.
+  const [checkingSlug, setCheckingSlug] = useState(false);
   const [state, formAction, pending] = useActionState(saveProduct.bind(null, slug), initialState);
 
   // A create-mode publish creates the product on its first success: every
@@ -174,6 +187,28 @@ export function ProductForm({
     setDraft((current) => ({ ...current, ...patch }));
   }
 
+  // QA1-P1-M1's import panel (step 1, create mode only, plan decision 3):
+  // an imported slug is treated as explicit as a typed one, so it runs
+  // through the same availability check `handleIdentityChange` already
+  // does. A successful import and a validation-error import never both
+  // fire per click (ImportConfigPanel calls exactly one of onImport /
+  // onErrors), so there is no race between `setErrors({})` here and a
+  // `handleImportErrors` call from the same click.
+  function handleImport(config: ProductConfig) {
+    setDraft(fromConfig(config));
+    setSlugEdited(true);
+    setErrors({});
+    toast.success("Configuration importée");
+    checkSlug(config.slug).then((result) => {
+      if (!result.available) setErrors((current) => ({ ...current, slug: result.error ?? "Slug indisponible" }));
+    });
+  }
+
+  function handleImportErrors(patchErrors: Record<string, string>) {
+    setErrors((current) => ({ ...current, ...patchErrors }));
+    toast.error("Configuration importée avec des erreurs à corriger");
+  }
+
   function clearError(path: string) {
     setErrors((current) => {
       if (!(path in current)) return current;
@@ -189,10 +224,16 @@ export function ProductForm({
 
     if (mode === "create" && draftPatch.slug !== undefined) {
       const candidate = draftPatch.slug;
-      checkSlug(candidate).then((result) => {
-        if (result.available) clearError("slug");
-        else setErrors((current) => ({ ...current, slug: result.error ?? "Slug indisponible" }));
-      });
+      // Best-effort, live feedback while typing: a rejection here (network,
+      // expired session) is silently ignored rather than left unhandled —
+      // `handleNext`'s own, guarded check is the authoritative one that
+      // blocks Suivant and surfaces an error.
+      checkSlug(candidate)
+        .then((result) => {
+          if (result.available) clearError("slug");
+          else setErrors((current) => ({ ...current, slug: result.error ?? "Slug indisponible" }));
+        })
+        .catch(() => {});
     }
   }
 
@@ -210,11 +251,56 @@ export function ProductForm({
     return testPrompt(publishSlug, {}, data);
   }
 
-  function handleNext() {
+  // QA1-P2-S1 (specs/qa/QA1-P2-S1-slug-pris.md): `validateStep` only checks
+  // the slug's local format (`slugSchema`: kebab-case, not reserved) — a
+  // taken slug like "lettre-pro" is perfectly valid there, since only the
+  // database knows it's unavailable. `handleIdentityChange`'s own
+  // `checkSlug` call (fired on every keystroke) races this click: it may
+  // still be in flight, or its result may already be stale by the time the
+  // admin clicks. So leaving step 1 in create mode re-checks (and awaits)
+  // the slug's availability itself, instead of trusting whatever `errors`
+  // happens to hold at click time.
+  async function handleNext() {
+    if (checkingSlug) return; // a check is already in flight; the button is disabled too
     const stepErrors = validateStep(currentStep, stepPatch(currentStep, draft));
+    // QA1-P4-E1 (.claude/qa/reports/2026-09-25-creation-produit.md ›
+    // B-P4-1): drop every stale error that belongs to the current step
+    // before re-adding whatever `validateStep` still reports, so a fixed
+    // step never keeps showing an outdated message or red StepNav tab.
+    // Errors that belong to other steps (e.g. returned by the server on
+    // Enregistrer) are untouched.
+    setErrors((current) => {
+      const next: Record<string, string> = {};
+      for (const [path, message] of Object.entries(current)) {
+        if (stepOfPath(path.split(".")) !== currentStep) next[path] = message;
+      }
+      return { ...next, ...stepErrors };
+    });
     if (Object.keys(stepErrors).length > 0) {
-      setErrors((current) => ({ ...current, ...stepErrors }));
       return;
+    }
+    if (currentStep === 1 && mode === "create") {
+      setCheckingSlug(true);
+      try {
+        const result = await checkSlug(draft.slug);
+        if (!result.available) {
+          setErrors((current) => ({ ...current, slug: result.error ?? "Slug indisponible" }));
+          return;
+        }
+        clearError("slug");
+      } catch {
+        // `checkSlug` is a Server Action (a public POST endpoint): it can
+        // reject (network, an expired session inside `requireAdmin()`, a
+        // DB error). Never advance on an unknown availability, and leave an
+        // actionable message where the other slug errors show.
+        setErrors((current) => ({
+          ...current,
+          slug: "Impossible de vérifier la disponibilité du slug, réessayez.",
+        }));
+        return;
+      } finally {
+        setCheckingSlug(false);
+      }
     }
     setCurrentStep((step) => Math.min(step + 1, STEPS.length));
   }
@@ -267,14 +353,22 @@ export function ProductForm({
               Enregistrer
             </Button>
             {!isLastStep ? (
-              <Button type="button" onClick={handleNext}>
-                Suivant
+              <Button type="button" onClick={handleNext} disabled={checkingSlug}>
+                {checkingSlug ? "Vérification…" : "Suivant"}
               </Button>
             ) : null}
           </div>
         </div>
 
         <Activity mode={currentStep === 1 ? "visible" : "hidden"}>
+          {mode === "create" ? (
+            <ImportConfigPanel
+              themes={themes}
+              currentThemeId={draft.themeId}
+              onImport={handleImport}
+              onErrors={handleImportErrors}
+            />
+          ) : null}
           <IdentityStep
             mode={mode}
             name={draft.name}
@@ -315,7 +409,12 @@ export function ProductForm({
               onChange={(patch: GenerationPatch) => patchDraft({ generation: { ...draft.generation, ...patch } })}
             />
             <PromptTester
-              fields={draft.inputs.map((field) => ({ key: field.key, label: field.label, required: field.required }))}
+              fields={draft.inputs.map((field) => ({
+                id: field.id,
+                key: field.key,
+                label: field.label,
+                required: field.required,
+              }))}
               onTest={handleTestPrompt}
               onTested={setLastTest}
             />

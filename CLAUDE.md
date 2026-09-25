@@ -20,7 +20,7 @@ referenced from `AGENTS.md` (managed by `next dev`): trust it over memory.
 | `pnpm typecheck` | Full typecheck, queued: 4 slots per machine |
 | `pnpm test` / `pnpm test:coverage` | Full Vitest suite / with coverage, queued: 4 slots per machine |
 | `pnpm vitest run <file>` | One test file, direct: the TDD loop |
-| `pnpm test:e2e` | Playwright on `$E2E_PORT` (default 3100), E2E phase only, queued: 1 slot |
+| `pnpm test:e2e` | Playwright on `$E2E_PORT` (default 3100; slot n of the queue adds n - 1), E2E phase only, queued: 1 slot unless `/tmp/msb-queue/e2e.slots` says more |
 | `pnpm db:migrate` / `pnpm db:seed` | Apply migrations / seed the current database |
 | `pnpm tsx scripts/worktree.ts integration\|new\|rm\|list` | Integration branch of a run, parallel worktrees (`worktrees` skill) |
 | `pnpm tsx scripts/monitor.ts start\|stop\|status\|live` | Monitoring daemon (tunes slots and pool, logs events); `live` shows usage in real time |

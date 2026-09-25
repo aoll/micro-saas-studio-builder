@@ -33,7 +33,13 @@ export function GenerationStep({
   onChange,
 }: {
   generation: Generation;
-  inputs: { key: string }[];
+  // B-N2 (.claude/qa/reports/2026-09-25-full-3.md): a step-4 field's `key`
+  // can transiently duplicate another one's while the admin is editing it
+  // ("Clé déjà utilisée" blocks the step, but the {{variable}} chip list
+  // below still renders meanwhile) — the client-only `id` (FieldDraft.id,
+  // form-values.ts) is used as the React key instead, since it never
+  // collides.
+  inputs: { id: string; key: string }[];
   errors: Record<string, string>;
   onChange: (patch: GenerationPatch) => void;
 }) {
@@ -54,6 +60,16 @@ export function GenerationStep({
 
   return (
     <div className="grid gap-4">
+      <div className="grid gap-1.5">
+        <Label htmlFor="generation-system-prompt">Prompt système</Label>
+        <Textarea
+          id="generation-system-prompt"
+          rows={3}
+          value={generation.systemPrompt ?? ""}
+          onChange={(event) => onChange({ systemPrompt: event.target.value })}
+        />
+      </div>
+
       <div className="grid gap-1.5">
         <Label htmlFor="generation-model">Modèle</Label>
         <select
@@ -76,7 +92,7 @@ export function GenerationStep({
           <div className="flex flex-wrap gap-1.5">
             {inputs.map((input) => (
               <button
-                key={input.key}
+                key={input.id}
                 type="button"
                 className="rounded-full border px-2 py-0.5 text-xs hover:bg-muted"
                 onClick={() => insertChip(input.key)}

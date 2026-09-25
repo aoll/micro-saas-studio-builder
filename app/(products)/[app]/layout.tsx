@@ -18,6 +18,7 @@ import { ProductFooter } from "@/components/product/product-footer";
 import { ProductHeader } from "@/components/product/product-header";
 import { themeCssVars } from "@/components/product/theme-vars";
 import { Toaster } from "@/components/ui/sonner";
+import { CrossProductSignupBonus } from "./signup/_components/cross-product-signup-bonus";
 
 // A root param needs at least one value under Cache Components (docs/04-nextjs.md).
 export async function generateStaticParams() {
@@ -110,6 +111,16 @@ export default async function ProductLayout({ children, modal }: LayoutProps<"/[
             <ProductFooter name={product.name} />
             {modal}
             <Toaster />
+            {/* QA1-P1-Q2 (specs/qa/QA1-P1-Q2-inscription-par-produit.md):
+                a session already connected on another product gets this
+                product's signup bonus once, on any page it lands on.
+                Its own <Suspense> (same pattern as HeaderBalance above)
+                keeps the statically pre-rendered landing shell unaffected:
+                it never mounts for an anonymous visitor (the gate itself
+                returns null before the client leaf mounts). */}
+            <Suspense fallback={null}>
+              <CrossProductSignupBonus slug={product.slug} />
+            </Suspense>
           </BalanceProvider>
         </NextIntlClientProvider>
       </body>

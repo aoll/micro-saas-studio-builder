@@ -102,10 +102,18 @@ test.describe("BO-01 sidebar · /admin/ops stays unlisted", () => {
 });
 
 test.describe("DEMO-mode · /admin/ops is owner-only", () => {
-  test("the seeded admin (not owner) gets a 404, not the reset page", async ({ page }) => {
+  // Orchestrator decision, 2026-09-25 (specs/DEMO-mode.md, specs/qa/QA1-P1-B12-statut-http.md):
+  // a signed-in non-owner's HTTP status here stays 200, a Next 16.3 Cache
+  // Components limitation (notFound() thrown after streaming starts can't
+  // change the status already sent — docs/04-nextjs.md; the only place that
+  // could give a real status before rendering is proxy.ts, which never
+  // reads the role, by design). What's asserted instead: a French 404 page,
+  // nothing of the reset page.
+  test("the seeded admin (not owner) gets the French 404 content, not the reset page", async ({ page }) => {
     await signInAs(page, SEED_ADMIN);
-    const response = await page.goto("/admin/ops");
-    expect(response?.status()).toBe(404);
+    await page.goto("/admin/ops");
+    await expect(page.getByRole("heading", { name: "Page introuvable" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Opérations" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Réinitialiser la démo" })).toHaveCount(0);
   });
 

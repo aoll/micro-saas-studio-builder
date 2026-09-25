@@ -149,7 +149,7 @@ describe("purchase", () => {
     expect(purchaseCredits).not.toHaveBeenCalled();
   });
 
-  it("on the happy path, credits the ledger, tracks a purchase event, and refreshes", async () => {
+  it("on the happy path, credits the ledger, tracks a purchase event, and leaves the router refresh to the caller", async () => {
     currentUser("user-1");
     getProduct.mockResolvedValue(product);
     purchaseCredits.mockResolvedValue({ balance: 50 });
@@ -165,7 +165,7 @@ describe("purchase", () => {
       packId: "pack-50",
       idempotencyKey: key,
     });
-    expect(refresh).toHaveBeenCalledOnce();
+    expect(refresh).not.toHaveBeenCalled();
 
     await flushAfterCallbacks();
     expect(track).toHaveBeenCalledWith({

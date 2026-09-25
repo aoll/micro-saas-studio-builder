@@ -1,0 +1,191 @@
+{
+  "integration": "integration/qa1",
+  "base": "integration/v1",
+  "scenario": "full",
+  "passes": [
+    {
+      "n": 1,
+      "report": ".claude/qa/reports/2026-09-25-full.md",
+      "findings": 22,
+      "retained": 19
+    },
+    {
+      "n": 2,
+      "report": ".claude/qa/reports/2026-09-25-full-2.md",
+      "findings": 1,
+      "retained": 2
+    },
+    {
+      "n": 3,
+      "report": ".claude/qa/reports/2026-09-25-full-3.md",
+      "findings": 2,
+      "retained": 2,
+      "scope": "focused: BO-05a, BO-05b, DEMO-mode"
+    },
+    {
+      "n": 4,
+      "report": ".claude/qa/reports/2026-09-25-creation-produit.md",
+      "findings": 1,
+      "retained": 1,
+      "scope": "scenario creation-produit"
+    },
+    {
+      "n": 5,
+      "report": ".claude/qa/reports/2026-09-25-creation-produit-2.md",
+      "findings": 1,
+      "retained": 1,
+      "scope": "scenario creation-produit, recheck B-P4-1"
+    },
+    {
+      "n": 6,
+      "report": ".claude/qa/reports/2026-09-25-creation-produit-3.md",
+      "findings": 1,
+      "retained": 1,
+      "scope": "scenario creation-produit, recheck B-P5-1"
+    },
+    {
+      "n": 7,
+      "report": ".claude/qa/reports/2026-09-25-full-4.md",
+      "findings": 0,
+      "retained": 0,
+      "scope": "scenario full, complet, recheck of every fixed finding"
+    }
+  ],
+  "setAside": [
+    {
+      "finding": "Q1",
+      "report": ".claude/qa/reports/2026-09-25-full.md",
+      "reason": "première version d'un produit neuf = version en ligne ; la lecture brouillon toucherait le contrat de données"
+    },
+    {
+      "finding": "Q3",
+      "report": ".claude/qa/reports/2026-09-25-full.md",
+      "reason": "limite du mock : fixture par défaut pour un produit sans slug"
+    },
+    {
+      "finding": "Q4",
+      "report": ".claude/qa/reports/2026-09-25-full.md",
+      "reason": "pas un écart de l'app : scénario aligné sur BO-02 › 3"
+    }
+  ],
+  "specs": {
+    "QA1-P1-L1-lot-leger": {
+      "dependsOn": [],
+      "status": "merged",
+      "worktree": null,
+      "pr": 55,
+      "mode": "léger"
+    },
+    "QA1-P1-B3-paiement-pricing": {
+      "dependsOn": [],
+      "status": "merged",
+      "worktree": null,
+      "pr": 63
+    },
+    "QA1-P1-B4-visite-double": {
+      "dependsOn": [],
+      "status": "merged",
+      "worktree": null,
+      "pr": 61
+    },
+    "QA1-P1-B5-premiere-generation": {
+      "dependsOn": [],
+      "status": "merged",
+      "worktree": null,
+      "pr": 56
+    },
+    "QA1-P1-B12-statut-http": {
+      "dependsOn": [
+        "QA1-P1-B4-visite-double"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 66
+    },
+    "QA1-P1-B7-refus-402-activite": {
+      "dependsOn": [
+        "QA1-P1-B5-premiere-generation",
+        "QA1-P1-L1-lot-leger"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 58,
+      "note": "planning early to use free worktree slots; TDD starts once dependsOn are merged"
+    },
+    "QA1-P1-B14-cache-components": {
+      "dependsOn": [
+        "QA1-P1-B3-paiement-pricing"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 65
+    },
+    "QA1-P1-M1-config-complete": {
+      "dependsOn": [
+        "QA1-P1-L1-lot-leger"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 62
+    },
+    "QA1-P1-Q2-inscription-par-produit": {
+      "dependsOn": [
+        "QA1-P1-L1-lot-leger",
+        "QA1-P1-B4-visite-double"
+      ],
+      "status": "merged",
+      "worktree": null,
+      "pr": 64
+    },
+    "QA1-P1-Q5-funnel-personnes": {
+      "dependsOn": [],
+      "status": "merged",
+      "worktree": null,
+      "pr": 57,
+      "note": "B4/B5 dependency was semantic only (no shared file): dispatched early"
+    },
+    "QA1-P2-N1-ops-cache-components": {
+      "dependsOn": [],
+      "status": "merged",
+      "worktree": null,
+      "pr": 67,
+      "mode": "plan dans la spec (constat mineur)"
+    },
+    "QA1-P2-S1-slug-pris": {
+      "dependsOn": [],
+      "status": "merged",
+      "worktree": null,
+      "pr": 68,
+      "mode": "plan dans la spec (constat mineur)"
+    },
+    "QA1-P3-F1-formulaire-etapes-5-4": {
+      "dependsOn": [],
+      "status": "merged",
+      "worktree": null,
+      "pr": 70,
+      "mode": "plan dans la spec"
+    },
+    "QA1-P4-E1-erreurs-perimees": {
+      "dependsOn": [],
+      "status": "merged",
+      "worktree": null,
+      "pr": 71,
+      "mode": "plan dans la spec"
+    },
+    "QA1-P5-E2-messages-numeriques": {
+      "dependsOn": [],
+      "status": "merged",
+      "worktree": null,
+      "pr": 72,
+      "mode": "lot léger, plan dans la spec"
+    },
+    "QA1-P6-E3-erreurs-pricing": {
+      "dependsOn": [],
+      "status": "merged",
+      "worktree": null,
+      "pr": 73,
+      "mode": "lot léger, plan dans la spec"
+    }
+  },
+  "pendingIntegrations": []
+}

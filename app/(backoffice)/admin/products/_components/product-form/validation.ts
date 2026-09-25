@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import type { z } from "zod";
 import { productConfigSchema, type ProductConfig } from "@/lib/schemas/product-config";
 import { DEFAULT_GENERATION, DEFAULT_PRICING } from "./form-values";
@@ -40,7 +39,7 @@ const VALID_BASELINE: ProductConfig = {
   slug: "produit-exemple",
   name: "Produit exemple",
   status: "test",
-  themeId: randomUUID(),
+  themeId: crypto.randomUUID(),
   locale: "fr",
   branding: {},
   landing: {
@@ -80,6 +79,17 @@ export function toFrenchMessage(issue: z.core.$ZodIssue): string {
   if (issue.code === "too_small" && issue.origin === "string") {
     return issue.minimum === 1 ? "Ce champ est requis" : `${issue.minimum} caractères minimum`;
   }
+  // QA1-P5-E2: every bounded numeric field (`z.int().min(…)`, `.positive()`,
+  // a future `.max(…)`) reports a French message instead of Zod's raw
+  // "Too small: expected number to be >=…" — `inclusive` tells whether the
+  // reported bound itself is allowed (`.min`) or not (`.positive`).
+  if (issue.code === "too_small" && issue.origin === "number") {
+    return issue.inclusive ? `Minimum : ${issue.minimum}` : `Doit être supérieur à ${issue.minimum}`;
+  }
+  if (issue.code === "too_big" && issue.origin === "number") {
+    return issue.inclusive ? `Maximum : ${issue.maximum}` : `Doit être inférieur à ${issue.maximum}`;
+  }
+  if (issue.code === "invalid_type" && issue.expected === "int") return "Doit être un nombre entier";
   return FRENCH_MESSAGES[issue.message] ?? issue.message;
 }
 

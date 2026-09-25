@@ -67,7 +67,7 @@ l'étape 6 : n'en fais aucune qui n'y soit pas notée.
 2.1 KPIs du studio sur 30 jours : revenu, marge, coût IA, visites. [BO-02 › 1 · mockup BO-02]
 2.2 Tableau : statut, visites, conversion, revenu, coût IA, marge ; tri par colonne. [BO-02 › 2]
 2.3 Badges du seed : LettrePro « à scaler », NomDeMarque « à couper », DescriPro sans badge. [BO-02 › 5 · docs/01 › Script 1]
-2.4 Squelette de chargement visible au premier rendu (`admin/loading.tsx`). [BO-02 › 7]
+2.4 Squelette de chargement visible au premier rendu (le `<Suspense>` du portefeuille). [BO-02 › 7]
 
 ### 3. Création en direct de BioInsta (BO-05a, BO-05b)
 
@@ -112,7 +112,7 @@ Chaque chiffre de ce bloc se compare au journal (section « Journal des actions
 sur BioInsta ») : un écart est un BUG majeur (la donnée de décision est fausse),
 avec la ligne du journal et la valeur affichée.
 
-6.1 Portefeuille : BioInsta présent, statut Test, et ses colonnes **égales au journal** : visites, conversion (achats / visites, arrondi de l'écran), revenu, coût IA, marge (revenu − coût IA). Les KPIs du studio ont augmenté exactement de ces montants (noter les KPIs avant l'étape 3). [BO-02 › 1-2 · E2E-demo › 1 · docs/01 › Script 6]
+6.1 Portefeuille : BioInsta présent, statut Test, et ses colonnes **égales au journal** : visites, conversion (inscription → achat, BO-02 › 3 : acheteurs distincts / inscrits, arrondi de l'écran), revenu, coût IA, marge (revenu − coût IA). Les KPIs du studio ont augmenté exactement de ces montants (noter les KPIs avant l'étape 3). [BO-02 › 1-2 · E2E-demo › 1 · docs/01 › Script 6]
 6.2 Fiche `/admin/products/bio-instagram` : funnel en 5 étapes (visite → 1re génération → inscription → crédits épuisés → achat), chaque volume **égal au journal**, chaque taux de passage recalculé à la main ; KPIs revenu, ARPU (revenu / inscrits, docs/01 › Le funnel suivi par produit), coût IA, marge par génération recalculés depuis le journal ; courbes 30 j avec tout le volume sur le jour de la passe ; seuils ; lien vers `/bio-instagram`. [BO-03 › 1-3 · mockup BO-03 · docs/07 › events]
 6.3 Fiche LettrePro : encart de décision « à scaler » et ses chiffres ; les actions de 5.11 et 5.10.4 sur LettrePro s'ajoutent à ses volumes du seed (noter les volumes avant 5.11). [BO-03 › 3]
 6.4 Activité `/admin/products/bio-instagram/activity` : autant de générations que le journal (entrée, sortie, modèle, coût), l'achat (un seul malgré le double clic), les mouvements (bonus +3 une seule fois par inscrit, -1 par génération, achat, pas de second bonus à la reconnexion de 5.10.2) ; pagination ; état vide sur un produit sans usage. [BO-04 · mockup BO-04 · docs/07 › credit_transactions]

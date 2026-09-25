@@ -7,18 +7,14 @@ import { getProduct } from "@/lib/dal/products";
 import { slugSchema } from "@/lib/schemas/product-config";
 import { signupInputSchema } from "@/lib/schemas/inputs";
 import { guardRequest } from "@/lib/security";
+import type { SignupState } from "./_state";
 
 // SA-03 (specs/SA-03-inscription.md): the modal on the outil and the full
 // page (page.tsx, @modal/(.)signup/page.tsx) both submit to this one
 // action. `next/root-params` is unavailable in Server Actions
 // (docs/04-nextjs.md), so the slug is bound with `.bind(null, slug)` by the
-// caller, never read from form data.
-export type SignupState =
-  | { status: "idle" }
-  | { status: "error"; error: "invalid_email" | "rate_limited" | "bot" | "unexpected" }
-  | { status: "sent"; email: string; magicLinkUrl: string | null };
-
-export const initialSignupState: SignupState = { status: "idle" };
+// caller, never read from form data. Its state type and initial value live
+// in _state.ts: a "use server" file may only export async functions.
 
 // The outbox stores the full absolute URL (docs/08-stack.md's simulated
 // inbox); only the path and query are ever shown or followed client-side,

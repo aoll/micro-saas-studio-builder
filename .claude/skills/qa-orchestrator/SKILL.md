@@ -97,7 +97,7 @@ démarre tant qu'une spec de correction n'est pas mergée.
 ## 2. Phase de passe
 
 Un seul agent, en arrière-plan (`general-purpose`), dans le **checkout
-principal** (sur `integration/<run>`, port 3000, base `msb` re-seedée par la
+principal** (sur `integration/<run>`, port 3000, base de `.env.local` remise à l'état du seed par la
 skill) :
 
 > Invoque la skill `qa` avec scenario=`<scenario>`, mode=`<mode>`,
@@ -107,6 +107,13 @@ skill) :
 > range-les en « Recheck » avec le verdict TOUJOURS PRÉSENT (écarté). Rends le
 > chemin du rapport, le décompte, et la liste des constats (identifiant,
 > catégorie, sévérité, titre, référence, fichiers de la route).
+
+**Passe ciblée.** Tant qu'aucune baseline n'existe (le mode delta vaut alors
+une passe complète), une passe de recheck après quelques corrections locales
+peut être ciblée : le scénario ou les étapes des specs que ces corrections
+touchent, en mode `complet`, avec `recheck`. Note la portée dans `passes`
+(`scope`). La passe qui clôt le run est toujours `full`, en mode `complet`
+sans baseline.
 
 Attends sa notification (le heartbeat couvre l'attente). Un agent qui échoue
 ou rend un rapport incomplet (étapes manquantes, `NON TESTÉ` sans raison) est
@@ -138,6 +145,12 @@ une passe peut n'être voulue que pour information. L'humain répond par
 constat (corriger, écarter avec une raison, requalifier un « À qualifier »),
 ou en bloc (« tout », « tout sauf B4 »). Ensuite :
 
+- **délégation** : si l'humain autorise une catégorie de corrections sans
+  validation (ex. « n'attends pas ma confirmation pour cette catégorie »),
+  note-la dans la Décision avec sa portée exacte (typiquement : affichage,
+  traduction, garde locale, sans contrat gelé ni règle métier) ; les constats
+  suivants de cette catégorie partent sans attendre, présentés après coup. Tout
+  autre constat reste soumis à validation ;
 - ajoute au rapport la section « Décision » (format :
   `.claude/qa/reports/README.md`) ;
 - ajoute les constats écartés à `setAside`, avec la raison ;
@@ -170,6 +183,10 @@ Hors périmètre : les autres constats du rapport
   jamais un contournement du symptôme). Test Vitest au niveau le plus bas qui
   montre le bug ; un bug visible seulement dans un navigateur prend un test
   Playwright dans `e2e/` (`pnpm test:e2e <fichier>`).
+- **Chaîne entière** : l'acceptation d'un message, d'une erreur ou d'un
+  chiffre se vérifie là où l'utilisateur la voit, champ par champ, pas
+  seulement dans la fonction qui la produit (en qa1, une traduction corrigée
+  restait invisible sur quatre champs qui n'affichaient pas leur erreur).
 - **MANQUE** : l'acceptation vient de la spec d'origine ou du dossier, jamais
   du comportement observé.
 - **Regrouper** : deux constats de même cause racine ou du même composant font
@@ -177,6 +194,12 @@ Hors périmètre : les autres constats du rapport
   dont les `Périmètre` se recouvrent sans même cause : la seconde dépend de la
   première (`Dépend de`), pour qu'elles ne se croisent jamais dans le même
   fichier.
+- **Lot léger** : les constats légers (libellé, traduction, affichage d'une
+  erreur, garde locale, même composant ou même zone) peuvent former une seule
+  spec dont le champ `Plan` tient en quelques lignes : pas de `planner`, un
+  seul `tdd-guide` qui écrit quand même le test de repro d'abord. Un constat
+  qui demande de choisir une solution (cause racine incertaine, plusieurs
+  lectures du dossier, sécurité, crédits) garde le flux complet.
 - **Contrat gelé** (`lib/db/schema.ts`, `lib/schemas/**`, signature DAL) : la
   correction est une spec CONTRACT, présentée comme telle à l'humain à
   l'étape 3 ; sans son accord explicite sur ce point, le constat ne part pas.
@@ -200,6 +223,17 @@ gaps`), « Per-spec flow » (worktree, `planner`, `tdd-guide`, `/review`,
 - **Titre de PR** : `fix(<scope>): <REF> <résumé>` pour un BUG,
   `feat(<scope>): <REF> <résumé>` pour un MANQUE ; même corps, même squash
   merge dans `integration/<run>`.
+- **Agents** : lancés avec `model: "sonnet"` (passes QA, `planner`,
+  `tdd-guide`, relecteurs). Chaque brief rappelle les commandes en file :
+  `pnpm typecheck`, `pnpm test`, `pnpm check`, `pnpm test:e2e <fichier>`,
+  jamais `npx tsc`, `pnpm vitest run` sans fichier ni enveloppe `queued.sh`.
+- **E2E** : contrairement au run d'implémentation, une spec de correction
+  peut lancer et étendre les e2e de sa zone (`pnpm test:e2e <fichier>`) : un
+  constat QA est souvent visible seulement dans un navigateur. Les échecs e2e
+  sans rapport avec la spec restent pour la phase E2E.
+- **Revue** : pour un diff de lot léger très court (une fonction pure, un
+  affichage calqué sur un existant), tu peux faire la revue toi-même ; lis
+  alors l'acceptation champ par champ contre le diff (voir « Chaîne entière »).
 - **Un constat toujours présent** au recheck alors que sa spec est mergée est
   une spec bloquée : tu la reprends (section « A stuck spec »), sans redemander
   à l'humain, qui l'a déjà validée.

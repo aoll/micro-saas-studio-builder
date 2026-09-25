@@ -3,6 +3,7 @@ import { cleanup, render } from "@testing-library/react";
 import { fireEvent, screen, waitFor } from "@testing-library/dom";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it } from "vitest";
+import en from "@/messages/en/common.json";
 import fr from "@/messages/fr/common.json";
 import { BalanceBadge, BalanceBadgeSkeleton, BalanceProvider, useBalanceDelta } from "./balance";
 
@@ -53,6 +54,32 @@ describe("BalanceBadge / BalanceProvider", () => {
     fireEvent.click(screen.getByRole("button", { name: "apply" }));
     expect(screen.getByText("2 crédits")).toBeTruthy();
     await waitFor(() => expect(screen.getByText("3 crédits")).toBeTruthy());
+  });
+});
+
+describe("BalanceBadge at zero credits", () => {
+  it("never shows a negative balance when the optimistic -1 is applied at 0", async () => {
+    render(
+      <Wrapper>
+        <BalanceBadge balance={0} />
+        <DeltaButton delta={-1} />
+      </Wrapper>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "apply" }));
+    expect(screen.queryByText(/-1/)).toBeNull();
+    expect(screen.getByText("0 crédit")).toBeTruthy();
+    await waitFor(() => expect(screen.getByText("0 crédit")).toBeTruthy());
+  });
+
+  it("reads « 0 credits » in English", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={{ common: en }}>
+        <BalanceProvider>
+          <BalanceBadge balance={0} />
+        </BalanceProvider>
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByText("0 credits")).toBeTruthy();
   });
 });
 

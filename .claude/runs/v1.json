@@ -491,6 +491,10 @@
     {
       "for": "SECURITY",
       "note": "the raw Better Auth /api/auth/sign-in/magic-link endpoint is not behind guardRequest(\"signup\") (outbox only, Better Auth built-in 5/60 s limit)."
+    },
+    {
+      "for": "CONTRACT follow-up (human)",
+      "note": "purchases has no index at all: add (product_id, created_at) and (user_id, product_id, created_at); used by getPortfolioMetrics, getFunnel daily, SA-07 listPurchases. Flagged HIGH by the BO-03 database review as a pre-existing frozen-schema gap, not fixable in BO-03."
     }
   ]
 }

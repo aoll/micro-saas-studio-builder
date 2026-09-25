@@ -1,4 +1,6 @@
 import "server-only";
+import { env } from "@/lib/env";
+import { countRecentGenerations } from "@/lib/dal/generations";
 
 // A byte-for-byte copy (SECURITY plan, decision D4) of the private
 // `clientIp` in api/generate/route.ts: `X-Forwarded-For` is only as
@@ -13,4 +15,18 @@ export function clientIp(requestHeaders: Headers): string {
     if (first?.trim()) return first.trim();
   }
   return requestHeaders.get("x-real-ip") ?? "unknown";
+}
+
+export type RateLimitIdentity = { userId: string | null; ipHash: string };
+
+// Postgres rate limit (specs/SECURITY.md): N generations per 60 s, per
+// signed-in user and per ip_hash, N from lib/env.ts. Limited when either
+// count reaches N (decision D2). `countRecentGenerations` already counts
+// with a `>` window boundary on the database clock; the `>=` here (decision
+// D3) means the guard, called before `recordGeneration`, refuses the
+// (N+1)th request first — the Nth still gets through.
+export async function isGenerationRateLimited({ userId, ipHash }: RateLimitIdentity): Promise<boolean> {
+  const { byUser, byIp } = await countRecentGenerations({ userId, ipHash, windowSeconds: 60 });
+  const limit = env.GENERATION_RATE_LIMIT_PER_MINUTE;
+  return (userId !== null && byUser >= limit) || byIp >= limit;
 }

@@ -58,10 +58,9 @@ describe("TrackVisit", () => {
     rerender(<TrackVisit slug="bio-insta" />);
 
     expect(randomUUID).not.toHaveBeenCalled();
+    const calls = sendBeacon.mock.calls as [string, Blob][];
     const bodies = await Promise.all(
-      sendBeacon.mock.calls.map(
-        async ([, blob]: [string, Blob]) => JSON.parse(await blob.text()) as { anonymousId: string },
-      ),
+      calls.map(async ([, blob]) => JSON.parse(await blob.text()) as { anonymousId: string }),
     );
     expect(bodies).toHaveLength(2);
     expect(new Set(bodies.map((body) => body.anonymousId)).size).toBe(1);

@@ -343,7 +343,8 @@
       "spec": "SA-01-landing",
       "blockedOn": "SA-02-outil",
       "what": "drop the `/${slug}/tool` as Route casts in [app]/_components/landing/hero.tsx and landing-pricing.tsx once [app]/tool/page.tsx exists",
-      "resolved": false
+      "resolved": true,
+      "pr": 20
     },
     {
       "spec": "SA-04-tarifs",

@@ -397,7 +397,12 @@ export function ProductForm({
               onChange={(patch: GenerationPatch) => patchDraft({ generation: { ...draft.generation, ...patch } })}
             />
             <PromptTester
-              fields={draft.inputs.map((field) => ({ key: field.key, label: field.label, required: field.required }))}
+              fields={draft.inputs.map((field) => ({
+                id: field.id,
+                key: field.key,
+                label: field.label,
+                required: field.required,
+              }))}
               onTest={handleTestPrompt}
               onTested={setLastTest}
             />

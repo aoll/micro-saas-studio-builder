@@ -24,7 +24,11 @@ export function PromptTester({
   onTest,
   onTested,
 }: {
-  fields: { key: string; label: string; required: boolean }[];
+  // B-N2 (.claude/qa/reports/2026-09-25-full-3.md): same reasoning as
+  // generation-step.tsx — the client-only `id` (FieldDraft.id,
+  // form-values.ts) is the React key, not the editable `key`, which can
+  // transiently duplicate another field's while the admin is editing it.
+  fields: { id: string; key: string; label: string; required: boolean }[];
   onTest: (sample: Record<string, string>) => Promise<PromptTestResult>;
   onTested?: (result: PromptTestResult) => void;
 }) {
@@ -44,7 +48,7 @@ export function PromptTester({
   return (
     <div className="grid gap-3 rounded-md border p-3">
       {fields.map((field) => (
-        <div key={field.key} className="grid gap-1.5">
+        <div key={field.id} className="grid gap-1.5">
           <Label htmlFor={`prompt-tester-${field.key}`}>{field.label}</Label>
           <Input
             id={`prompt-tester-${field.key}`}

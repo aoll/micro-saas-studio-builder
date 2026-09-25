@@ -160,9 +160,9 @@
     },
     "QA1-P5-E2-messages-numeriques": {
       "dependsOn": [],
-      "status": "dispatched",
-      "worktree": "qa1-p5-e2-messages-numeriques",
-      "pr": null,
+      "status": "merged",
+      "worktree": null,
+      "pr": 72,
       "mode": "lot léger, plan dans la spec"
     }
   },

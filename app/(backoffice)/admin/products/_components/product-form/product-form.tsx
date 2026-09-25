@@ -263,8 +263,20 @@ export function ProductForm({
   async function handleNext() {
     if (checkingSlug) return; // a check is already in flight; the button is disabled too
     const stepErrors = validateStep(currentStep, stepPatch(currentStep, draft));
+    // QA1-P4-E1 (.claude/qa/reports/2026-09-25-creation-produit.md ›
+    // B-P4-1): drop every stale error that belongs to the current step
+    // before re-adding whatever `validateStep` still reports, so a fixed
+    // step never keeps showing an outdated message or red StepNav tab.
+    // Errors that belong to other steps (e.g. returned by the server on
+    // Enregistrer) are untouched.
+    setErrors((current) => {
+      const next: Record<string, string> = {};
+      for (const [path, message] of Object.entries(current)) {
+        if (stepOfPath(path.split(".")) !== currentStep) next[path] = message;
+      }
+      return { ...next, ...stepErrors };
+    });
     if (Object.keys(stepErrors).length > 0) {
-      setErrors((current) => ({ ...current, ...stepErrors }));
       return;
     }
     if (currentStep === 1 && mode === "create") {

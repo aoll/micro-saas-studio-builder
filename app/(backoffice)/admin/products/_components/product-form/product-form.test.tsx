@@ -314,6 +314,59 @@ describe("ProductForm · generation, pricing, publication", () => {
     expect(screen.getByRole("button", { name: /5\. Génération/ }).getAttribute("aria-current")).toBe("step");
   });
 
+  // QA1-P4-E1 (.claude/qa/reports/2026-09-25-creation-produit.md › B-P4-1):
+  // once Suivant validates step 5 again (the {{inconnu}} variable removed),
+  // revisiting step 5 through StepNav must show neither the stale error
+  // message nor a red tab — before the fix, `handleNext` only ever added to
+  // `errors`, never removed a step's own, now-fixed entries.
+  it("purges step 5's stale error and red tab once Suivant validates it again, after revisiting via StepNav", () => {
+    render(
+      <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
+    );
+    goToStep(5);
+    fireEvent.change(screen.getByLabelText("Template de prompt"), { target: { value: "Pour {{inconnu}}" } });
+    fireEvent.click(screen.getByRole("button", { name: "Suivant" }));
+    expect(screen.getByText("Variable {{inconnu}} sans champ correspondant")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /5\. Génération/ }).getAttribute("data-has-error")).toBe("true");
+
+    // Remove the unknown variable and go through Suivant once more: this is
+    // the fix from B-N1 (stepPatch(5) already compares against the draft's
+    // real inputs), so the step is now valid and advances.
+    fireEvent.change(screen.getByLabelText("Template de prompt"), {
+      target: { value: "Rédige une réponse claire et utile à partir des informations fournies." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Suivant" }));
+    expect(screen.getByRole("button", { name: /6\. Pricing/ }).getAttribute("aria-current")).toBe("step");
+
+    goToStep(5);
+    expect(screen.queryByText("Variable {{inconnu}} sans champ correspondant")).toBeNull();
+    expect(screen.getByRole("button", { name: /5\. Génération/ }).getAttribute("data-has-error")).toBeNull();
+  });
+
+  // QA1-P4-E1 acceptance bullet 2: a step's own errors are purged when
+  // Suivant validates it, but another step's errors (here one the server
+  // returned on Enregistrer) must survive an unrelated Suivant elsewhere,
+  // until that other step is itself corrected and revalidated.
+  it("keeps another step's error (from a server response) after Suivant validates a different step", async () => {
+    saveProduct.mockResolvedValue({ errors: { slug: "Ce slug est déjà utilisé" }, step: 1 });
+    render(
+      <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await screen.findByText("Ce slug est déjà utilisé");
+    expect(screen.getByRole("button", { name: /1\. Identité/ }).getAttribute("data-has-error")).toBe("true");
+
+    // Step 6's own fields are already valid (DEFAULT_PRICING): Suivant there
+    // must not touch step 1's still-unresolved slug error.
+    goToStep(6);
+    fireEvent.click(screen.getByRole("button", { name: "Suivant" }));
+    expect(screen.getByRole("button", { name: /7\. Récapitulatif/ }).getAttribute("aria-current")).toBe("step");
+
+    goToStep(1);
+    expect(screen.getByText("Ce slug est déjà utilisé")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /1\. Identité/ }).getAttribute("data-has-error")).toBe("true");
+  });
+
   it("a server error on step 6 (from Enregistrer) switches to the Pricing step", async () => {
     saveProduct.mockResolvedValue({ errors: { "pricing.costPerGeneration": "1 minimum" }, step: 6 });
     render(

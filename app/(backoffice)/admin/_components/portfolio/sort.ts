@@ -23,7 +23,7 @@ function valueFor(row: PortfolioRow, column: SortColumn): number | null {
     case "aiCost":
       return row.aiCostMicros;
     case "margin":
-      return row.marginPerGenerationMicros;
+      return row.marginRate;
   }
 }
 

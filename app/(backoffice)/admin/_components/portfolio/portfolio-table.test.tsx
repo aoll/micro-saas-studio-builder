@@ -18,8 +18,8 @@ function row(overrides: Partial<PortfolioRow> = {}): PortfolioRow {
     signupToPurchaseRate: 0.07,
     revenueCents: 2470,
     aiCostMicros: 80000,
-    marginPerGenerationMicros: 1000,
-    display: { visits: "1 200", conversion: "7 %", revenue: "24,70 €", aiCost: "0,08 €", margin: "0,00 €" },
+    marginRate: 0.99,
+    display: { visits: "1 200", conversion: "7 %", revenue: "24,70 €", aiCost: "0,08 €", margin: "99 %" },
     ...overrides,
   };
 }
@@ -28,6 +28,15 @@ describe("PortfolioTable", () => {
   it("shows the product count in its caption", () => {
     render(<PortfolioTable rows={[row(), row({ productId: "p2", slug: "descri-pro", name: "DescriPro" })]} />);
     expect(screen.getByText("Produits (2)")).toBeTruthy();
+  });
+
+  it("puts the product first, under a « Produit » header, with its slug", () => {
+    render(<PortfolioTable rows={[row()]} />);
+    const headers = screen.getAllByRole("columnheader");
+    expect(headers[0]!.textContent).toBe("Produit");
+    const firstCell = screen.getAllByRole("cell")[0]!;
+    expect(firstCell.textContent).toContain("LettrePro");
+    expect(firstCell.textContent).toContain("/lettre-pro");
   });
 
   it("renders the 6 sortable column headers", () => {

@@ -72,7 +72,7 @@ export function ToolForm({
         });
 
         if (response.status === 402) {
-          router.push(`/${slug}/pricing` as Route);
+          router.push(`/${slug}/pricing`);
           return;
         }
         if (response.status === 401) {

@@ -10,6 +10,10 @@ const MICROS_PER_CENT = 10_000;
 // `costPerGeneration` credits; a pack's revenue per credit is its price
 // spread evenly over its credits.
 export function revenuePerGenerationMicros(pack: Pack, costPerGeneration: number): number {
+  // QA1-P6-E3 (B-P6-1): a pack still mid-edit can carry 0 (or negative)
+  // credits before the form blocks "Suivant" on it; dividing by zero would
+  // otherwise produce Infinity, shown as "$Infinity" in the margin panel.
+  if (pack.credits <= 0) return NaN;
   const revenuePerCreditMicros = (pack.priceCents * MICROS_PER_CENT) / pack.credits;
   return revenuePerCreditMicros * costPerGeneration;
 }

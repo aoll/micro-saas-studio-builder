@@ -20,6 +20,13 @@ describe("revenuePerGenerationMicros", () => {
   it("a 50-credit pack at 14.90€: 298 000 micros per credit", () => {
     expect(revenuePerGenerationMicros(pack50, 1)).toBe(298_000);
   });
+
+  // QA1-P6-E3 (B-P6-1): a pack with 0 credits divided the price by zero,
+  // producing Infinity and, downstream, "$Infinity" in the UI.
+  it("is NaN for a pack with 0 credits, instead of Infinity", () => {
+    const zeroCreditPack: Pack = { id: "pack-0", credits: 0, priceCents: 490 };
+    expect(Number.isNaN(revenuePerGenerationMicros(zeroCreditPack, 1))).toBe(true);
+  });
 });
 
 describe("estimateMargins", () => {
@@ -36,6 +43,12 @@ describe("estimateMargins", () => {
   it("one entry per pack, in the given order", () => {
     const margins = estimateMargins([pack10, pack50], 1, 4_000);
     expect(margins.map((margin) => margin.packId)).toEqual(["pack-10", "pack-50"]);
+  });
+
+  it("is NaN for a pack with 0 credits, instead of Infinity", () => {
+    const zeroCreditPack: Pack = { id: "pack-0", credits: 0, priceCents: 490 };
+    const margins = estimateMargins([zeroCreditPack], 1, 4_000);
+    expect(Number.isNaN(margins[0]!.marginMicros)).toBe(true);
   });
 });
 

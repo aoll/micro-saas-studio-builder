@@ -110,4 +110,50 @@ describe("PricingStep", () => {
     setup({ errors: { "pricing.packs.0.id": "Identifiant de pack déjà utilisé" } });
     expect(screen.getByText("Identifiant de pack déjà utilisé")).toBeTruthy();
   });
+
+  // QA1-P6-E3 (B-P6-1): four numeric paths of step 6 produced a French
+  // message in `validation.ts` but were never wired to an `errors[…]` lookup
+  // in this component, so the admin saw no message and no `aria-invalid`
+  // while "Suivant" stayed blocked.
+  it("shows the free credits on signup error message, with aria-invalid", () => {
+    setup({ errors: { "pricing.freeCreditsOnSignup": "Minimum : 0" } });
+    expect(screen.getByText("Minimum : 0")).toBeTruthy();
+    expect(screen.getByLabelText("Crédits offerts à l'inscription").getAttribute("aria-invalid")).toBe("true");
+  });
+
+  it("shows the anonymous free generations error message, with aria-invalid", () => {
+    setup({ errors: { "pricing.anonymousFreeGenerations": "Minimum : 0" } });
+    expect(screen.getByText("Minimum : 0")).toBeTruthy();
+    expect(screen.getByLabelText("Générations anonymes gratuites").getAttribute("aria-invalid")).toBe("true");
+  });
+
+  it("shows a pack credits error message, with aria-invalid", () => {
+    setup({ errors: { "pricing.packs.0.credits": "Doit être supérieur à 0" } });
+    expect(screen.getByText("Doit être supérieur à 0")).toBeTruthy();
+    expect(screen.getByLabelText("Crédits", { selector: "#pricing-pack-credits-0" }).getAttribute("aria-invalid")).toBe(
+      "true",
+    );
+  });
+
+  it("shows a pack price error message, with aria-invalid", () => {
+    setup({ errors: { "pricing.packs.0.priceCents": "Doit être supérieur à 0" } });
+    expect(screen.getByText("Doit être supérieur à 0")).toBeTruthy();
+    expect(screen.getByLabelText("Prix (€)", { selector: "#pricing-pack-price-0" }).getAttribute("aria-invalid")).toBe(
+      "true",
+    );
+  });
+
+  // QA1-P6-E3: a pack with 0 credits divides by zero in `revenuePerGenerationMicros`.
+  // The margin must show "—" instead of "$Infinity" or "$NaN".
+  it("shows — for the margin of a pack with 0 credits, instead of $Infinity or NaN", () => {
+    const zeroCreditPacks: ProductConfig["pricing"]["packs"] = [{ id: "pack-0", credits: 0, priceCents: 490 }];
+    setup({
+      pricing: { ...pricing, packs: zeroCreditPacks },
+      margins: estimateMargins(zeroCreditPacks, pricing.costPerGeneration, 4_000),
+    });
+    const marginText = screen.getByTestId("pack-margin");
+    expect(marginText.textContent).not.toContain("Infinity");
+    expect(marginText.textContent).not.toContain("NaN");
+    expect(marginText.textContent).toContain("—");
+  });
 });

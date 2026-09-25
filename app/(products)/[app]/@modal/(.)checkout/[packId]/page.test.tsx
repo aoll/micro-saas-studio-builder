@@ -62,7 +62,7 @@ const product: Product = {
 };
 
 function ctx(packId = "pack-50") {
-  return { params: Promise.resolve({ app: "bio-insta", packId }) };
+  return { params: Promise.resolve({ app: "bio-insta", packId }), searchParams: Promise.resolve({}) };
 }
 
 describe("@modal/(.)checkout/[packId] page", () => {

@@ -67,7 +67,7 @@ l'étape 6 : n'en fais aucune qui n'y soit pas notée.
 2.1 KPIs du studio sur 30 jours : revenu, marge, coût IA, visites. [BO-02 › 1 · mockup BO-02]
 2.2 Tableau : statut, visites, conversion, revenu, coût IA, marge ; tri par colonne. [BO-02 › 2]
 2.3 Badges du seed : LettrePro « à scaler », NomDeMarque « à couper », DescriPro sans badge. [BO-02 › 5 · docs/01 › Script 1]
-2.4 Squelette de chargement visible au premier rendu (`admin/loading.tsx`). [BO-02 › 7]
+2.4 Squelette de chargement visible au premier rendu (le `<Suspense>` du portefeuille). [BO-02 › 7]
 
 ### 3. Création en direct de BioInsta (BO-05a, BO-05b)
 

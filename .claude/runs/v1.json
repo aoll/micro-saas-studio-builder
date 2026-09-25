@@ -177,9 +177,9 @@
         "CONTRACT-ui",
         "BO-05a-formulaire"
       ],
-      "status": "dispatched",
-      "worktree": "bo-07-themes",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 21
     },
     "DEMO-mode": {
       "dependsOn": [
@@ -293,8 +293,8 @@
       "dependsOn": [
         "BO-07-themes"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "bo-08-editeur-theme",
       "pr": null
     },
     "E2E-demo": {

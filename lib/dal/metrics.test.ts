@@ -739,6 +739,33 @@ describe("getFunnel", () => {
       await cleanupProduct(id);
       await db.delete(users).where(inArray(users.id, [buyer2, buyer3]));
     });
+
+    it("leaves revenueCents, aiCostMicros and marginPerGenerationMicros unchanged by a duplicated purchase event", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id } = await createTempProduct({ name: "KPIs unchanged P", costPerGeneration: 1 });
+      const { buyerIds } = await seedFunnelStory(id, { visits: 0, signups: 0, buyers: 1, succeededGenerations: 1 });
+      const [buyerId] = buyerIds;
+
+      // A second `purchase` event for the very same person the QA1-P1-Q5 fix now dedupes at the
+      // funnel-step level — revenueCents and aiCostMicros are read from `purchases` and
+      // `generations` (never from the `events` subquery this spec touches), so they must be
+      // identical whether this duplicate event exists or not.
+      await db.insert(events).values([
+        { productId: id, type: "purchase" as const, userId: buyerId, anonymousId: null },
+        { productId: id, type: "purchase" as const, userId: buyerId, anonymousId: null },
+      ]);
+
+      const { getFunnel } = await import("./metrics");
+      const funnel = await getFunnel(id, { days: 30 });
+      expect(funnel.metrics.revenueCents).toBe(490);
+      expect(funnel.metrics.aiCostMicros).toBe(4000);
+      expect(funnel.metrics.marginPerGenerationMicros).toBe(Math.round((490 * 10_000) / 10) - 4000);
+      const purchaseStep = funnel.steps.find((row) => row.type === "purchase")!;
+      expect(purchaseStep.count).toBe(1);
+
+      await cleanupProduct(id);
+      if (buyerIds.length) await db.delete(users).where(inArray(users.id, buyerIds));
+    });
   });
 
   // Task 3 — steps

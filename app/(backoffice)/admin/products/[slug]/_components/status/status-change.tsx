@@ -33,7 +33,8 @@ const initialState: SetProductStatusState = {};
 // docs/02-ecrans.md › BO-06: the modal opens preselected on the suggested
 // status when there is one and it differs from the current status; a
 // `null` decision (or a suggestion equal to the current status) leaves
-// the current status selected.
+// nothing selected, so the confirm button stays disabled until another
+// status is chosen (QA1 B13: it used to open on "Test → Test").
 function suggestedStatus(decision: Decision, current: ProductStatus): ProductStatus | null {
   const suggested = decision === "kill" ? "killed" : decision === "scale" ? "scale" : null;
   return suggested !== null && suggested !== current ? suggested : null;
@@ -51,7 +52,7 @@ function StatusChangeForm({
   onDone,
 }: Omit<StatusChangeProps, "productId"> & { onDone: () => void }) {
   const [state, formAction, pending] = useActionState(setProductStatus.bind(null, slug), initialState);
-  const [selected, setSelected] = useState<ProductStatus>(() => suggestedStatus(decision, status) ?? status);
+  const [selected, setSelected] = useState<ProductStatus | null>(() => suggestedStatus(decision, status));
 
   useEffect(() => {
     if (state.ok) {
@@ -64,7 +65,7 @@ function StatusChangeForm({
 
   return (
     <form action={formAction} className="grid gap-4">
-      <input type="hidden" name="status" value={selected} />
+      <input type="hidden" name="status" value={selected ?? ""} />
 
       {state.formError ? (
         <p role="alert" className="text-sm text-destructive">
@@ -75,7 +76,7 @@ function StatusChangeForm({
       <div className="flex items-center gap-2 text-sm">
         <span className="font-medium">{STATUS_LABELS[status]}</span>
         <span aria-hidden="true">→</span>
-        <span className="font-medium">{STATUS_LABELS[selected]}</span>
+        <span className="font-medium">{selected ? STATUS_LABELS[selected] : "…"}</span>
       </div>
 
       <fieldset className="grid gap-2">
@@ -131,8 +132,8 @@ function StatusChangeForm({
         <Button type="button" variant="outline" onClick={onDone}>
           Annuler
         </Button>
-        <Button type="submit" variant={isKilled ? "destructive" : "default"} disabled={pending}>
-          {isKilled ? "Passer en Killed" : `Passer en ${STATUS_LABELS[selected]}`}
+        <Button type="submit" variant={isKilled ? "destructive" : "default"} disabled={pending || selected === null}>
+          {selected ? `Passer en ${STATUS_LABELS[selected]}` : "Passer en …"}
         </Button>
       </DialogFooter>
     </form>

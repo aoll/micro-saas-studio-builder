@@ -66,11 +66,26 @@ describe("StatusChange", () => {
     expect((screen.getByRole("radio", { name: "Scale" }) as HTMLInputElement).checked).toBe(true);
   });
 
+  it("opens with no new status selected when there is no suggestion, and keeps the confirm button disabled", () => {
+    render(<StatusChange {...baseProps} status="test" decision={null} />);
+    openModal();
+
+    const radios = screen.getAllByRole("radio") as HTMLInputElement[];
+    expect(radios.some((radio) => radio.checked)).toBe(false);
+    expect(screen.queryByRole("button", { name: "Passer en Test" })).toBeNull();
+    expect((screen.getByRole("button", { name: "Passer en …" }) as HTMLButtonElement).disabled).toBe(true);
+
+    fireEvent.click(screen.getByRole("radio", { name: "Learn" }));
+    expect((screen.getByRole("button", { name: "Passer en Learn" }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
   it("shows the killed warning and a destructive confirm label only when killed is selected", () => {
     render(<StatusChange {...baseProps} status="test" />);
     openModal();
 
-    expect(screen.getByRole("button", { name: "Passer en Test" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("radio", { name: "Learn" }));
+    expect(screen.getByRole("button", { name: "Passer en Learn" })).toBeTruthy();
+    expect(screen.queryByText(/ferme le produit/)).toBeNull();
     fireEvent.click(screen.getByRole("radio", { name: "Killed" }));
 
     expect(screen.getByRole("button", { name: "Passer en Killed" })).toBeTruthy();
@@ -101,7 +116,8 @@ describe("StatusChange", () => {
     setProductStatus.mockResolvedValue({ formError: "Le statut n'a pas pu être changé" });
     render(<StatusChange {...baseProps} />);
     openModal();
-    fireEvent.click(screen.getByRole("button", { name: "Passer en Test" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Learn" }));
+    fireEvent.click(screen.getByRole("button", { name: "Passer en Learn" }));
 
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toBe("Le statut n'a pas pu être changé");

@@ -72,7 +72,7 @@ function mockModelFor(slug: string): LanguageModel {
   return new MockLanguageModelV4({
     doStream: async () => ({
       stream: simulateReadableStream({
-        chunkDelayInMs: 5,
+        chunkDelayInMs: 30, // docs/05 › Stratégie de mock: the UI streams like the real thing
         chunks: [
           { type: "text-start", id: "1" },
           ...toTextChunks(fixture!.text).map((delta) => ({ type: "text-delta" as const, id: "1", delta })),

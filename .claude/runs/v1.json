@@ -424,7 +424,8 @@
       "spec": "SETUP-skeleton",
       "blockedOn": "SETUP-skeleton",
       "what": "intermittent: lib/dal/session.test.ts \"redirects to /admin/login for a role=user session\" failed once (session!.id undefined at line 80) under full-suite parallelism; find the concurrent file that mutates admin sessions and isolate it",
-      "resolved": false
+      "resolved": true,
+      "pr": 47
     },
     {
       "spec": "BO-05a-formulaire",
@@ -473,13 +474,15 @@
       "spec": "SA-02-outil",
       "blockedOn": "SA-02-outil",
       "what": "intermittent: lib/dal/generations.test.ts failed once under shared DB load during SA-07 full run (green isolated and on re-run); root-cause like the other DAL test races",
-      "resolved": false
+      "resolved": true,
+      "pr": 47
     },
     {
       "spec": "BO-05a-formulaire",
       "blockedOn": "BO-05a-formulaire",
       "what": "product-form.test.tsx create-mode publish test failed once in a full pnpm test run (SA-05 TDD, after the #31 act() fix); root-cause before the end of the run",
-      "resolved": false
+      "resolved": true,
+      "pr": 47
     },
     {
       "spec": "BO-02-portefeuille",
@@ -500,7 +503,8 @@
       "spec": "CONTRACT-data",
       "blockedOn": "CONTRACT-data",
       "what": "lib/dal/contract.test.ts « debit takes a single Debit argument » hit the 5000 ms timeout once under heavy load (sa-03 coverage run); root-cause before end of run",
-      "resolved": false
+      "resolved": true,
+      "pr": 47
     },
     {
       "spec": "SA-01-landing",
@@ -519,7 +523,8 @@
       "spec": "SA-02-outil",
       "blockedOn": "SECURITY",
       "what": "api/generate/route.ts should import clientIp from lib/rate-limit.ts instead of its private copy (parity test meanwhile)",
-      "resolved": false
+      "resolved": true,
+      "pr": 47
     }
   ],
   "notes": [

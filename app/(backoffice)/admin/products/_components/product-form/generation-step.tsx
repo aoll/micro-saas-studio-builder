@@ -6,23 +6,20 @@ import { templateVariables } from "@/lib/schemas/product-config";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/components/utils";
+import { MODEL_CATALOGUE } from "./model-catalogue";
 import { insertVariable } from "./prompt-variables";
 
 export type GenerationPatch = Partial<ProductConfig["generation"]>;
 
 type Generation = ProductConfig["generation"];
 
-// Claude Haiku 4.5 is the demo's default model, Sonnet 5 its "premium" step
-// up (docs/05-ia.md); the plan's orchestrator decision 8: a stored model
-// that is neither is kept as a third option, rather than silently replaced.
-const MODEL_OPTIONS: { value: string; label: string }[] = [
-  { value: "anthropic/claude-haiku-4.5", label: "Claude Haiku 4.5" },
-  { value: "anthropic/claude-sonnet-5", label: "Claude Sonnet 5" },
-];
-
+// The plan's orchestrator decision 8: a stored model that is neither Haiku
+// nor Sonnet (MODEL_CATALOGUE) is kept as a third option, rather than
+// silently replaced — and `_actions.ts` accepts that same stored model
+// server-side (security review, LOW).
 function modelOptions(current: string) {
-  if (MODEL_OPTIONS.some((option) => option.value === current)) return MODEL_OPTIONS;
-  return [...MODEL_OPTIONS, { value: current, label: current }];
+  if (MODEL_CATALOGUE.some((option) => option.value === current)) return MODEL_CATALOGUE;
+  return [...MODEL_CATALOGUE, { value: current, label: current }];
 }
 
 // BO-05 step 5 (docs/02-ecrans.md): model, prompt template with clickable

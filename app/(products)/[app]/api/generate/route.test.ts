@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { withTestTransaction } from "@/lib/db/test-transaction";
 import { users } from "@/lib/db/auth-schema";
 import { generations, products } from "@/lib/db/schema";
+import { listProductGenerations } from "@/lib/dal/activity";
 
 vi.mock("next/cache", () => ({ cacheLife: vi.fn(), cacheTag: vi.fn() }));
 
@@ -40,7 +41,11 @@ vi.mock("next/server", async () => {
 // (guardRequest) is mocked too, so its stub ("laisse tout passer") can't
 // hide a guard-ordering bug.
 const getSession = vi.fn();
-vi.mock("@/lib/dal/session", () => ({ getSession: () => getSession() }));
+// requireAdmin, added for the QA1-P1-B7 activity-read test below: it lives
+// in the same module (lib/dal/session) that listProductGenerations
+// (lib/dal/activity.ts) calls, mocked the same way activity.test.ts does.
+const requireAdmin = vi.fn();
+vi.mock("@/lib/dal/session", () => ({ getSession: () => getSession(), requireAdmin: () => requireAdmin() }));
 const debit = vi.fn();
 const refund = vi.fn();
 vi.mock("@/lib/dal/credits", () => ({ debit: (args: unknown) => debit(args), refund: (id: string) => refund(id) }));
@@ -55,6 +60,7 @@ afterEach(() => {
   testHeaders = new Headers();
   afterCallbacks.length = 0;
   getSession.mockReset();
+  requireAdmin.mockReset();
   debit.mockReset().mockResolvedValue({ ok: true, balance: 9 });
   refund.mockReset();
   track.mockReset();
@@ -417,6 +423,30 @@ describe("POST [app]/api/generate — insufficient balance", () => {
     await flushAfterCallbacks();
 
     await cleanupGeneration(idempotencyKey);
+  });
+
+  // QA1-P1-B7 Acceptation 2: BO-04's activity lists exactly the generations
+  // served or failed-then-refunded, not the refusals. requireAdmin mocked as
+  // activity.test.ts does (same lib/dal/session module the route mocks
+  // getSession on).
+  it("does not appear in listProductGenerations, and total does not grow", async () => {
+    requireAdmin.mockResolvedValue({ user: { id: "admin-id", role: "admin" } });
+    const productId = await lettreProId();
+    const before = await listProductGenerations(productId, 1);
+
+    const user = await db.query.users.findFirst();
+    getSession.mockResolvedValue({ user: { id: user!.id } });
+    debit.mockResolvedValue({ ok: false, reason: "insufficient_balance" });
+    const idempotencyKey = randomUUID();
+
+    const { POST } = await import("./route");
+    const response = await POST(postRequest({ input: validInput, idempotencyKey }), ctx());
+    expect(response.status).toBe(402);
+    await flushAfterCallbacks();
+
+    const after = await listProductGenerations(productId, 1);
+    expect(after.total).toBe(before.total);
+    expect(after.entries).toEqual(before.entries);
   });
 });
 

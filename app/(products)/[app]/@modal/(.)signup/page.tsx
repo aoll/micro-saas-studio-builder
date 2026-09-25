@@ -21,7 +21,7 @@ export default async function SignupModal() {
 
   return (
     <RouteModal title={`${t("heading")} ${t("headingAccent", { count: product.pricing.freeCreditsOnSignup })}`}>
-      <SignupFlow slug={product.slug} freeCreditsOnSignup={product.pricing.freeCreditsOnSignup} />
+      <SignupFlow slug={product.slug} />
     </RouteModal>
   );
 }

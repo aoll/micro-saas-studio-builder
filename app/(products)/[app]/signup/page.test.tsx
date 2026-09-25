@@ -29,11 +29,9 @@ vi.mock("next-intl/server", () => ({
 }));
 
 const { SignupPanel } = vi.hoisted(() => ({
-  SignupPanel: vi.fn(
-    (props: { slug: string; freeCreditsOnSignup: number; searchParams: Promise<Record<string, unknown>> }) => (
-      <div data-testid="signup-panel" data-slug={props.slug} data-credits={props.freeCreditsOnSignup} />
-    ),
-  ),
+  SignupPanel: vi.fn((props: { slug: string; searchParams: Promise<Record<string, unknown>> }) => (
+    <div data-testid="signup-panel" data-slug={props.slug} />
+  )),
 }));
 vi.mock("./_components/signup-panel", () => ({ SignupPanel }));
 
@@ -67,7 +65,7 @@ const product: Product = {
 };
 
 describe("/[app]/signup page", () => {
-  it("renders exactly one <h1> with the heading, and SignupPanel with the product's slug and freeCreditsOnSignup", async () => {
+  it("renders exactly one <h1> with the heading, and SignupPanel with the product's slug", async () => {
     app.mockResolvedValue("lettre-pro");
     getProduct.mockResolvedValue(product);
     const { default: SignupPage } = await import("./page");
@@ -81,7 +79,6 @@ describe("/[app]/signup page", () => {
 
     const panel = screen.getByTestId("signup-panel");
     expect(panel.dataset.slug).toBe("lettre-pro");
-    expect(panel.dataset.credits).toBe("3");
   });
 
   it("calls notFound for an unknown product", async () => {

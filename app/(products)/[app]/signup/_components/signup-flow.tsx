@@ -26,15 +26,10 @@ import { initialSignupState, requestMagicLink } from "../_actions";
 // `<h1>` and the intercepted modal renders it as RouteModal's
 // `DialogTitle`, so nesting SignupFlow under either never duplicates the
 // heading. Only the subtitle/help copy, which isn't a heading, stays here.
-export function SignupFlow({
-  slug,
-  freeCreditsOnSignup,
-  expired = false,
-}: {
-  slug: string;
-  freeCreditsOnSignup: number;
-  expired?: boolean;
-}) {
+// No `freeCreditsOnSignup` prop either: it only ever fed that removed
+// heading, so both callers (SignupPanel, the modal) keep it for their own
+// title and stop passing it down.
+export function SignupFlow({ slug, expired = false }: { slug: string; expired?: boolean }) {
   const t = useTranslations("auth");
   const [state, formAction, pending] = useActionState(requestMagicLink.bind(null, slug), initialSignupState);
 

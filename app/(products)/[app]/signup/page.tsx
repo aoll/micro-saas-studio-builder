@@ -31,11 +31,7 @@ export default async function SignupPage({ searchParams }: PageProps<"/[app]/sig
         <span className="text-primary">{t("headingAccent", { count: product.pricing.freeCreditsOnSignup })}</span>
       </h1>
       <Suspense fallback={null}>
-        <SignupPanel
-          slug={product.slug}
-          freeCreditsOnSignup={product.pricing.freeCreditsOnSignup}
-          searchParams={searchParams}
-        />
+        <SignupPanel slug={product.slug} searchParams={searchParams} />
       </Suspense>
     </section>
   );

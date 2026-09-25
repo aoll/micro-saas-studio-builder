@@ -7,17 +7,19 @@ import { SignupFlow } from "./signup-flow";
 // magic-link verify redirects here with `?error=INVALID_TOKEN` for both an
 // expired and an already-used token — collapses to the same "expired"
 // message; Better Auth's own error text or code is never shown.
+//
+// No `freeCreditsOnSignup` prop: it only ever forwarded to SignupFlow,
+// which dropped it once its heading moved to the page's own <h1> (review
+// fix).
 export async function SignupPanel({
   slug,
-  freeCreditsOnSignup,
   searchParams,
 }: {
   slug: string;
-  freeCreditsOnSignup: number;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
   const expired = typeof params.error === "string";
 
-  return <SignupFlow slug={slug} freeCreditsOnSignup={freeCreditsOnSignup} expired={expired} />;
+  return <SignupFlow slug={slug} expired={expired} />;
 }

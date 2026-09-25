@@ -34,7 +34,7 @@ describe("SignupFlow: form (fr and en)", () => {
   it("renders no heading and an empty, required email field (fr)", async () => {
     requestMagicLink.mockResolvedValue({ status: "idle" });
     const { SignupFlow } = await import("./signup-flow");
-    renderUi(<SignupFlow slug="lettre-pro" freeCreditsOnSignup={3} />, "fr");
+    renderUi(<SignupFlow slug="lettre-pro" />, "fr");
 
     expect(screen.queryAllByRole("heading")).toHaveLength(0);
     const email = screen.getByLabelText("Email") as HTMLInputElement;
@@ -47,7 +47,7 @@ describe("SignupFlow: form (fr and en)", () => {
   it("renders no heading and the submit button in English", async () => {
     requestMagicLink.mockResolvedValue({ status: "idle" });
     const { SignupFlow } = await import("./signup-flow");
-    renderUi(<SignupFlow slug="lettre-pro" freeCreditsOnSignup={3} />, "en");
+    renderUi(<SignupFlow slug="lettre-pro" />, "en");
 
     expect(screen.queryAllByRole("heading")).toHaveLength(0);
     expect(screen.getByRole("button", { name: "Get my sign-in link" })).toBeTruthy();
@@ -56,7 +56,7 @@ describe("SignupFlow: form (fr and en)", () => {
   it("submits the typed email to requestMagicLink", async () => {
     requestMagicLink.mockResolvedValue({ status: "idle" });
     const { SignupFlow } = await import("./signup-flow");
-    renderUi(<SignupFlow slug="lettre-pro" freeCreditsOnSignup={3} />);
+    renderUi(<SignupFlow slug="lettre-pro" />);
 
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "lea@exemple.fr" } });
     fireEvent.submit(screen.getByLabelText("Email").closest("form")!);
@@ -72,7 +72,7 @@ describe("SignupFlow: form (fr and en)", () => {
   it("shows the translated error message for an action error", async () => {
     requestMagicLink.mockResolvedValue({ status: "error", error: "invalid_email" });
     const { SignupFlow } = await import("./signup-flow");
-    renderUi(<SignupFlow slug="lettre-pro" freeCreditsOnSignup={3} />);
+    renderUi(<SignupFlow slug="lettre-pro" />);
 
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "not-an-email" } });
     fireEvent.submit(screen.getByLabelText("Email").closest("form")!);
@@ -85,7 +85,7 @@ describe("SignupFlow: expired link and resend", () => {
   it("shows the expired message and a resend button instead of the normal submit label (fr)", async () => {
     requestMagicLink.mockResolvedValue({ status: "idle" });
     const { SignupFlow } = await import("./signup-flow");
-    renderUi(<SignupFlow slug="lettre-pro" freeCreditsOnSignup={3} expired />, "fr");
+    renderUi(<SignupFlow slug="lettre-pro" expired />, "fr");
 
     expect(screen.getByRole("alert").textContent).toBe("Ce lien a expiré ou a déjà été utilisé.");
     expect(screen.getByRole("button", { name: "Recevoir un nouveau lien" })).toBeTruthy();
@@ -95,7 +95,7 @@ describe("SignupFlow: expired link and resend", () => {
   it("shows the expired message and resend button in English", async () => {
     requestMagicLink.mockResolvedValue({ status: "idle" });
     const { SignupFlow } = await import("./signup-flow");
-    renderUi(<SignupFlow slug="lettre-pro" freeCreditsOnSignup={3} expired />, "en");
+    renderUi(<SignupFlow slug="lettre-pro" expired />, "en");
 
     expect(screen.getByRole("alert").textContent).toBe("This link has expired or was already used.");
     expect(screen.getByRole("button", { name: "Get a new link" })).toBeTruthy();
@@ -104,7 +104,7 @@ describe("SignupFlow: expired link and resend", () => {
   it("resending only needs the email again: no token or email is embedded in the form", async () => {
     requestMagicLink.mockResolvedValue({ status: "idle" });
     const { SignupFlow } = await import("./signup-flow");
-    renderUi(<SignupFlow slug="lettre-pro" freeCreditsOnSignup={3} expired />);
+    renderUi(<SignupFlow slug="lettre-pro" expired />);
 
     const form = screen.getByRole("button", { name: "Recevoir un nouveau lien" }).closest("form")!;
     expect(form.querySelectorAll("input")).toHaveLength(1);
@@ -121,7 +121,7 @@ describe("SignupFlow: expired link and resend", () => {
   it("does not show the expired message when expired is false", async () => {
     requestMagicLink.mockResolvedValue({ status: "idle" });
     const { SignupFlow } = await import("./signup-flow");
-    renderUi(<SignupFlow slug="lettre-pro" freeCreditsOnSignup={3} />);
+    renderUi(<SignupFlow slug="lettre-pro" />);
 
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.getByRole("button", { name: "Recevoir mon lien de connexion" })).toBeTruthy();
@@ -136,7 +136,7 @@ describe("SignupFlow: inbox after sending", () => {
       magicLinkUrl: "/api/auth/magic-link/verify?token=abc",
     });
     const { SignupFlow } = await import("./signup-flow");
-    renderUi(<SignupFlow slug="lettre-pro" freeCreditsOnSignup={3} />);
+    renderUi(<SignupFlow slug="lettre-pro" />);
 
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "lea@exemple.fr" } });
     fireEvent.submit(screen.getByLabelText("Email").closest("form")!);
@@ -149,7 +149,7 @@ describe("SignupFlow: inbox after sending", () => {
   it("shows the empty-inbox message when there is no magic link (admin/owner email)", async () => {
     requestMagicLink.mockResolvedValue({ status: "sent", email: "admin@msb.local", magicLinkUrl: null });
     const { SignupFlow } = await import("./signup-flow");
-    renderUi(<SignupFlow slug="lettre-pro" freeCreditsOnSignup={3} />);
+    renderUi(<SignupFlow slug="lettre-pro" />);
 
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "admin@msb.local" } });
     fireEvent.submit(screen.getByLabelText("Email").closest("form")!);

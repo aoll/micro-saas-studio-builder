@@ -431,7 +431,8 @@
       "spec": "BO-05b-generation-publication",
       "blockedOn": "BO-05b-generation-publication",
       "what": "intermittent: product-form.test.tsx \"a create-mode publish captures the created slug, so a second publish takes the edit path\" failed once under load (expected null to be bio-instagram); root-cause (timing of createdSlug capture) and fix the component or the test without weakening it",
-      "resolved": false
+      "resolved": true,
+      "pr": 31
     },
     {
       "spec": "SA-02-outil",

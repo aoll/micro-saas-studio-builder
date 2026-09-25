@@ -1,0 +1,9 @@
+{
+  "integration": "integration/qa1",
+  "base": "integration/v1",
+  "scenario": "full",
+  "passes": [],
+  "setAside": [],
+  "specs": {},
+  "pendingIntegrations": []
+}

@@ -20,6 +20,12 @@ import { initialSignupState, requestMagicLink } from "../_actions";
 //   `SignupState`) shows one message above the same form, so resending
 //   only ever asks for the email again (plan's decision 2: no email in
 //   URLs or cookies).
+//
+// No `t("heading")` here (review fix, mirrors the pricing split in
+// pricing/_components/pricing-content.tsx): the full page renders it as its
+// `<h1>` and the intercepted modal renders it as RouteModal's
+// `DialogTitle`, so nesting SignupFlow under either never duplicates the
+// heading. Only the subtitle/help copy, which isn't a heading, stays here.
 export function SignupFlow({
   slug,
   freeCreditsOnSignup,
@@ -56,12 +62,7 @@ export function SignupFlow({
 
   return (
     <div className="grid gap-4">
-      <div>
-        <h2 className="text-2xl font-bold">
-          {t("heading")} <span className="text-primary">{t("headingAccent", { count: freeCreditsOnSignup })}</span>
-        </h2>
-        <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
-      </div>
+      <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       {expired ? (
         <p role="alert" className="text-sm text-destructive">
           {t("expired.message")}

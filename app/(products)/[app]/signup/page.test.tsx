@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
+import { createTranslator, NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import frAuth from "@/messages/fr/auth.json";
+import frCommon from "@/messages/fr/common.json";
 import type { Product } from "@/lib/dal/products";
 
 afterEach(cleanup);
@@ -18,6 +21,13 @@ vi.mock("next/navigation", () => ({
   },
 }));
 
+// next-intl/server picks its "react-server" export via a condition Vitest's
+// node/jsdom environments don't set (see @modal/(.)pricing/page.test.tsx).
+vi.mock("next-intl/server", () => ({
+  getTranslations: async (namespace: "auth") =>
+    createTranslator({ locale: "fr", messages: { auth: frAuth }, namespace }),
+}));
+
 const { SignupPanel } = vi.hoisted(() => ({
   SignupPanel: vi.fn(
     (props: { slug: string; freeCreditsOnSignup: number; searchParams: Promise<Record<string, unknown>> }) => (
@@ -26,6 +36,14 @@ const { SignupPanel } = vi.hoisted(() => ({
   ),
 }));
 vi.mock("./_components/signup-panel", () => ({ SignupPanel }));
+
+function renderUi(ui: React.ReactElement) {
+  return render(
+    <NextIntlClientProvider locale="fr" messages={{ common: frCommon, auth: frAuth }}>
+      {ui}
+    </NextIntlClientProvider>,
+  );
+}
 
 const product: Product = {
   id: "product-1",
@@ -49,12 +67,17 @@ const product: Product = {
 };
 
 describe("/[app]/signup page", () => {
-  it("renders SignupPanel with the product's slug and freeCreditsOnSignup", async () => {
+  it("renders exactly one <h1> with the heading, and SignupPanel with the product's slug and freeCreditsOnSignup", async () => {
     app.mockResolvedValue("lettre-pro");
     getProduct.mockResolvedValue(product);
     const { default: SignupPage } = await import("./page");
     const ui = await SignupPage({ searchParams: Promise.resolve({}) } as never);
-    render(ui);
+    renderUi(ui);
+
+    const headings = screen.getAllByRole("heading", { level: 1 });
+    expect(headings).toHaveLength(1);
+    expect(headings[0]!.textContent).toContain("Vous avez aimé ?");
+    expect(headings[0]!.textContent).toContain("3 crédits offerts");
 
     const panel = screen.getByTestId("signup-panel");
     expect(panel.dataset.slug).toBe("lettre-pro");

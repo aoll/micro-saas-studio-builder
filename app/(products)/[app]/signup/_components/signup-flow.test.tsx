@@ -26,12 +26,17 @@ function renderUi(ui: React.ReactElement, locale: "fr" | "en" = "fr") {
 }
 
 describe("SignupFlow: form (fr and en)", () => {
-  it("renders the heading with the free-credits count and an empty, required email field (fr)", async () => {
+  // Review fix: SignupFlow no longer renders the "Vous avez aimé ?" /
+  // "3 crédits offerts" heading itself (the full page's <h1> and the
+  // modal's DialogTitle own it now, see signup/page.tsx and
+  // @modal/(.)signup/page.tsx), so this test only asserts the form it does
+  // render. The heading assertion moved to those two pages' own tests.
+  it("renders no heading and an empty, required email field (fr)", async () => {
     requestMagicLink.mockResolvedValue({ status: "idle" });
     const { SignupFlow } = await import("./signup-flow");
     renderUi(<SignupFlow slug="lettre-pro" freeCreditsOnSignup={3} />, "fr");
 
-    expect(screen.getByText(/3 crédits offerts/)).toBeTruthy();
+    expect(screen.queryAllByRole("heading")).toHaveLength(0);
     const email = screen.getByLabelText("Email") as HTMLInputElement;
     expect(email.type).toBe("email");
     expect(email.required).toBe(true);
@@ -39,12 +44,12 @@ describe("SignupFlow: form (fr and en)", () => {
     expect(screen.getByRole("button", { name: "Recevoir mon lien de connexion" })).toBeTruthy();
   });
 
-  it("renders the heading with the free-credits count in English", async () => {
+  it("renders no heading and the submit button in English", async () => {
     requestMagicLink.mockResolvedValue({ status: "idle" });
     const { SignupFlow } = await import("./signup-flow");
     renderUi(<SignupFlow slug="lettre-pro" freeCreditsOnSignup={3} />, "en");
 
-    expect(screen.getByText(/3 free credits/)).toBeTruthy();
+    expect(screen.queryAllByRole("heading")).toHaveLength(0);
     expect(screen.getByRole("button", { name: "Get my sign-in link" })).toBeTruthy();
   });
 

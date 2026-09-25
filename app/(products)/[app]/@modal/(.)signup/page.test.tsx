@@ -66,7 +66,7 @@ const product: Product = {
 };
 
 describe("@modal/(.)signup page", () => {
-  it("renders the signup form in an open dialog titled with the free-credits count", async () => {
+  it("renders the signup form in an open dialog titled with the free-credits count, exactly once", async () => {
     app.mockResolvedValue("lettre-pro");
     getProduct.mockResolvedValue(product);
     requestMagicLink.mockResolvedValue({ status: "idle" });
@@ -77,6 +77,9 @@ describe("@modal/(.)signup page", () => {
     const dialog = screen.getByRole("dialog");
     expect(dialog.textContent).toContain("Vous avez aimé ?");
     expect(dialog.textContent).toContain("3 crédits offerts");
+    // RouteModal's DialogTitle is the only heading: SignupFlow renders none
+    // of its own, so the heading never appears twice inside the modal.
+    expect(screen.getAllByRole("heading")).toHaveLength(1);
     expect(screen.getByLabelText("Email")).toBeTruthy();
   });
 

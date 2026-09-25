@@ -118,7 +118,7 @@ describe("POST /[app]/api/events", () => {
         headers: new Headers({ "content-type": "application/json", "content-length": "3000" }),
         body: stream,
         duplex: "half",
-      } as RequestInit);
+      });
 
       const response = await callPost(request);
 
@@ -154,7 +154,7 @@ describe("POST /[app]/api/events", () => {
         headers: new Headers({ "content-type": "application/json" }),
         body: stream,
         duplex: "half",
-      } as RequestInit);
+      });
 
       const response = await callPost(request);
 

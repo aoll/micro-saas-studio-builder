@@ -11,14 +11,6 @@ import { ResetForm } from "./_components/reset-form";
 // included.
 export const maxDuration = 60;
 
-// QA1-P1-B12: this page must block on its own session/role check before the
-// first byte, so a non-owner really gets HTTP 404 (not a 200 that streams
-// NEXT_HTTP_ERROR_FALLBACK once admin/loading.tsx's implicit Suspense
-// already left with the shell). Acceptable here: this hidden owner-only
-// page has no shell worth showing early (docs/04-nextjs.md's `instant`
-// escape hatch — "bloquer la route").
-export const instant = false;
-
 // specs/DEMO-mode.md: not `ops/_ops` (a `_`-prefixed segment is never
 // routable, docs/09-arborescence.md), reserved to the `owner` role, 404
 // for anyone else — including a role="admin" caller, who gets a real

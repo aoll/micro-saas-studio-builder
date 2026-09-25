@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { sql } from "drizzle-orm";
+import { PgDatabase, PgTransaction } from "drizzle-orm/pg-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { APP_POOL_MAX, baseDb, db, poolMaxFor, TEST_POOL_MAX, testTxStorage } from "./index";
 
@@ -90,6 +91,28 @@ describe("db routing", () => {
           const spy = vi.spyOn(db, "execute");
           await db.execute(sql`select 1`);
           expect(spy).toHaveBeenCalledTimes(1);
+        });
+        scope.open = false;
+        tx.rollback();
+      })
+      .catch(() => {});
+  });
+
+  // Review finding (DB, LOW): without a `getPrototypeOf` trap, the Proxy's
+  // own prototype was that of its literal `{}` target, so `db instanceof
+  // PgDatabase` and drizzle's `is(db, …)` both returned false through the
+  // routing proxy, and any method resolved via the prototype chain (rather
+  // than an own property) would miss a `vi.spyOn` patch placed on the real
+  // class's prototype.
+  it("db is an instance of the drizzle class matching whatever is currently routed to", async () => {
+    expect(db).toBeInstanceOf(PgDatabase);
+    expect(db).not.toBeInstanceOf(PgTransaction);
+
+    await baseDb
+      .transaction(async (tx) => {
+        const scope = { tx, open: true };
+        await testTxStorage.run(scope, async () => {
+          expect(db).toBeInstanceOf(PgTransaction);
         });
         scope.open = false;
         tx.rollback();

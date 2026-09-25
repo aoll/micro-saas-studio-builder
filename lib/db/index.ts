@@ -64,9 +64,9 @@ function currentTarget(): BaseDb {
 // A Proxy so `db` keeps the exact static type of the base Drizzle instance
 // (no DAL signature or call site changes) while every access — property
 // reads, `in`, assignment, `Object.defineProperty` (what `vi.spyOn` uses),
-// `delete`, `Object.getOwnPropertyDescriptor` — is resolved against
-// whichever instance is current *at the time of the call*, not once at
-// import time.
+// `delete`, `Object.getOwnPropertyDescriptor`, `Object.getPrototypeOf` — is
+// resolved against whichever instance is current *at the time of the
+// call*, not once at import time.
 function createRoutingDb(): BaseDb {
   return new Proxy({} as BaseDb, {
     get(_target, prop) {
@@ -86,14 +86,26 @@ function createRoutingDb(): BaseDb {
     deleteProperty(_target, prop) {
       return Reflect.deleteProperty(currentTarget() as object, prop);
     },
+    // Without this trap the Proxy's own prototype stays that of its literal
+    // `{}` target: `db instanceof PgDatabase` and drizzle-orm's `is(db, …)`
+    // both return false, and any method that lives on the prototype
+    // (instead of an own property) resolves through *this* — routed —
+    // prototype, so a `vi.spyOn` placed on the real class's prototype still
+    // takes effect through `db`.
+    getPrototypeOf(_target) {
+      return Reflect.getPrototypeOf(currentTarget() as object);
+    },
     getOwnPropertyDescriptor(_target, prop) {
       const target = currentTarget();
       const descriptor = Reflect.getOwnPropertyDescriptor(target as object, prop);
-      // A Proxy must report non-configurable for any property that is
-      // actually non-configurable on the *current* target, and `db` swaps
-      // targets over time — report every own property as configurable so
-      // the invariant never trips, matching what `vi.spyOn` needs to patch
-      // and later restore it.
+      // `db` swaps targets over time, but a Proxy must keep reporting
+      // non-configurable for any *own* property that was already
+      // non-configurable on a *previous* target it reported through this
+      // same trap — an invariant the engine enforces regardless of the
+      // `getPrototypeOf` trap above. Forcing every own data property
+      // configurable sidesteps that invariant; methods themselves live on
+      // the prototype (routed by `getPrototypeOf`, not by this trap) and
+      // are what `vi.spyOn(db, "someMethod")` actually patches.
       return descriptor ? { ...descriptor, configurable: true } : descriptor;
     },
   });

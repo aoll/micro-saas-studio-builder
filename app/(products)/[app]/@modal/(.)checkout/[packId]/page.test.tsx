@@ -2,6 +2,8 @@
 import { cleanup, render } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
 import { NextIntlClientProvider } from "next-intl";
+import { Suspense } from "react";
+import type { ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import fr from "@/messages/fr/common.json";
 import checkoutFr from "@/messages/fr/checkout.json";
@@ -21,7 +23,7 @@ vi.mock("next/navigation", () => ({
   notFound: () => {
     throw new Error("NEXT_NOT_FOUND");
   },
-  useRouter: () => ({ back, replace: vi.fn() }),
+  useRouter: () => ({ back, replace: vi.fn(), refresh: vi.fn() }),
 }));
 
 const purchase = vi.fn();
@@ -65,11 +67,31 @@ function ctx(packId = "pack-50") {
   return { params: Promise.resolve({ app: "bio-insta", packId }), searchParams: Promise.resolve({}) };
 }
 
-describe("@modal/(.)checkout/[packId] page", () => {
+// QA1-P1-B14 (.claude/plans/QA1-P1-B14.plan.md, orchestrator note: the
+// spec's acceptance covers the checkout modal too, extended into this
+// spec's Périmètre since B14 starts after B3 merges): same categorical
+// "await params outside <Suspense>" violation as the full page
+// (.claude/qa/reports/2026-09-25-full.md › B14), same fix — CheckoutModal
+// stays synchronous, CheckoutModalContent does the awaiting behind
+// <Suspense>. Replaces the old "await CheckoutModal(ctx())" assertions
+// below (mirrors page.test.tsx's own structural guard).
+describe("@modal/(.)checkout/[packId] page — structure", () => {
+  it("returns a <Suspense> wrapping CheckoutModalContent, with params forwarded unawaited", async () => {
+    const { default: CheckoutModal } = await import("./page");
+    const paramsPromise = ctx("pack-50").params;
+    const element = CheckoutModal({ params: paramsPromise, searchParams: Promise.resolve({}) }) as ReactElement<{
+      children: ReactElement<{ params: unknown }>;
+    }>;
+    expect(element.type).toBe(Suspense);
+    expect(element.props.children.props.params).toBe(paramsPromise);
+  });
+});
+
+describe("@modal/(.)checkout/[packId] page — CheckoutModalContent", () => {
   it("renders the checkout flow in an open dialog titled « Paiement »", async () => {
     getProduct.mockResolvedValue(product);
-    const { default: CheckoutModal } = await import("./page");
-    const ui = await CheckoutModal(ctx("pack-50"));
+    const { CheckoutModalContent } = await import("./page");
+    const ui = await CheckoutModalContent(ctx("pack-50"));
     renderUi(ui);
     const dialog = screen.getByRole("dialog");
     expect(dialog.textContent).toContain("Paiement");
@@ -78,8 +100,8 @@ describe("@modal/(.)checkout/[packId] page", () => {
 
   it("fills the viewport on mobile and becomes a centered dialog from the sm breakpoint", async () => {
     getProduct.mockResolvedValue(product);
-    const { default: CheckoutModal } = await import("./page");
-    const ui = await CheckoutModal(ctx("pack-50"));
+    const { CheckoutModalContent } = await import("./page");
+    const ui = await CheckoutModalContent(ctx("pack-50"));
     renderUi(ui);
     const classes = screen.getByRole("dialog").className.split(/\s+/);
     expect(classes).toEqual(expect.arrayContaining(["h-dvh", "max-h-dvh", "w-dvw", "max-w-dvw"]));
@@ -88,8 +110,8 @@ describe("@modal/(.)checkout/[packId] page", () => {
 
   it("navigates back when closed", async () => {
     getProduct.mockResolvedValue(product);
-    const { default: CheckoutModal } = await import("./page");
-    const ui = await CheckoutModal(ctx("pack-50"));
+    const { CheckoutModalContent } = await import("./page");
+    const ui = await CheckoutModalContent(ctx("pack-50"));
     const { fireEvent } = await import("@testing-library/dom");
     renderUi(ui);
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
@@ -98,14 +120,14 @@ describe("@modal/(.)checkout/[packId] page", () => {
 
   it("calls notFound for an unknown product", async () => {
     getProduct.mockResolvedValue(null);
-    const { default: CheckoutModal } = await import("./page");
-    await expect(CheckoutModal(ctx("pack-50"))).rejects.toThrow("NEXT_NOT_FOUND");
+    const { CheckoutModalContent } = await import("./page");
+    await expect(CheckoutModalContent(ctx("pack-50"))).rejects.toThrow("NEXT_NOT_FOUND");
   });
 
   it("calls notFound for a packId absent from the product's config", async () => {
     getProduct.mockResolvedValue(product);
-    const { default: CheckoutModal } = await import("./page");
-    await expect(CheckoutModal(ctx("does-not-exist"))).rejects.toThrow("NEXT_NOT_FOUND");
+    const { CheckoutModalContent } = await import("./page");
+    await expect(CheckoutModalContent(ctx("does-not-exist"))).rejects.toThrow("NEXT_NOT_FOUND");
   });
 });
 

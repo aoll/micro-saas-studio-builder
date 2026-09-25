@@ -123,6 +123,20 @@ describe("LandingPreview", () => {
     expect(screen.getByText(/Passionné/)).toBeTruthy();
   });
 
+  it("shows the 'how it works' steps when present", () => {
+    render(
+      <LandingPreview
+        slug="bio-instagram"
+        landing={{ ...landing, steps: [{ title: "Étape 1", description: "Description 1" }] }}
+        pricing={pricing}
+        theme={theme}
+        branding={{}}
+      />,
+    );
+    expect(screen.getByText("Étape 1")).toBeTruthy();
+    expect(screen.getByText("Description 1")).toBeTruthy();
+  });
+
   it("shows the FAQ entries", () => {
     render(<LandingPreview slug="bio-instagram" landing={landing} pricing={pricing} theme={theme} branding={{}} />);
     expect(screen.getByText("Combien ça coûte ?")).toBeTruthy();

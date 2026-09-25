@@ -70,6 +70,19 @@ export function LandingPreview({
         </div>
       ) : null}
 
+      {landing.steps && landing.steps.length > 0 ? (
+        <div className="grid gap-2">
+          {landing.steps.map((step, index) => (
+            <div key={index}>
+              <p className="text-sm font-medium">{step.title}</p>
+              <p className="text-sm" style={{ color: light.mutedForeground }}>
+                {step.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       {landing.faq.length > 0 ? (
         <div className="grid gap-2">
           {landing.faq.map((entry, index) => (

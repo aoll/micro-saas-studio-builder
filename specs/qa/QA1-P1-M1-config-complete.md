@@ -12,5 +12,6 @@ Acceptation :
   le thème se choisit par son nom si l'id ne correspond pas
 - Un produit créé ainsi a sur sa landing l'exemple et « comment ça marche »
 Périmètre   : admin/products/_components/product-form/**, admin/products/new/**,
+              admin/products/[slug]/edit/page.tsx (étendu après revue : même brouillon),
               leurs tests, e2e/product-form.spec.ts
 Hors périmètre : Q1 (écarté), Q3 (écarté)

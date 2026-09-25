@@ -21,8 +21,23 @@ vi.mock("next/navigation", () => ({
 }));
 
 let currentHeaders = new Headers();
+// QA1-P1-B14 (.claude/plans/QA1-P1-B14.plan.md, step 1): both mocks record
+// their call into the same array, so a test can assert `io()` (the fix for
+// "unstable value new Date() while prerendering", .claude/qa/reports/2026-09-25-full.md
+// › B14) runs before headers() — before the sync IO Better Auth performs
+// internally inside auth.api.getSession, per node_modules/next/dist/docs/…/io.md
+// ("call io() before reading a value").
+const ioOrder: string[] = [];
+vi.mock("next/cache", () => ({
+  io: async () => {
+    ioOrder.push("io");
+  },
+}));
 vi.mock("next/headers", () => ({
-  headers: async () => currentHeaders,
+  headers: async () => {
+    ioOrder.push("headers");
+    return currentHeaders;
+  },
 }));
 
 const sql = postgres(requireDatabaseUrl(), { max: 1, onnotice: () => {} });
@@ -94,6 +109,14 @@ describe("getSession", () => {
     currentHeaders = new Headers();
     const { getSession } = await import("./session");
     expect(await getSession()).toBeNull();
+  });
+
+  it("calls io() before reading headers(), so any sync IO inside auth.api.getSession stays outside the static shell", async () => {
+    currentHeaders = new Headers();
+    ioOrder.length = 0;
+    const { getSession } = await import("./session");
+    await getSession();
+    expect(ioOrder).toEqual(["io", "headers"]);
   });
 
   it("returns the session for the seeded admin", async () => {

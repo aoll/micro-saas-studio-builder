@@ -2,15 +2,9 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getProductDraft, listThemeOptions } from "@/lib/dal/product-editor";
 import { requireAdmin } from "@/lib/dal/session";
-import type { ProductConfig } from "@/lib/schemas/product-config";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { ProductDraft } from "../../_components/product-form/form-values";
+import { fromConfig } from "../../_components/product-form/form-values";
 import { ProductForm } from "../../_components/product-form/product-form";
-
-// A client-only id is added to each input row for React keys (form-values.ts).
-function toDraft(config: ProductConfig): ProductDraft {
-  return { ...config, inputs: config.inputs.map((input) => ({ ...input, id: crypto.randomUUID() })) };
-}
 
 // BO-05a (specs/BO-05a-formulaire.md): same Suspense + own `requireAdmin()`
 // shape as the `new` page (plan's orchestrator decision 6). `notFound()`
@@ -29,7 +23,7 @@ async function EditProductForm({ params }: { params: Promise<{ slug: string }> }
     <ProductForm
       mode="edit"
       slug={slug}
-      initialDraft={toDraft(draft.config)}
+      initialDraft={fromConfig(draft.config)}
       themes={themes}
       draftVersion={draft.version}
       publishedVersion={draft.publishedVersion}

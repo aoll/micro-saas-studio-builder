@@ -32,7 +32,13 @@ const getSession = vi.fn();
 vi.mock("@/lib/dal/session", () => ({ getSession }));
 
 const getBalance = vi.fn();
-vi.mock("@/lib/dal/credits", () => ({ getBalance }));
+vi.mock("@/lib/dal/credits", () => ({ getBalance, grantSignupBonus: vi.fn() }));
+
+// QA1-P1-Q2 (specs/qa/QA1-P1-Q2-inscription-par-produit.md): the new
+// CrossProductSignupBonus gate's client leaf transitively imports
+// _lib/claim.ts (lib/dal/events.ts, server-only), which this file never
+// needs to exercise -- only the element tree ProductLayout returns.
+vi.mock("@/lib/dal/events", () => ({ track: vi.fn() }));
 
 const cacheLife = vi.fn();
 const cacheTag = vi.fn();
@@ -107,6 +113,57 @@ describe("ProductLayout", () => {
     });
     expect(ui.props.lang).toBe(ACTIVE_PRODUCT.locale);
     expect(getTheme).toHaveBeenCalledWith("theme-1");
+  });
+
+  // QA1-P1-Q2 (specs/qa/QA1-P1-Q2-inscription-par-produit.md), plan step 6:
+  // a session already connected on another product must reach
+  // CrossProductSignupBonus on every page of this product, streamed under
+  // its own <Suspense> (docs/04-nextjs.md's "isoler ce qui lit la
+  // session") so it never forces the statically pre-rendered landing
+  // dynamic. This walks the raw element tree ProductLayout returns
+  // (no render(), same style as this file's other assertions) looking for
+  // that Suspense boundary wrapping the gate with the product's slug.
+  it("wraps CrossProductSignupBonus in its own <Suspense>, with the product's slug", async () => {
+    appRootParam.mockResolvedValue("lettre-pro");
+    getProduct.mockResolvedValue(ACTIVE_PRODUCT);
+    getTheme.mockResolvedValue(THEME);
+    loadMessages.mockResolvedValue({ common: {} });
+    getSession.mockResolvedValue(null);
+    const { default: ProductLayout } = await import("./layout");
+    const { CrossProductSignupBonus } = await import("./signup/_components/cross-product-signup-bonus");
+    const { Suspense } = await import("react");
+    const ui = await ProductLayout({
+      children: <p>child</p>,
+      modal: null,
+      params: Promise.resolve({ app: "lettre-pro" }),
+    });
+
+    type El = { type: unknown; props: Record<string, unknown> };
+    function findAll(node: unknown, predicate: (n: El) => boolean, out: El[] = []): El[] {
+      if (node == null || typeof node !== "object") return out;
+      if (Array.isArray(node)) {
+        for (const child of node) findAll(child, predicate, out);
+        return out;
+      }
+      const element = node as { type?: unknown; props?: Record<string, unknown> };
+      if (element.type !== undefined && element.props !== undefined) {
+        const el = element as El;
+        if (predicate(el)) out.push(el);
+        findAll(el.props.children, predicate, out);
+      }
+      return out;
+    }
+
+    const suspenseNodes = findAll(ui, (n) => n.type === Suspense);
+    const gateWrapper = suspenseNodes.find((node) => {
+      const children = node.props.children;
+      const list = Array.isArray(children) ? children : [children];
+      return list.some((child) => (child as { type?: unknown })?.type === CrossProductSignupBonus);
+    });
+    expect(gateWrapper).toBeDefined();
+
+    const gate = findAll(ui, (n) => n.type === CrossProductSignupBonus)[0];
+    expect(gate?.props).toEqual({ slug: "lettre-pro" });
   });
 });
 

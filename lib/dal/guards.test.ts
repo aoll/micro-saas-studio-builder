@@ -32,3 +32,47 @@ describe("assertEditable", () => {
     expect(() => assertEditable({ isSeed: true })).not.toThrow();
   });
 });
+
+// Real behaviour (docs/01 › Mode démo public): `isEditable = (row) =>
+// !(env.DEMO_MODE && row.isSeed)`, `env.DEMO_MODE` read inside the
+// function so a single mutation of the mocked env between tests is enough
+// (no module re-import needed).
+describe("demo-mode lock (DEMO_MODE=true)", () => {
+  it("isEditable is false for a seeded row", async () => {
+    mockEnv.DEMO_MODE = true;
+    const { isEditable } = await import("./guards");
+    expect(isEditable({ isSeed: true })).toBe(false);
+  });
+
+  it("isEditable is true for a non-seeded row", async () => {
+    mockEnv.DEMO_MODE = true;
+    const { isEditable } = await import("./guards");
+    expect(isEditable({ isSeed: false })).toBe(true);
+  });
+
+  it("assertEditable throws a demo_locked error for a seeded row", async () => {
+    mockEnv.DEMO_MODE = true;
+    const { assertEditable } = await import("./guards");
+    expect(() => assertEditable({ isSeed: true })).toThrow(/^demo_locked:/);
+  });
+
+  it("assertEditable does not throw for a non-seeded row", async () => {
+    mockEnv.DEMO_MODE = true;
+    const { assertEditable } = await import("./guards");
+    expect(() => assertEditable({ isSeed: false })).not.toThrow();
+  });
+});
+
+describe("demo-mode lock (DEMO_MODE=false)", () => {
+  it("isEditable is true for a seeded row", async () => {
+    mockEnv.DEMO_MODE = false;
+    const { isEditable } = await import("./guards");
+    expect(isEditable({ isSeed: true })).toBe(true);
+  });
+
+  it("assertEditable does not throw for a seeded row", async () => {
+    mockEnv.DEMO_MODE = false;
+    const { assertEditable } = await import("./guards");
+    expect(() => assertEditable({ isSeed: true })).not.toThrow();
+  });
+});

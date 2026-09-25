@@ -291,10 +291,9 @@
         "BO-05b-generation-publication",
         "BO-07-themes"
       ],
-      "status": "dispatched",
-      "worktree": "bo-04-activite",
-      "pr": null,
-      "step": "review"
+      "status": "merged",
+      "worktree": null,
+      "pr": 42
     },
     "BO-06-statut": {
       "dependsOn": [

@@ -111,9 +111,9 @@
     },
     "QA1-P2-N1-ops-cache-components": {
       "dependsOn": [],
-      "status": "dispatched",
-      "worktree": "qa1-p2-n1-ops-cache-components",
-      "pr": null,
+      "status": "merged",
+      "worktree": null,
+      "pr": 67,
       "mode": "plan dans la spec (constat mineur)"
     },
     "QA1-P2-S1-slug-pris": {

@@ -261,6 +261,10 @@ describe("checkSlug", () => {
   });
 });
 
+const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
+const JPEG_BYTES = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0, 0, 0, 0, 0]);
+const WEBP_BYTES = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50]);
+
 describe("uploadLogo", () => {
   it("redirects a non-admin caller", async () => {
     requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
@@ -299,20 +303,51 @@ describe("uploadLogo", () => {
     expect(put).not.toHaveBeenCalled();
   });
 
-  it("uploads a valid file and returns its url", async () => {
+  it("rejects a file whose declared type doesn't match its real bytes, without calling put", async () => {
     await currentAdmin();
-    put.mockResolvedValue({ url: "https://blob.example/logos/logo-abc.png" });
     const { uploadLogo } = await import("./_actions");
-    const file = new File([new Uint8Array(10)], "logo.png", { type: "image/png" });
+    // Declared as a PNG, but the actual content is HTML: file.type alone
+    // would have passed the old allow-list check.
+    const html = new TextEncoder().encode("<html><body>not an image</body></html>");
+    const file = new File([html], "logo.png", { type: "image/png" });
     const data = new FormData();
     data.set("file", file);
     const result = await uploadLogo({}, data);
-    expect(result.url).toBe("https://blob.example/logos/logo-abc.png");
+    expect(result.error).toBeTruthy();
+    expect(put).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["PNG", PNG_BYTES, "png"],
+    ["JPEG", JPEG_BYTES, "jpg"],
+    ["WEBP", WEBP_BYTES, "webp"],
+  ])("uploads a real %s file and returns its url", async (_label, fileBytes, extension) => {
+    await currentAdmin();
+    put.mockResolvedValue({ url: "https://blob.example/logos/logo-abc" });
+    const { uploadLogo } = await import("./_actions");
+    const file = new File([fileBytes], "ignored-name.bin", { type: "application/octet-stream" });
+    const data = new FormData();
+    data.set("file", file);
+    const result = await uploadLogo({}, data);
+    expect(result.url).toBe("https://blob.example/logos/logo-abc");
     expect(put).toHaveBeenCalledWith(
-      expect.stringContaining("logos/"),
+      expect.stringMatching(new RegExp(`^logos/[^/]+\\.${extension}$`)),
       expect.anything(),
       expect.objectContaining({ access: "public", addRandomSuffix: true }),
     );
+  });
+
+  it("never uses the client-supplied file name as the blob pathname", async () => {
+    await currentAdmin();
+    put.mockResolvedValue({ url: "https://blob.example/logos/logo-abc.png" });
+    const { uploadLogo } = await import("./_actions");
+    const file = new File([PNG_BYTES], "../../etc/passwd.png", { type: "image/png" });
+    const data = new FormData();
+    data.set("file", file);
+    await uploadLogo({}, data);
+    const [pathname] = put.mock.calls[0]!;
+    expect(pathname).not.toContain("passwd");
+    expect(pathname).not.toContain("..");
   });
 
   it("logs and returns a generic error when put rejects", async () => {
@@ -320,7 +355,7 @@ describe("uploadLogo", () => {
     put.mockRejectedValue(new Error("blob store unavailable"));
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { uploadLogo } = await import("./_actions");
-    const file = new File([new Uint8Array(10)], "logo.png", { type: "image/png" });
+    const file = new File([PNG_BYTES], "logo.png", { type: "image/png" });
     const data = new FormData();
     data.set("file", file);
     const result = await uploadLogo({}, data);

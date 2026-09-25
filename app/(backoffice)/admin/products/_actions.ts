@@ -1,11 +1,13 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { put } from "@vercel/blob";
 import { updateTag } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { env } from "@/lib/env";
 import { createProduct, isSlugAvailable, listThemeOptions, saveVersion } from "@/lib/dal/product-editor";
 import { requireAdmin } from "@/lib/dal/session";
+import { detectImageType, IMAGE_EXTENSIONS, type DetectedImageType } from "@/lib/image-signature";
 import { productConfigSchema, slugSchema } from "@/lib/schemas/product-config";
 import { issuesToErrors, stepOfPath } from "./_components/product-form/validation";
 
@@ -25,7 +27,7 @@ export type SaveProductState = {
 };
 
 const MAX_LOGO_BYTES = 512 * 1024;
-const ALLOWED_LOGO_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+const ALLOWED_LOGO_TYPES = new Set<DetectedImageType>(["image/png", "image/jpeg", "image/webp"]);
 
 function isUniqueSlugViolation(err: unknown): boolean {
   return typeof err === "object" && err !== null && "code" in err && (err as { code?: unknown }).code === "23505";
@@ -111,15 +113,23 @@ export async function uploadLogo(
   if (file.size > MAX_LOGO_BYTES) {
     return { error: "Le logo dépasse 512 Ko" };
   }
-  if (!ALLOWED_LOGO_TYPES.has(file.type)) {
+
+  // Never trust the client-declared `file.type` (any file can be labelled
+  // `image/png`): the real format is read from the file's own magic bytes.
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const detectedType = detectImageType(bytes);
+  if (!detectedType || !ALLOWED_LOGO_TYPES.has(detectedType)) {
     return { error: "Formats acceptés : PNG, JPEG, WebP" };
   }
 
   try {
-    const blob = await put(`logos/${file.name}`, file, {
+    // Never use the client-supplied file name for the blob pathname
+    // either: a random name with the detected type's own extension.
+    const pathname = `logos/${randomUUID()}.${IMAGE_EXTENSIONS[detectedType]}`;
+    const blob = await put(pathname, file, {
       access: "public",
       addRandomSuffix: true,
-      contentType: file.type,
+      contentType: detectedType,
       token: env.BLOB_READ_WRITE_TOKEN,
     });
     return { url: blob.url };

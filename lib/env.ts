@@ -18,6 +18,10 @@ export const createAppEnv = (source: Record<string, string | undefined>) =>
       AI_GATEWAY_API_KEY: z.string().min(1),
       BLOB_READ_WRITE_TOKEN: z.string().min(1),
       CRON_SECRET: z.string().min(1),
+      // SECURITY (specs/SECURITY.md): the Postgres generation rate limit, N
+      // generations per 60 s per user and per ip_hash. Optional: most local
+      // and preview setups never set it.
+      GENERATION_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(10),
     },
     runtimeEnv: source,
     emptyStringAsUndefined: true,

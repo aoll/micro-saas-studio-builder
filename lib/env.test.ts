@@ -39,3 +39,26 @@ describe("createAppEnv", () => {
     expect(() => createAppEnv({ ...validSource, DATABASE_URL: "not-a-url" })).toThrow();
   });
 });
+
+// GENERATION_RATE_LIMIT_PER_MINUTE (SECURITY): optional, defaults to 10.
+// Kept out of `validSource` and its `it.each` loops (missing/empty-string):
+// it is optional, so those loops would fail for this one key.
+describe("createAppEnv › GENERATION_RATE_LIMIT_PER_MINUTE", () => {
+  it("defaults to 10 when absent", () => {
+    const env = createAppEnv(validSource);
+    expect(env.GENERATION_RATE_LIMIT_PER_MINUTE).toBe(10);
+  });
+
+  it("parses a provided positive integer", () => {
+    const env = createAppEnv({ ...validSource, GENERATION_RATE_LIMIT_PER_MINUTE: "25" });
+    expect(env.GENERATION_RATE_LIMIT_PER_MINUTE).toBe(25);
+  });
+
+  it("throws on 0", () => {
+    expect(() => createAppEnv({ ...validSource, GENERATION_RATE_LIMIT_PER_MINUTE: "0" })).toThrow();
+  });
+
+  it("throws on a non-numeric value", () => {
+    expect(() => createAppEnv({ ...validSource, GENERATION_RATE_LIMIT_PER_MINUTE: "abc" })).toThrow();
+  });
+});

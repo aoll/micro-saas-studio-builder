@@ -105,3 +105,11 @@ BioInsta (créé en saisie manuelle, enregistré en brouillon, publié deux fois
 ## Observation hors périmètre (non consignée en constat)
 
 Le journal du serveur affiche une fois, au tout premier `GET /bio-instagram` juste après la publication initiale (produit encore non mis en cache statique), l'avertissement Next.js « Route "/[app]": Next.js encountered URL data in `generateMetadata()` … This route's metadata is blocked, but the rest of its content can be prefetched », pointant vers le fichier généré `opengraph-image--metadata.js`. `get_errors` du MCP ne le remonte pas (`sessionErrors: []`), l'avertissement ne réapparaît pas aux requêtes suivantes, et il concerne `I18N-SEO`/`opengraph-image.tsx`, hors du périmètre de B-P5-1 et de la non-régression demandée pour cette passe : signalé ici pour mémoire, non qualifié en BUG ou MANQUE faute d'investigation plus poussée.
+
+## Décision
+
+Validée par l'humain le 2026-09-25 (« Oui corrige »), avec délégation pour la suite du run : les correctifs légers de même catégorie (affichage, traduction, garde locale, sans contrat ni règle métier) sont dispatchés sans attendre sa validation.
+
+| Constat | Décision | Spec de correction |
+|---|---|---|
+| B-P6-1 | corriger | `specs/qa/QA1-P6-E3-erreurs-pricing.md` |

@@ -35,6 +35,13 @@
       "findings": 1,
       "retained": 1,
       "scope": "scenario creation-produit, recheck B-P4-1"
+    },
+    {
+      "n": 6,
+      "report": ".claude/qa/reports/2026-09-25-creation-produit-3.md",
+      "findings": 1,
+      "retained": 1,
+      "scope": "scenario creation-produit, recheck B-P5-1"
     }
   ],
   "setAside": [
@@ -163,6 +170,13 @@
       "status": "merged",
       "worktree": null,
       "pr": 72,
+      "mode": "lot léger, plan dans la spec"
+    },
+    "QA1-P6-E3-erreurs-pricing": {
+      "dependsOn": [],
+      "status": "dispatched",
+      "worktree": "qa1-p6-e3-erreurs-pricing",
+      "pr": null,
       "mode": "lot léger, plan dans la spec"
     }
   },

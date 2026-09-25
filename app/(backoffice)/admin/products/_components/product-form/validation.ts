@@ -7,7 +7,7 @@ import { DEFAULT_GENERATION, DEFAULT_PRICING } from "./form-values";
 // `productConfigSchema` belongs to exactly one step of this spec's four
 // (5 and 6 are BO-05b's, kept here so a stray issue on those fields still
 // routes somewhere instead of being silently dropped).
-export function stepOfPath(path: ReadonlyArray<string | number>): number {
+export function stepOfPath(path: readonly PropertyKey[]): number {
   switch (path[0]) {
     case "themeId":
     case "branding":

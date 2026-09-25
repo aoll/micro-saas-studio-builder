@@ -56,11 +56,11 @@ export async function saveVersion(
     if (!row) return null;
     assertEditable(row);
 
-    const [{ next }] = await tx
+    const [nextVersionRow] = await tx
       .select({ next: sql<number>`coalesce(max(${productVersions.version}), 0) + 1` })
       .from(productVersions)
       .where(eq(productVersions.productId, row.id));
-    const version = Number(next);
+    const version = Number(nextVersionRow!.next);
 
     // The catalogue row wins over the submitted config for the fields it
     // also owns (docs/07): a draft save never lets the client change slug

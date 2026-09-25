@@ -580,6 +580,95 @@ describe("getFunnel", () => {
       await expect(getFunnel("not-a-uuid", { days: 30 })).rejects.toThrow("getFunnel: unknown product not-a-uuid");
     });
   });
+
+  // Task 2 — metrics equals the portfolio row for the same product
+  describe("metrics", () => {
+    it("equals the row getPortfolioMetrics returns for the same product", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id } = await createTempProduct({ name: "Funnel Metrics P", costPerGeneration: 1 });
+      const { buyerIds } = await seedFunnelStory(id, { visits: 12, signups: 4, buyers: 2, succeededGenerations: 3 });
+
+      const { getFunnel, getPortfolioMetrics } = await import("./metrics");
+      const funnel = await getFunnel(id, { days: 30 });
+      const portfolio = await getPortfolioMetrics({ days: 30 });
+      const portfolioRow = portfolio.products.find((row) => row.productId === id);
+
+      expect(funnel.metrics).toEqual(portfolioRow);
+
+      await cleanupProduct(id);
+      if (buyerIds.length) await db.delete(users).where(inArray(users.id, buyerIds));
+    });
+  });
+
+  // Task 3 — steps
+  describe("steps", () => {
+    it("builds counts and pass rates from 12/5/4/2/1 funnel-step events, step 1's rate null", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id } = await createTempProduct({ name: "Steps P" });
+      await db.insert(events).values([
+        ...Array.from({ length: 12 }, () => ({ productId: id, type: "visit" as const, anonymousId: randomUUID() })),
+        ...Array.from({ length: 5 }, () => ({
+          productId: id,
+          type: "first_generation" as const,
+          anonymousId: randomUUID(),
+        })),
+        ...Array.from({ length: 4 }, () => ({ productId: id, type: "signup" as const, anonymousId: randomUUID() })),
+        ...Array.from({ length: 2 }, () => ({
+          productId: id,
+          type: "credits_exhausted" as const,
+          anonymousId: randomUUID(),
+        })),
+        { productId: id, type: "purchase" as const, anonymousId: randomUUID() },
+      ]);
+
+      const { getFunnel } = await import("./metrics");
+      const funnel = await getFunnel(id, { days: 30 });
+      expect(funnel.steps).toEqual([
+        { type: "visit", count: 12, rateFromPrevious: null },
+        { type: "first_generation", count: 5, rateFromPrevious: 5 / 12 },
+        { type: "signup", count: 4, rateFromPrevious: 4 / 5 },
+        { type: "credits_exhausted", count: 2, rateFromPrevious: 2 / 4 },
+        { type: "purchase", count: 1, rateFromPrevious: 1 / 2 },
+      ]);
+
+      await cleanupProduct(id);
+    });
+
+    it("returns zero counts and null rates for an idle product", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id } = await createTempProduct({ name: "Idle steps P" });
+
+      const { getFunnel } = await import("./metrics");
+      const funnel = await getFunnel(id, { days: 30 });
+      expect(funnel.steps).toEqual([
+        { type: "visit", count: 0, rateFromPrevious: null },
+        { type: "first_generation", count: 0, rateFromPrevious: null },
+        { type: "signup", count: 0, rateFromPrevious: null },
+        { type: "credits_exhausted", count: 0, rateFromPrevious: null },
+        { type: "purchase", count: 0, rateFromPrevious: null },
+      ]);
+
+      await cleanupProduct(id);
+    });
+
+    it("leaves the signup step's rate null when there are 0 first generations", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id } = await createTempProduct({ name: "No first-gen P" });
+      await db
+        .insert(events)
+        .values(
+          Array.from({ length: 3 }, () => ({ productId: id, type: "signup" as const, anonymousId: randomUUID() })),
+        );
+
+      const { getFunnel } = await import("./metrics");
+      const funnel = await getFunnel(id, { days: 30 });
+      const signupStep = funnel.steps.find((step) => step.type === "signup");
+      expect(signupStep!.count).toBe(3);
+      expect(signupStep!.rateFromPrevious).toBeNull();
+
+      await cleanupProduct(id);
+    });
+  });
 });
 
 /**

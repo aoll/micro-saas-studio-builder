@@ -1,0 +1,122 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+class NotFoundMarker extends Error {
+  constructor() {
+    super("NEXT_NOT_FOUND");
+  }
+}
+
+vi.mock("next/navigation", () => ({
+  notFound: () => {
+    throw new NotFoundMarker();
+  },
+}));
+
+class MockImageResponse {
+  element: unknown;
+  options: unknown;
+  constructor(element: unknown, options: unknown) {
+    this.element = element;
+    this.options = options;
+  }
+}
+vi.mock("next/og", () => ({ ImageResponse: MockImageResponse }));
+
+const getProduct = vi.fn();
+vi.mock("@/lib/dal/products", () => ({ getProduct }));
+
+const getTheme = vi.fn();
+vi.mock("@/lib/dal/themes", () => ({ getTheme }));
+
+afterEach(() => {
+  vi.clearAllMocks();
+});
+
+const THEME = {
+  id: "theme-1",
+  slug: "editorial",
+  name: "Editorial",
+  tokens: {
+    light: {
+      background: "#ffffff",
+      foreground: "#111111",
+      card: "#ffffff",
+      cardForeground: "#111111",
+      primary: "rgb(220 38 38)",
+      primaryForeground: "#fef2f2",
+      secondary: "#f4f4f5",
+      secondaryForeground: "#111111",
+      muted: "#f4f4f5",
+      mutedForeground: "hsl(240 4% 46%)",
+      accent: "#f4f4f5",
+      accentForeground: "#111111",
+      destructive: "#dc2626",
+      border: "#e4e4e7",
+      input: "#e4e4e7",
+      ring: "#dc2626",
+    },
+    dark: {},
+    fontKey: "serif",
+    radius: "0.5rem",
+  },
+  landingVariant: "centered",
+  isSeed: true,
+};
+
+const ACTIVE_PRODUCT = {
+  id: "product-1",
+  slug: "lettre-pro",
+  name: "LettrePro",
+  status: "scale",
+  themeId: "theme-1",
+  locale: "fr",
+  branding: {},
+};
+
+describe("[app]/icon", () => {
+  it("renders the product's initial on its primary color, 32x32 png", async () => {
+    getProduct.mockResolvedValue(ACTIVE_PRODUCT);
+    getTheme.mockResolvedValue(THEME);
+    const { default: Icon, size, contentType } = await import("./icon");
+    const response = (await Icon({ params: Promise.resolve({ app: "lettre-pro" }) })) as MockImageResponse;
+
+    expect(size).toEqual({ width: 32, height: 32 });
+    expect(contentType).toBe("image/png");
+    expect(response.options).toMatchObject({ width: 32, height: 32 });
+
+    const element = response.element as { props: { style: Record<string, string>; children: string } };
+    expect(element.props.children).toBe("L");
+    expect(element.props.style.background).toBe("rgb(220 38 38)");
+    expect(element.props.style.color).toBe("#fef2f2");
+  });
+
+  it("lets the branding primary color override the theme's primary", async () => {
+    getProduct.mockResolvedValue({ ...ACTIVE_PRODUCT, branding: { primaryColor: "#00ff00" } });
+    getTheme.mockResolvedValue(THEME);
+    const { default: Icon } = await import("./icon");
+    const response = (await Icon({ params: Promise.resolve({ app: "lettre-pro" }) })) as MockImageResponse;
+    const element = response.element as { props: { style: Record<string, string> } };
+    expect(element.props.style.background).toBe("#00ff00");
+  });
+
+  it("404s for an unknown product", async () => {
+    getProduct.mockResolvedValue(null);
+    const { default: Icon } = await import("./icon");
+    await expect(Icon({ params: Promise.resolve({ app: "zz-unknown" }) })).rejects.toThrow(NotFoundMarker);
+    expect(getTheme).not.toHaveBeenCalled();
+  });
+
+  it("404s for a killed product", async () => {
+    getProduct.mockResolvedValue({ ...ACTIVE_PRODUCT, status: "killed" });
+    const { default: Icon } = await import("./icon");
+    await expect(Icon({ params: Promise.resolve({ app: "killed-product" }) })).rejects.toThrow(NotFoundMarker);
+    expect(getTheme).not.toHaveBeenCalled();
+  });
+
+  it("throws when the product's theme row is missing", async () => {
+    getProduct.mockResolvedValue(ACTIVE_PRODUCT);
+    getTheme.mockResolvedValue(null);
+    const { default: Icon } = await import("./icon");
+    await expect(Icon({ params: Promise.resolve({ app: "lettre-pro" }) })).rejects.toThrow(/missing theme row/);
+  });
+});

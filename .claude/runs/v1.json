@@ -381,7 +381,8 @@
       "spec": "TRACKING",
       "blockedOn": "TRACKING",
       "what": "flaky: lib/dal/events.test.ts createTempProduct inserts product_versions with config {} which breaks concurrent listProducts() tests (Zod parse); give it a schema-valid config",
-      "resolved": false
+      "resolved": true,
+      "pr": 23
     }
   ],
   "notes": [

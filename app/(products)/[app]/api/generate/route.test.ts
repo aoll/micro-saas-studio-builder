@@ -429,24 +429,29 @@ describe("POST [app]/api/generate — insufficient balance", () => {
   // served or failed-then-refunded, not the refusals. requireAdmin mocked as
   // activity.test.ts does (same lib/dal/session module the route mocks
   // getSession on).
-  it("does not appear in listProductGenerations, and total does not grow", async () => {
+  // The refused attempt carries a unique marker in its input, so the check
+  // stays exact while other test files write generations on the shared
+  // lettre-pro product concurrently (comparing whole pages before/after raced
+  // those writes).
+  it("does not appear in listProductGenerations", async () => {
     requireAdmin.mockResolvedValue({ user: { id: "admin-id", role: "admin" } });
     const productId = await lettreProId();
-    const before = await listProductGenerations(productId, 1);
 
     const user = await db.query.users.findFirst();
     getSession.mockResolvedValue({ user: { id: user!.id } });
     debit.mockResolvedValue({ ok: false, reason: "insufficient_balance" });
     const idempotencyKey = randomUUID();
+    const marker = `refused-${idempotencyKey}`;
 
     const { POST } = await import("./route");
-    const response = await POST(postRequest({ input: validInput, idempotencyKey }), ctx());
+    const response = await POST(postRequest({ input: { ...validInput, entreprise: marker }, idempotencyKey }), ctx());
     expect(response.status).toBe(402);
     await flushAfterCallbacks();
 
     const after = await listProductGenerations(productId, 1);
-    expect(after.total).toBe(before.total);
-    expect(after.entries).toEqual(before.entries);
+    expect(after.entries.some((entry) => entry.input.entreprise === marker)).toBe(false);
+    const row = await db.query.generations.findFirst({ where: eq(generations.idempotencyKey, idempotencyKey) });
+    expect(row).toBeUndefined();
   });
 });
 

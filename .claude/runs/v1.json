@@ -111,9 +111,9 @@
       "dependsOn": [
         "LEDGER"
       ],
-      "status": "dispatched",
-      "worktree": "sa-07-compte",
-      "pr": null,
+      "status": "merged",
+      "worktree": null,
+      "pr": 38,
       "mergeAfter": [
         "SA-03-inscription"
       ],
@@ -204,9 +204,10 @@
         "BO-05b-generation-publication",
         "BO-07-themes"
       ],
-      "status": "pending",
-      "worktree": null,
-      "pr": null
+      "status": "dispatched",
+      "worktree": "demo-mode",
+      "pr": null,
+      "step": "plan"
     },
     "SECURITY": {
       "dependsOn": [
@@ -227,9 +228,10 @@
         "BO-05b-generation-publication",
         "BO-07-themes"
       ],
-      "status": "pending",
-      "worktree": null,
-      "pr": null
+      "status": "dispatched",
+      "worktree": "security",
+      "pr": null,
+      "step": "plan"
     },
     "I18N-SEO": {
       "dependsOn": [
@@ -250,9 +252,10 @@
         "BO-05b-generation-publication",
         "BO-07-themes"
       ],
-      "status": "pending",
-      "worktree": null,
-      "pr": null
+      "status": "dispatched",
+      "worktree": "i18n-seo",
+      "pr": null,
+      "step": "plan"
     },
     "BO-04-activite": {
       "dependsOn": [
@@ -273,9 +276,10 @@
         "BO-05b-generation-publication",
         "BO-07-themes"
       ],
-      "status": "pending",
-      "worktree": null,
-      "pr": null
+      "status": "dispatched",
+      "worktree": "bo-04-activite",
+      "pr": null,
+      "step": "plan"
     },
     "BO-06-statut": {
       "dependsOn": [
@@ -374,8 +378,9 @@
       "spec": "SA-06-historique",
       "blockedOn": "SA-07-compte",
       "what": "entry point to /[app]/history: SA-07 account page links to it (inside [app]/account/**); a header/tool link would need a CONTRACT-ui/SA-02 follow-up",
-      "resolved": false,
-      "note": "handled inside SA-07 (history link in the account page)"
+      "resolved": true,
+      "note": "handled inside SA-07 (history link in the account page)",
+      "resolution": "SA-07 account page links to /history (#38)"
     },
     {
       "spec": "CONTRACT-ui",

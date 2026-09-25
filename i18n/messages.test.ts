@@ -9,15 +9,15 @@ import { loadMessages } from "./load-messages";
 // zone file that exists today, so a future spec's zone is covered for free.
 
 const MESSAGES_ROOT = path.join(process.cwd(), "messages");
-const LOCALES = ["fr", "en"] as const;
+type Locale = "fr" | "en";
 
-function zoneFiles(locale: (typeof LOCALES)[number]): string[] {
+function zoneFiles(locale: Locale): string[] {
   return readdirSync(path.join(MESSAGES_ROOT, locale))
     .filter((name) => name.endsWith(".json"))
     .sort();
 }
 
-function readZone(locale: (typeof LOCALES)[number], file: string): Record<string, unknown> {
+function readZone(locale: Locale, file: string): Record<string, unknown> {
   return JSON.parse(readFileSync(path.join(MESSAGES_ROOT, locale, file), "utf8")) as Record<string, unknown>;
 }
 

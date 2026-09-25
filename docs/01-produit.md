@@ -205,7 +205,7 @@ La crédibilité de la démo repose sur des produits qui ressemblent à de vrais
 | --- | --- | --- | --- |
 | LettrePro (lettre de motivation) | Editorial | Scale | Prompt système, 4 champs, landing, FAQ, 3 exemples |
 | DescriPro (description produit) | Corporate | Learn | Idem |
-| NomDeMarque (noms de marque) | Playful | Test, « à couper » | Idem, sortie structurée (liste de noms) |
+| NomDeMarque (noms de marque) | Playful | Test, « à couper » | Idem, liste de noms en markdown (le schéma figé n'a pas de sortie structurée) |
 | BioInsta (bio Instagram) | Neon | Créé en direct pendant la démo | Config prête à coller dans le formulaire, pour ne pas taper en live |
 
 Les chiffres de chaque produit (visites, conversion, revenu, coût IA) sont choisis pour raconter une histoire sur 30 jours : LettrePro « à scaler », DescriPro sans badge, NomDeMarque « à couper », chacun avec au moins 1 000 visites. La config de BioInsta est prête à coller (`fixtures/bio-instagram.config.json`). En mode mock, l'IA sert à chaque produit sa propre fixture.

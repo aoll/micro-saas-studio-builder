@@ -88,3 +88,11 @@ BioInsta (créé en saisie manuelle, enregistré en brouillon, publié, puis rep
 - Lecture de code : `product-form.tsx` (`handleNext`, `stepPatch`), `step-nav.tsx`, `validation.ts` (`toFrenchMessage`, `validateStep`), `lib/schemas/product-config.ts` (`pricingSchema`) pour confirmer la correction de B-P4-1 et documenter la cause de B-P5-1
 - `pnpm tsx scripts/reset-demo.ts`, `pnpm db:migrate`
 - Lecture complète de `docs/` (00 à 13), `specs/README.md`, toutes les specs `BO-*`/`SA-*`/`CONTRACT-*`/`LEDGER`/`TRACKING`/`SECURITY`/`DEMO-mode`/`I18N-SEO`/`E2E-demo`/`SETUP-skeleton`/`TOOLING-test-transaction`, et `specs/qa/*.md`
+
+## Décision
+
+Validée par l'humain le 2026-09-25 (« Fixe aussi »).
+
+| Constat | Décision | Spec de correction |
+|---|---|---|
+| B-P5-1 | corriger | `specs/qa/QA1-P5-E2-messages-numeriques.md` |

@@ -28,6 +28,13 @@
       "findings": 1,
       "retained": 1,
       "scope": "scenario creation-produit"
+    },
+    {
+      "n": 5,
+      "report": ".claude/qa/reports/2026-09-25-creation-produit-2.md",
+      "findings": 1,
+      "retained": 1,
+      "scope": "scenario creation-produit, recheck B-P4-1"
     }
   ],
   "setAside": [
@@ -150,6 +157,13 @@
       "worktree": null,
       "pr": 71,
       "mode": "plan dans la spec"
+    },
+    "QA1-P5-E2-messages-numeriques": {
+      "dependsOn": [],
+      "status": "dispatched",
+      "worktree": "qa1-p5-e2-messages-numeriques",
+      "pr": null,
+      "mode": "lot léger, plan dans la spec"
     }
   },
   "pendingIntegrations": []

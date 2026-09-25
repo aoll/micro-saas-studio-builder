@@ -186,6 +186,9 @@ test.describe("BO-03 · Fiche produit", () => {
 
       const editLink = page.getByRole("link", { name: "Modifier la config" });
       await expect(editLink).toHaveAttribute("href", `/admin/products/${product.slug}/edit`);
+
+      const activityTab = page.getByRole("link", { name: "Activité" });
+      await expect(activityTab).toHaveAttribute("href", `/admin/products/${product.slug}/activity`);
     } finally {
       await cleanupStoryProduct(product);
     }

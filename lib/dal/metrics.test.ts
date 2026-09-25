@@ -675,6 +675,40 @@ describe("getFunnel", () => {
       await cleanupProduct(id);
     });
 
+    // Orchestrator decision on this spec's diagnosis (scripts/seed.ts, out of Périmètre, is not
+    // touched): the person identity is coalesce(user_id, anonymous_id) for every one of the 5
+    // step types, not just first_generation. In production signup/credits_exhausted/purchase
+    // always carry a userId (D1, unchanged), so this is a no-op there; but scripts/seed.ts's
+    // synthetic story events, which only ever set anonymousId for these three types, must still
+    // count as one person per anonymousId rather than 0.
+    it("counts a signup event identified by anonymous_id alone (no user_id) as 1 person", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id } = await createTempProduct({ name: "Anon signup P" });
+      const anonymousId = randomUUID();
+      await db.insert(events).values({ productId: id, type: "signup" as const, anonymousId, userId: null });
+
+      const { getFunnel } = await import("./metrics");
+      const funnel = await getFunnel(id, { days: 30 });
+      const step = funnel.steps.find((row) => row.type === "signup")!;
+      expect(step.count).toBe(1);
+
+      await cleanupProduct(id);
+    });
+
+    it("counts a credits_exhausted event identified by anonymous_id alone (no user_id) as 1 person", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id } = await createTempProduct({ name: "Anon exhausted P" });
+      const anonymousId = randomUUID();
+      await db.insert(events).values({ productId: id, type: "credits_exhausted" as const, anonymousId, userId: null });
+
+      const { getFunnel } = await import("./metrics");
+      const funnel = await getFunnel(id, { days: 30 });
+      const step = funnel.steps.find((row) => row.type === "credits_exhausted")!;
+      expect(step.count).toBe(1);
+
+      await cleanupProduct(id);
+    });
+
     it("counts two first_generation events from the same anonymous visitor as 1", async () => {
       requireAdmin.mockResolvedValue({ user: { role: "admin" } });
       const { id } = await createTempProduct({ name: "Dup first-gen anon P" });

@@ -527,6 +527,10 @@
     {
       "for": "E2E-demo",
       "note": "SA-05: e2e/checkout.spec.ts journey « opens as a nested modal from the tool paywall » is test.fixme; finish it in the E2E phase with SA-04 pricing journey 3"
+    },
+    {
+      "for": "CONTRACT (human)",
+      "note": "events: track() dedupe (follow-up SA-03/SA-05) filters signup by user_id and purchase by metadata->>purchaseKey on top of the (product_id, type, created_at) index; add (product_id, type, user_id) and a purchase_key column or expression index on metadata->>purchaseKey when volume grows"
     }
   ]
 }

@@ -20,7 +20,7 @@ const STATUS_BADGE_CLASS: Record<"ok" | "error" | "pending", string> = {
 };
 
 // BO-04's "Dernières générations" table (mockup, docs/02-ecrans.md › BO-04):
-// date, entrée, sortie, coût IA, statut — every status, the refunded flag
+// date, entrée, sortie, modèle, coût IA, statut — every status, the refunded flag
 // folded into the status pill.
 export function GenerationsTable({
   slug,
@@ -74,6 +74,9 @@ export function GenerationsTable({
                   Sortie
                 </th>
                 <th scope="col" className="py-2 pr-4 font-medium">
+                  Modèle
+                </th>
+                <th scope="col" className="py-2 pr-4 font-medium">
                   Coût IA
                 </th>
                 <th scope="col" className="py-2 pr-4 font-medium">
@@ -89,6 +92,7 @@ export function GenerationsTable({
                     <td className="py-2 pr-4 whitespace-nowrap">{formatRelative(entry.createdAt, now)}</td>
                     <td className="py-2 pr-4">{summarizeInput(entry.input, fields)}</td>
                     <td className="py-2 pr-4 text-muted-foreground">{summarizeOutput(entry.output)}</td>
+                    <td className="py-2 pr-4 whitespace-nowrap">{entry.model ?? "—"}</td>
                     <td className="py-2 pr-4 whitespace-nowrap">{formatCostMicros(entry.costMicros)}</td>
                     <td className="py-2 pr-4">
                       <Badge className={STATUS_BADGE_CLASS[status.variant]}>{status.label}</Badge>

@@ -97,4 +97,37 @@ describe("GenerationsTable", () => {
     expect(screen.getByText("—")).toBeTruthy();
     expect(screen.getByText("Erreur · remboursé")).toBeTruthy();
   });
+
+  it("shows the model that answered in a Modèle column (spec BO-04: entrée, sortie, modèle, coût)", () => {
+    render(
+      <GenerationsTable
+        slug="s"
+        entries={[entry()]}
+        total={1}
+        page={1}
+        hasMore={false}
+        fields={fields}
+        now={now}
+        currentPages={{}}
+      />,
+    );
+    expect(screen.getByRole("columnheader", { name: "Modèle" })).toBeTruthy();
+    expect(screen.getByRole("cell", { name: "anthropic/claude-haiku-4.5" })).toBeTruthy();
+  });
+
+  it("shows an em dash when no model is recorded", () => {
+    render(
+      <GenerationsTable
+        slug="s"
+        entries={[entry({ model: null })]}
+        total={1}
+        page={1}
+        hasMore={false}
+        fields={fields}
+        now={now}
+        currentPages={{}}
+      />,
+    );
+    expect(screen.getByRole("cell", { name: "—" })).toBeTruthy();
+  });
 });

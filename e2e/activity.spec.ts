@@ -186,6 +186,7 @@ test.describe("BO-04 · Fiche produit : activité", () => {
       await expect(page.getByRole("heading", { name: "E2E Activity Story" })).toBeVisible();
       await expect(page.getByText("Dernières générations")).toBeVisible();
       await expect(page.getByText("Brewtiful, Grain Gang, Moka")).toBeVisible();
+      await expect(page.getByRole("cell", { name: "anthropic/claude-haiku-4.5" })).toBeVisible();
       await expect(page.getByText("Erreur · remboursé")).toBeVisible();
 
       await expect(page.getByText("Mouvements de crédits")).toBeVisible();

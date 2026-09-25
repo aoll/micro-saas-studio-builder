@@ -105,9 +105,10 @@ test.describe("DEMO-mode · /admin/ops is owner-only", () => {
     await expect(page.getByRole("button", { name: "Réinitialiser la démo" })).toHaveCount(0);
   });
 
-  test("a signed-out visitor is redirected to /admin/login, not shown a 404 or the page", async ({ page }) => {
-    await page.goto("/admin/ops");
-    await expect(page).toHaveURL(/\/admin\/login$/);
+  test("a signed-out visitor gets a 404, not a login redirect", async ({ page }) => {
+    const response = await page.goto("/admin/ops");
+    expect(response?.status()).toBe(404);
+    await expect(page).toHaveURL(/\/admin\/ops$/);
   });
 
   test("the owner reaches the page, with a two-step destructive confirm", async ({ page }) => {

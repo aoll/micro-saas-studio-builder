@@ -131,13 +131,21 @@ test("QA1-P1-M1: pasting the bio-instagram fixture fills every step, and the pub
     await expect(page.getByLabel("Prompt système")).toHaveValue(fixture.generation.systemPrompt);
 
     // Step 2: still a deliberate action (plan decision 2) — pick a theme.
+    // ThemeThumbnail's content is aria-hidden (docs/04's "vrais mini-rendus
+    // React", not text meant to be read by a screen reader), so the radio
+    // carries no accessible name: locate it by its (aria-hidden) text
+    // instead of `getByRole(..., { name })`.
     await page.getByRole("button", { name: /^2\./ }).click();
-    await page.getByRole("radio", { name: /Neon/ }).click();
+    await page.locator('[role="radio"]', { hasText: "Neon" }).click();
 
     // Walk to the recap and publish.
     await page.getByRole("button", { name: /^7\./ }).click();
     await page.getByRole("button", { name: "Publier" }).click();
-    await expect(page.getByText(/Produit publié/)).toBeVisible();
+    // Two elements match a loose /Produit publié/: SummaryStep's own inline
+    // confirmation ("Produit publié · Voir /…") and the toast
+    // (`product-form.tsx`'s `toast.success`, "Produit publié · version …"):
+    // match the toast's exact wording to disambiguate.
+    await expect(page.getByText(/Produit publié · version/)).toBeVisible();
 
     const productRow = await db.query.products.findFirst({ where: eq(products.slug, uniqueSlug) });
     createdProductId = productRow?.id;
@@ -145,7 +153,10 @@ test("QA1-P1-M1: pasting the bio-instagram fixture fills every step, and the pub
 
     await page.goto(`/${uniqueSlug}`);
     await expect(page.getByText(fixture.landing.exampleOutput)).toBeVisible();
-    await expect(page.getByText(fixture.landing.steps[0].title)).toBeVisible();
+    // Exact match: the fixture's subheadline ("Tell us your niche and
+    // vibe, …") contains the first step's title as a substring, so a loose
+    // match resolves to both and Playwright's strict mode rejects it.
+    await expect(page.getByText(fixture.landing.steps[0].title, { exact: true })).toBeVisible();
   } finally {
     if (createdProductId) {
       await db.delete(productVersions).where(eq(productVersions.productId, createdProductId));

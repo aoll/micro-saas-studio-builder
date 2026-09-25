@@ -84,9 +84,9 @@
       "dependsOn": [
         "LEDGER"
       ],
-      "status": "dispatched",
-      "worktree": "sa-03-inscription",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 35
     },
     "SA-04-tarifs": {
       "dependsOn": [

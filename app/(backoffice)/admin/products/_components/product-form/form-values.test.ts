@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { productConfigSchema } from "@/lib/schemas/product-config";
-import { DEFAULT_GENERATION, DEFAULT_PRICING, moveItem, newProductDraft, toConfig } from "./form-values";
+import { productConfigSchema, type ProductConfig } from "@/lib/schemas/product-config";
+import { DEFAULT_GENERATION, DEFAULT_PRICING, fromConfig, moveItem, newProductDraft, toConfig } from "./form-values";
 
 const themeId = randomUUID();
 
@@ -77,6 +79,24 @@ describe("toConfig", () => {
     const config = toConfig(draft);
     expect((config.inputs[0] as Record<string, unknown>).id).toBeUndefined();
     expect(draft).toEqual(before);
+  });
+});
+
+describe("fromConfig", () => {
+  it("adds a non-empty client-only id to every input field", () => {
+    const config: ProductConfig = { ...toConfig(newProductDraft(themeId)) };
+    const draft = fromConfig(config);
+    expect(draft.inputs).toHaveLength(config.inputs.length);
+    for (const field of draft.inputs) expect(field.id).toBeTruthy();
+  });
+
+  it("round-trips a config: toConfig(fromConfig(config)) deep-equals config", () => {
+    const raw = readFileSync(join(process.cwd(), "fixtures/bio-instagram.config.json"), "utf-8");
+    const parsed = { ...JSON.parse(raw), themeId };
+    const result = productConfigSchema.safeParse(parsed);
+    if (!result.success) throw new Error("fixture must already validate");
+    const config = result.data;
+    expect(toConfig(fromConfig(config))).toEqual(config);
   });
 });
 

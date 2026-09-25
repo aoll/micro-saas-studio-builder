@@ -46,6 +46,16 @@ export function newProductDraft(themeId: string): ProductDraft {
   };
 }
 
+// The inverse of `toConfig`, for a config that already validated (import
+// panel, QA1-P1-M1): adds a fresh client-only `id` per input row (needed by
+// FieldsStep's `key`-based list), everything else passes through unchanged.
+export function fromConfig(config: ProductConfig): ProductDraft {
+  return {
+    ...config,
+    inputs: config.inputs.map((input) => ({ ...input, id: crypto.randomUUID() })),
+  };
+}
+
 function cleanBranding(branding: ProductConfig["branding"]): ProductConfig["branding"] {
   const cleaned: ProductConfig["branding"] = {};
   if (branding.logoUrl?.trim()) cleaned.logoUrl = branding.logoUrl.trim();

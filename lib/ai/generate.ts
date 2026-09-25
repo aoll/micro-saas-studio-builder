@@ -1,5 +1,5 @@
 import "server-only";
-import { streamText, type StreamTextResult } from "ai";
+import { streamText } from "ai";
 import { resolveModel } from "@/lib/ai/model";
 import { renderPrompt } from "@/lib/ai/prompt";
 import type { GenerationResult } from "@/lib/dal/generations";
@@ -66,12 +66,10 @@ export type StreamGenerationArgs = {
 // product's prompt template with the safety prompt prepended, and reports
 // the outcome through `onSuccess` / `onError` so the caller (api/generate)
 // can persist it — this module never touches the database itself.
-export function streamGeneration({
-  product,
-  inputs,
-  onSuccess,
-  onError,
-}: StreamGenerationArgs): StreamTextResult<never, never, never> {
+// The return type is inferred from `streamText` itself (StreamTextResult is
+// generic over the tool set / output type and this call declares no tools):
+// pinning it by hand fights the callback types instead of matching them.
+export function streamGeneration({ product, inputs, onSuccess, onError }: StreamGenerationArgs) {
   const { generation } = product;
   const system = generation.systemPrompt
     ? `${SAFETY_SYSTEM_PROMPT}\n\n${generation.systemPrompt}`

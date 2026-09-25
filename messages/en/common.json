@@ -1,7 +1,7 @@
 {
   "header": {
     "signIn": "Sign in",
-    "credits": "{count, plural, =0 {0 credit} one {# credit} other {# credits}}"
+    "credits": "{count, plural, one {# credit} other {# credits}}"
   },
   "demo": {
     "banner": "Demo: payment and email are simulated"

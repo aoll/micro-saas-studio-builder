@@ -15,6 +15,10 @@ describe("formatCostMicros", () => {
     expect(formatCostMicros(5_000)).toBe("0,005 €");
   });
 
+  it("adds decimals for a cost under a tenth of a cent", () => {
+    expect(formatCostMicros(295)).toBe("0,0003 €");
+  });
+
   it("shows 0,000 € for a null cost (a failed generation)", () => {
     expect(formatCostMicros(null)).toBe("0,000 €");
   });

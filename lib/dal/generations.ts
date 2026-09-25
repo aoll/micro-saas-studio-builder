@@ -1,9 +1,9 @@
 import "server-only";
 import { createHmac } from "node:crypto";
-import { and, eq, isNull, ne, or, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import { env } from "@/lib/env";
 import { db } from "@/lib/db";
-import { generations } from "@/lib/db/schema";
+import { events, generations } from "@/lib/db/schema";
 import { getSession } from "./session";
 
 // Frozen contract (specs/CONTRACT-types.md): the generation write flow
@@ -127,12 +127,33 @@ export const countPriorGenerations: (who: {
     if (who.userId !== session?.user.id) {
       throw new Error("countPriorGenerations: userId does not match the caller's session");
     }
+    // QA1-P1-B5: the caller's own rows, plus any anonymous row (no
+    // user_id) this same visitor made before signing in. Two ways to link
+    // an anonymous row to them: the anonymous cookie still in their
+    // browser (`who.anonymousId`), or — cookie lost, other device — an
+    // anonymousId recorded on one of their own `signup` events for this
+    // product (docs/07: "relie la visite anonyme à l'inscription"). Either
+    // is a strict subset of "an anonymousId this exact user's own signup
+    // vouched for", so both are combined into one set of linked ids.
+    // `ipHash` is never used to link here (docs/01: a shared IP must not
+    // hide another person's first generation).
+    const linkedFromSignup = db
+      .select({ anonymousId: events.anonymousId })
+      .from(events)
+      .where(
+        and(
+          eq(events.productId, who.productId),
+          eq(events.type, "signup"),
+          eq(events.userId, who.userId),
+          isNotNull(events.anonymousId),
+        ),
+      );
+    const linkedIds = who.anonymousId
+      ? or(inArray(generations.anonymousId, linkedFromSignup), eq(generations.anonymousId, who.anonymousId))
+      : inArray(generations.anonymousId, linkedFromSignup);
+    const ownOrLinked = or(eq(generations.userId, who.userId), and(isNull(generations.userId), linkedIds));
     const rows = await db.query.generations.findMany({
-      where: and(
-        eq(generations.productId, who.productId),
-        eq(generations.userId, who.userId),
-        ne(generations.status, "failed"),
-      ),
+      where: and(eq(generations.productId, who.productId), ne(generations.status, "failed"), ownOrLinked),
       columns: { id: true },
     });
     return rows.length;

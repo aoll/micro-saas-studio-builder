@@ -205,7 +205,16 @@ export async function saveThresholds(
     if (!productRow) return { ok: false, reason: "product_not_found" as const };
     assertEditable(productRow);
 
-    const [defaultRow] = await tx.select().from(decisionThresholds).where(isNull(decisionThresholds.productId));
+    // Locked too (review round, DB MEDIUM): without `.for("update")` here, a
+    // concurrent default save (which does lock this row) could commit its
+    // own new default in between this read and this override's insert,
+    // leaving the diff computed against a stale default — this blocks
+    // until that other transaction commits and reads its fresh values.
+    const [defaultRow] = await tx
+      .select()
+      .from(decisionThresholds)
+      .where(isNull(decisionThresholds.productId))
+      .for("update");
     if (!defaultRow) throw new Error("saveThresholds: default thresholds row missing");
     const defaults = defaultThresholdsRowSchema.parse(defaultRow);
 

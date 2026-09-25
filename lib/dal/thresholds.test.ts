@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { eq, isNull } from "drizzle-orm";
+import { eq, isNull, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/auth-schema";
@@ -353,6 +353,55 @@ describe("saveThresholds(productId, …) — per-product override", () => {
       scaleRequiresPositiveMargin: true,
     });
     expect(mockAssertEditable).toHaveBeenCalledWith(expect.objectContaining({ isSeed: true, id: productId }));
+  });
+
+  // Review round (DB MEDIUM): the default row is now locked with
+  // `.for("update")` on this path too, so a concurrent default save cannot
+  // interleave with the diff computation. Pinned by a real overlap: a
+  // default-save transaction holds the row's lock (`pg_sleep` while locked)
+  // and changes `minVisits` to 750; a concurrent product override submits
+  // `minVisits: 750` too. If the override read the *old* default (1000)
+  // without waiting for the lock, 750 !== 1000 and it would be stored as a
+  // spurious override; having waited for the *new* default (750), 750 ===
+  // 750 and no override is stored for that field.
+  it("waits for a concurrent default save's lock before diffing (no dirty read)", async () => {
+    await currentAdmin();
+    const productId = await createTestProduct();
+    const { saveThresholds } = await import("./thresholds");
+
+    try {
+      const defaultSave = db.transaction(async (tx) => {
+        await tx.select().from(decisionThresholds).where(isNull(decisionThresholds.productId)).for("update");
+        await tx.execute(sql`select pg_sleep(0.3)`);
+        await tx
+          .update(decisionThresholds)
+          .set({ minVisits: 750, updatedBy: ownerId, updatedAt: new Date() })
+          .where(isNull(decisionThresholds.productId));
+      });
+
+      const overrideSave = (async () => {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        return saveThresholds(productId, {
+          minVisits: 750,
+          killMaxConversion: 0.02,
+          scaleMinConversion: 0.05,
+          scaleRequiresPositiveMargin: true,
+        });
+      })();
+
+      const [, result] = await Promise.all([defaultSave, overrideSave]);
+      expect(result).toEqual({ ok: true });
+
+      const row = await db.query.decisionThresholds.findFirst({
+        where: eq(decisionThresholds.productId, productId),
+      });
+      expect(row?.minVisits ?? null).toBeNull();
+    } finally {
+      await db
+        .update(decisionThresholds)
+        .set({ minVisits: 1000, updatedBy: null, updatedAt: new Date() })
+        .where(isNull(decisionThresholds.productId));
+    }
   });
 });
 

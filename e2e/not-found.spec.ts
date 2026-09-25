@@ -13,15 +13,15 @@ import { SEED_OWNER } from "../scripts/seed";
 // SA-08 journeys (specs/SA-08-introuvable.md). Runs against the webServer
 // built by playwright.config.ts: migrated, seeded, AI_MODE=mock.
 //
-// Written, not run (orchestrator decision): they assert the target
-// behaviour of the spec's acceptance bullets (status 404 with the SA-08
-// UI, its heading and its link to another active product). Task 1's spike
-// (app/(products)/[app]/layout.tsx's comment) found outcome C: the
-// layout's notFound() call gives a real 404 status today, but the body is
-// Next's own generic error page, not [app]/not-found.tsx's content, so the
-// heading/link assertions below are expected to fail until that blocker is
-// lifted (see the PR body's Blockers section) by a follow-up outside this
-// spec's périmètre.
+// Plan round 2 (task R5): the product-level 404s (unknown slug, `killed`
+// product) are served by app/(products)/not-found.tsx, reached when the
+// root layout's notFound() call bubbles to the parent segment (task 1's
+// spike, outcome 3). Manually re-checked with a real Chromium browser on a
+// production build (:3108, docs/11-implementation.md's real-check step):
+// status 404, the SA-08 heading and the link to another active product all
+// render — the server HTML for this path is an empty shell
+// (`<html id="__next_error__">`), same as Next's own 404, and the content
+// below hydrates client-side, which `toBeVisible()` waits for.
 
 test("an unknown slug returns 404 with the SA-08 page", async ({ page }) => {
   const slug = `introuvable-${randomUUID()}`;

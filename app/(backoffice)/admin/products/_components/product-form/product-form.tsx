@@ -5,6 +5,7 @@ import { Activity, useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Theme } from "@/lib/dal/themes";
+import type { ProductConfig } from "@/lib/schemas/product-config";
 import { Button } from "@/components/ui/button";
 import {
   checkSlug,
@@ -17,9 +18,10 @@ import {
   uploadLogo,
 } from "../../_actions";
 import { FieldsStep } from "./fields-step";
-import { toConfig, type ProductDraft } from "./form-values";
+import { fromConfig, toConfig, type ProductDraft } from "./form-values";
 import { GenerationStep, type GenerationPatch } from "./generation-step";
 import { IdentityStep, type IdentityPatch } from "./identity-step";
+import { ImportConfigPanel } from "./import-config-panel";
 import { LandingPreview } from "./landing-preview";
 import { LandingStep } from "./landing-step";
 import { estimateMargins } from "./margin";
@@ -174,6 +176,28 @@ export function ProductForm({
     setDraft((current) => ({ ...current, ...patch }));
   }
 
+  // QA1-P1-M1's import panel (step 1, create mode only, plan decision 3):
+  // an imported slug is treated as explicit as a typed one, so it runs
+  // through the same availability check `handleIdentityChange` already
+  // does. A successful import and a validation-error import never both
+  // fire per click (ImportConfigPanel calls exactly one of onImport /
+  // onErrors), so there is no race between `setErrors({})` here and a
+  // `handleImportErrors` call from the same click.
+  function handleImport(config: ProductConfig) {
+    setDraft(fromConfig(config));
+    setSlugEdited(true);
+    setErrors({});
+    toast.success("Configuration importée");
+    checkSlug(config.slug).then((result) => {
+      if (!result.available) setErrors((current) => ({ ...current, slug: result.error ?? "Slug indisponible" }));
+    });
+  }
+
+  function handleImportErrors(patchErrors: Record<string, string>) {
+    setErrors((current) => ({ ...current, ...patchErrors }));
+    toast.error("Configuration importée avec des erreurs à corriger");
+  }
+
   function clearError(path: string) {
     setErrors((current) => {
       if (!(path in current)) return current;
@@ -275,6 +299,14 @@ export function ProductForm({
         </div>
 
         <Activity mode={currentStep === 1 ? "visible" : "hidden"}>
+          {mode === "create" ? (
+            <ImportConfigPanel
+              themes={themes}
+              currentThemeId={draft.themeId}
+              onImport={handleImport}
+              onErrors={handleImportErrors}
+            />
+          ) : null}
           <IdentityStep
             mode={mode}
             name={draft.name}

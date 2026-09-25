@@ -234,10 +234,9 @@
         "BO-05b-generation-publication",
         "BO-07-themes"
       ],
-      "status": "dispatched",
-      "worktree": "security",
-      "pr": null,
-      "step": "tdd",
+      "status": "merged",
+      "worktree": null,
+      "pr": 43,
       "humanDecision": {
         "pending": false,
         "answer": "OK SECURITY (2026-09-25)",
@@ -263,10 +262,9 @@
         "BO-05b-generation-publication",
         "BO-07-themes"
       ],
-      "status": "dispatched",
-      "worktree": "i18n-seo",
-      "pr": null,
-      "step": "tdd",
+      "status": "merged",
+      "worktree": null,
+      "pr": 41,
       "humanDecision": {
         "pending": false,
         "answer": "go fichier partagé (2026-09-25)",
@@ -292,10 +290,9 @@
         "BO-05b-generation-publication",
         "BO-07-themes"
       ],
-      "status": "dispatched",
-      "worktree": "bo-04-activite",
-      "pr": null,
-      "step": "review"
+      "status": "merged",
+      "worktree": null,
+      "pr": 42
     },
     "BO-06-statut": {
       "dependsOn": [
@@ -354,6 +351,17 @@
       "status": "deferred",
       "worktree": null,
       "pr": null
+    },
+    "CONTRACT-remove-demo-lock": {
+      "dependsOn": [],
+      "status": "dispatched",
+      "worktree": "contract-remove-demo-lock",
+      "pr": null,
+      "step": "tdd",
+      "humanDecision": {
+        "pending": false,
+        "answer": "« Le verrouillage doit être nettoyé, pas de code mort » (2026-09-25): remove assertEditable/isEditable/Lockable and the read-only UI; residual contract spec written by the orchestrator"
+      }
     }
   },
   "pendingIntegrations": [
@@ -581,6 +589,10 @@
     {
       "for": "CONTRACT (human)",
       "note": "BO-04 activity: add indexes purchases(product_id, created_at) and credit_transactions(product_id, created_at) for the product-wide activity lists (seq scans today, fine at demo volume)"
+    },
+    {
+      "for": "human (docs)",
+      "note": "docs/ still describes the demo lock and the 10 visitor-product limit (01-produit, 02-ecrans BO-09, 07-modele-de-donnees is_seed columns, 09-arborescence guards.ts, 11-implementation); update after the run"
     }
   ]
 }

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/auth-schema";
@@ -537,5 +537,101 @@ describe("recordAnonymousGeneration", () => {
     const rows = await db.select().from(generations).where(eq(generations.idempotencyKey, idempotencyKey));
     expect(rows).toHaveLength(1);
     await db.delete(generations).where(eq(generations.idempotencyKey, idempotencyKey));
+  });
+});
+
+describe("countRecentGenerations", () => {
+  // Inserts a row directly (bypassing recordGeneration) so `createdAt` can
+  // be backdated: the window is anchored on the database clock (SECURITY
+  // plan), so a fixture 61 s in the past must actually be 61 s in the past
+  // in Postgres, not merely inserted "a moment ago" from Node's clock.
+  async function insertAt(args: {
+    productId: string;
+    userId: string | null;
+    ipHash: string;
+    secondsAgo: number;
+    status?: "pending" | "succeeded" | "failed";
+  }): Promise<string> {
+    const [row] = await db
+      .insert(generations)
+      .values({
+        productId: args.productId,
+        productVersion: 1,
+        userId: args.userId,
+        anonymousId: args.userId ? null : randomUUID(),
+        ipHash: args.ipHash,
+        input: {},
+        status: args.status ?? "succeeded",
+        idempotencyKey: randomUUID(),
+        createdAt: sql`now() - make_interval(secs => ${args.secondsAgo})`,
+      })
+      .returning({ id: generations.id });
+    return row!.id;
+  }
+
+  it("counts rows inside the 60 s window and excludes older ones, by user and by ip", async () => {
+    const randomUser = await db.query.users.findFirst();
+    getSession.mockResolvedValue({ user: { id: randomUser!.id } });
+    const { countRecentGenerations } = await import("./generations");
+    const productId = await lettreProId();
+    const ipHash = `ip-${randomUUID()}`;
+    const ids = [
+      await insertAt({ productId, userId: randomUser!.id, ipHash, secondsAgo: 0 }),
+      await insertAt({ productId, userId: randomUser!.id, ipHash, secondsAgo: 30 }),
+      // Outside the window: must not be counted.
+      await insertAt({ productId, userId: randomUser!.id, ipHash, secondsAgo: 61 }),
+    ];
+
+    try {
+      const { byUser, byIp } = await countRecentGenerations({ userId: randomUser!.id, ipHash, windowSeconds: 60 });
+      expect(byUser).toBe(2);
+      expect(byIp).toBe(2);
+    } finally {
+      for (const id of ids) await db.delete(generations).where(eq(generations.id, id));
+    }
+  });
+
+  it("scopes by ip_hash across products, and a failed row still counts (rate limiting counts attempts)", async () => {
+    getSession.mockResolvedValue(null);
+    const { countRecentGenerations } = await import("./generations");
+    const productId = await lettreProId();
+    const otherId = await otherProductId();
+    const ipHash = `ip-${randomUUID()}`;
+    const ids = [
+      await insertAt({ productId, userId: null, ipHash, secondsAgo: 0, status: "succeeded" }),
+      await insertAt({ productId: otherId, userId: null, ipHash, secondsAgo: 0, status: "failed" }),
+    ];
+
+    try {
+      const { byIp } = await countRecentGenerations({ userId: null, ipHash, windowSeconds: 60 });
+      expect(byIp).toBe(2);
+    } finally {
+      for (const id of ids) await db.delete(generations).where(eq(generations.id, id));
+    }
+  });
+
+  it("byUser is 0 for an anonymous caller (userId null), regardless of byIp", async () => {
+    getSession.mockResolvedValue(null);
+    const { countRecentGenerations } = await import("./generations");
+    const productId = await lettreProId();
+    const ipHash = `ip-${randomUUID()}`;
+    const id = await insertAt({ productId, userId: null, ipHash, secondsAgo: 0 });
+
+    try {
+      const { byUser, byIp } = await countRecentGenerations({ userId: null, ipHash, windowSeconds: 60 });
+      expect(byUser).toBe(0);
+      expect(byIp).toBe(1);
+    } finally {
+      await db.delete(generations).where(eq(generations.id, id));
+    }
+  });
+
+  it("throws when the given userId does not match the session", async () => {
+    const randomUser = await db.query.users.findFirst();
+    getSession.mockResolvedValue({ user: { id: randomUser!.id } });
+    const { countRecentGenerations } = await import("./generations");
+    await expect(
+      countRecentGenerations({ userId: "someone-else", ipHash: "hash", windowSeconds: 60 }),
+    ).rejects.toThrow();
   });
 });

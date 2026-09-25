@@ -25,15 +25,13 @@ export async function generateStaticParams() {
 // (docs/04-nextjs.md), read with next/root-params since it sits above this
 // root layout. An unknown slug or a `killed` product both 404 (specs/SA-08):
 // spiked at specs/SA-08-introuvable.md's task 1, on a throwaway build
-// served on :3108 with a real killed row. Neither a plain `notFound()` in
-// this layout nor the root-layout-with-slots fallback pass (a second
-// invocation with `modal` left `undefined`, per
-// node_modules/next/dist/server/app-render/create-component-tree.js) ever
-// rendered `[app]/not-found.tsx`'s content or status 404 without falling
-// back to Next's own generic "This page could not be found" — outcome C,
-// reported as a blocker (see the PR body). A product whose theme row is
-// missing is a data integrity error, not a 404, so it throws instead of
-// calling notFound().
+// served on :3108 with a real killed row, then re-checked on a clean build
+// in a browser (plan round 2, decision 3). Outcome: this `notFound()` call
+// is rendered by the *parent* segment's not-found
+// (app/(products)/not-found.tsx), never by this segment's own
+// `[app]/not-found.tsx` — real 404 status, SA-08 content served one level
+// up. A product whose theme row is missing is a data integrity error, not
+// a 404, so it throws instead of calling notFound().
 export default async function ProductLayout({ children, modal }: LayoutProps<"/[app]">) {
   const slug = await app();
   const product = slug ? await getProduct(slug) : null;

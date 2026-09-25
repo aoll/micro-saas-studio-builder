@@ -75,12 +75,25 @@ const FRENCH_MESSAGES: Record<string, string> = {
 // already writes in English, and to the raw message for anything else
 // (an as-yet-untranslated Zod built-in), so nothing is ever silently
 // dropped.
-function toFrenchMessage(issue: z.core.$ZodIssue): string {
+export function toFrenchMessage(issue: z.core.$ZodIssue): string {
   if (issue.code === "too_big" && issue.origin === "string") return `${issue.maximum} caractères maximum`;
   if (issue.code === "too_small" && issue.origin === "string") {
     return issue.minimum === 1 ? "Ce champ est requis" : `${issue.minimum} caractères minimum`;
   }
   return FRENCH_MESSAGES[issue.message] ?? issue.message;
+}
+
+// First French message per dotted path (e.g. `"inputs.1.key"`), shared by
+// `validateStep` and the `saveProduct` Server Action so both report the
+// same wording for the same issue.
+export function issuesToErrors(issues: readonly z.core.$ZodIssue[]): Record<string, string> {
+  const errors: Record<string, string> = {};
+  for (const issue of issues) {
+    const path = issue.path.join(".");
+    if (path in errors) continue;
+    errors[path] = toFrenchMessage(issue);
+  }
+  return errors;
 }
 
 // Validates one step's patch on top of `VALID_BASELINE`, returning only
@@ -91,12 +104,5 @@ export function validateStep(step: number, patch: Partial<ProductConfig>): Recor
   const result = productConfigSchema.safeParse(merged);
   if (result.success) return {};
 
-  const errors: Record<string, string> = {};
-  for (const issue of result.error.issues) {
-    if (stepOfPath(issue.path) !== step) continue;
-    const path = issue.path.join(".");
-    if (path in errors) continue;
-    errors[path] = toFrenchMessage(issue);
-  }
-  return errors;
+  return issuesToErrors(result.error.issues.filter((issue) => stepOfPath(issue.path) === step));
 }

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 import { db } from "@/lib/db";
+import { withTestTransaction } from "@/lib/db/test-transaction";
 import { users } from "@/lib/db/auth-schema";
 import { creditTransactions, generations, productVersions, products, purchases, themes } from "@/lib/db/schema";
 import type { ProductConfig } from "@/lib/schemas/product-config";
@@ -63,7 +64,7 @@ function buildValidConfig(slug: string, themeId: string): ProductConfig {
   };
 }
 
-/** A throwaway product + its (schema-valid) config, cleaned up by the caller. */
+/** A throwaway product + its (schema-valid) config, rolled back by withTestTransaction. */
 async function createTempProduct(): Promise<{ id: string; slug: string }> {
   const id = randomUUID();
   const slug = `activity-${randomUUID()}`;
@@ -84,24 +85,13 @@ async function createTempProduct(): Promise<{ id: string; slug: string }> {
   return { id, slug };
 }
 
-/** A throwaway user, cleaned up by the caller. */
+/** A throwaway user, rolled back by withTestTransaction. */
 async function createTempUser(): Promise<string> {
   const [row] = await db
     .insert(users)
     .values({ id: randomUUID(), name: "Activity test user", email: `activity-${randomUUID()}@example.com` })
     .returning({ id: users.id });
   return row!.id;
-}
-
-async function cleanupProduct(productId: string, userIds: string[] = []): Promise<void> {
-  await db.delete(creditTransactions).where(eq(creditTransactions.productId, productId));
-  await db.delete(purchases).where(eq(purchases.productId, productId));
-  await db.delete(generations).where(eq(generations.productId, productId));
-  await db.delete(productVersions).where(eq(productVersions.productId, productId));
-  await db.delete(products).where(eq(products.id, productId));
-  for (const userId of userIds) {
-    await db.delete(users).where(eq(users.id, userId));
-  }
 }
 
 async function insertGeneration(overrides: {
@@ -207,6 +197,9 @@ describe("signatures", () => {
   });
 });
 
+// Guards write nothing to the database (rejected before any query, or the
+// spy itself proves no query ran): kept outside withTestTransaction, per
+// the tdd-workflow rule this run adds for spy-guard tests.
 describe("guards", () => {
   it("listProductGenerations requires an admin session", async () => {
     requireAdmin.mockRejectedValue(new Error("redirect:/admin/login"));
@@ -296,23 +289,25 @@ describe("guards", () => {
   });
 });
 
+// Fixtures and cleanup only, refactored onto withTestTransaction
+// (TOOLING-test-transaction): every test below now runs inside a
+// transaction that is always rolled back, so the manual try/finally
+// cleanupProduct() calls this file used are gone. Assertions are unchanged.
 describe("listProductGenerations", () => {
   it("returns an empty page for a product with no generations", async () => {
-    asAdmin();
-    const product = await createTempProduct();
-    try {
+    await withTestTransaction(async () => {
+      asAdmin();
+      const product = await createTempProduct();
       const result = await listProductGenerations(product.id, 1);
       expect(result).toEqual({ entries: [], page: 1, total: 0, hasMore: false });
-    } finally {
-      await cleanupProduct(product.id);
-    }
+    });
   });
 
   it("orders newest first and paginates 20 per page, with a stable order across equal timestamps", async () => {
-    asAdmin();
-    const product = await createTempProduct();
-    const userId = await createTempUser();
-    try {
+    await withTestTransaction(async () => {
+      asAdmin();
+      const product = await createTempProduct();
+      const userId = await createTempUser();
       const sameInstant = new Date("2026-01-01T00:00:00.000Z");
       const ids: string[] = [];
       for (let index = 0; index < 21; index += 1) {
@@ -332,16 +327,14 @@ describe("listProductGenerations", () => {
       const allIds = [...firstPage.entries, ...secondPage.entries].map((entry) => entry.id);
       expect(new Set(allIds).size).toBe(21);
       expect(allIds.sort()).toEqual([...ids].sort());
-    } finally {
-      await cleanupProduct(product.id, [userId]);
-    }
+    });
   });
 
   it("returns every status (pending, succeeded, failed), unlike the user-facing history", async () => {
-    asAdmin();
-    const product = await createTempProduct();
-    const userId = await createTempUser();
-    try {
+    await withTestTransaction(async () => {
+      asAdmin();
+      const product = await createTempProduct();
+      const userId = await createTempUser();
       await insertGeneration({ productId: product.id, userId, status: "succeeded" });
       await insertGeneration({ productId: product.id, userId, status: "pending" });
       await insertGeneration({ productId: product.id, userId, status: "failed" });
@@ -349,16 +342,14 @@ describe("listProductGenerations", () => {
       const result = await listProductGenerations(product.id, 1);
       expect(result.total).toBe(3);
       expect(result.entries.map((entry) => entry.status).sort()).toEqual(["failed", "pending", "succeeded"]);
-    } finally {
-      await cleanupProduct(product.id, [userId]);
-    }
+    });
   });
 
   it("returns input, output, model and cost, never a user id, anonymous id or ip hash", async () => {
-    asAdmin();
-    const product = await createTempProduct();
-    const userId = await createTempUser();
-    try {
+    await withTestTransaction(async () => {
+      asAdmin();
+      const product = await createTempProduct();
+      const userId = await createTempUser();
       await insertGeneration({
         productId: product.id,
         userId,
@@ -377,16 +368,14 @@ describe("listProductGenerations", () => {
       expect(Object.keys(entry).sort()).toEqual(
         ["costMicros", "createdAt", "id", "input", "model", "output", "refunded", "status"].sort(),
       );
-    } finally {
-      await cleanupProduct(product.id, [userId]);
-    }
+    });
   });
 
   it("marks a generation refunded when a refund ledger row references it", async () => {
-    asAdmin();
-    const product = await createTempProduct();
-    const userId = await createTempUser();
-    try {
+    await withTestTransaction(async () => {
+      asAdmin();
+      const product = await createTempProduct();
+      const userId = await createTempUser();
       const failedId = await insertGeneration({ productId: product.id, userId, status: "failed", output: null });
       await insertMovement({ productId: product.id, userId, delta: -1, reason: "generation", generationId: failedId });
       await insertMovement({ productId: product.id, userId, delta: 1, reason: "refund", generationId: failedId });
@@ -405,30 +394,26 @@ describe("listProductGenerations", () => {
       const notRefunded = result.entries.find((entry) => entry.id === succeededId)!;
       expect(refunded.refunded).toBe(true);
       expect(notRefunded.refunded).toBe(false);
-    } finally {
-      await cleanupProduct(product.id, [userId]);
-    }
+    });
   });
 });
 
 describe("listProductPurchases", () => {
   it("returns an empty page for a product with no purchases", async () => {
-    asAdmin();
-    const product = await createTempProduct();
-    try {
+    await withTestTransaction(async () => {
+      asAdmin();
+      const product = await createTempProduct();
       const result = await listProductPurchases(product.id, 1);
       expect(result).toEqual({ entries: [], page: 1, total: 0, hasMore: false });
-    } finally {
-      await cleanupProduct(product.id);
-    }
+    });
   });
 
   it("orders newest first, paginates, and returns every user's purchases without their user id", async () => {
-    asAdmin();
-    const product = await createTempProduct();
-    const userA = await createTempUser();
-    const userB = await createTempUser();
-    try {
+    await withTestTransaction(async () => {
+      asAdmin();
+      const product = await createTempProduct();
+      const userA = await createTempUser();
+      const userB = await createTempUser();
       const older = await insertPurchase({
         productId: product.id,
         userId: userA,
@@ -454,16 +439,14 @@ describe("listProductPurchases", () => {
         amountCents: 1490,
         currency: "EUR",
       });
-    } finally {
-      await cleanupProduct(product.id, [userA, userB]);
-    }
+    });
   });
 
   it("paginates 20 per page", async () => {
-    asAdmin();
-    const product = await createTempProduct();
-    const userId = await createTempUser();
-    try {
+    await withTestTransaction(async () => {
+      asAdmin();
+      const product = await createTempProduct();
+      const userId = await createTempUser();
       for (let index = 0; index < 21; index += 1) {
         await insertPurchase({
           productId: product.id,
@@ -477,29 +460,25 @@ describe("listProductPurchases", () => {
       const secondPage = await listProductPurchases(product.id, 2);
       expect(secondPage.entries).toHaveLength(1);
       expect(secondPage.hasMore).toBe(false);
-    } finally {
-      await cleanupProduct(product.id, [userId]);
-    }
+    });
   });
 });
 
 describe("listProductCreditMovements", () => {
   it("returns an empty page for a product with no movements", async () => {
-    asAdmin();
-    const product = await createTempProduct();
-    try {
+    await withTestTransaction(async () => {
+      asAdmin();
+      const product = await createTempProduct();
       const result = await listProductCreditMovements(product.id, 1);
       expect(result).toEqual({ entries: [], page: 1, total: 0, hasMore: false });
-    } finally {
-      await cleanupProduct(product.id);
-    }
+    });
   });
 
   it("returns the delta and reason of every user's movements, newest first", async () => {
-    asAdmin();
-    const product = await createTempProduct();
-    const userId = await createTempUser();
-    try {
+    await withTestTransaction(async () => {
+      asAdmin();
+      const product = await createTempProduct();
+      const userId = await createTempUser();
       await insertMovement({
         productId: product.id,
         userId,
@@ -524,16 +503,14 @@ describe("listProductCreditMovements", () => {
       expect(Object.keys(result.entries[0]!).sort()).toEqual(
         ["createdAt", "delta", "id", "packCredits", "reason"].sort(),
       );
-    } finally {
-      await cleanupProduct(product.id, [userId]);
-    }
+    });
   });
 
   it("carries the pack's credit count for a purchase movement, null for every other reason", async () => {
-    asAdmin();
-    const product = await createTempProduct();
-    const userId = await createTempUser();
-    try {
+    await withTestTransaction(async () => {
+      asAdmin();
+      const product = await createTempProduct();
+      const userId = await createTempUser();
       const purchase = await insertPurchase({ productId: product.id, userId, credits: 10 });
       await insertMovement({ productId: product.id, userId, delta: 10, reason: "purchase", purchaseId: purchase.id });
       await insertMovement({ productId: product.id, userId, delta: 3, reason: "signup_bonus" });
@@ -543,16 +520,14 @@ describe("listProductCreditMovements", () => {
       const bonusMovement = result.entries.find((entry) => entry.reason === "signup_bonus")!;
       expect(purchaseMovement.packCredits).toBe(10);
       expect(bonusMovement.packCredits).toBeNull();
-    } finally {
-      await cleanupProduct(product.id, [userId]);
-    }
+    });
   });
 
   it("paginates 20 per page", async () => {
-    asAdmin();
-    const product = await createTempProduct();
-    const userId = await createTempUser();
-    try {
+    await withTestTransaction(async () => {
+      asAdmin();
+      const product = await createTempProduct();
+      const userId = await createTempUser();
       for (let index = 0; index < 21; index += 1) {
         await insertMovement({
           productId: product.id,
@@ -568,29 +543,25 @@ describe("listProductCreditMovements", () => {
       const secondPage = await listProductCreditMovements(product.id, 2);
       expect(secondPage.entries).toHaveLength(1);
       expect(secondPage.hasMore).toBe(false);
-    } finally {
-      await cleanupProduct(product.id, [userId]);
-    }
+    });
   });
 });
 
 describe("getPurchaseSummary", () => {
   it("returns a zeroed summary for a product with no purchases", async () => {
-    asAdmin();
-    const product = await createTempProduct();
-    try {
+    await withTestTransaction(async () => {
+      asAdmin();
+      const product = await createTempProduct();
       const result = await getPurchaseSummary(product.id);
       expect(result).toEqual({ count: 0, revenueCents: 0, byPack: [] });
-    } finally {
-      await cleanupProduct(product.id);
-    }
+    });
   });
 
   it("counts purchases, sums revenue and groups by pack size, ascending", async () => {
-    asAdmin();
-    const product = await createTempProduct();
-    const userId = await createTempUser();
-    try {
+    await withTestTransaction(async () => {
+      asAdmin();
+      const product = await createTempProduct();
+      const userId = await createTempUser();
       await insertPurchase({ productId: product.id, userId, credits: 50, amountCents: 1490 });
       await insertPurchase({ productId: product.id, userId, credits: 10, amountCents: 490 });
       await insertPurchase({ productId: product.id, userId, credits: 10, amountCents: 490 });
@@ -604,16 +575,14 @@ describe("getPurchaseSummary", () => {
           { credits: 50, count: 1 },
         ],
       });
-    } finally {
-      await cleanupProduct(product.id, [userId]);
-    }
+    });
   });
 
   it("includes a purchase exactly at the window start, excludes one just before it", async () => {
-    asAdmin();
-    const product = await createTempProduct();
-    const userId = await createTempUser();
-    try {
+    await withTestTransaction(async () => {
+      asAdmin();
+      const product = await createTempProduct();
+      const userId = await createTempUser();
       const now = new Date("2026-02-01T12:00:00.000Z");
       const windowStart = new Date("2026-01-03T00:00:00.000Z"); // 00:00 UTC, 29 days before 2026-02-01
       const justBefore = new Date(windowStart.getTime() - 1);
@@ -624,8 +593,6 @@ describe("getPurchaseSummary", () => {
       const result = await getPurchaseSummary(product.id, now);
       expect(result.count).toBe(1);
       expect(result.revenueCents).toBe(490);
-    } finally {
-      await cleanupProduct(product.id, [userId]);
-    }
+    });
   });
 });

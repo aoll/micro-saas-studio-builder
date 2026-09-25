@@ -1,6 +1,4 @@
-"use client";
-
-import { useFormatter, useTranslations } from "next-intl";
+import { getFormatter, getTranslations } from "next-intl/server";
 import type { CreditMovement } from "@/lib/dal/account";
 import { EmptyState } from "@/components/shared/empty-state";
 
@@ -8,10 +6,12 @@ import { EmptyState } from "@/components/shared/empty-state";
 // first as returned by listCreditMovements. Per the plan's design decision
 // 5, a generation's label is the plain reason word — no per-generation
 // input summary (that would need the tool's field config, out of scope
-// here).
-export function MovementList({ movements }: { movements: CreditMovement[] }) {
-  const t = useTranslations("account");
-  const format = useFormatter();
+// here). A Server Component (review fix, MEDIUM): no interactivity, so
+// getTranslations/getFormatter from next-intl/server, mirroring
+// history-list.tsx, instead of a 'use client' leaf with no client behavior.
+export async function MovementList({ movements }: { movements: CreditMovement[] }) {
+  const t = await getTranslations("account");
+  const format = await getFormatter();
 
   if (movements.length === 0) {
     return <EmptyState title={t("movements.empty")} />;

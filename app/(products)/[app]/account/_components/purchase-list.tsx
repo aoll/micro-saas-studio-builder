@@ -1,15 +1,16 @@
-"use client";
-
-import { useFormatter, useTranslations } from "next-intl";
+import { getFormatter, getTranslations } from "next-intl/server";
 import type { AccountPurchase } from "@/lib/dal/account";
 import { EmptyState } from "@/components/shared/empty-state";
 
 // SA-07 (docs/03-maquettes.md › SA-07): the purchases list, newest first as
 // returned by listPurchases. Price formatting mirrors PackCard
-// (components/product/pack-card.tsx).
-export function PurchaseList({ purchases }: { purchases: AccountPurchase[] }) {
-  const t = useTranslations("account");
-  const format = useFormatter();
+// (components/product/pack-card.tsx). A Server Component (review fix,
+// MEDIUM): no interactivity, so getTranslations/getFormatter from
+// next-intl/server, mirroring history-list.tsx, instead of a 'use client'
+// leaf with no client behavior.
+export async function PurchaseList({ purchases }: { purchases: AccountPurchase[] }) {
+  const t = await getTranslations("account");
+  const format = await getFormatter();
 
   if (purchases.length === 0) {
     return <EmptyState title={t("purchases.empty")} />;

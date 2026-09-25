@@ -1,26 +1,28 @@
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
-import { NextIntlClientProvider } from "next-intl";
-import { afterEach, describe, expect, it } from "vitest";
-import fr from "@/messages/fr/common.json";
+import { createTranslator } from "next-intl";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import frAccount from "@/messages/fr/account.json";
 import enAccount from "@/messages/en/account.json";
 import type { CreditMovement } from "@/lib/dal/account";
 
 afterEach(cleanup);
 
-// next-intl's client hooks (useTranslations, useFormatter) work fine under
-// NextIntlClientProvider in jsdom, unlike the server-only entry points
-// mocked elsewhere (history-list.test.tsx's comment): MovementList is a
-// plain presentational component, no server import to mock.
-function renderUi(ui: React.ReactElement) {
-  return render(
-    <NextIntlClientProvider locale="fr" messages={{ common: fr, account: frAccount }}>
-      {ui}
-    </NextIntlClientProvider>,
-  );
-}
+// MovementList has no interactivity (review fix, MEDIUM): a Server
+// Component like history-list.tsx, not a 'use client' leaf, so this test
+// calls it directly (async, like signup-prompt.test.tsx) instead of
+// rendering it under NextIntlClientProvider. next-intl/server picks its
+// "react-server" export via a condition Vitest's node/jsdom environments
+// don't set (history-list.test.tsx's comment): mocked with a real
+// translator, and a formatter built from Intl directly.
+vi.mock("next-intl/server", () => ({
+  getTranslations: async (namespace: "account") =>
+    createTranslator({ locale: "fr", messages: { account: frAccount }, namespace }),
+  getFormatter: async () => ({
+    dateTime: (date: Date, options: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat("fr", options).format(date),
+  }),
+}));
 
 const movements: CreditMovement[] = [
   { id: "m1", createdAt: new Date("2026-09-14T10:00:00.000Z"), delta: 10, reason: "purchase" },
@@ -32,7 +34,8 @@ const movements: CreditMovement[] = [
 describe("MovementList", () => {
   it("renders each movement's signed delta and reason label, in the given order", async () => {
     const { MovementList } = await import("./movement-list");
-    renderUi(<MovementList movements={movements} />);
+    const ui = await MovementList({ movements });
+    render(ui);
 
     const items = screen.getAllByRole("listitem");
     expect(items).toHaveLength(4);
@@ -48,7 +51,8 @@ describe("MovementList", () => {
 
   it("shows the empty state when there is no movement", async () => {
     const { MovementList } = await import("./movement-list");
-    renderUi(<MovementList movements={[]} />);
+    const ui = await MovementList({ movements: [] });
+    render(ui);
     expect(screen.getByText("Aucun mouvement pour le moment")).toBeTruthy();
   });
 });

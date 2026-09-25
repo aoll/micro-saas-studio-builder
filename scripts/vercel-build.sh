@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 # Runs on every Vercel deployment (`vercel-build` in package.json wins over
-# `build` there — docs/06-vercel.md). Applies pending migrations before the
-# build, since `next build` reads products from the database
-# (generateStaticParams): a deploy must never build static pages against a
-# schema the app hasn't migrated to yet.
+# `build` there — docs/06-vercel.md). Applies pending migrations, then seeds
+# once if the database is still empty, before the build: `next build` reads
+# products from the database (generateStaticParams), so a deploy must never
+# build static pages against a schema the app hasn't migrated to yet, or a
+# fresh database with no products at all.
 #
-# Migrations run over DATABASE_URL_UNPOOLED when Vercel provides it (Neon
-# integration): a pooled connection can hold DDL behind pgbouncer's
-# transaction pooling in ways a direct connection doesn't. Falls back to
-# DATABASE_URL so this also works locally and anywhere else only that one is set.
+# Both steps run over DATABASE_URL_UNPOOLED when Vercel provides it (Neon
+# integration): a pooled connection can hold DDL and the seed's own
+# transaction behind pgbouncer's transaction pooling in ways a direct
+# connection doesn't. Falls back to DATABASE_URL so this also works locally
+# and anywhere else only that one is set.
 set -euo pipefail
 
 if [ -n "${DATABASE_URL_UNPOOLED:-}" ]; then
@@ -16,5 +18,6 @@ if [ -n "${DATABASE_URL_UNPOOLED:-}" ]; then
 fi
 
 pnpm db:migrate
+pnpm db:seed:if-empty
 next typegen
 next build

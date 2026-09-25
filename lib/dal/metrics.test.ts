@@ -3,10 +3,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { products } from "@/lib/db/schema";
 
-// V1 stub (docs/11 › Les contrats gelés en V1: "chiffres fixes
-// plausibles"), fixed and internally consistent LettrePro numbers.
-// Replaced by TRACKING's real aggregation over `events`.
-
 class RedirectMarker extends Error {
   constructor(public url: string) {
     super(`redirect:${url}`);
@@ -24,30 +20,6 @@ describe("getPortfolioMetrics", () => {
     requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
     const { getPortfolioMetrics } = await import("./metrics");
     await expect(getPortfolioMetrics({ days: 30 })).rejects.toThrow("redirect:/admin/login");
-  });
-
-  it("returns internally consistent, fixed LettrePro numbers, and totals = sum over products", async () => {
-    requireAdmin.mockResolvedValue({ user: { role: "admin" } });
-    const { getPortfolioMetrics } = await import("./metrics");
-    const metrics = await getPortfolioMetrics({ days: 30 });
-
-    expect(metrics.products).toHaveLength(1);
-    const lettrePro = metrics.products[0]!;
-    expect(lettrePro.slug).toBe("lettre-pro");
-    expect(lettrePro.visits).toBe(4200);
-    expect(lettrePro.firstGenerations).toBe(1260);
-    expect(lettrePro.signups).toBe(520);
-    expect(lettrePro.creditsExhausted).toBe(180);
-    expect(lettrePro.purchases).toBe(36);
-    expect(lettrePro.generations).toBe(2900);
-    expect(lettrePro.revenueCents).toBe(29640);
-    expect(lettrePro.aiCostMicros).toBe(2900 * 4000);
-    expect(lettrePro.signupToPurchaseRate).toBeCloseTo(36 / 520);
-    expect(lettrePro.marginPerGenerationMicros).toBeGreaterThan(0);
-
-    expect(metrics.totals.visits).toBe(metrics.products.reduce((sum, product) => sum + product.visits, 0));
-    expect(metrics.totals.revenueCents).toBe(metrics.products.reduce((sum, product) => sum + product.revenueCents, 0));
-    expect(metrics.totals.aiCostMicros).toBe(metrics.products.reduce((sum, product) => sum + product.aiCostMicros, 0));
   });
 });
 

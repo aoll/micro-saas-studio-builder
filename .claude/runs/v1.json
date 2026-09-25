@@ -362,12 +362,25 @@
       "spec": "CONTRACT-ui",
       "blockedOn": "BO-07-themes",
       "what": "drop the \"/admin/themes\" as Route cast (and comment) in components/backoffice/admin-sidebar.tsx once /admin/themes exists",
-      "resolved": false
+      "resolved": true,
+      "pr": 22
     },
     {
       "spec": "SA-06-historique",
       "blockedOn": "SA-07-compte",
       "what": "entry point to /[app]/history: SA-07 account page links to it (inside [app]/account/**); a header/tool link would need a CONTRACT-ui/SA-02 follow-up",
+      "resolved": false
+    },
+    {
+      "spec": "CONTRACT-ui",
+      "blockedOn": "BO-09-seuils",
+      "what": "drop the \"/admin/settings\" as Route cast in components/backoffice/admin-sidebar.tsx once BO-09 ships /admin/settings",
+      "resolved": false
+    },
+    {
+      "spec": "TRACKING",
+      "blockedOn": "TRACKING",
+      "what": "flaky: lib/dal/events.test.ts createTempProduct inserts product_versions with config {} which breaks concurrent listProducts() tests (Zod parse); give it a schema-valid config",
       "resolved": false
     }
   ],

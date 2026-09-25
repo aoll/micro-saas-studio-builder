@@ -25,6 +25,12 @@ export async function GET(_request: Request, { params }: RouteContext<"/[app]/si
   const session = await getSession();
   if (!session) redirect(`/${slug}/signup` as Route);
 
+  // Credits are per (user, product) — every SaaS is independent for the
+  // user (docs/01-produit.md, docs/07-modele-de-donnees.md) — and
+  // grantSignupBonus is idempotent (its own key, lib/dal/credits.ts): any
+  // signed-in user reaching this URL gets at most the same once-per-product
+  // bonus that filling out this product's own signup form would grant, no
+  // more. Reviewed and accepted (orchestrator decision, SA-03 review round).
   await grantSignupBonus({ userId: session.user.id, productId: product.id });
 
   // The anonymous cookie set by a prior anonymous generation or visit

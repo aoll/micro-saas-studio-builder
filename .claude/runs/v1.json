@@ -406,6 +406,10 @@
     {
       "for": "BO-05b",
       "note": "publishProduct must updateTag(\"products\") (and product:<slug>) when theme_id/locale change, else BO-07 counts and layouts stay stale; sync products.theme_id/locale from the published config (BO-05a)."
+    },
+    {
+      "for": "CONTRACT follow-up",
+      "note": "no index serves created_at >= since range filters on events/purchases/generations in getPortfolioMetrics (full scans at volume, measured by the BO-02 database review); consider covering (created_at, product_id) indexes or pruning/archival."
     }
   ]
 }

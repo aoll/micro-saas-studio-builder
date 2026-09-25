@@ -131,15 +131,15 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "dispatched",
-      "worktree": "tracking",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 17
     },
     "BO-02-portefeuille": {
       "dependsOn": [
         "TRACKING"
       ],
-      "status": "pending",
+      "status": "ready",
       "worktree": null,
       "pr": null
     },
@@ -354,6 +354,10 @@
   ],
   "notes": [
     "SECURITY: lib/auth.ts before-hook rejects unknown/non-admin emails without hashing (timing side-channel to enumerate the admin email); pad the fast path with a dummy hash (BO-01 security review).",
-    "SECURITY: public login and events beacon have no rate limit yet; hashIp from lib/dal/generations.ts (SA-02) is the shared IP key."
+    "SECURITY: public login and events beacon have no rate limit yet; hashIp from lib/dal/generations.ts (SA-02) is the shared IP key.",
+    {
+      "for": "CONTRACT follow-up",
+      "note": "events: index covering (product_id, anonymous_id, type, created_at) for the visit dedupe (TRACKING database review)"
+    }
   ]
 }

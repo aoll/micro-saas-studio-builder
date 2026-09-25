@@ -139,16 +139,16 @@
       "dependsOn": [
         "TRACKING"
       ],
-      "status": "dispatched",
-      "worktree": "bo-02-portefeuille",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 25
     },
     "BO-03-fiche": {
       "dependsOn": [
         "BO-02-portefeuille"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "bo-03-fiche",
       "pr": null
     },
     "BO-05a-formulaire": {
@@ -285,8 +285,8 @@
       "dependsOn": [
         "BO-02-portefeuille"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "bo-09-seuils",
       "pr": null
     },
     "BO-08-editeur-theme": {

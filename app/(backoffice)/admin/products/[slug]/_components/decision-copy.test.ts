@@ -120,4 +120,22 @@ describe("toDecisionCopy", () => {
     );
     expect(copy.suggestion).toBeNull();
   });
+
+  describe("badge", () => {
+    it("is the raw evaluate() decision, for the header's DecisionBadge", () => {
+      const kill = toDecisionCopy(
+        metrics({ visits: 1100, signupToPurchaseRate: 0.01 }),
+        thresholds({ minVisits: 1000, killMaxConversion: 0.02 }),
+      );
+      expect(kill.badge).toBe("kill");
+    });
+
+    it("is null for a killed product even when the metrics would otherwise suggest killing", () => {
+      const copy = toDecisionCopy(
+        metrics({ status: "killed", visits: 1100, signupToPurchaseRate: 0.01 }),
+        thresholds({ minVisits: 1000, killMaxConversion: 0.02 }),
+      );
+      expect(copy.badge).toBeNull();
+    });
+  });
 });

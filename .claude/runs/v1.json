@@ -432,6 +432,12 @@
       "blockedOn": "BO-05b-generation-publication",
       "what": "intermittent: product-form.test.tsx \"a create-mode publish captures the created slug, so a second publish takes the edit path\" failed once under load (expected null to be bio-instagram); root-cause (timing of createdSlug capture) and fix the component or the test without weakening it",
       "resolved": false
+    },
+    {
+      "spec": "SA-02-outil",
+      "blockedOn": "SA-02-outil",
+      "what": "intermittent: lib/dal/generations.test.ts failed once under shared DB load during SA-07 full run (green isolated and on re-run); root-cause like the other DAL test races",
+      "resolved": false
     }
   ],
   "notes": [

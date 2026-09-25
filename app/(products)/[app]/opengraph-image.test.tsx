@@ -23,7 +23,8 @@ class MockImageResponse {
 vi.mock("next/og", () => ({ ImageResponse: MockImageResponse }));
 
 const getProduct = vi.fn();
-vi.mock("@/lib/dal/products", () => ({ getProduct }));
+const listProductSlugs = vi.fn();
+vi.mock("@/lib/dal/products", () => ({ getProduct, listProductSlugs }));
 
 const getTheme = vi.fn();
 vi.mock("@/lib/dal/themes", () => ({ getTheme }));
@@ -126,5 +127,12 @@ describe("[app]/opengraph-image", () => {
     await expect(OpengraphImage({ params: Promise.resolve({ app: "lettre-pro" }) })).rejects.toThrow(
       /missing theme row/,
     );
+  });
+
+  it("generateStaticParams returns one { app } per product slug, prerendering the OG image like [app]/layout.tsx", async () => {
+    listProductSlugs.mockResolvedValue(["lettre-pro", "descri-pro", "nom-de-marque"]);
+    const { generateStaticParams } = await import("./opengraph-image");
+    const params = await generateStaticParams();
+    expect(params).toEqual([{ app: "lettre-pro" }, { app: "descri-pro" }, { app: "nom-de-marque" }]);
   });
 });

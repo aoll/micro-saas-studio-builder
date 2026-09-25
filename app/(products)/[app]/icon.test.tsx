@@ -23,7 +23,8 @@ class MockImageResponse {
 vi.mock("next/og", () => ({ ImageResponse: MockImageResponse }));
 
 const getProduct = vi.fn();
-vi.mock("@/lib/dal/products", () => ({ getProduct }));
+const listProductSlugs = vi.fn();
+vi.mock("@/lib/dal/products", () => ({ getProduct, listProductSlugs }));
 
 const getTheme = vi.fn();
 vi.mock("@/lib/dal/themes", () => ({ getTheme }));
@@ -118,5 +119,12 @@ describe("[app]/icon", () => {
     getTheme.mockResolvedValue(null);
     const { default: Icon } = await import("./icon");
     await expect(Icon({ params: Promise.resolve({ app: "lettre-pro" }) })).rejects.toThrow(/missing theme row/);
+  });
+
+  it("generateStaticParams returns one { app } per product slug, prerendering the icon like [app]/layout.tsx", async () => {
+    listProductSlugs.mockResolvedValue(["lettre-pro", "descri-pro", "nom-de-marque"]);
+    const { generateStaticParams } = await import("./icon");
+    const params = await generateStaticParams();
+    expect(params).toEqual([{ app: "lettre-pro" }, { app: "descri-pro" }, { app: "nom-de-marque" }]);
   });
 });

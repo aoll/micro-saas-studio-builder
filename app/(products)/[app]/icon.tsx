@@ -1,11 +1,19 @@
 import { notFound } from "next/navigation";
 import { ImageResponse } from "next/og";
-import { getProduct } from "@/lib/dal/products";
+import { getProduct, listProductSlugs } from "@/lib/dal/products";
 import { getTheme } from "@/lib/dal/themes";
 import { resolveOgColors } from "./_lib/og-colors";
 
 export const size = { width: 32, height: 32 };
 export const contentType = "image/png";
+
+// A root param needs at least one value under Cache Components, same as
+// [app]/layout.tsx: without this, the icon is served dynamically (`ƒ`) on
+// every request instead of being prerendered per slug (code review MEDIUM).
+export async function generateStaticParams() {
+  const slugs = await listProductSlugs();
+  return slugs.map((app) => ({ app }));
+}
 
 // I18N-SEO (specs/I18N-SEO.md): the product's initial on its primary color.
 // Route Handler props, not `next/root-params` (orchestrator decision 4:

@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { withTestTransaction } from "@/lib/db/test-transaction";
 import { users } from "@/lib/db/auth-schema";
-import { generations, productVersions, products, themes } from "@/lib/db/schema";
+import { events, generations, productVersions, products, themes } from "@/lib/db/schema";
 import { SEED_OWNER } from "@/scripts/seed";
 
 const getSession = vi.fn();
@@ -533,6 +533,74 @@ describe("countPriorGenerations", () => {
         });
 
         getSession.mockResolvedValue({ user: { id: userId } });
+        expect(await countPriorGenerations({ productId, userId, anonymousId: null, ipHash: null })).toBe(0);
+      });
+    });
+
+    // Phase 2 (plan): the cookie is lost (cleared, other device), but a
+    // `signup` event still links this user to the anonymousId they
+    // generated with before signing up (docs/07 › events: "relie la visite
+    // anonyme à l'inscription").
+    it("counts an anonymous generation whose anonymousId is on the user's signup event for this product, without a cookie", async () => {
+      await withTestTransaction(async () => {
+        const userId = await freshUserId();
+        const productId = await lettreProId();
+        const anonymousId = randomUUID();
+
+        getSession.mockResolvedValue(null);
+        const { recordGeneration } = await import("./generations");
+        await recordGeneration({
+          productId,
+          productVersion: 1,
+          userId: null,
+          anonymousId,
+          ipHash: "hash",
+          input: {},
+          idempotencyKey: randomUUID(),
+        });
+        await db.insert(events).values({ productId, type: "signup", userId, anonymousId });
+
+        getSession.mockResolvedValue({ user: { id: userId } });
+        const { countPriorGenerations } = await import("./generations");
+        expect(await countPriorGenerations({ productId, userId, anonymousId: null, ipHash: null })).toBe(1);
+      });
+    });
+
+    it("does not link through a signup event recorded for another product", async () => {
+      await withTestTransaction(async () => {
+        const userId = await freshUserId();
+        const productId = await lettreProId();
+        const otherId = await otherProductId();
+        const anonymousId = randomUUID();
+
+        getSession.mockResolvedValue(null);
+        const { recordGeneration } = await import("./generations");
+        await recordGeneration({
+          productId,
+          productVersion: 1,
+          userId: null,
+          anonymousId,
+          ipHash: "hash",
+          input: {},
+          idempotencyKey: randomUUID(),
+        });
+        await db.insert(events).values({ productId: otherId, type: "signup", userId, anonymousId });
+
+        getSession.mockResolvedValue({ user: { id: userId } });
+        const { countPriorGenerations } = await import("./generations");
+        expect(await countPriorGenerations({ productId, userId, anonymousId: null, ipHash: null })).toBe(0);
+      });
+    });
+
+    it("does not link through a signup event with a null anonymousId", async () => {
+      await withTestTransaction(async () => {
+        const userId = await freshUserId();
+        const productId = await lettreProId();
+
+        await db.insert(events).values({ productId, type: "signup", userId, anonymousId: null });
+
+        getSession.mockResolvedValue({ user: { id: userId } });
+        const { countPriorGenerations } = await import("./generations");
         expect(await countPriorGenerations({ productId, userId, anonymousId: null, ipHash: null })).toBe(0);
       });
     });

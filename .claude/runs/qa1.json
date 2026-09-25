@@ -174,9 +174,9 @@
     },
     "QA1-P6-E3-erreurs-pricing": {
       "dependsOn": [],
-      "status": "dispatched",
-      "worktree": "qa1-p6-e3-erreurs-pricing",
-      "pr": null,
+      "status": "merged",
+      "worktree": null,
+      "pr": 73,
       "mode": "lot léger, plan dans la spec"
     }
   },

@@ -115,37 +115,6 @@ test.describe("Checkout (simulated payment)", () => {
       }
     });
 
-    test("a double click on Payer credits only one pack", async ({ page }) => {
-      await resetAdminLedgerOnLettrePro();
-      try {
-        await signInAsAdmin(page);
-        await page.goto("/lettre-pro/checkout/pack-10");
-
-        const payButton = page.getByRole("button", { name: /Payer/ });
-        // Two rapid clicks, not awaited between them: the button disables
-        // itself synchronously (single dispatch, CheckoutFlow's own guard),
-        // so the second click either hits nothing or a disabled button.
-        await Promise.all([payButton.click(), payButton.click({ force: true }).catch(() => undefined)]);
-
-        await expect(page.getByText("+10 crédits")).toBeVisible();
-
-        const sql = postgres(requireDatabaseUrl(), { max: 1, onnotice: () => {} });
-        const db = drizzle(sql, { schema: { products, users, purchases } });
-        try {
-          const product = await db.query.products.findFirst({ where: eq(products.slug, "lettre-pro") });
-          const admin = await db.query.users.findFirst({ where: eq(users.email, SEED_ADMIN.email) });
-          const rows = await db.query.purchases.findMany({
-            where: and(eq(purchases.productId, product!.id), eq(purchases.userId, admin!.id)),
-          });
-          expect(rows).toHaveLength(1);
-        } finally {
-          await sql.end();
-        }
-      } finally {
-        await resetAdminLedgerOnLettrePro();
-      }
-    });
-
     // QA1-P1-B3 (.claude/qa/reports/2026-09-25-full.md › B3, repro 5.7,
     // s57b.out.txt): paying from the modal opened over the full /pricing page
     // used to trigger a server refresh() that re-fetched the intercepted
@@ -263,6 +232,41 @@ test.describe("Checkout (simulated payment)", () => {
         await expect(page).toHaveURL(/\/lettre-pro\/tool$/);
         await expect(page.getByRole("dialog")).toHaveCount(0);
         expect(loadCount).toBe(0);
+      } finally {
+        await resetAdminLedgerOnLettrePro();
+      }
+    });
+
+    // Ordered last in this serial group (pre-existing failure, unrelated to
+    // QA1-P1-B3: a Playwright click-retry hang on the already-detached
+    // "Payer" button, reported to the orchestrator separately), so it never
+    // blocks the two B3 tests above from running in a full suite pass.
+    test("a double click on Payer credits only one pack", async ({ page }) => {
+      await resetAdminLedgerOnLettrePro();
+      try {
+        await signInAsAdmin(page);
+        await page.goto("/lettre-pro/checkout/pack-10");
+
+        const payButton = page.getByRole("button", { name: /Payer/ });
+        // Two rapid clicks, not awaited between them: the button disables
+        // itself synchronously (single dispatch, CheckoutFlow's own guard),
+        // so the second click either hits nothing or a disabled button.
+        await Promise.all([payButton.click(), payButton.click({ force: true }).catch(() => undefined)]);
+
+        await expect(page.getByText("+10 crédits")).toBeVisible();
+
+        const sql = postgres(requireDatabaseUrl(), { max: 1, onnotice: () => {} });
+        const db = drizzle(sql, { schema: { products, users, purchases } });
+        try {
+          const product = await db.query.products.findFirst({ where: eq(products.slug, "lettre-pro") });
+          const admin = await db.query.users.findFirst({ where: eq(users.email, SEED_ADMIN.email) });
+          const rows = await db.query.purchases.findMany({
+            where: and(eq(purchases.productId, product!.id), eq(purchases.userId, admin!.id)),
+          });
+          expect(rows).toHaveLength(1);
+        } finally {
+          await sql.end();
+        }
       } finally {
         await resetAdminLedgerOnLettrePro();
       }

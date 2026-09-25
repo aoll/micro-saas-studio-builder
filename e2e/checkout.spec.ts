@@ -227,11 +227,16 @@ test.describe("Checkout (simulated payment)", () => {
       await expect(page).toHaveURL("/lettre-pro/checkout/pack-10");
       const checkoutDialog = page.getByRole("dialog");
       await expect(checkoutDialog).toBeVisible();
-      await expect(checkoutDialog.getByText(/Paiement/)).toBeVisible();
+      // The dialog's own notice ("Paiement simulé pour la démo…") also
+      // matches a broad /Paiement/ text query, alongside the title; the
+      // title (RouteModal's DialogTitle) is what this line means to check.
+      await expect(checkoutDialog.getByRole("heading", { name: "Paiement" })).toBeVisible();
 
       await checkoutDialog.getByRole("button", { name: /Payer/ }).click();
       await expect(checkoutDialog.getByText("+10 crédits")).toBeVisible();
-      await expect(page.getByText("10 crédits")).toBeVisible();
+      // Scoped to the header (role "banner"): see the A1 test above for why
+      // an unscoped "10 crédits" query is ambiguous.
+      await expect(page.getByRole("banner").getByText("10 crédits")).toBeVisible();
       expect(loadCount).toBe(0);
 
       await checkoutDialog.getByRole("button", { name: "Reprendre ma génération →" }).click();

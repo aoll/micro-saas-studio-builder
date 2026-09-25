@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
-import { createTranslator, NextIntlClientProvider } from "next-intl";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { NextIntlClientProvider } from "next-intl";
+import { afterEach, describe, expect, it } from "vitest";
 import fr from "@/messages/fr/common.json";
 import frAccount from "@/messages/fr/account.json";
 import enAccount from "@/messages/en/account.json";

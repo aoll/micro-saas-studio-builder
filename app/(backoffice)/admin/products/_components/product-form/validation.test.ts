@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { stepOfPath, validateStep } from "./validation";
+import { stepOfPath, toFrenchMessage, validateStep } from "./validation";
 
 describe("stepOfPath", () => {
   it("maps a slug path to step 1", () => {
@@ -124,5 +124,162 @@ describe("validateStep", () => {
       pricing: { freeCreditsOnSignup: 3, anonymousFreeGenerations: 1, costPerGeneration: 1, packs: [] },
     });
     expect(errors["pricing.packs"]).toBeTruthy();
+  });
+
+  // QA1-P5-E2 (docs/01-produit.md › Bloc Pricing, « Valeurs positives »):
+  // every bounded numeric field of the schema must report a French
+  // message, never Zod's raw "Too small: expected number to be >=…".
+  it("step 6: a cost per generation of -1 reports the minimum in French", () => {
+    const errors = validateStep(6, {
+      pricing: {
+        freeCreditsOnSignup: 3,
+        anonymousFreeGenerations: 1,
+        costPerGeneration: -1,
+        packs: [{ id: "pack-10", credits: 10, priceCents: 490 }],
+      },
+    });
+    expect(errors["pricing.costPerGeneration"]).toBe("Minimum : 1");
+  });
+
+  it("step 6: a non-integer cost per generation reports the integer message in French", () => {
+    const errors = validateStep(6, {
+      pricing: {
+        freeCreditsOnSignup: 3,
+        anonymousFreeGenerations: 1,
+        costPerGeneration: 1.5,
+        packs: [{ id: "pack-10", credits: 10, priceCents: 490 }],
+      },
+    });
+    expect(errors["pricing.costPerGeneration"]).toBe("Doit être un nombre entier");
+  });
+
+  it("step 6: a negative free-credits-on-signup reports the minimum in French", () => {
+    const errors = validateStep(6, {
+      pricing: {
+        freeCreditsOnSignup: -1,
+        anonymousFreeGenerations: 1,
+        costPerGeneration: 1,
+        packs: [{ id: "pack-10", credits: 10, priceCents: 490 }],
+      },
+    });
+    expect(errors["pricing.freeCreditsOnSignup"]).toBe("Minimum : 0");
+  });
+
+  it("step 6: a negative anonymous-free-generations reports the minimum in French", () => {
+    const errors = validateStep(6, {
+      pricing: {
+        freeCreditsOnSignup: 3,
+        anonymousFreeGenerations: -1,
+        costPerGeneration: 1,
+        packs: [{ id: "pack-10", credits: 10, priceCents: 490 }],
+      },
+    });
+    expect(errors["pricing.anonymousFreeGenerations"]).toBe("Minimum : 0");
+  });
+
+  it("step 6: a pack with 0 credits reports the French exclusive-minimum message", () => {
+    const errors = validateStep(6, {
+      pricing: {
+        freeCreditsOnSignup: 3,
+        anonymousFreeGenerations: 1,
+        costPerGeneration: 1,
+        packs: [{ id: "pack-10", credits: 0, priceCents: 490 }],
+      },
+    });
+    expect(errors["pricing.packs.0.credits"]).toBe("Doit être supérieur à 0");
+  });
+
+  it("step 6: a pack with 0 priceCents reports the French exclusive-minimum message", () => {
+    const errors = validateStep(6, {
+      pricing: {
+        freeCreditsOnSignup: 3,
+        anonymousFreeGenerations: 1,
+        costPerGeneration: 1,
+        packs: [{ id: "pack-10", credits: 10, priceCents: 0 }],
+      },
+    });
+    expect(errors["pricing.packs.0.priceCents"]).toBe("Doit être supérieur à 0");
+  });
+
+  it("step 6: a non-integer pack credits reports the integer message in French", () => {
+    const errors = validateStep(6, {
+      pricing: {
+        freeCreditsOnSignup: 3,
+        anonymousFreeGenerations: 1,
+        costPerGeneration: 1,
+        packs: [{ id: "pack-10", credits: 2.5, priceCents: 490 }],
+      },
+    });
+    expect(errors["pricing.packs.0.credits"]).toBe("Doit être un nombre entier");
+  });
+});
+
+describe("toFrenchMessage: number origin (QA1-P5-E2)", () => {
+  it("translates an inclusive too_small (e.g. `.min(0)`) to a French minimum", () => {
+    const message = toFrenchMessage({
+      code: "too_small",
+      origin: "number",
+      minimum: 0,
+      inclusive: true,
+      path: ["pricing", "freeCreditsOnSignup"],
+      message: "Too small: expected number to be >=0",
+    });
+    expect(message).toBe("Minimum : 0");
+  });
+
+  it("translates an exclusive too_small (e.g. `.positive()`) to a French strict minimum", () => {
+    const message = toFrenchMessage({
+      code: "too_small",
+      origin: "number",
+      minimum: 0,
+      inclusive: false,
+      path: ["pricing", "packs", 0, "credits"],
+      message: "Too small: expected number to be >0",
+    });
+    expect(message).toBe("Doit être supérieur à 0");
+  });
+
+  it("translates an inclusive too_big to a French maximum", () => {
+    const message = toFrenchMessage({
+      code: "too_big",
+      origin: "number",
+      maximum: 100,
+      inclusive: true,
+      path: ["pricing", "someBoundedField"],
+      message: "Too big: expected number to be <=100",
+    });
+    expect(message).toBe("Maximum : 100");
+  });
+
+  it("translates an exclusive too_big to a French strict maximum", () => {
+    const message = toFrenchMessage({
+      code: "too_big",
+      origin: "number",
+      maximum: 100,
+      inclusive: false,
+      path: ["pricing", "someBoundedField"],
+      message: "Too big: expected number to be <100",
+    });
+    expect(message).toBe("Doit être inférieur à 100");
+  });
+
+  it("translates a non-integer number (`z.int()`) to a French integer message", () => {
+    const message = toFrenchMessage({
+      code: "invalid_type",
+      expected: "int",
+      path: ["pricing", "costPerGeneration"],
+      message: "Invalid input: expected int, received number",
+    });
+    expect(message).toBe("Doit être un nombre entier");
+  });
+
+  it("leaves a non-int invalid_type issue untranslated (not a bounded number case)", () => {
+    const message = toFrenchMessage({
+      code: "invalid_type",
+      expected: "string",
+      path: ["name"],
+      message: "Invalid input: expected string, received number",
+    });
+    expect(message).toBe("Invalid input: expected string, received number");
   });
 });

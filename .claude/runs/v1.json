@@ -295,7 +295,7 @@
       "status": "dispatched",
       "worktree": "bo-04-activite",
       "pr": null,
-      "step": "tdd"
+      "step": "review"
     },
     "BO-06-statut": {
       "dependsOn": [
@@ -577,6 +577,10 @@
     {
       "for": "CONTRACT (human)",
       "note": "SECURITY follow-ups: raw Better Auth /api/auth/sign-in/magic-link not behind guardRequest; login timing side-channel in lib/auth.ts (dummy verifyPassword on reject path); a shared Postgres limiter (rate_limit_hits table or Better Auth rateLimit storage database) for test-prompt, signup, login and events"
+    },
+    {
+      "for": "CONTRACT (human)",
+      "note": "BO-04 activity: add indexes purchases(product_id, created_at) and credit_transactions(product_id, created_at) for the product-wide activity lists (seq scans today, fine at demo volume)"
     }
   ]
 }

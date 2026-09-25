@@ -394,6 +394,30 @@ describe("POST [app]/api/generate — insufficient balance", () => {
     const row = await db.query.generations.findFirst({ where: eq(generations.idempotencyKey, idempotencyKey) });
     expect(row).toBeUndefined();
   });
+
+  // QA1-P1-B7 (plan step 6, flagged for review): nothing was debited on the
+  // refused attempt (docs/01 › "un retry ne débite pas deux fois" still
+  // holds), so a retry with the same idempotency key is a first attempt, not
+  // a duplicate — 200, not 409, once the balance allows it.
+  it("a retry with the same key after a 402 succeeds once debit allows it (not a 409)", async () => {
+    const user = await db.query.users.findFirst();
+    getSession.mockResolvedValue({ user: { id: user!.id } });
+    const idempotencyKey = randomUUID();
+
+    debit.mockResolvedValue({ ok: false, reason: "insufficient_balance" });
+    const { POST } = await import("./route");
+    const first = await POST(postRequest({ input: validInput, idempotencyKey }), ctx());
+    expect(first.status).toBe(402);
+    await flushAfterCallbacks();
+
+    debit.mockResolvedValue({ ok: true, balance: 9 });
+    const second = await POST(postRequest({ input: validInput, idempotencyKey }), ctx());
+    expect(second.status).toBe(200);
+    await readTextDeltas(second);
+    await flushAfterCallbacks();
+
+    await cleanupGeneration(idempotencyKey);
+  });
 });
 
 describe("POST [app]/api/generate — replay", () => {

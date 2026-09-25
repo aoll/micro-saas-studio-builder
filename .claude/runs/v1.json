@@ -207,7 +207,11 @@
       "status": "dispatched",
       "worktree": "demo-mode",
       "pr": null,
-      "step": "plan"
+      "step": "tdd (partial; human decision pending)",
+      "humanDecision": {
+        "pending": true,
+        "question": "Périmètre extension: (a) visitor limit 10: lib/dal/product-editor.ts(+test), admin/products/_actions.ts(+test), additive guards export; (b) BO-06 trigger disabled on seeded products: admin/products/[slug]/page.tsx, sheet.ts, product-sheet-view.tsx, sheet-header.tsx, status/status-change.tsx(+tests); (c) lib/ai/model.ts mock fixtures for descri-pro, nom-de-marque, bio-instagram; (d) .env.example SEED_* credential vars"
+      }
     },
     "SECURITY": {
       "dependsOn": [
@@ -260,7 +264,12 @@
       "status": "dispatched",
       "worktree": "i18n-seo",
       "pr": null,
-      "step": "tdd"
+      "step": "tdd",
+      "humanDecision": {
+        "pending": false,
+        "answer": "go fichier partagé (2026-09-25)",
+        "extension": "app/(products)/[app]/_lib/og-colors.ts(+test)"
+      }
     },
     "BO-04-activite": {
       "dependsOn": [

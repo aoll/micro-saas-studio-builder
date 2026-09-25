@@ -1,7 +1,14 @@
 // @vitest-environment jsdom
+import type { Route } from "next";
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { OpenSignupModal } from "./open-signup-modal";
+
+// Review fix (LOW, code-reviewer): `href` is `Route`, not `Route | string`
+// — `/nom-de-marque/signup` doesn't exist as a route yet (SA-03), so the
+// literal is cast here the same way signup-prompt.tsx casts it at the call
+// site.
+const SIGNUP_HREF = "/nom-de-marque/signup" as Route;
 
 const { replace } = vi.hoisted(() => ({ replace: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
@@ -18,12 +25,12 @@ afterEach(() => {
 // would).
 describe("OpenSignupModal", () => {
   it("renders nothing and replaces the URL with href exactly once", () => {
-    const { container, rerender } = render(<OpenSignupModal href="/nom-de-marque/signup" />);
+    const { container, rerender } = render(<OpenSignupModal href={SIGNUP_HREF} />);
     expect(container.firstChild).toBeNull();
     expect(replace).toHaveBeenCalledTimes(1);
-    expect(replace).toHaveBeenCalledWith("/nom-de-marque/signup");
+    expect(replace).toHaveBeenCalledWith(SIGNUP_HREF);
 
-    rerender(<OpenSignupModal href="/nom-de-marque/signup" />);
+    rerender(<OpenSignupModal href={SIGNUP_HREF} />);
     expect(replace).toHaveBeenCalledTimes(1);
   });
 });

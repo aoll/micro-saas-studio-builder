@@ -12,14 +12,14 @@ import { useEffect, useRef } from "react";
 // never `push`: closing the modal must not come back to a history entry
 // that reopens it. Renders nothing — SignupPrompt's own EmptyState and
 // link are the visible, no-JS fallback.
-export function OpenSignupModal({ href }: { href: Route | string }) {
+export function OpenSignupModal({ href }: { href: Route }) {
   const router = useRouter();
   const opened = useRef(false);
 
   useEffect(() => {
     if (opened.current) return;
     opened.current = true;
-    router.replace(href as Route);
+    router.replace(href);
   }, [router, href]);
 
   return null;

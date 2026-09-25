@@ -47,9 +47,9 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "dispatched",
-      "worktree": "sa-08-introuvable",
-      "pr": null,
+      "status": "merged",
+      "worktree": null,
+      "pr": 32,
       "humanDecision": "2026-09-25: human approved (OK SA-08) extending Périmètre to app/(products)/not-found.tsx (full <html> document) + a shared SA-08 content component used by both not-found files."
     },
     "SA-02-outil": {

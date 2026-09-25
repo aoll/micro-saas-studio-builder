@@ -58,17 +58,17 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "dispatched",
-      "worktree": "sa-02-outil",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 19
     },
     "SA-06-historique": {
       "dependsOn": [
         "SA-02-outil"
       ],
-      "status": "pending",
+      "status": "merged",
       "worktree": null,
-      "pr": null
+      "pr": 24
     },
     "LEDGER": {
       "dependsOn": [
@@ -131,16 +131,16 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "dispatched",
-      "worktree": "tracking",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 17
     },
     "BO-02-portefeuille": {
       "dependsOn": [
         "TRACKING"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "bo-02-portefeuille",
       "pr": null
     },
     "BO-03-fiche": {
@@ -157,17 +157,17 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "dispatched",
-      "worktree": "bo-05a-formulaire",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 18
     },
     "BO-05b-generation-publication": {
       "dependsOn": [
         "BO-05a-formulaire",
         "SA-02-outil"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "bo-05b-generation-publication",
       "pr": null
     },
     "BO-07-themes": {
@@ -177,9 +177,9 @@
         "CONTRACT-ui",
         "BO-05a-formulaire"
       ],
-      "status": "pending",
+      "status": "merged",
       "worktree": null,
-      "pr": null
+      "pr": 21
     },
     "DEMO-mode": {
       "dependsOn": [
@@ -293,8 +293,8 @@
       "dependsOn": [
         "BO-07-themes"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "bo-08-editeur-theme",
       "pr": null
     },
     "E2E-demo": {
@@ -337,23 +337,84 @@
       "spec": "SA-02-outil",
       "blockedOn": "TRACKING",
       "what": "api/generate: use TRACKING anonymous-id helper (ANONYMOUS_ID_COOKIE, readAnonymousId, anonymousIdCookie) instead of inline cookie code",
-      "resolved": false
+      "resolved": true
     },
     {
       "spec": "SA-01-landing",
       "blockedOn": "SA-02-outil",
       "what": "drop the `/${slug}/tool` as Route casts in [app]/_components/landing/hero.tsx and landing-pricing.tsx once [app]/tool/page.tsx exists",
-      "resolved": false
+      "resolved": true,
+      "pr": 20
     },
     {
       "spec": "SA-04-tarifs",
       "blockedOn": "SA-05-paiement",
       "what": "drop the `/${slug}/checkout/${packId}` as Route cast in [app]/pricing/_components/pricing-content.tsx once the checkout route exists; un-fixme e2e/pricing.spec.ts journey 3 once SA-02 and LEDGER are merged",
       "resolved": false
+    },
+    {
+      "spec": "BO-07-themes",
+      "blockedOn": "BO-08-editeur-theme",
+      "what": "wrap ThemeCard (admin/themes/_components/theme-card.tsx) in a <Link> to /admin/themes/[id] once the editor route exists",
+      "resolved": false
+    },
+    {
+      "spec": "CONTRACT-ui",
+      "blockedOn": "BO-07-themes",
+      "what": "drop the \"/admin/themes\" as Route cast (and comment) in components/backoffice/admin-sidebar.tsx once /admin/themes exists",
+      "resolved": true,
+      "pr": 22
+    },
+    {
+      "spec": "SA-06-historique",
+      "blockedOn": "SA-07-compte",
+      "what": "entry point to /[app]/history: SA-07 account page links to it (inside [app]/account/**); a header/tool link would need a CONTRACT-ui/SA-02 follow-up",
+      "resolved": false
+    },
+    {
+      "spec": "CONTRACT-ui",
+      "blockedOn": "BO-09-seuils",
+      "what": "drop the \"/admin/settings\" as Route cast in components/backoffice/admin-sidebar.tsx once BO-09 ships /admin/settings",
+      "resolved": false
+    },
+    {
+      "spec": "TRACKING",
+      "blockedOn": "TRACKING",
+      "what": "flaky: lib/dal/events.test.ts createTempProduct inserts product_versions with config {} which breaks concurrent listProducts() tests (Zod parse); give it a schema-valid config",
+      "resolved": true,
+      "pr": 23
     }
   ],
   "notes": [
     "SECURITY: lib/auth.ts before-hook rejects unknown/non-admin emails without hashing (timing side-channel to enumerate the admin email); pad the fast path with a dummy hash (BO-01 security review).",
-    "SECURITY: public login and events beacon have no rate limit yet; hashIp from lib/dal/generations.ts (SA-02) is the shared IP key."
+    "SECURITY: public login and events beacon have no rate limit yet; hashIp from lib/dal/generations.ts (SA-02) is the shared IP key.",
+    {
+      "for": "CONTRACT follow-up",
+      "note": "events: index covering (product_id, anonymous_id, type, created_at) for the visit dedupe (TRACKING database review)"
+    },
+    {
+      "for": "SECURITY",
+      "note": "api/generate trusts the first X-Forwarded-For entry for the anonymous free-try key: fine behind Vercel (edge overwrites XFF), self-hosting must strip inbound XFF at its proxy (SA-02 security review)."
+    },
+    {
+      "for": "DEMO-mode",
+      "note": "seed must give each demo product >= 1000 visits in the last 30 UTC days; LettrePro >= 5% distinct-buyer signup->purchase conversion and positive margin, NomDeMarque < 2%, DescriPro in between (BO-02 bullet 4, checked by E2E-demo)."
+    },
+    {
+      "for": "BO-03, BO-09",
+      "note": "lib/decision.ts (BO-02): evaluate(metrics: DecisionMetrics, thresholds: Thresholds): \"kill\"|\"scale\"|null; metric definitions in lib/dal/metrics.ts header; admin/loading.tsx wraps nested admin routes."
+    },
+    {
+      "for": "BO-05b",
+      "note": "publishProduct must updateTag(\"products\") (and product:<slug>) when theme_id/locale change, else BO-07 counts and layouts stay stale; sync products.theme_id/locale from the published config (BO-05a)."
+    },
+    {
+      "for": "CONTRACT follow-up",
+      "note": "no index serves created_at >= since range filters on events/purchases/generations in getPortfolioMetrics (full scans at volume, measured by the BO-02 database review); consider covering (created_at, product_id) indexes or pruning/archival."
+    },
+    {
+      "for": "CONTRACT follow-up",
+      "note": "generations has no index covering anonymous_id: the anonymous /history list and count do full scans at volume (SA-06 security review); add (product_id, anonymous_id, created_at). Also consider rate-limiting public history page views (SECURITY)."
+    }
   ]
 }

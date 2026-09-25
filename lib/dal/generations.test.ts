@@ -208,6 +208,80 @@ describe("markGenerationFailed", () => {
   });
 });
 
+describe("deleteGeneration", () => {
+  it("deletes a pending row", async () => {
+    await withTestTransaction(async () => {
+      getSession.mockResolvedValue(null);
+      const { recordGeneration, deleteGeneration } = await import("./generations");
+      const { id } = await recordGeneration({
+        productId: await lettreProId(),
+        productVersion: 1,
+        userId: null,
+        anonymousId: randomUUID(),
+        ipHash: "hash",
+        input: {},
+        idempotencyKey: randomUUID(),
+      });
+
+      await deleteGeneration(id);
+      const row = await db.query.generations.findFirst({ where: eq(generations.id, id) });
+      expect(row).toBeUndefined();
+    });
+  });
+
+  // QA1-P1-B7: a `succeeded` or `failed` row is part of the audit trail
+  // (docs/07 › generations); deleteGeneration only ever removes a refused
+  // attempt that never got to run, never a real outcome.
+  it("is a no-op on a succeeded row", async () => {
+    await withTestTransaction(async () => {
+      getSession.mockResolvedValue(null);
+      const { recordGeneration, saveGeneration, deleteGeneration } = await import("./generations");
+      const { id } = await recordGeneration({
+        productId: await lettreProId(),
+        productVersion: 1,
+        userId: null,
+        anonymousId: randomUUID(),
+        ipHash: "hash",
+        input: {},
+        idempotencyKey: randomUUID(),
+      });
+      await saveGeneration(id, {
+        output: "Lettre générée",
+        model: "anthropic/claude-haiku-4.5",
+        inputTokens: 200,
+        outputTokens: 140,
+        cachedInputTokens: 0,
+        costMicros: 300,
+      });
+
+      await deleteGeneration(id);
+      const row = await db.query.generations.findFirst({ where: eq(generations.id, id) });
+      expect(row?.status).toBe("succeeded");
+    });
+  });
+
+  it("is a no-op on a failed row", async () => {
+    await withTestTransaction(async () => {
+      getSession.mockResolvedValue(null);
+      const { recordGeneration, markGenerationFailed, deleteGeneration } = await import("./generations");
+      const { id } = await recordGeneration({
+        productId: await lettreProId(),
+        productVersion: 1,
+        userId: null,
+        anonymousId: randomUUID(),
+        ipHash: "hash",
+        input: {},
+        idempotencyKey: randomUUID(),
+      });
+      await markGenerationFailed(id);
+
+      await deleteGeneration(id);
+      const row = await db.query.generations.findFirst({ where: eq(generations.id, id) });
+      expect(row?.status).toBe("failed");
+    });
+  });
+});
+
 describe("hashIp", () => {
   it("is stable for the same IP and produces 64 hex characters", async () => {
     const { hashIp } = await import("./generations");

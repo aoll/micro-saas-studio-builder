@@ -90,6 +90,15 @@ export const markGenerationFailed: (generationId: string) => Promise<void> = asy
   await db.update(generations).set({ status: "failed" }).where(eq(generations.id, generationId));
 };
 
+// Additive export (QA1-P1-B7 plan): a generation refused for insufficient
+// balance never ran and was never refunded, so it must leave no trace in
+// BO-04's activity (specs/qa/QA1-P1-B7-refus-402-activite.md). Deletes only
+// a row still `pending`: a `succeeded` or genuinely `failed` (AI error,
+// refunded) row is part of the audit trail and this is a no-op on either.
+export const deleteGeneration: (generationId: string) => Promise<void> = async (generationId) => {
+  await db.delete(generations).where(and(eq(generations.id, generationId), eq(generations.status, "pending")));
+};
+
 // Additive export (SA-02 plan › orchestrator decision 1): the anonymous
 // generation limit and the rate limit (SECURITY) both need an IP that never
 // appears in plain text in `generations.ip_hash` (docs/07). Keyed with the

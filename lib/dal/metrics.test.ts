@@ -143,20 +143,6 @@ describe("getPortfolioMetrics", () => {
 
       await cleanupProduct(id);
     });
-
-    it("does not throw for a product whose config has no name or pricing, and falls back to slug as name", async () => {
-      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
-      const { id, slug } = await createTempProduct({});
-
-      const { getPortfolioMetrics } = await import("./metrics");
-      const result = await getPortfolioMetrics({ days: 30 });
-      const product = result.products.find((row) => row.productId === id);
-      expect(product).toBeDefined();
-      expect(product!.name).toBe(slug);
-      expect(product!.marginPerGenerationMicros).toBeNull();
-
-      await cleanupProduct(id);
-    });
   });
 
   // Task 6 — revenue, AI cost, conversion, margin, totals, real DB

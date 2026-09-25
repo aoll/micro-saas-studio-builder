@@ -259,7 +259,7 @@
       "status": "dispatched",
       "worktree": "i18n-seo",
       "pr": null,
-      "step": "plan"
+      "step": "tdd"
     },
     "BO-04-activite": {
       "dependsOn": [
@@ -472,6 +472,18 @@
       "spec": "CONTRACT-data",
       "blockedOn": "CONTRACT-data",
       "what": "lib/dal/contract.test.ts « debit takes a single Debit argument » hit the 5000 ms timeout once under heavy load (sa-03 coverage run); root-cause before end of run",
+      "resolved": false
+    },
+    {
+      "spec": "SA-01-landing",
+      "blockedOn": "I18N-SEO",
+      "what": "docs/04 SEO par produit: metadataBase, canonical, Open Graph title/description in [app]/page.tsx generateMetadata, generateViewport themeColor in [app]/layout.tsx (outside I18N-SEO Périmètre; SA-01 plan deferred it)",
+      "resolved": false
+    },
+    {
+      "spec": "BO-03-fiche",
+      "blockedOn": "BO-04-activite",
+      "what": "link the BO-03 product sheet to /admin/products/[slug]/activity (reuse BO-04 ProductTabs in sheet-header or a [slug]/layout.tsx)",
       "resolved": false
     }
   ],

@@ -6,6 +6,14 @@ Dépend de   : QA1-P1-B4-visite-double (proxy.ts)
 Acceptation :
 - GET /admin/ops par un anonyme, un admin ou un user répond HTTP 404 (pas 200 avec
   NEXT_HTTP_ERROR_FALLBACK dans le corps), et la page 404 est en français
+  Note (run qa1, 2026-09-25) : décision humaine — pour l'anonyme, vrai 404 HTTP
+  (acquis, proxy.ts). Pour un admin ou un user connecté (pas owner), la limite
+  de Cache Components (Next 16.3) est acceptée : une fois le streaming
+  commencé, notFound() ne peut plus changer le statut déjà envoyé (200) ; seul
+  proxy.ts pourrait donner un vrai statut avant le rendu, mais il ne lit ni
+  base ni rôle (docs/04) — hors périmètre d'y ajouter cette lecture. Contenu
+  404 en français, rien de la page ops, noindex ; statut HTTP 200 accepté pour
+  ce seul cas.
 - GET /admin sans session répond une redirection (307/308) vers /admin/login, sans
   servir le shell du portefeuille
 - L'owner reçoit toujours /admin/ops en 200 ; l'admin connecté reçoit /admin en 200

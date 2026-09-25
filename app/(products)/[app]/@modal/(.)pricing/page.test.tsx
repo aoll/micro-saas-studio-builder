@@ -26,7 +26,7 @@ vi.mock("next/navigation", () => ({
 // next-intl/server picks its "react-server" export via a condition Vitest's
 // node/jsdom environments don't set (see i18n/request.test.ts).
 vi.mock("next-intl/server", () => ({
-  getTranslations: async (namespace: string) =>
+  getTranslations: async (namespace: "pricing") =>
     createTranslator({ locale: "fr", messages: { pricing: frPricing }, namespace }),
 }));
 

@@ -26,7 +26,7 @@ vi.mock("next/navigation", () => ({
 // a real translator built from the pricing zone, like a Server Component
 // would receive at runtime.
 vi.mock("next-intl/server", () => ({
-  getTranslations: async (namespace: string) =>
+  getTranslations: async (namespace: "pricing") =>
     createTranslator({ locale: "fr", messages: { pricing: frPricing }, namespace }),
 }));
 

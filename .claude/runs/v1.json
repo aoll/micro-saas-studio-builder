@@ -47,10 +47,10 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "blocked",
+      "status": "dispatched",
       "worktree": "sa-08-introuvable",
       "pr": null,
-      "blockedReason": "root-layout notFound() is rendered by the parent segment: needs app/(products)/not-found.tsx (full <html> document) + a shared SA-08 component, outside Périmètre. Waiting for human approval."
+      "humanDecision": "2026-09-25: human approved (OK SA-08) extending Périmètre to app/(products)/not-found.tsx (full <html> document) + a shared SA-08 content component used by both not-found files."
     },
     "SA-02-outil": {
       "dependsOn": [
@@ -76,16 +76,16 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "dispatched",
-      "worktree": "ledger",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 28
     },
     "SA-03-inscription": {
       "dependsOn": [
         "LEDGER"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "sa-03-inscription",
       "pr": null
     },
     "SA-04-tarifs": {
@@ -103,16 +103,16 @@
         "LEDGER",
         "SA-04-tarifs"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "sa-05-paiement",
       "pr": null
     },
     "SA-07-compte": {
       "dependsOn": [
         "LEDGER"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "sa-07-compte",
       "pr": null
     },
     "BO-01-connexion": {
@@ -166,9 +166,9 @@
         "BO-05a-formulaire",
         "SA-02-outil"
       ],
-      "status": "dispatched",
-      "worktree": "bo-05b-generation-publication",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 27
     },
     "BO-07-themes": {
       "dependsOn": [
@@ -356,7 +356,8 @@
       "spec": "BO-07-themes",
       "blockedOn": "BO-08-editeur-theme",
       "what": "wrap ThemeCard (admin/themes/_components/theme-card.tsx) in a <Link> to /admin/themes/[id] once the editor route exists",
-      "resolved": false
+      "resolved": true,
+      "pr": 29
     },
     {
       "spec": "CONTRACT-ui",
@@ -388,6 +389,12 @@
       "spec": "SETUP-skeleton",
       "blockedOn": "SETUP-skeleton",
       "what": "intermittent: lib/dal/session.test.ts \"redirects to /admin/login for a role=user session\" failed once (session!.id undefined at line 80) under full-suite parallelism; find the concurrent file that mutates admin sessions and isolate it",
+      "resolved": false
+    },
+    {
+      "spec": "BO-05a-formulaire",
+      "blockedOn": "BO-05b-generation-publication",
+      "what": "admin/products/_actions.ts isUniqueSlugViolation reads err.code but drizzle puts the PG code on err.cause (lib/db/schema.test.ts:24-31): the slug race throws instead of returning a slug error; fix + a test with a real duplicate insert",
       "resolved": false
     }
   ],
@@ -425,6 +432,14 @@
     {
       "for": "human (open question)",
       "note": "themeTokensSchema lacks typography scale, shadows and density listed in docs/01; a contract PR would be needed. DEMO-mode will make BO-08 read-only for seeded themes on the public demo."
+    },
+    {
+      "for": "DEMO-mode",
+      "note": "verify end to end that /admin/settings shows the default thresholds locked and seeded products overrides locked when DEMO_MODE=true, visitor products editable (BO-09)."
+    },
+    {
+      "for": "E2E-demo",
+      "note": "instant() portfolio -> fiche: name and status cannot be in the static shell while each boundary calls requireAdmin() (BO-03)."
     }
   ]
 }

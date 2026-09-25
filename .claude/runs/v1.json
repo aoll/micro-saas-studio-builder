@@ -263,10 +263,9 @@
         "BO-05b-generation-publication",
         "BO-07-themes"
       ],
-      "status": "dispatched",
-      "worktree": "i18n-seo",
-      "pr": null,
-      "step": "tdd",
+      "status": "merged",
+      "worktree": null,
+      "pr": 41,
       "humanDecision": {
         "pending": false,
         "answer": "go fichier partagé (2026-09-25)",

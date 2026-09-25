@@ -356,3 +356,181 @@ describe("countPriorGenerations", () => {
     ).rejects.toThrow();
   });
 });
+
+describe("recordAnonymousGeneration", () => {
+  it("succeeds under the limit and returns the free generations left", async () => {
+    const { recordAnonymousGeneration } = await import("./generations");
+    const productId = await lettreProId();
+    const anonymousId = randomUUID();
+    const ipHash = `ip-${randomUUID()}`;
+
+    const result = await recordAnonymousGeneration({
+      productId,
+      productVersion: 1,
+      anonymousId,
+      ipHash,
+      input: {},
+      idempotencyKey: randomUUID(),
+      limit: 1,
+    });
+
+    expect(result).toMatchObject({ ok: true, freeGenerationsLeft: 0, isFirst: true });
+    if (result.ok) await db.delete(generations).where(eq(generations.id, result.id));
+  });
+
+  it("refuses at the limit with 'signup_required', writing nothing", async () => {
+    const { recordAnonymousGeneration, findGenerationByKey } = await import("./generations");
+    const productId = await lettreProId();
+    const anonymousId = randomUUID();
+    const ipHash = `ip-${randomUUID()}`;
+
+    const first = await recordAnonymousGeneration({
+      productId,
+      productVersion: 1,
+      anonymousId,
+      ipHash,
+      input: {},
+      idempotencyKey: randomUUID(),
+      limit: 1,
+    });
+    expect(first.ok).toBe(true);
+
+    const secondKey = randomUUID();
+    const second = await recordAnonymousGeneration({
+      productId,
+      productVersion: 1,
+      anonymousId,
+      ipHash,
+      input: {},
+      idempotencyKey: secondKey,
+      limit: 1,
+    });
+    expect(second).toEqual({ ok: false, reason: "signup_required" });
+    expect(await findGenerationByKey(secondKey)).toBeNull();
+
+    if (first.ok) await db.delete(generations).where(eq(generations.id, first.id));
+  });
+
+  it("5 concurrent calls with the same cookie produce exactly `limit` rows", async () => {
+    const { recordAnonymousGeneration } = await import("./generations");
+    const productId = await lettreProId();
+    const anonymousId = randomUUID();
+    const ipHash = `ip-${randomUUID()}`;
+    const limit = 2;
+
+    const results = await Promise.all(
+      Array.from({ length: 5 }, () =>
+        recordAnonymousGeneration({
+          productId,
+          productVersion: 1,
+          anonymousId,
+          ipHash,
+          input: {},
+          idempotencyKey: randomUUID(),
+          limit,
+        }),
+      ),
+    );
+
+    const succeeded = results.filter((result) => result.ok);
+    const refused = results.filter((result) => !result.ok);
+    expect(succeeded).toHaveLength(limit);
+    expect(refused).toHaveLength(5 - limit);
+    refused.forEach((result) => expect(result).toEqual({ ok: false, reason: "signup_required" }));
+
+    const rows = await db.query.generations.findMany({ where: eq(generations.anonymousId, anonymousId) });
+    expect(rows).toHaveLength(limit);
+    await db.delete(generations).where(eq(generations.anonymousId, anonymousId));
+  });
+
+  it("5 concurrent calls with the same IP but different cookies produce exactly `limit` rows", async () => {
+    const { recordAnonymousGeneration } = await import("./generations");
+    const productId = await lettreProId();
+    const ipHash = `ip-${randomUUID()}`;
+    const limit = 2;
+
+    const results = await Promise.all(
+      Array.from({ length: 5 }, () =>
+        recordAnonymousGeneration({
+          productId,
+          productVersion: 1,
+          anonymousId: randomUUID(),
+          ipHash,
+          input: {},
+          idempotencyKey: randomUUID(),
+          limit,
+        }),
+      ),
+    );
+
+    const succeeded = results.filter((result) => result.ok);
+    expect(succeeded).toHaveLength(limit);
+
+    const rows = await db.query.generations.findMany({ where: eq(generations.ipHash, ipHash) });
+    expect(rows).toHaveLength(limit);
+    await db.delete(generations).where(eq(generations.ipHash, ipHash));
+  });
+
+  it("a failed generation does not count against the limit", async () => {
+    const { recordAnonymousGeneration, markGenerationFailed } = await import("./generations");
+    const productId = await lettreProId();
+    const anonymousId = randomUUID();
+    const ipHash = `ip-${randomUUID()}`;
+
+    const first = await recordAnonymousGeneration({
+      productId,
+      productVersion: 1,
+      anonymousId,
+      ipHash,
+      input: {},
+      idempotencyKey: randomUUID(),
+      limit: 1,
+    });
+    if (first.ok) await markGenerationFailed(first.id);
+
+    const second = await recordAnonymousGeneration({
+      productId,
+      productVersion: 1,
+      anonymousId,
+      ipHash,
+      input: {},
+      idempotencyKey: randomUUID(),
+      limit: 1,
+    });
+    expect(second).toMatchObject({ ok: true, isFirst: true });
+
+    await db.delete(generations).where(eq(generations.anonymousId, anonymousId));
+  });
+
+  it("a replayed idempotency key returns the existing row instead of inserting again", async () => {
+    const { recordAnonymousGeneration } = await import("./generations");
+    const productId = await lettreProId();
+    const anonymousId = randomUUID();
+    const ipHash = `ip-${randomUUID()}`;
+    const idempotencyKey = randomUUID();
+
+    const first = await recordAnonymousGeneration({
+      productId,
+      productVersion: 1,
+      anonymousId,
+      ipHash,
+      input: {},
+      idempotencyKey,
+      limit: 1,
+    });
+    const second = await recordAnonymousGeneration({
+      productId,
+      productVersion: 1,
+      anonymousId,
+      ipHash,
+      input: {},
+      idempotencyKey,
+      limit: 1,
+    });
+
+    expect(first.ok && second.ok && first.id === second.id).toBe(true);
+    const rows = await db.select().from(generations).where(eq(generations.idempotencyKey, idempotencyKey));
+    expect(rows).toHaveLength(1);
+    await db.delete(generations).where(eq(generations.idempotencyKey, idempotencyKey));
+  });
+});

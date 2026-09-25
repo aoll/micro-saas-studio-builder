@@ -1,6 +1,6 @@
 import "server-only";
 import { createHmac } from "node:crypto";
-import { and, eq, isNull, ne, or } from "drizzle-orm";
+import { and, eq, isNull, ne, or, sql } from "drizzle-orm";
 import { env } from "@/lib/env";
 import { db } from "@/lib/db";
 import { generations } from "@/lib/db/schema";
@@ -153,4 +153,91 @@ export const countPriorGenerations: (who: {
     columns: { id: true },
   });
   return rows.length;
+};
+
+export type RecordAnonymousGenerationArgs = {
+  productId: string;
+  productVersion: number;
+  anonymousId: string;
+  ipHash: string;
+  input: Record<string, string>;
+  idempotencyKey: string;
+  limit: number;
+};
+
+export type RecordAnonymousGenerationResult =
+  { ok: true; id: string; freeGenerationsLeft: number; isFirst: boolean } | { ok: false; reason: "signup_required" };
+
+// Additive export (security review, SA-02): `countPriorGenerations` then
+// `recordGeneration` as two separate statements let N concurrent anonymous
+// requests all read the same "under the limit" count before any of them
+// commits an insert (TOCTOU). This combines the count and the insert in one
+// transaction, serialized by a Postgres advisory lock on *both* identity
+// keys the anonymous limit is checked against (docs/01: "cookie + IP") —
+// two concurrent calls sharing either the cookie or the IP always
+// serialize, in the same fixed lock order, so they can never deadlock each
+// other.
+export const recordAnonymousGeneration: (
+  args: RecordAnonymousGenerationArgs,
+) => Promise<RecordAnonymousGenerationResult> = async (args) => {
+  return db.transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${`anon-gen:${args.productId}:${args.anonymousId}`}, 0))`,
+    );
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${`anon-gen-ip:${args.productId}:${args.ipHash}`}, 0))`,
+    );
+
+    // A replay of an idempotency key already recorded under this lock (or
+    // an earlier request) is not a new attempt: return it as-is, without
+    // touching the count.
+    const existing = await tx.query.generations.findFirst({
+      where: eq(generations.idempotencyKey, args.idempotencyKey),
+      columns: { id: true },
+    });
+    if (existing) return { ok: true, id: existing.id, freeGenerationsLeft: 0, isFirst: false };
+
+    const priorRows = await tx.query.generations.findMany({
+      where: and(
+        eq(generations.productId, args.productId),
+        ne(generations.status, "failed"),
+        isNull(generations.userId),
+        or(eq(generations.anonymousId, args.anonymousId), eq(generations.ipHash, args.ipHash)),
+      ),
+      columns: { id: true },
+    });
+    if (priorRows.length >= args.limit) return { ok: false, reason: "signup_required" };
+
+    const inserted = await tx
+      .insert(generations)
+      .values({
+        productId: args.productId,
+        productVersion: args.productVersion,
+        userId: null,
+        anonymousId: args.anonymousId,
+        ipHash: args.ipHash,
+        input: args.input,
+        idempotencyKey: args.idempotencyKey,
+      })
+      .onConflictDoNothing({ target: generations.idempotencyKey })
+      .returning({ id: generations.id });
+
+    if (!inserted[0]) {
+      // Lost a race on the idempotency key itself (a genuine double
+      // submission of the very same key, not the free-try race this
+      // function exists to close): read back the row the other call wrote.
+      const raced = await tx.query.generations.findFirst({
+        where: eq(generations.idempotencyKey, args.idempotencyKey),
+        columns: { id: true },
+      });
+      return { ok: true, id: raced!.id, freeGenerationsLeft: 0, isFirst: false };
+    }
+
+    return {
+      ok: true,
+      id: inserted[0].id,
+      freeGenerationsLeft: args.limit - priorRows.length - 1,
+      isFirst: priorRows.length === 0,
+    };
+  });
 };

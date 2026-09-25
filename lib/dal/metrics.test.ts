@@ -31,9 +31,50 @@ async function editorialThemeId(): Promise<string> {
   return row!.id;
 }
 
-/** A throwaway product + its (draft) config, cleaned up by the caller. */
+// A full, schema-valid config (mirrors lib/dal/product-editor.test.ts's
+// buildConfig()): getPortfolioMetrics's SQL only ever reads `name` and
+// `pricing.costPerGeneration` from it, but a schema-invalid config would
+// break any test file whose `listProducts()` runs concurrently against
+// this shared DB (it Zod-parses every product's config) — reproduced with
+// products.test.ts and events.test.ts. Only `name` and `costPerGeneration`
+// vary per test.
+function buildValidConfig(
+  slug: string,
+  themeId: string,
+  overrides: { name?: string; costPerGeneration?: number } = {},
+): ProductConfig {
+  return {
+    slug,
+    name: overrides.name ?? "Metrics test product",
+    status: "test",
+    themeId,
+    locale: "fr",
+    branding: {},
+    landing: {
+      headline: "Headline",
+      subheadline: "Subheadline",
+      faq: [],
+      seoTitle: "Title",
+      seoDescription: "Description",
+    },
+    inputs: [{ key: "topic", label: "Topic", type: "text", required: true }],
+    generation: {
+      model: "anthropic/claude-haiku-4.5",
+      promptTemplate: "Write about {{topic}}",
+      outputType: "markdown",
+    },
+    pricing: {
+      freeCreditsOnSignup: 3,
+      anonymousFreeGenerations: 1,
+      costPerGeneration: overrides.costPerGeneration ?? 1,
+      packs: [{ id: "pack-10", credits: 10, priceCents: 490 }],
+    },
+  };
+}
+
+/** A throwaway product + its (schema-valid) config, cleaned up by the caller. */
 async function createTempProduct(
-  config: Record<string, unknown>,
+  overrides: { name?: string; costPerGeneration?: number } = {},
   opts: { status?: "test" | "learn" | "scale" | "killed" } = {},
 ): Promise<{ id: string; slug: string }> {
   const id = randomUUID();
@@ -51,7 +92,7 @@ async function createTempProduct(
   });
   await db
     .insert(productVersions)
-    .values({ productId: id, version: 1, config: config as unknown as ProductConfig, createdBy: owner });
+    .values({ productId: id, version: 1, config: buildValidConfig(slug, themeId, overrides), createdBy: owner });
   return { id, slug };
 }
 
@@ -74,10 +115,7 @@ describe("getPortfolioMetrics", () => {
   describe("SQL aggregation", () => {
     it("counts events and succeeded generations, and reads name/slug/status for an active product", async () => {
       requireAdmin.mockResolvedValue({ user: { role: "admin" } });
-      const { id, slug } = await createTempProduct(
-        { name: "Metrics P", pricing: { costPerGeneration: 1 } },
-        { status: "learn" },
-      );
+      const { id, slug } = await createTempProduct({ name: "Metrics P", costPerGeneration: 1 }, { status: "learn" });
 
       await db.insert(events).values([
         ...Array.from({ length: 12 }, () => ({ productId: id, type: "visit" as const, anonymousId: randomUUID() })),
@@ -124,7 +162,7 @@ describe("getPortfolioMetrics", () => {
 
     it("returns zero counts and null rates for an idle product (no events, purchases or generations)", async () => {
       requireAdmin.mockResolvedValue({ user: { role: "admin" } });
-      const { id } = await createTempProduct({ name: "Idle", pricing: { costPerGeneration: 2 } });
+      const { id } = await createTempProduct({ name: "Idle", costPerGeneration: 2 });
 
       const { getPortfolioMetrics } = await import("./metrics");
       const metrics = await getPortfolioMetrics({ days: 30 });
@@ -149,7 +187,7 @@ describe("getPortfolioMetrics", () => {
   describe("revenue, cost, conversion and margin", () => {
     it("computes revenue, buyer conversion, AI cost and margin per generation from purchases and generations", async () => {
       requireAdmin.mockResolvedValue({ user: { role: "admin" } });
-      const { id } = await createTempProduct({ name: "Margin P", pricing: { costPerGeneration: 1 } });
+      const { id } = await createTempProduct({ name: "Margin P", costPerGeneration: 1 });
 
       // 4 signups, 2 distinct buyers (one buys twice) → conversion 2/4 = 0.5
       await db
@@ -250,7 +288,7 @@ describe("getPortfolioMetrics", () => {
 
     it("returns null margin when no credits were sold, even with succeeded generations", async () => {
       requireAdmin.mockResolvedValue({ user: { role: "admin" } });
-      const { id } = await createTempProduct({ name: "No sales", pricing: { costPerGeneration: 1 } });
+      const { id } = await createTempProduct({ name: "No sales", costPerGeneration: 1 });
       await db.insert(generations).values({
         productId: id,
         productVersion: 1,
@@ -310,10 +348,7 @@ describe("getPortfolioMetrics", () => {
   describe("the dossier's kill / scale story (fresh products, real thresholds)", () => {
     it("scales a product with visits, conversion and margin above the default thresholds", async () => {
       requireAdmin.mockResolvedValue({ user: { role: "admin" } });
-      const { id } = await createTempProduct(
-        { name: "LettrePro-like", pricing: { costPerGeneration: 1 } },
-        { status: "scale" },
-      );
+      const { id } = await createTempProduct({ name: "LettrePro-like", costPerGeneration: 1 }, { status: "scale" });
       const { buyerIds } = await seedFunnelStory(id, {
         visits: 1200,
         signups: 100,
@@ -344,10 +379,7 @@ describe("getPortfolioMetrics", () => {
 
     it("suggests killing a product with visits but very low conversion", async () => {
       requireAdmin.mockResolvedValue({ user: { role: "admin" } });
-      const { id } = await createTempProduct(
-        { name: "NomDeMarque-like", pricing: { costPerGeneration: 1 } },
-        { status: "test" },
-      );
+      const { id } = await createTempProduct({ name: "NomDeMarque-like", costPerGeneration: 1 }, { status: "test" });
       const { buyerIds } = await seedFunnelStory(id, {
         visits: 1100,
         signups: 100,
@@ -378,10 +410,7 @@ describe("getPortfolioMetrics", () => {
 
     it("suggests no badge for a product between the two thresholds", async () => {
       requireAdmin.mockResolvedValue({ user: { role: "admin" } });
-      const { id } = await createTempProduct(
-        { name: "DescriPro-like", pricing: { costPerGeneration: 1 } },
-        { status: "learn" },
-      );
+      const { id } = await createTempProduct({ name: "DescriPro-like", costPerGeneration: 1 }, { status: "learn" });
       const { buyerIds } = await seedFunnelStory(id, {
         visits: 1050,
         signups: 100,
@@ -412,7 +441,7 @@ describe("getPortfolioMetrics", () => {
 
     it("suggests no badge under the 1000-visit volume gate", async () => {
       requireAdmin.mockResolvedValue({ user: { role: "admin" } });
-      const { id } = await createTempProduct({ name: "Tiny", pricing: { costPerGeneration: 1 } });
+      const { id } = await createTempProduct({ name: "Tiny", costPerGeneration: 1 });
       const { buyerIds } = await seedFunnelStory(id, { visits: 10, signups: 2, buyers: 0, succeededGenerations: 0 });
 
       const { getPortfolioMetrics } = await import("./metrics");

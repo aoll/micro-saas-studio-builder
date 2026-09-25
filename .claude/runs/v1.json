@@ -281,10 +281,9 @@
       "dependsOn": [
         "BO-03-fiche"
       ],
-      "status": "dispatched",
-      "worktree": "bo-06-statut",
-      "pr": null,
-      "step": "verify"
+      "status": "merged",
+      "worktree": null,
+      "pr": 37
     },
     "BO-09-seuils": {
       "dependsOn": [

@@ -62,14 +62,18 @@ describe("ProductLayout", () => {
     appRootParam.mockResolvedValue("zz-unknown");
     getProduct.mockResolvedValue(null);
     const { default: ProductLayout } = await import("./layout");
-    await expect(ProductLayout({ children: null, modal: null })).rejects.toThrow(NotFoundMarker);
+    await expect(
+      ProductLayout({ children: null, modal: null, params: Promise.resolve({ app: "zz-unknown" }) }),
+    ).rejects.toThrow(NotFoundMarker);
     expect(getTheme).not.toHaveBeenCalled();
   });
 
   it("rejects when app() has no value, without calling getProduct", async () => {
     appRootParam.mockResolvedValue(undefined);
     const { default: ProductLayout } = await import("./layout");
-    await expect(ProductLayout({ children: null, modal: null })).rejects.toThrow(NotFoundMarker);
+    await expect(ProductLayout({ children: null, modal: null, params: Promise.resolve({ app: "" }) })).rejects.toThrow(
+      NotFoundMarker,
+    );
     expect(getProduct).not.toHaveBeenCalled();
   });
 
@@ -77,7 +81,9 @@ describe("ProductLayout", () => {
     appRootParam.mockResolvedValue("killed-product");
     getProduct.mockResolvedValue({ ...ACTIVE_PRODUCT, slug: "killed-product", status: "killed" });
     const { default: ProductLayout } = await import("./layout");
-    await expect(ProductLayout({ children: null, modal: null })).rejects.toThrow(NotFoundMarker);
+    await expect(
+      ProductLayout({ children: null, modal: null, params: Promise.resolve({ app: "killed-product" }) }),
+    ).rejects.toThrow(NotFoundMarker);
     expect(getTheme).not.toHaveBeenCalled();
   });
 
@@ -88,7 +94,11 @@ describe("ProductLayout", () => {
     loadMessages.mockResolvedValue({ common: {} });
     getSession.mockResolvedValue(null);
     const { default: ProductLayout } = await import("./layout");
-    const ui = await ProductLayout({ children: <p>child</p>, modal: null });
+    const ui = await ProductLayout({
+      children: <p>child</p>,
+      modal: null,
+      params: Promise.resolve({ app: "lettre-pro" }),
+    });
     expect(ui.props.lang).toBe(ACTIVE_PRODUCT.locale);
     expect(getTheme).toHaveBeenCalledWith("theme-1");
   });

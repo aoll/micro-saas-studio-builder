@@ -43,7 +43,10 @@ export function useBalanceDelta(): (delta: number) => void {
 export function BalanceBadge({ balance }: { balance: number }) {
   const ctx = useContext(BalanceContext);
   const t = useTranslations("common.header");
-  const displayed = balance + (ctx?.delta ?? 0);
+  // Never below zero (docs/01-produit.md: "aucun solde négatif"): at 0, the
+  // optimistic -1 of "Générer" would show "-1" until the 402 opens the
+  // paywall (QA1 B11).
+  const displayed = Math.max(0, balance + (ctx?.delta ?? 0));
   return (
     <span key={displayed} className="animate-[badge-pop_0.3s_ease-out] rounded-full border px-2 py-0.5 text-sm">
       {t("credits", { count: displayed })}

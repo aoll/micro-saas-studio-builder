@@ -7,6 +7,7 @@ import { debit, refund } from "@/lib/dal/credits";
 import { track } from "@/lib/dal/events";
 import {
   countPriorGenerations,
+  deleteGeneration,
   findGenerationByKey,
   hashIp,
   markGenerationFailed,
@@ -75,7 +76,12 @@ export async function POST(request: Request, { params }: RouteContext<"/[app]/ap
   const cookieStore = await cookies();
   // Shared with TRACKING (api/events): same cookie name and shape, so a
   // visit and a generation from the same visitor agree on one anonymous id.
-  const existingAnonymousId = userId ? null : readAnonymousId(cookieStore.get(ANONYMOUS_ID_COOKIE)?.value);
+  // Read even for a signed-in caller (QA1-P1-B5): the cookie set during
+  // their earlier anonymous free generation is still in the browser, and
+  // countPriorGenerations below needs it to see that prior row. It is
+  // never assigned to `anonymousId` below, the variable tracked events
+  // use: a signed-in generation always tracks with `anonymousId: null`.
+  const existingAnonymousId = readAnonymousId(cookieStore.get(ANONYMOUS_ID_COOKIE)?.value);
 
   let generationId: string;
   let anonymousId: string | null = null;
@@ -83,7 +89,12 @@ export async function POST(request: Request, { params }: RouteContext<"/[app]/ap
   let isFirstGeneration: boolean;
 
   if (userId) {
-    const priorCount = await countPriorGenerations({ productId: product.id, userId, anonymousId: null, ipHash: null });
+    const priorCount = await countPriorGenerations({
+      productId: product.id,
+      userId,
+      anonymousId: existingAnonymousId,
+      ipHash: null,
+    });
     isFirstGeneration = priorCount === 0;
     const recorded = await recordGeneration({
       productId: product.id,
@@ -124,7 +135,11 @@ export async function POST(request: Request, { params }: RouteContext<"/[app]/ap
       idempotencyKey,
     });
     if (!debitResult.ok) {
-      await markGenerationFailed(generationId);
+      // QA1-P1-B7: a refusal is not a generation (BO-04's activity must
+      // list only served or genuinely failed-then-refunded attempts). The
+      // row `recordGeneration` wrote above is still `pending` — never ran,
+      // never refunded — so it is deleted, not marked failed.
+      await deleteGeneration(generationId);
       after(() => track({ type: "credits_exhausted", productId: product.id, userId, anonymousId: null }));
       return jsonError("insufficient_balance", 402);
     }

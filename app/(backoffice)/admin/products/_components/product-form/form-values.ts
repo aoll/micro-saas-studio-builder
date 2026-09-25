@@ -1,11 +1,10 @@
 import { randomUUID } from "node:crypto";
 import type { ProductConfig } from "@/lib/schemas/product-config";
 
-// BO-05a only builds steps 1 to 4 (identity, theme, landing & SEO, fields):
-// generation (step 5) and pricing (step 6) are BO-05b's. A draft still
-// needs a valid value for both so a step-4 save produces a config the
-// shared schema accepts end to end; BO-05b appends its two steps to
-// `STEPS` and replaces these defaults with real form inputs.
+// The starting point for BO-05 steps 5 and 6 (GenerationStep, PricingStep)
+// on a brand-new product: sensible defaults the admin edits from there.
+// Also what a step-4 draft save falls back to before steps 5-6 have been
+// touched at all, so the config stays valid end to end.
 export const DEFAULT_GENERATION: ProductConfig["generation"] = {
   model: "anthropic/claude-haiku-4.5",
   promptTemplate: "Rédige une réponse claire et utile à partir des informations fournies.",

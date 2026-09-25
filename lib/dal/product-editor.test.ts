@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/auth-schema";
 import { productVersions, products, themes } from "@/lib/db/schema";
@@ -250,5 +250,95 @@ describe("listThemeOptions", () => {
     for (const theme of themeOptions) {
       expect(themeTokensSchema.safeParse(theme.tokens).success).toBe(true);
     }
+  });
+});
+
+describe("publishProduct", () => {
+  it("redirects a non-admin caller", async () => {
+    requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
+    const { publishProduct } = await import("./product-editor");
+    await expect(publishProduct("lettre-pro", 1)).rejects.toThrow("redirect:/admin/login");
+  });
+
+  it("returns null for an unknown slug, without changing anything", async () => {
+    await currentAdmin();
+    const { publishProduct } = await import("./product-editor");
+    expect(await publishProduct(`missing-${randomUUID()}`, 1)).toBeNull();
+  });
+
+  it("returns null for an unknown version, without changing the product row", async () => {
+    await currentAdmin();
+    const { createProduct, publishProduct } = await import("./product-editor");
+    const config = await buildConfig();
+    const created = await createProduct(config);
+
+    const before = await db.query.products.findFirst({ where: eq(products.id, created.id) });
+    expect(await publishProduct(created.slug, 99)).toBeNull();
+    const after = await db.query.products.findFirst({ where: eq(products.id, created.id) });
+    expect(after?.currentVersion).toBe(before?.currentVersion);
+
+    await db.delete(productVersions).where(eq(productVersions.productId, created.id));
+    await db.delete(products).where(eq(products.id, created.id));
+  });
+
+  it("moves current_version, theme and locale to a saved draft's, keeping earlier versions intact", async () => {
+    await currentAdmin();
+    const { createProduct, saveVersion, publishProduct } = await import("./product-editor");
+    const editorial = await db.query.themes.findFirst({ where: eq(themes.slug, "editorial") });
+    const neon = await db.query.themes.findFirst({ where: eq(themes.slug, "neon") });
+    const config = await buildConfig();
+    const created = await createProduct({ ...config, themeId: editorial!.id, locale: "fr" });
+
+    const before = await db.query.products.findFirst({ where: eq(products.id, created.id) });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    await saveVersion(created.slug, { ...config, themeId: neon!.id, locale: "en" });
+
+    const published = await publishProduct(created.slug, 2);
+    expect(published).toMatchObject({ id: created.id, slug: created.slug, version: 2 });
+
+    const after = await db.query.products.findFirst({ where: eq(products.id, created.id) });
+    expect(after).toMatchObject({ currentVersion: 2, themeId: neon!.id, locale: "en" });
+    expect(after!.updatedAt.getTime()).toBeGreaterThan(before!.updatedAt.getTime());
+
+    const v1 = await db.query.productVersions.findFirst({
+      where: and(eq(productVersions.productId, created.id), eq(productVersions.version, 1)),
+    });
+    expect((v1?.config as ProductConfig).themeId).toBe(editorial!.id);
+
+    // Rollback: publishing an earlier version still works (any existing
+    // version, docs/07: "jamais de modification en place").
+    const rolledBack = await publishProduct(created.slug, 1);
+    expect(rolledBack).toMatchObject({ version: 1 });
+    const rolledBackRow = await db.query.products.findFirst({ where: eq(products.id, created.id) });
+    expect(rolledBackRow).toMatchObject({ currentVersion: 1, themeId: editorial!.id, locale: "fr" });
+
+    await db.delete(productVersions).where(eq(productVersions.productId, created.id));
+    await db.delete(products).where(eq(products.id, created.id));
+  });
+
+  it("calls assertEditable with the row and rejects without changing it when it throws", async () => {
+    await currentAdmin();
+    const { createProduct, publishProduct } = await import("./product-editor");
+    const config = await buildConfig();
+    const created = await createProduct(config);
+    const before = await db.query.products.findFirst({ where: eq(products.id, created.id) });
+
+    mockAssertEditable.mockImplementation(() => {
+      throw new Error("locked");
+    });
+    await expect(publishProduct(created.slug, 1)).rejects.toThrow("locked");
+    expect(mockAssertEditable).toHaveBeenCalledWith(expect.objectContaining({ isSeed: false }));
+
+    const after = await db.query.products.findFirst({ where: eq(products.id, created.id) });
+    expect(after?.updatedAt).toEqual(before?.updatedAt);
+
+    await db.delete(productVersions).where(eq(productVersions.productId, created.id));
+    await db.delete(products).where(eq(products.id, created.id));
+  });
+
+  it("pins publishProduct's signature: (slug, version) -> { id; slug; version } | null", () => {
+    expectTypeOf<typeof import("./product-editor").publishProduct>().toEqualTypeOf<
+      (slug: string, version: number) => Promise<{ id: string; slug: string; version: number } | null>
+    >();
   });
 });

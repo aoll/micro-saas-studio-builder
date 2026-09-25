@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { desc, eq, inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { afterAll, describe, expect, it, vi } from "vitest";
@@ -35,15 +35,23 @@ const uniqueEmail = (label: string) => {
   return email;
 };
 
+// Session tokens created by this file for SEED_ADMIN, tracked precisely so
+// afterAll deletes only the rows this file created. lib/auth.test.ts and
+// admin/login/_actions.test.ts sign the same seeded admin in concurrently
+// (separate worker threads, shared worktree DB): a blanket
+// `delete(sessions).where(eq(sessions.userId, admin.id))` here would also
+// remove sessions those files are mid-assertion on (and vice versa), a real
+// observed flake (a concurrent file's blanket delete removed the row this
+// file was about to read).
+const createdAdminSessionTokens: string[] = [];
+
 afterAll(async () => {
   // Deleting a user cascades its sessions (onDelete: "cascade"): this also
   // removes the swapped session row from swapSessionToRoleUser below.
   if (createdEmails.length) await db.delete(users).where(inArray(users.email, createdEmails));
-  // Signing SEED_ADMIN in for real leaves extra session rows for it: seed.ts
-  // never inserts a session, so every row here is a test artifact, safe to
-  // clear without touching the SEED_ADMIN user/account row itself.
-  const admin = await db.query.users.findFirst({ where: eq(users.email, SEED_ADMIN.email) });
-  if (admin) await db.delete(sessions).where(eq(sessions.userId, admin.id));
+  if (createdAdminSessionTokens.length) {
+    await db.delete(sessions).where(inArray(sessions.token, createdAdminSessionTokens));
+  }
   await sql.end({ timeout: 5 });
 });
 
@@ -54,6 +62,12 @@ const cookieHeadersFor = async (email: string, password: string): Promise<Header
     headers: new Headers(),
     asResponse: true,
   });
+  // The response body carries the plain session token (see better-auth's
+  // sign-in route), the same value stored in `sessions.token`: reading it
+  // here identifies exactly the session this call created, no query by
+  // user id and recency needed (and no race with concurrent sign-ins).
+  const body = (await response.clone().json()) as { token: string };
+  createdAdminSessionTokens.push(body.token);
   const cookie = response.headers
     .getSetCookie()
     .map((entry) => entry.split(";")[0])
@@ -63,15 +77,10 @@ const cookieHeadersFor = async (email: string, password: string): Promise<Header
   return headers;
 };
 
-/** Points the newest session row for `email` at a freshly created role=user account. */
-const swapSessionToRoleUser = async (email: string): Promise<void> => {
-  const admin = await db.query.users.findFirst({ where: eq(users.email, email) });
-  const [session] = await db
-    .select()
-    .from(sessions)
-    .where(eq(sessions.userId, admin!.id))
-    .orderBy(desc(sessions.createdAt))
-    .limit(1);
+/** Points the session created by the most recent cookieHeadersFor() call at a freshly created role=user account. */
+const swapSessionToRoleUser = async (): Promise<void> => {
+  const token = createdAdminSessionTokens.at(-1);
+  const [session] = await db.select().from(sessions).where(eq(sessions.token, token!)).limit(1);
 
   const plainUserId = randomUUID();
   await db
@@ -112,7 +121,7 @@ describe("requireAdmin", () => {
     // freshly created role=user account, exercises exactly that: same
     // cookie, same signature, different user underneath.
     currentHeaders = await cookieHeadersFor(SEED_ADMIN.email, SEED_ADMIN.password);
-    await swapSessionToRoleUser(SEED_ADMIN.email);
+    await swapSessionToRoleUser();
 
     const { requireAdmin } = await import("./session");
     await expect(requireAdmin()).rejects.toThrow("redirect:/admin/login");

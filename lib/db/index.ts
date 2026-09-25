@@ -92,7 +92,7 @@ function createRoutingDb(): BaseDb {
     // (instead of an own property) resolves through *this* — routed —
     // prototype, so a `vi.spyOn` placed on the real class's prototype still
     // takes effect through `db`.
-    getPrototypeOf(_target) {
+    getPrototypeOf() {
       return Reflect.getPrototypeOf(currentTarget() as object);
     },
     getOwnPropertyDescriptor(_target, prop) {

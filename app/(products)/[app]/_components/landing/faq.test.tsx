@@ -24,7 +24,7 @@ const entries = [
 describe("Faq", () => {
   it("renders the heading and one details element per entry", () => {
     renderUi(<Faq entries={entries} />);
-    expect(screen.getByText("Questions fréquentes")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 2, name: "Questions fréquentes" })).toBeTruthy();
     expect(screen.getByText("Combien coûte une génération ?").tagName).toBe("SUMMARY");
     expect(screen.getByText("1 crédit par lettre générée.")).toBeTruthy();
     expect(screen.getByText("Puis-je modifier le résultat ?")).toBeTruthy();

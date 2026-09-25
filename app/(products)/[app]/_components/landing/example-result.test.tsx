@@ -19,7 +19,7 @@ function renderUi(ui: React.ReactElement) {
 describe("ExampleResult", () => {
   it("renders the title and the example text, keeping line breaks", () => {
     renderUi(<ExampleResult exampleOutput={"Madame, Monsieur,\n\nJe candidate..."} />);
-    expect(screen.getByText("Exemple de résultat")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 2, name: "Exemple de résultat" })).toBeTruthy();
     const text = screen.getByText(/Je candidate/);
     expect(text.className).toContain("whitespace-pre-line");
     expect(text.textContent).toBe("Madame, Monsieur,\n\nJe candidate...");

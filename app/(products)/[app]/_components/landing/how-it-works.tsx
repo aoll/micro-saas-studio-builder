@@ -8,7 +8,7 @@ export function HowItWorks({ steps }: { steps: { title: string; description: str
 
   return (
     <div>
-      <p className="font-medium">{t("steps.title")}</p>
+      <h2 className="font-medium">{t("steps.title")}</h2>
       <ol className="mt-4 grid gap-4">
         {steps.map((step, index) => (
           <li key={step.title} className="flex gap-3">

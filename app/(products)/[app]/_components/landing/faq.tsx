@@ -8,7 +8,7 @@ export function Faq({ entries }: { entries: { question: string; answer: string }
 
   return (
     <div>
-      <p className="font-medium">{t("faq.title")}</p>
+      <h2 className="font-medium">{t("faq.title")}</h2>
       <div className="mt-4 grid gap-2">
         {entries.map((entry) => (
           <details key={entry.question} className="rounded-lg border p-4">

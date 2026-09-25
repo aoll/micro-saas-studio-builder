@@ -26,7 +26,7 @@ const packs: Pack[] = [
 describe("LandingPricing", () => {
   it("renders the heading and one PackCard per pack", () => {
     renderUi(<LandingPricing slug="lettre-pro" packs={packs} costPerGeneration={1} freeCreditsOnSignup={3} />);
-    expect(screen.getByText("Tarifs")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 2, name: "Tarifs" })).toBeTruthy();
     expect(screen.getByText("10 crédits")).toBeTruthy();
     expect(screen.getByText("50 crédits")).toBeTruthy();
     expect(screen.getByText("4,90 €")).toBeTruthy();

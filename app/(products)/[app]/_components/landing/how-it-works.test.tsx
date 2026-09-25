@@ -25,7 +25,7 @@ const steps = [
 describe("HowItWorks", () => {
   it("renders the heading and one item per step, in order", () => {
     renderUi(<HowItWorks steps={steps} />);
-    expect(screen.getByText("Comment ça marche")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 2, name: "Comment ça marche" })).toBeTruthy();
     const list = screen.getByRole("list");
     expect(list.tagName).toBe("OL");
     const items = screen.getAllByRole("listitem");

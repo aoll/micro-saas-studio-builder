@@ -9,7 +9,7 @@ export function ExampleResult({ exampleOutput, bare = false }: { exampleOutput: 
   const t = useTranslations("landing");
   if (!exampleOutput || exampleOutput.trim() === "") return null;
 
-  const title = <p className="font-medium">{t("example.title")}</p>;
+  const title = <h2 className="font-medium">{t("example.title")}</h2>;
   const text = <p className="whitespace-pre-line text-muted-foreground">{exampleOutput}</p>;
 
   if (bare) {

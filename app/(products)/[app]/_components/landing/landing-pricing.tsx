@@ -23,7 +23,7 @@ export function LandingPricing({
 
   return (
     <div>
-      <p className="font-medium">{t("pricing.title")}</p>
+      <h2 className="font-medium">{t("pricing.title")}</h2>
       {freeCreditsOnSignup > 0 ? (
         <p className="mt-1 text-sm text-muted-foreground">{t("pricing.signupBonus", { count: freeCreditsOnSignup })}</p>
       ) : null}

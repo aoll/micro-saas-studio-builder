@@ -22,3 +22,6 @@ test-results/
 .DS_Store
 *.pem
 npm-debug.log*
+
+# Vercel CLI project link, machine-local
+.vercel

@@ -11,6 +11,7 @@
     "dev": "AI_MODE=mock next dev",
     "dev:live": "AI_MODE=live next dev",
     "build": "next typegen && next build",
+    "vercel-build": "bash scripts/vercel-build.sh",
     "start": "next start",
     "typecheck": "scripts/queued.sh typecheck sh -c 'next typegen && tsc -p tsconfig.build.json --noEmit'",
     "lint": "eslint .",

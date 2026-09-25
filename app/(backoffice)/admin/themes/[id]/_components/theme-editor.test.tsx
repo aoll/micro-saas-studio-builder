@@ -150,6 +150,49 @@ describe("ThemeEditor", () => {
     expect(screen.getByRole("alert")).toBeTruthy();
   });
 
+  // A screen reader announces a control's accessible description (the
+  // element(s) named by `aria-describedby`) alongside its label: without
+  // that wiring, the error `<p>` is only a sighted hint next to the field.
+  function describedTextOf(control: HTMLElement): string | null {
+    const id = control.getAttribute("aria-describedby");
+    if (!id) return null;
+    return document.getElementById(id)?.textContent ?? null;
+  }
+
+  it("wires a color field's error as its accessible description via aria-describedby", async () => {
+    saveTheme.mockResolvedValue({ errors: { "tokens.light.primary": "Doit être une couleur CSS valide" } });
+    render(<ThemeEditor theme={theme} readOnly={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+
+    await screen.findByText("Doit être une couleur CSS valide");
+    expect(describedTextOf(screen.getByLabelText("Primary"))).toBe("Doit être une couleur CSS valide");
+  });
+
+  it("wires the font, radius and landing variant errors the same way", async () => {
+    saveTheme.mockResolvedValue({
+      errors: {
+        "tokens.fontKey": "Police hors catalogue",
+        "tokens.radius": "Doit être une longueur CSS en rem ou px",
+        landingVariant: "Variante invalide",
+      },
+    });
+    render(<ThemeEditor theme={theme} readOnly={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+
+    await screen.findByText("Police hors catalogue");
+    expect(describedTextOf(screen.getByLabelText("Police"))).toBe("Police hors catalogue");
+    expect(describedTextOf(screen.getByLabelText("Radius"))).toBe("Doit être une longueur CSS en rem ou px");
+    expect(describedTextOf(screen.getByLabelText("Variante de landing"))).toBe("Variante invalide");
+  });
+
+  it("has no accessible description on a field with no error", () => {
+    render(<ThemeEditor theme={theme} readOnly={false} />);
+    expect(screen.getByLabelText("Background").getAttribute("aria-describedby")).toBeNull();
+    expect(screen.getByLabelText("Police").getAttribute("aria-describedby")).toBeNull();
+    expect(screen.getByLabelText("Radius").getAttribute("aria-describedby")).toBeNull();
+    expect(screen.getByLabelText("Variante de landing").getAttribute("aria-describedby")).toBeNull();
+  });
+
   it("shows a success toast when the save succeeds", async () => {
     saveTheme.mockResolvedValue({ ok: true });
     render(<ThemeEditor theme={theme} readOnly={false} />);

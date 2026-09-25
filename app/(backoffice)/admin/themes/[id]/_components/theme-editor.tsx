@@ -132,10 +132,15 @@ export function ThemeEditor({
                         value={value}
                         disabled={readOnly}
                         aria-invalid={path in errors}
+                        aria-describedby={errors[path] ? `${fieldId}-error` : undefined}
                         onChange={(event) => updateColor(key, event.target.value)}
                       />
                     </div>
-                    {errors[path] ? <p className="text-sm text-destructive">{errors[path]}</p> : null}
+                    {errors[path] ? (
+                      <p id={`${fieldId}-error`} className="text-sm text-destructive">
+                        {errors[path]}
+                      </p>
+                    ) : null}
                   </div>
                 );
               })}
@@ -151,6 +156,7 @@ export function ThemeEditor({
               value={tokens.fontKey}
               disabled={readOnly}
               aria-invalid={"tokens.fontKey" in errors}
+              aria-describedby={errors["tokens.fontKey"] ? "theme-font-key-error" : undefined}
               onChange={(event) => setTokens((current) => ({ ...current, fontKey: event.target.value }))}
             >
               {FONT_KEYS.map((key) => (
@@ -159,7 +165,11 @@ export function ThemeEditor({
                 </option>
               ))}
             </select>
-            {errors["tokens.fontKey"] ? <p className="text-sm text-destructive">{errors["tokens.fontKey"]}</p> : null}
+            {errors["tokens.fontKey"] ? (
+              <p id="theme-font-key-error" className="text-sm text-destructive">
+                {errors["tokens.fontKey"]}
+              </p>
+            ) : null}
           </fieldset>
 
           <fieldset className="grid gap-1.5">
@@ -175,13 +185,18 @@ export function ThemeEditor({
                 value={radiusToRem(tokens.radius)}
                 disabled={readOnly}
                 aria-invalid={"tokens.radius" in errors}
+                aria-describedby={errors["tokens.radius"] ? "theme-radius-error" : undefined}
                 onChange={(event) =>
                   setTokens((current) => ({ ...current, radius: remToRadius(Number(event.target.value)) }))
                 }
               />
               <span className="text-sm text-muted-foreground">{tokens.radius}</span>
             </div>
-            {errors["tokens.radius"] ? <p className="text-sm text-destructive">{errors["tokens.radius"]}</p> : null}
+            {errors["tokens.radius"] ? (
+              <p id="theme-radius-error" className="text-sm text-destructive">
+                {errors["tokens.radius"]}
+              </p>
+            ) : null}
           </fieldset>
 
           <fieldset className="grid gap-1.5">
@@ -193,6 +208,7 @@ export function ThemeEditor({
               value={landingVariant}
               disabled={readOnly}
               aria-invalid={"landingVariant" in errors}
+              aria-describedby={errors.landingVariant ? "theme-landing-variant-error" : undefined}
               onChange={(event) => setLandingVariant(event.target.value as LandingVariant)}
             >
               {Object.entries(LANDING_VARIANT_LABELS).map(([value, label]) => (
@@ -201,7 +217,11 @@ export function ThemeEditor({
                 </option>
               ))}
             </select>
-            {errors.landingVariant ? <p className="text-sm text-destructive">{errors.landingVariant}</p> : null}
+            {errors.landingVariant ? (
+              <p id="theme-landing-variant-error" className="text-sm text-destructive">
+                {errors.landingVariant}
+              </p>
+            ) : null}
           </fieldset>
         </fieldset>
 

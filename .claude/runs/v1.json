@@ -372,7 +372,9 @@
       "spec": "SA-04-tarifs",
       "blockedOn": "SA-05-paiement",
       "what": "drop the `/${slug}/checkout/${packId}` as Route cast in [app]/pricing/_components/pricing-content.tsx once the checkout route exists; un-fixme e2e/pricing.spec.ts journey 3 once SA-02 and LEDGER are merged",
-      "resolved": false
+      "resolved": true,
+      "pr": 40,
+      "resolution": "cast dropped; pricing e2e journey 3 un-fixme deferred to the E2E phase (noted)"
     },
     {
       "spec": "BO-07-themes",
@@ -400,7 +402,8 @@
       "spec": "CONTRACT-ui",
       "blockedOn": "BO-09-seuils",
       "what": "drop the \"/admin/settings\" as Route cast in components/backoffice/admin-sidebar.tsx once BO-09 ships /admin/settings",
-      "resolved": false
+      "resolved": true,
+      "pr": 40
     },
     {
       "spec": "TRACKING",
@@ -426,25 +429,30 @@
       "spec": "CONTRACT-ui",
       "blockedOn": "SA-07-compte",
       "what": "header entry point to /[app]/account (components/product/header-balance.tsx: link the balance badge to /${slug}/account)",
-      "resolved": false
+      "resolved": true,
+      "pr": 40
     },
     {
       "spec": "SA-03-inscription",
       "blockedOn": "SA-03-inscription",
       "what": "after SA-03 merges: drop the /${slug}/signup as Route casts in [app]/tool/_components/tool-form.tsx and components/product/header-balance.tsx; update e2e/tool.spec.ts notes; SA-07 account signup cast + un-fixme its anonymous journey",
-      "resolved": false
+      "resolved": true,
+      "pr": 40
     },
     {
       "spec": "TRACKING",
       "blockedOn": "SA-03-inscription",
       "what": "dedupe signup events per (product, user) in the body of track() (signature unchanged), like visit, so a returning user re-login does not inflate the funnel; also dedupe purchase events by metadata.purchaseKey (SA-05 puts the idempotency key there)",
-      "resolved": false
+      "resolved": true,
+      "pr": 40
     },
     {
       "spec": "CONTRACT-ui",
       "blockedOn": "SA-05-paiement",
       "what": "optional onClose prop on components/product/route-modal.tsx so the confirmed checkout closes to /tool instead of router.back() into the pricing modal",
-      "resolved": false
+      "resolved": true,
+      "pr": 40,
+      "resolution": "cast dropped; pricing e2e journey 3 un-fixme deferred to the E2E phase (noted)"
     },
     {
       "spec": "BO-05b-generation-publication",
@@ -469,7 +477,9 @@
       "spec": "BO-02-portefeuille",
       "blockedOn": "BO-03-fiche",
       "what": "drop the /admin/products/[slug] as Route cast in portfolio-table.tsx; make e2e/portfolio.spec.ts:50 temp product config schema-valid",
-      "resolved": false
+      "resolved": true,
+      "pr": 40,
+      "resolution": "e2e config fixed; cast kept with reason (typedRoutes, string outside JSX href)"
     },
     {
       "spec": "BO-03-fiche",

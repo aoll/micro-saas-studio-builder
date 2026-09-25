@@ -1,0 +1,19 @@
+{
+  "costLine": "{count, plural, one {Coûte # crédit par génération} other {Coûte # crédits par génération}}",
+  "generate": "{count, plural, one {Générer · # crédit} other {Générer · # crédits}}",
+  "generating": "Génération en cours…",
+  "results": "Résultat",
+  "retry": "Réessayer",
+  "errors": {
+    "required": "Ce champ est obligatoire.",
+    "too_long": "Ce champ est trop long.",
+    "invalid_option": "Cette valeur n'est pas proposée.",
+    "unknown_field": "Champ inconnu.",
+    "failedRefunded": "La génération a échoué. Votre crédit a été remboursé.",
+    "failedFree": "La génération a échoué. Votre essai gratuit reste disponible.",
+    "rateLimited": "Trop de générations en peu de temps, réessayez dans un instant.",
+    "bot": "Requête bloquée.",
+    "duplicate": "Cette génération a déjà été traitée.",
+    "unexpected": "Une erreur inattendue est survenue."
+  }
+}

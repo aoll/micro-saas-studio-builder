@@ -1,0 +1,19 @@
+{
+  "costLine": "{count, plural, one {Costs # credit per generation} other {Costs # credits per generation}}",
+  "generate": "{count, plural, one {Generate · # credit} other {Generate · # credits}}",
+  "generating": "Generating…",
+  "results": "Result",
+  "retry": "Retry",
+  "errors": {
+    "required": "This field is required.",
+    "too_long": "This field is too long.",
+    "invalid_option": "This value is not available.",
+    "unknown_field": "Unknown field.",
+    "failedRefunded": "The generation failed. Your credit was refunded.",
+    "failedFree": "The generation failed. Your free try is still available.",
+    "rateLimited": "Too many generations in a short time, try again in a moment.",
+    "bot": "Request blocked.",
+    "duplicate": "This generation was already processed.",
+    "unexpected": "An unexpected error occurred."
+  }
+}

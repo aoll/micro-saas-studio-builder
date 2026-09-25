@@ -41,8 +41,19 @@ export type SaveProductState = {
 const MAX_LOGO_BYTES = 512 * 1024;
 const ALLOWED_LOGO_TYPES = new Set<DetectedImageType>(["image/png", "image/jpeg", "image/webp"]);
 
+// Drizzle wraps the driver's own error instead of exposing `.code` on it
+// directly: the real Postgres error (and its `code`) lives on `.cause`
+// (lib/db/schema.test.ts's `expectViolation`). A plain `{ code: "23505" }`
+// (e.g. a hand-built test double) is still accepted, so this also covers a
+// driver that one day stops wrapping.
 function isUniqueSlugViolation(err: unknown): boolean {
-  return typeof err === "object" && err !== null && "code" in err && (err as { code?: unknown }).code === "23505";
+  if (typeof err !== "object" || err === null) return false;
+  const cause = "cause" in err ? (err as { cause?: unknown }).cause : undefined;
+  const code =
+    typeof cause === "object" && cause !== null && "code" in cause
+      ? (cause as { code?: unknown }).code
+      : (err as { code?: unknown }).code;
+  return code === "23505";
 }
 
 // Shared by every action below that reads the form's "config" hidden field

@@ -23,13 +23,19 @@ export async function generateStaticParams() {
 
 // The layout that renders <html> for every sub-app: [app] is a root param
 // (docs/04-nextjs.md), read with next/root-params since it sits above this
-// root layout. The `killed` check belongs to SA-08 (not found is enough
-// here for an unknown slug); a product whose theme row is missing is a data
-// integrity error, not a 404, so it throws instead of calling notFound().
+// root layout. An unknown slug or a `killed` product both 404 (specs/SA-08):
+// spiked at specs/SA-08-introuvable.md's task 1, on a throwaway build
+// served on :3108 with a real killed row, then re-checked on a clean build
+// in a browser (plan round 2, decision 3). Outcome: this `notFound()` call
+// is rendered by the *parent* segment's not-found
+// (app/(products)/not-found.tsx), never by this segment's own
+// `[app]/not-found.tsx` — real 404 status, SA-08 content served one level
+// up. A product whose theme row is missing is a data integrity error, not
+// a 404, so it throws instead of calling notFound().
 export default async function ProductLayout({ children, modal }: LayoutProps<"/[app]">) {
   const slug = await app();
   const product = slug ? await getProduct(slug) : null;
-  if (!product) notFound();
+  if (!product || product.status === "killed") notFound();
 
   const theme = await getTheme(product.themeId);
   if (!theme) throw new Error(`ProductLayout(${product.slug}): missing theme row for ${product.themeId}`);

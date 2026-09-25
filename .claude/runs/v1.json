@@ -47,9 +47,9 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "dispatched",
-      "worktree": "sa-08-introuvable",
-      "pr": null,
+      "status": "merged",
+      "worktree": null,
+      "pr": 32,
       "humanDecision": "2026-09-25: human approved (OK SA-08) extending Périmètre to app/(products)/not-found.tsx (full <html> document) + a shared SA-08 content component used by both not-found files."
     },
     "SA-02-outil": {
@@ -105,7 +105,8 @@
       ],
       "status": "dispatched",
       "worktree": "sa-05-paiement",
-      "pr": null
+      "pr": null,
+      "step": "review"
     },
     "SA-07-compte": {
       "dependsOn": [
@@ -400,7 +401,8 @@
       "spec": "BO-05a-formulaire",
       "blockedOn": "BO-05b-generation-publication",
       "what": "admin/products/_actions.ts isUniqueSlugViolation reads err.code but drizzle puts the PG code on err.cause (lib/db/schema.test.ts:24-31): the slug race throws instead of returning a slug error; fix + a test with a real duplicate insert",
-      "resolved": false
+      "resolved": true,
+      "pr": 30
     },
     {
       "spec": "CONTRACT-ui",
@@ -417,7 +419,32 @@
     {
       "spec": "TRACKING",
       "blockedOn": "SA-03-inscription",
-      "what": "dedupe signup events per (product, user) in the body of track() (signature unchanged), like visit, so a returning user re-login does not inflate the funnel",
+      "what": "dedupe signup events per (product, user) in the body of track() (signature unchanged), like visit, so a returning user re-login does not inflate the funnel; also dedupe purchase events by metadata.purchaseKey (SA-05 puts the idempotency key there)",
+      "resolved": false
+    },
+    {
+      "spec": "CONTRACT-ui",
+      "blockedOn": "SA-05-paiement",
+      "what": "optional onClose prop on components/product/route-modal.tsx so the confirmed checkout closes to /tool instead of router.back() into the pricing modal",
+      "resolved": false
+    },
+    {
+      "spec": "BO-05b-generation-publication",
+      "blockedOn": "BO-05b-generation-publication",
+      "what": "intermittent: product-form.test.tsx \"a create-mode publish captures the created slug, so a second publish takes the edit path\" failed once under load (expected null to be bio-instagram); root-cause (timing of createdSlug capture) and fix the component or the test without weakening it",
+      "resolved": true,
+      "pr": 31
+    },
+    {
+      "spec": "SA-02-outil",
+      "blockedOn": "SA-02-outil",
+      "what": "intermittent: lib/dal/generations.test.ts failed once under shared DB load during SA-07 full run (green isolated and on re-run); root-cause like the other DAL test races",
+      "resolved": false
+    },
+    {
+      "spec": "BO-05a-formulaire",
+      "blockedOn": "BO-05a-formulaire",
+      "what": "product-form.test.tsx create-mode publish test failed once in a full pnpm test run (SA-05 TDD, after the #31 act() fix); root-cause before the end of the run",
       "resolved": false
     }
   ],
@@ -471,6 +498,10 @@
     {
       "for": "SECURITY",
       "note": "the raw Better Auth /api/auth/sign-in/magic-link endpoint is not behind guardRequest(\"signup\") (outbox only, Better Auth built-in 5/60 s limit)."
+    },
+    {
+      "for": "CONTRACT follow-up (human)",
+      "note": "purchases has no index at all: add (product_id, created_at) and (user_id, product_id, created_at); used by getPortfolioMetrics, getFunnel daily, SA-07 listPurchases. Flagged HIGH by the BO-03 database review as a pre-existing frozen-schema gap, not fixable in BO-03."
     }
   ]
 }

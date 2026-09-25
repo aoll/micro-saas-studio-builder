@@ -11,17 +11,36 @@ vi.mock("next/font/google", () => {
   return { Fraunces: loader, Space_Grotesk: loader, Inter: loader, Nunito: loader };
 });
 
-const { saveProduct, checkSlug, uploadLogo, replace, toastSuccess, toastError } = vi.hoisted(() => ({
+const {
+  saveProduct,
+  checkSlug,
+  uploadLogo,
+  testPrompt,
+  estimateGenerationCost,
+  publish,
+  replace,
+  refresh,
+  toastSuccess,
+  toastError,
+} = vi.hoisted(() => ({
   saveProduct: vi.fn(),
   checkSlug: vi.fn(),
   uploadLogo: vi.fn(),
+  testPrompt: vi.fn(),
+  estimateGenerationCost: vi.fn(),
+  publish: vi.fn(),
   replace: vi.fn(),
+  refresh: vi.fn(),
   toastSuccess: vi.fn(),
   toastError: vi.fn(),
 }));
 
-vi.mock("../../_actions", () => ({ saveProduct, checkSlug, uploadLogo }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
+// BO-05b (specs/BO-05b-generation-publication.md): extends BO-05a's
+// committed mock with the three new actions its steps 5-7 call, without
+// touching a single assertion below (CLAUDE.md: a committed test is never
+// weakened silently — this commit only adds mock entries).
+vi.mock("../../_actions", () => ({ saveProduct, checkSlug, uploadLogo, testPrompt, estimateGenerationCost, publish }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, refresh }) }));
 vi.mock("sonner", () => ({ toast: { success: toastSuccess, error: toastError } }));
 
 const { ProductForm } = await import("./product-form");
@@ -39,7 +58,11 @@ afterEach(() => {
   saveProduct.mockReset();
   checkSlug.mockReset();
   uploadLogo.mockReset();
+  testPrompt.mockReset();
+  estimateGenerationCost.mockReset();
+  publish.mockReset();
   replace.mockClear();
+  refresh.mockClear();
   toastSuccess.mockClear();
   toastError.mockClear();
 });

@@ -11,7 +11,7 @@
 //
 // Usage: pnpm tsx scripts/seed.ts (wired to `pnpm db:seed`)
 import { randomUUID } from "node:crypto";
-import { readFileSync, realpathSync } from "node:fs";
+import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 // Namespace import: see the comment in drizzle.config.ts.
 import * as nextEnvNs from "@next/env";
@@ -21,6 +21,12 @@ import { hashPassword } from "better-auth/crypto";
 import { eq, inArray, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import descriProConfig from "../fixtures/descri-pro.config.json";
+import descriProGenerations from "../fixtures/descri-pro.json";
+import lettreProConfig from "../fixtures/lettre-pro.config.json";
+import lettreProGenerations from "../fixtures/lettre-pro.json";
+import nomDeMarqueConfig from "../fixtures/nom-de-marque.config.json";
+import nomDeMarqueGenerations from "../fixtures/nom-de-marque.json";
 import { accounts, users } from "../lib/db/auth-schema";
 import {
   balances,
@@ -38,8 +44,6 @@ import { productConfigSchema, type ProductConfig } from "../lib/schemas/product-
 import type { EventType } from "../lib/schemas/event-type";
 import type { LandingVariant } from "../lib/schemas/theme-tokens";
 import type { ThemeTokens } from "../lib/schemas/theme-tokens";
-
-loadEnvConfig(process.cwd());
 
 // Dev-only fallback (docs/01 › Mode démo public: "envoyés avec la
 // candidature, pas affichés dans l'app"). `resolveCredentials` (below)
@@ -267,10 +271,23 @@ const SEED_THEMES: SeedTheme[] = [
   },
 ];
 
-const fixturesDir = new URL("../fixtures/", import.meta.url);
+// Static imports, not `readFileSync(new URL(..., import.meta.url))`
+// (orchestrator decision 4): this module is imported into the Next.js
+// server bundle (app/(backoffice)/admin/ops/_actions.ts, via
+// scripts/reset-demo.ts's own applySeed call) — a build spike (plan's
+// orchestrator decision 6) showed Turbopack cannot resolve a relative
+// `fixtures/` directory URL once this file is bundled away from its own
+// path on disk. A static import has no such runtime path to resolve.
+const CONFIG_FIXTURES: Record<string, unknown> = {
+  "lettre-pro": lettreProConfig,
+  "descri-pro": descriProConfig,
+  "nom-de-marque": nomDeMarqueConfig,
+};
 
 function readConfigFixture(slug: string): unknown {
-  return JSON.parse(readFileSync(new URL(`${slug}.config.json`, fixturesDir), "utf8"));
+  const config = CONFIG_FIXTURES[slug];
+  if (!config) throw new Error(`readConfigFixture: no fixture registered for ${slug}`);
+  return config;
 }
 
 type GenerationFixture = {
@@ -279,8 +296,16 @@ type GenerationFixture = {
   usage: { inputTokens: number; outputTokens: number; cachedInputTokens: number };
 };
 
+const GENERATION_FIXTURES: Record<string, GenerationFixture[]> = {
+  "lettre-pro": lettreProGenerations as GenerationFixture[],
+  "descri-pro": descriProGenerations as GenerationFixture[],
+  "nom-de-marque": nomDeMarqueGenerations as GenerationFixture[],
+};
+
 function readGenerationFixtures(slug: string): GenerationFixture[] {
-  return JSON.parse(readFileSync(new URL(`${slug}.json`, fixturesDir), "utf8")) as GenerationFixture[];
+  const fixtures = GENERATION_FIXTURES[slug];
+  if (!fixtures) throw new Error(`readGenerationFixtures: no fixture registered for ${slug}`);
+  return fixtures;
 }
 
 // The 3 locked products that tell the story (docs/01 › Contenu des
@@ -785,6 +810,11 @@ const isEntry = (): boolean => {
   }
 };
 if (isEntry()) {
+  // Only loaded for the CLI (`pnpm tsx scripts/seed.ts`), not when this
+  // module is imported by Vitest (which loads its own env via
+  // vitest.config.mts's `loadEnv`) or bundled into the Next.js server
+  // (which loads its own): orchestrator decision 4.
+  loadEnvConfig(process.cwd());
   seed()
     .then(() => process.exit(0))
     .catch((err: unknown) => {

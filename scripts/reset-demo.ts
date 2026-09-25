@@ -33,8 +33,6 @@ import {
 import { requireDatabaseUrl } from "../lib/require-database-url";
 import { applySeed, createSeedDb, type SeedTx } from "./seed";
 
-loadEnvConfig(process.cwd());
-
 // A Postgres advisory lock, held for the whole transaction
 // (`pg_advisory_xact_lock`, auto-released at commit or rollback): a reset
 // and a concurrent seed (or two concurrent resets — the button posts once,
@@ -101,6 +99,10 @@ const isEntry = (): boolean => {
   }
 };
 if (isEntry()) {
+  // Only loaded for the CLI, same reasoning as scripts/seed.ts's own
+  // isEntry() block (orchestrator decision 4): Vitest and the Next.js
+  // server bundle both load their own env already.
+  loadEnvConfig(process.cwd());
   resetDemo()
     .then(() => process.exit(0))
     .catch((err: unknown) => {

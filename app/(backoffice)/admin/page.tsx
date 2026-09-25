@@ -1,4 +1,3 @@
-import type { Route } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
@@ -9,10 +8,7 @@ import { PortfolioSkeleton } from "./_components/portfolio/portfolio-skeleton";
 import { PortfolioView } from "./_components/portfolio/portfolio-view";
 import { toPortfolioRows } from "./_components/portfolio/rows";
 
-// BO-05 (the product form) has not landed yet: `as Route` dropped once it
-// does (specs/BO-02-portefeuille.md plan, pattern: "Links to routes not
-// merged yet").
-const NEW_PRODUCT_HREF = "/admin/products/new" as Route;
+const NEW_PRODUCT_HREF = "/admin/products/new";
 
 // The portfolio's data: session-gated (never cached, docs/04-nextjs.md),
 // so it streams under <Suspense> while the shell above renders instantly.

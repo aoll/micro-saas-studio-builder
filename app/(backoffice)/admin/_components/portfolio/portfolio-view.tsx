@@ -1,4 +1,3 @@
-import type { Route } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -7,10 +6,7 @@ import { PortfolioKpis } from "./portfolio-kpis";
 import { PortfolioTable } from "./portfolio-table";
 import type { PortfolioRow } from "./rows";
 
-// BO-05 (the product form) has not landed yet: `as Route` dropped once it
-// does (specs/BO-02-portefeuille.md plan, pattern: "Links to routes not
-// merged yet").
-const NEW_PRODUCT_HREF = "/admin/products/new" as Route;
+const NEW_PRODUCT_HREF = "/admin/products/new";
 
 // docs/02-ecrans.md › BO-02 état "Vide (aucun produit)": KPIs stay (all
 // zero), the table is replaced by an empty state with a create action

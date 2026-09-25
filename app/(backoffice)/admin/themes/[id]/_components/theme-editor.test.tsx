@@ -83,21 +83,21 @@ function payloadOf(formData: FormData): { tokens: ThemeTokens; landingVariant: s
 
 describe("ThemeEditor", () => {
   it("renders the 16 light color fields with their current values", () => {
-    render(<ThemeEditor theme={theme} readOnly={false} />);
+    render(<ThemeEditor theme={theme} />);
     expect((screen.getByLabelText("Background") as HTMLInputElement).value).toBe(LIGHT.background);
     expect((screen.getByLabelText("Card foreground") as HTMLInputElement).value).toBe(LIGHT.cardForeground);
     expect((screen.getByLabelText("Ring") as HTMLInputElement).value).toBe(LIGHT.ring);
   });
 
   it("switches to the dark tokens when the mode switch is used", () => {
-    render(<ThemeEditor theme={theme} readOnly={false} />);
+    render(<ThemeEditor theme={theme} />);
     fireEvent.click(screen.getByRole("button", { name: "Sombre" }));
     expect((screen.getByLabelText("Background") as HTMLInputElement).value).toBe(DARK.background);
   });
 
   it("updates a color field and reflects it in the submitted payload", async () => {
     saveTheme.mockResolvedValue({ ok: true });
-    render(<ThemeEditor theme={theme} readOnly={false} />);
+    render(<ThemeEditor theme={theme} />);
     fireEvent.change(screen.getByLabelText("Primary"), { target: { value: "#123456" } });
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
 
@@ -108,7 +108,7 @@ describe("ThemeEditor", () => {
 
   it("changes the font key through the typography select", async () => {
     saveTheme.mockResolvedValue({ ok: true });
-    render(<ThemeEditor theme={theme} readOnly={false} />);
+    render(<ThemeEditor theme={theme} />);
     fireEvent.change(screen.getByLabelText("Police"), { target: { value: "rounded" } });
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
 
@@ -119,7 +119,7 @@ describe("ThemeEditor", () => {
 
   it("changes the radius through the slider and shows its readout", async () => {
     saveTheme.mockResolvedValue({ ok: true });
-    render(<ThemeEditor theme={theme} readOnly={false} />);
+    render(<ThemeEditor theme={theme} />);
     fireEvent.change(screen.getByLabelText("Radius"), { target: { value: "1" } });
     expect(screen.getByText("1rem")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
@@ -131,7 +131,7 @@ describe("ThemeEditor", () => {
 
   it("changes the landing variant through its select", async () => {
     saveTheme.mockResolvedValue({ ok: true });
-    render(<ThemeEditor theme={theme} readOnly={false} />);
+    render(<ThemeEditor theme={theme} />);
     fireEvent.change(screen.getByLabelText("Variante de landing"), { target: { value: "split" } });
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
 
@@ -142,7 +142,7 @@ describe("ThemeEditor", () => {
 
   it("shows field errors returned by the action, with aria-invalid, and a banner", async () => {
     saveTheme.mockResolvedValue({ errors: { "tokens.light.background": "Doit être une couleur CSS valide" } });
-    render(<ThemeEditor theme={theme} readOnly={false} />);
+    render(<ThemeEditor theme={theme} />);
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
 
     await screen.findByText("Doit être une couleur CSS valide");
@@ -161,7 +161,7 @@ describe("ThemeEditor", () => {
 
   it("wires a color field's error as its accessible description via aria-describedby", async () => {
     saveTheme.mockResolvedValue({ errors: { "tokens.light.primary": "Doit être une couleur CSS valide" } });
-    render(<ThemeEditor theme={theme} readOnly={false} />);
+    render(<ThemeEditor theme={theme} />);
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
 
     await screen.findByText("Doit être une couleur CSS valide");
@@ -176,7 +176,7 @@ describe("ThemeEditor", () => {
         landingVariant: "Variante invalide",
       },
     });
-    render(<ThemeEditor theme={theme} readOnly={false} />);
+    render(<ThemeEditor theme={theme} />);
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
 
     await screen.findByText("Police hors catalogue");
@@ -186,7 +186,7 @@ describe("ThemeEditor", () => {
   });
 
   it("has no accessible description on a field with no error", () => {
-    render(<ThemeEditor theme={theme} readOnly={false} />);
+    render(<ThemeEditor theme={theme} />);
     expect(screen.getByLabelText("Background").getAttribute("aria-describedby")).toBeNull();
     expect(screen.getByLabelText("Police").getAttribute("aria-describedby")).toBeNull();
     expect(screen.getByLabelText("Radius").getAttribute("aria-describedby")).toBeNull();
@@ -195,32 +195,26 @@ describe("ThemeEditor", () => {
 
   it("shows a success toast when the save succeeds", async () => {
     saveTheme.mockResolvedValue({ ok: true });
-    render(<ThemeEditor theme={theme} readOnly={false} />);
+    render(<ThemeEditor theme={theme} />);
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
     await vi.waitFor(() => expect(toastSuccess).toHaveBeenCalled());
   });
 
   it("shows an error toast on a form-level error", async () => {
     saveTheme.mockResolvedValue({ formError: "Thème introuvable" });
-    render(<ThemeEditor theme={theme} readOnly={false} />);
+    render(<ThemeEditor theme={theme} />);
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
     await vi.waitFor(() => expect(toastError).toHaveBeenCalledWith("Thème introuvable"));
   });
 
-  it("disables every field and the save button when read-only", () => {
-    render(<ThemeEditor theme={theme} readOnly={true} />);
-    expect((screen.getByLabelText("Background") as HTMLInputElement).disabled).toBe(true);
-    expect((screen.getByRole("button", { name: "Enregistrer" }) as HTMLButtonElement).disabled).toBe(true);
-  });
-
   it("links back to the theme library through 'Annuler'", () => {
-    render(<ThemeEditor theme={theme} readOnly={false} />);
+    render(<ThemeEditor theme={theme} />);
     expect(screen.getByRole("link", { name: "Annuler" }).getAttribute("href")).toBe("/admin/themes");
   });
 
   it("does nothing destructive when submitted with no changes (payload matches the original theme)", async () => {
     saveTheme.mockResolvedValue({ ok: true });
-    render(<ThemeEditor theme={theme} readOnly={false} />);
+    render(<ThemeEditor theme={theme} />);
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
     await vi.waitFor(() => expect(saveTheme).toHaveBeenCalled());
     const [, , formData] = saveTheme.mock.calls[0]!;
@@ -229,7 +223,7 @@ describe("ThemeEditor", () => {
   });
 
   it("shows a live preview whose colors follow the draft as it is edited", () => {
-    render(<ThemeEditor theme={theme} readOnly={false} />);
+    render(<ThemeEditor theme={theme} />);
     const preview = screen.getByTestId("theme-preview");
     expect(preview.style.getPropertyValue("--primary")).toBe(LIGHT.primary);
 
@@ -238,7 +232,7 @@ describe("ThemeEditor", () => {
   });
 
   it("passes the sample product name through to the preview headline", () => {
-    render(<ThemeEditor theme={theme} readOnly={false} sampleProductName="LettrePro" />);
+    render(<ThemeEditor theme={theme} sampleProductName="LettrePro" />);
     expect(screen.getByText("LettrePro")).toBeTruthy();
   });
 });

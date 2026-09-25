@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { isEditable } from "@/lib/dal/guards";
 import { getPortfolioMetrics } from "@/lib/dal/metrics";
 import { requireAdmin } from "@/lib/dal/session";
 import { getThresholdSettings } from "@/lib/dal/thresholds";
@@ -15,7 +14,7 @@ import { ThresholdsSettings } from "./_components/thresholds-settings";
 async function GuardedSettings() {
   await requireAdmin();
   const [metrics, settings] = await Promise.all([getPortfolioMetrics({ days: 30 }), getThresholdSettings()]);
-  const view = toSettingsView(metrics, settings, isEditable);
+  const view = toSettingsView(metrics, settings);
   return <ThresholdsSettings view={view} />;
 }
 

@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getProductDraft, listThemeOptions } from "@/lib/dal/product-editor";
-import { isEditable } from "@/lib/dal/guards";
 import { requireAdmin } from "@/lib/dal/session";
 import type { ProductConfig } from "@/lib/schemas/product-config";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,8 +14,7 @@ function toDraft(config: ProductConfig): ProductDraft {
 
 // BO-05a (specs/BO-05a-formulaire.md): same Suspense + own `requireAdmin()`
 // shape as the `new` page (plan's orchestrator decision 6). `notFound()`
-// for an unknown slug (docs/02-ecrans.md), `readOnly` for a seeded,
-// demo-locked product (docs/01-produit.md › Mode démo public).
+// for an unknown slug (docs/02-ecrans.md).
 //
 // `params` is awaited inside this Suspense-wrapped component, not in the
 // page itself: reading it outside `<Suspense>` blocks the whole route from
@@ -33,7 +31,6 @@ async function EditProductForm({ params }: { params: Promise<{ slug: string }> }
       slug={slug}
       initialDraft={toDraft(draft.config)}
       themes={themes}
-      readOnly={!isEditable({ isSeed: draft.isSeed })}
       draftVersion={draft.version}
       publishedVersion={draft.publishedVersion}
     />

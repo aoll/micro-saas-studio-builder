@@ -1,0 +1,54 @@
+{
+  "slug": "descri-pro",
+  "name": "DescriPro",
+  "status": "learn",
+  "locale": "fr",
+  "branding": {},
+  "landing": {
+    "headline": "Des fiches produit e-commerce qui convertissent, en 20 secondes",
+    "subheadline": "Décrivez votre produit en quelques mots, DescriPro rédige une fiche prête à publier, optimisée pour la conversion et le référencement.",
+    "faq": [
+      {
+        "question": "Combien coûte une génération ?",
+        "answer": "1 crédit par fiche produit générée. Vous recevez 3 crédits gratuits à l'inscription, et la première génération est gratuite même sans compte."
+      },
+      {
+        "question": "La fiche est-elle optimisée SEO ?",
+        "answer": "Oui : DescriPro intègre naturellement les caractéristiques du produit dans un texte pensé pour le référencement."
+      },
+      {
+        "question": "Puis-je régénérer si le résultat ne me plaît pas ?",
+        "answer": "Oui, autant de fois que vous avez de crédits : chaque régénération compte comme une nouvelle génération."
+      }
+    ],
+    "seoTitle": "Générateur de fiches produit e-commerce IA",
+    "seoDescription": "Rédigez des fiches produit e-commerce qui convertissent en 20 secondes grâce à l'IA. Essai gratuit, sans carte bancaire.",
+    "exampleOutput": "**Gourde isotherme 500ml — Inox brossé**\n\nGardez vos boissons fraîches 24h ou chaudes 12h avec cette gourde isotherme premium...",
+    "steps": [
+      { "title": "Décrivez le produit", "description": "Nom, caractéristiques et public cible du produit." },
+      { "title": "Choisissez le ton", "description": "Sobre et technique, ou plus enlevé pour du lifestyle." },
+      { "title": "Publiez votre fiche", "description": "Un texte prêt à coller sur votre boutique en ligne." }
+    ]
+  },
+  "inputs": [
+    { "key": "produit", "label": "Nom du produit", "type": "text", "required": true },
+    { "key": "caracteristiques", "label": "Caractéristiques clés", "type": "textarea", "required": true },
+    { "key": "public_cible", "label": "Public cible", "type": "text", "required": true },
+    { "key": "ton", "label": "Ton", "type": "select", "required": true, "options": ["sobre", "lifestyle"] }
+  ],
+  "generation": {
+    "model": "anthropic/claude-haiku-4.5",
+    "systemPrompt": "Tu es un rédacteur e-commerce senior. Tu écris des fiches produit courtes, concrètes, sans superlatifs creux, qui donnent envie d'acheter sans jamais inventer de caractéristique absente de la description fournie.",
+    "promptTemplate": "Rédige une fiche produit e-commerce pour {{produit}}. Caractéristiques : {{caracteristiques}}. Public cible : {{public_cible}}. Ton : {{ton}}.",
+    "outputType": "markdown"
+  },
+  "pricing": {
+    "freeCreditsOnSignup": 3,
+    "anonymousFreeGenerations": 1,
+    "costPerGeneration": 1,
+    "packs": [
+      { "id": "pack-10", "credits": 10, "priceCents": 490 },
+      { "id": "pack-50", "credits": 50, "priceCents": 1490, "recommended": true }
+    ]
+  }
+}

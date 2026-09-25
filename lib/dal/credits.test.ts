@@ -47,8 +47,7 @@ async function lettreProId(): Promise<string> {
 }
 
 // A private test product, copied from lettre-pro's config, so tests never
-// touch the seeded product (guards.ts locks it) nor share balances with
-// other spec's tests.
+// touch the seeded product nor share balances with other spec's tests.
 async function createProduct(overrides?: Partial<ProductConfig["pricing"]>): Promise<{ id: string }> {
   const lettrePro = await db.query.products.findFirst({ where: eq(products.slug, "lettre-pro") });
   const editorial = await db.query.themes.findFirst({ where: eq(themes.slug, "editorial") });

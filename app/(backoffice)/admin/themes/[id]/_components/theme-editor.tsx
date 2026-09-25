@@ -52,15 +52,7 @@ const initialState: SaveThemeState = {};
 // instead of the mockup's tabs. `theme.id` is bound to `saveTheme` once
 // (next/root-params is not available in Server Actions, same reasoning as
 // admin/products' `.bind(null, slug)`).
-export function ThemeEditor({
-  theme,
-  readOnly,
-  sampleProductName,
-}: {
-  theme: Theme;
-  readOnly: boolean;
-  sampleProductName?: string;
-}) {
+export function ThemeEditor({ theme, sampleProductName }: { theme: Theme; sampleProductName?: string }) {
   const [tokens, setTokens] = useState<ThemeTokens>(theme.tokens);
   const [landingVariant, setLandingVariant] = useState<LandingVariant>(theme.landingVariant);
   const [mode, setMode] = useState<"light" | "dark">("light");
@@ -91,7 +83,7 @@ export function ThemeEditor({
           </p>
         ) : null}
 
-        <fieldset disabled={readOnly} className="grid gap-6">
+        <fieldset className="grid gap-6">
           <fieldset className="grid gap-3">
             <legend className="text-sm font-semibold">Couleurs</legend>
             <div role="group" aria-label="Mode" className="flex w-fit gap-1 rounded-md border p-1">
@@ -130,7 +122,6 @@ export function ThemeEditor({
                       <Input
                         id={fieldId}
                         value={value}
-                        disabled={readOnly}
                         aria-invalid={path in errors}
                         aria-describedby={errors[path] ? `${fieldId}-error` : undefined}
                         onChange={(event) => updateColor(key, event.target.value)}
@@ -154,7 +145,6 @@ export function ThemeEditor({
               id="theme-font-key"
               className="w-fit rounded-md border bg-background px-3 py-2 text-sm"
               value={tokens.fontKey}
-              disabled={readOnly}
               aria-invalid={"tokens.fontKey" in errors}
               aria-describedby={errors["tokens.fontKey"] ? "theme-font-key-error" : undefined}
               onChange={(event) => setTokens((current) => ({ ...current, fontKey: event.target.value }))}
@@ -183,7 +173,6 @@ export function ThemeEditor({
                 max={2}
                 step={0.125}
                 value={radiusToRem(tokens.radius)}
-                disabled={readOnly}
                 aria-invalid={"tokens.radius" in errors}
                 aria-describedby={errors["tokens.radius"] ? "theme-radius-error" : undefined}
                 onChange={(event) =>
@@ -206,7 +195,6 @@ export function ThemeEditor({
               id="theme-landing-variant"
               className="w-fit rounded-md border bg-background px-3 py-2 text-sm"
               value={landingVariant}
-              disabled={readOnly}
               aria-invalid={"landingVariant" in errors}
               aria-describedby={errors.landingVariant ? "theme-landing-variant-error" : undefined}
               onChange={(event) => setLandingVariant(event.target.value as LandingVariant)}
@@ -229,7 +217,7 @@ export function ThemeEditor({
           <Button variant="outline" asChild>
             <Link href={"/admin/themes" as Route}>Annuler</Link>
           </Button>
-          <Button type="submit" disabled={pending || readOnly}>
+          <Button type="submit" disabled={pending}>
             Enregistrer
           </Button>
         </div>

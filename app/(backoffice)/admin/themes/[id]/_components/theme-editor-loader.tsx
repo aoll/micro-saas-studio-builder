@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { listThemeOptions } from "@/lib/dal/product-editor";
 import { listProducts } from "@/lib/dal/products";
-import { isEditable } from "@/lib/dal/guards";
 import { productsByTheme } from "../../_components/theme-usage";
 import { ThemeEditor } from "./theme-editor";
 import { UsageWarning } from "./usage-warning";
@@ -23,7 +22,7 @@ export async function ThemeEditorLoader({ id }: { id: string }) {
     <div className="grid gap-6">
       <h1 className="text-xl font-semibold">Thème · {theme.name}</h1>
       <UsageWarning productNames={productNames} />
-      <ThemeEditor theme={theme} readOnly={!isEditable(theme)} sampleProductName={productNames[0]} />
+      <ThemeEditor theme={theme} sampleProductName={productNames[0]} />
     </div>
   );
 }

@@ -1,0 +1,59 @@
+{
+  "slug": "bio-instagram",
+  "name": "BioInsta",
+  "status": "test",
+  "locale": "en",
+  "branding": {},
+  "landing": {
+    "headline": "Write an Instagram bio people actually remember",
+    "subheadline": "Tell us your niche and vibe, get 3 ready-to-paste Instagram bios in seconds.",
+    "faq": [
+      {
+        "question": "How much does a generation cost?",
+        "answer": "1 credit per set of 3 bios. You get 3 free credits on signup, and your first generation is free, no account needed."
+      },
+      {
+        "question": "Can I regenerate if I don't like the result?",
+        "answer": "Yes, as many times as you have credits: each regeneration counts as a new generation."
+      },
+      {
+        "question": "Which languages are supported?",
+        "answer": "English for now; every product in the studio has its own configuration language."
+      }
+    ],
+    "seoTitle": "AI Instagram Bio Generator",
+    "seoDescription": "Generate a scroll-stopping Instagram bio in 15 seconds with AI. Free to try, no credit card required.",
+    "exampleOutput": "✨ Coffee-first designer\n📍 Lisbon, remote-friendly\n🎨 Brands that don't blend in\n👇 Book a call",
+    "steps": [
+      { "title": "Tell us your niche", "description": "What you do, where you're based, and your vibe." },
+      { "title": "Pick a tone", "description": "Playful or professional, your call." },
+      { "title": "Get your bios", "description": "3 ready-to-paste bios, generated in seconds." }
+    ]
+  },
+  "inputs": [
+    { "key": "niche", "label": "What you do", "type": "text", "required": true },
+    { "key": "highlights", "label": "Highlights to mention", "type": "textarea", "required": true },
+    {
+      "key": "tone",
+      "label": "Tone",
+      "type": "select",
+      "required": true,
+      "options": ["playful", "professional"]
+    }
+  ],
+  "generation": {
+    "model": "anthropic/claude-haiku-4.5",
+    "systemPrompt": "You are a social media copywriter. You write short, punchy Instagram bios (under 150 characters each) that use line breaks and emoji sparingly, never inventing facts the user did not mention.",
+    "promptTemplate": "Write 3 Instagram bio options for someone whose niche is {{niche}}. Highlights to mention: {{highlights}}. Tone: {{tone}}. Return them as a markdown list, one bio per line, no explanation.",
+    "outputType": "markdown"
+  },
+  "pricing": {
+    "freeCreditsOnSignup": 3,
+    "anonymousFreeGenerations": 1,
+    "costPerGeneration": 1,
+    "packs": [
+      { "id": "pack-10", "credits": 10, "priceCents": 490 },
+      { "id": "pack-50", "credits": 50, "priceCents": 1490, "recommended": true }
+    ]
+  }
+}

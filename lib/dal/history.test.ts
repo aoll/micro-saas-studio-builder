@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
-import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
+import { eq, inArray } from "drizzle-orm";
+import { afterAll, afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/auth-schema";
 import { generations, productVersions, products, themes } from "@/lib/db/schema";
@@ -9,8 +9,30 @@ import { SEED_OWNER } from "@/scripts/seed";
 const getSession = vi.fn();
 vi.mock("./session", () => ({ getSession: () => getSession() }));
 
-afterEach(() => {
+// This file writes rows other suites' tests share (lettre-pro's own
+// generations, and — via listProducts()'s unfiltered, cached read — every
+// product row): everything inserted here is tracked and deleted, generations
+// first (FK), then product versions and products, then the throwaway users.
+const insertedGenerationIds: string[] = [];
+const createdProductIds: string[] = [];
+const createdUserIds: string[] = [];
+
+afterEach(async () => {
   getSession.mockReset();
+  if (insertedGenerationIds.length > 0) {
+    await db.delete(generations).where(inArray(generations.id, insertedGenerationIds));
+    insertedGenerationIds.length = 0;
+  }
+});
+
+afterAll(async () => {
+  for (const id of createdProductIds) {
+    await db.delete(productVersions).where(eq(productVersions.productId, id));
+    await db.delete(products).where(eq(products.id, id));
+  }
+  if (createdUserIds.length > 0) {
+    await db.delete(users).where(inArray(users.id, createdUserIds));
+  }
 });
 
 async function lettreProId(): Promise<string> {
@@ -26,11 +48,14 @@ async function createUser(): Promise<string> {
     .insert(users)
     .values({ id: randomUUID(), name: "History test user", email: `history-${randomUUID()}@example.com` })
     .returning({ id: users.id });
+  createdUserIds.push(row!.id);
   return row!.id;
 }
 
 // Fresh product per isolation test, so its rows never mix with other
-// suites' generations on lettre-pro.
+// suites' generations on lettre-pro. A pack is required by
+// productConfigSchema (min 1) — listProducts() parses every product's
+// config, so a leftover invalid config here breaks unrelated tests.
 async function createProduct(): Promise<string> {
   const owner = await db.query.users.findFirst({ where: eq(users.email, SEED_OWNER.email) });
   const editorial = await db.query.themes.findFirst({ where: eq(themes.slug, "editorial") });
@@ -58,10 +83,16 @@ async function createProduct(): Promise<string> {
       landing: { headline: "H", subheadline: "S", faq: [], seoTitle: "T", seoDescription: "D" },
       inputs: [{ key: "topic", label: "Topic", type: "text", required: true }],
       generation: { model: "anthropic/claude-haiku-4.5", promptTemplate: "About {{topic}}", outputType: "markdown" },
-      pricing: { freeCreditsOnSignup: 3, anonymousFreeGenerations: 1, costPerGeneration: 1, packs: [] },
+      pricing: {
+        freeCreditsOnSignup: 3,
+        anonymousFreeGenerations: 1,
+        costPerGeneration: 1,
+        packs: [{ id: "pack-10", credits: 10, priceCents: 490 }],
+      },
     },
     createdBy: owner!.id,
   });
+  createdProductIds.push(product!.id);
   return product!.id;
 }
 
@@ -89,6 +120,7 @@ async function insertGeneration(overrides: {
       ...(overrides.createdAt ? { createdAt: overrides.createdAt } : {}),
     })
     .returning({ id: generations.id });
+  insertedGenerationIds.push(row!.id);
   return row!.id;
 }
 

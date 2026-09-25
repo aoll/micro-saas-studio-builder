@@ -76,16 +76,16 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "dispatched",
-      "worktree": "ledger",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 28
     },
     "SA-03-inscription": {
       "dependsOn": [
         "LEDGER"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "sa-03-inscription",
       "pr": null
     },
     "SA-04-tarifs": {
@@ -103,16 +103,16 @@
         "LEDGER",
         "SA-04-tarifs"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "sa-05-paiement",
       "pr": null
     },
     "SA-07-compte": {
       "dependsOn": [
         "LEDGER"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "sa-07-compte",
       "pr": null
     },
     "BO-01-connexion": {

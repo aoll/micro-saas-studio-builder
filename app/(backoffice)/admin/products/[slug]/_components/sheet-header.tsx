@@ -30,7 +30,8 @@ export function SheetHeader({ sheet }: { sheet: ProductSheetViewModel }) {
           <StatusBadge status={sheet.status} />
           {!isKilled ? <DecisionBadge decision={sheet.decision.badge} /> : null}
         </div>
-        <div className="flex items-center gap-2">
+        {/* specs/mockups/BO-06.png: "Changer de statut" sits top-right, next to "Modifier la config". */}
+        <div className="flex items-center gap-2" data-testid="sheet-actions">
           <Button asChild variant="outline">
             <a href={`/${sheet.slug}`} target="_blank" rel="noopener noreferrer">
               Voir /{sheet.slug} ↗
@@ -39,17 +40,17 @@ export function SheetHeader({ sheet }: { sheet: ProductSheetViewModel }) {
           <Button asChild>
             <Link href={`/admin/products/${sheet.slug}/edit` as Route}>Modifier la config</Link>
           </Button>
+          <StatusChange
+            productId={sheet.productId}
+            slug={sheet.slug}
+            name={sheet.name}
+            status={sheet.status}
+            decision={sheet.decision.badge}
+            justification={sheet.decision.current}
+          />
         </div>
       </div>
       {isKilled ? <KilledBanner slug={sheet.slug} /> : null}
-      <StatusChange
-        productId={sheet.productId}
-        slug={sheet.slug}
-        name={sheet.name}
-        status={sheet.status}
-        decision={sheet.decision.badge}
-        justification={sheet.decision.current}
-      />
     </div>
   );
 }

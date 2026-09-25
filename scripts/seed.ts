@@ -499,7 +499,11 @@ export function buildSeedUsage(
 
 // --- Database wiring ---------------------------------------------------
 
-const createDb = (sqlClient: postgres.Sql) =>
+// Exported so scripts/reset-demo.ts shares the exact same drizzle instance
+// shape (schema keys) when it calls applySeed(tx, now) at the end of a
+// reset: a `tx` built from a differently-scoped schema would be missing
+// `tx.query.themes` and `tx.insert(accounts)`, both used inside applySeed.
+export const createSeedDb = (sqlClient: postgres.Sql) =>
   drizzle(sqlClient, {
     schema: {
       products,
@@ -516,8 +520,8 @@ const createDb = (sqlClient: postgres.Sql) =>
     },
   });
 
-type SeedDb = ReturnType<typeof createDb>;
-type SeedTx = Parameters<Parameters<SeedDb["transaction"]>[0]>[0];
+type SeedDb = ReturnType<typeof createSeedDb>;
+export type SeedTx = Parameters<Parameters<SeedDb["transaction"]>[0]>[0];
 
 async function seedCredentialUser(
   tx: SeedTx,
@@ -758,7 +762,7 @@ export async function seed(opts: { sql?: postgres.Sql; now?: Date } = {}): Promi
 
   const ownsSql = !opts.sql;
   const sqlClient = opts.sql ?? postgres(requireDatabaseUrl(), { max: 1, connect_timeout: 5, onnotice: () => {} });
-  const db = createDb(sqlClient);
+  const db = createSeedDb(sqlClient);
   try {
     await db.transaction(async (tx) => {
       await applySeed(tx, opts.now ?? new Date());

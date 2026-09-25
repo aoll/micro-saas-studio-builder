@@ -1,0 +1,16 @@
+{
+  "title": "Historique",
+  "count": "{count, plural, one {# génération} other {# générations}}",
+  "open": "Ouvrir",
+  "empty": {
+    "title": "Aucune génération pour le moment",
+    "cta": "Aller à l'outil"
+  },
+  "pagination": {
+    "more": "Générations plus anciennes",
+    "newer": "Générations plus récentes"
+  },
+  "pageEmpty": "Cette page est vide.",
+  "backToFirst": "Revenir à la première page",
+  "loading": "Chargement de l'historique…"
+}

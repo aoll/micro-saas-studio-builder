@@ -1,5 +1,4 @@
 import { useTranslations } from "next-intl";
-import type { Route } from "next";
 import Link from "next/link";
 import { getBalance } from "@/lib/dal/credits";
 import { getSession } from "@/lib/dal/session";
@@ -18,6 +17,5 @@ export async function HeaderBalance({ productId, slug }: { productId: string; sl
 
 function SignInLink({ slug }: { slug: string }) {
   const t = useTranslations("common.header");
-  // SA-03 (signup) has not landed yet: cast dropped once it does.
-  return <Link href={`/${slug}/signup` as Route}>{t("signIn")}</Link>;
+  return <Link href={`/${slug}/signup`}>{t("signIn")}</Link>;
 }

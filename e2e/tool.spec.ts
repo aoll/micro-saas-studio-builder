@@ -13,9 +13,14 @@ import { expect, test } from "@playwright/test";
 // - Delete this spec's `generations` rows (by `ip_hash`) in a `beforeEach`,
 //   the way e2e/themes.spec.ts resets its theme change, so repeated runs
 //   don't exhaust the anonymous free-generation limit.
-// - The `/pricing` and `/signup` journeys below need LEDGER (real
-//   `debit`/`getBalance`), SA-03 (signup) and SA-04 (pricing) merged: until
-//   then they only reach the redirect, not the destination page's content.
+// - LEDGER, SA-03 (signup) and SA-04 (pricing) are merged: the `/pricing`
+//   and `/signup` journeys below assert the real destination (the
+//   intercepting-route modal, e2e/signup.spec.ts's own check), not just
+//   the redirect.
+// - The second and third scenarios still need a signed-in session and an
+//   exhausted balance respectively; setting those up (magic-link sign-in,
+//   a debited balance) is e2e/signup.spec.ts's and LEDGER's own territory,
+//   left here as placeholder steps for whoever wires the E2E phase.
 
 test.describe("Tool (/lettre-pro/tool)", () => {
   test("an anonymous visitor generates once for free, then is asked to sign up", async ({ page }) => {
@@ -28,16 +33,20 @@ test.describe("Tool (/lettre-pro/tool)", () => {
 
     await expect(page.getByText(/Bonjour/)).toBeVisible();
 
-    // Second attempt: the free try is used up, /signup opens.
+    // Second attempt: the free try is used up, /signup opens as a modal
+    // over the tool (intercepting route, docs/04-nextjs.md), same check as
+    // e2e/signup.spec.ts's own first scenario.
     await page.getByRole("button", { name: "Régénérer" }).click();
     await expect(page).toHaveURL(/\/lettre-pro\/signup$/);
+    await expect(page.getByRole("dialog")).toBeVisible();
   });
 
   test("a signed-in user's balance badge decrements, then the result can be copied, downloaded and regenerated", async ({
     page,
   }) => {
-    // Requires a signed-in session (SA-03's magic-link flow once merged);
-    // left as a placeholder step for the E2E phase.
+    // Requires a signed-in session: sign in first via the real magic-link
+    // flow (e2e/signup.spec.ts's second scenario), then reuse that
+    // session here. Left as a placeholder step for the E2E phase.
     await page.goto("/lettre-pro/tool");
 
     await page.getByLabel("Poste visé").fill("Product Manager");
@@ -62,8 +71,8 @@ test.describe("Tool (/lettre-pro/tool)", () => {
   });
 
   test("a zero balance opens the paywall", async ({ page }) => {
-    // Requires a signed-in user with an exhausted balance (LEDGER once
-    // merged): left as a placeholder for the E2E phase.
+    // Requires a signed-in user with an exhausted balance (debited via the
+    // real ledger): left as a placeholder for the E2E phase.
     await page.goto("/lettre-pro/tool");
     await page.getByLabel("Poste visé").fill("Data Analyst");
     await page.getByLabel("Entreprise").fill("GreenMetrics");

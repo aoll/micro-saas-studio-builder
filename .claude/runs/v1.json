@@ -354,10 +354,9 @@
     },
     "CONTRACT-remove-demo-lock": {
       "dependsOn": [],
-      "status": "dispatched",
-      "worktree": "contract-remove-demo-lock",
-      "pr": null,
-      "step": "tdd",
+      "status": "merged",
+      "worktree": null,
+      "pr": 44,
       "humanDecision": {
         "pending": false,
         "answer": "« Le verrouillage doit être nettoyé, pas de code mort » (2026-09-25): remove assertEditable/isEditable/Lockable and the read-only UI; residual contract spec written by the orchestrator"

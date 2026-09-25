@@ -14,6 +14,13 @@
       "report": ".claude/qa/reports/2026-09-25-full-2.md",
       "findings": 1,
       "retained": 2
+    },
+    {
+      "n": 3,
+      "report": ".claude/qa/reports/2026-09-25-full-3.md",
+      "findings": 2,
+      "retained": 2,
+      "scope": "focused: BO-05a, BO-05b, DEMO-mode"
     }
   ],
   "setAside": [
@@ -122,6 +129,13 @@
       "worktree": null,
       "pr": 68,
       "mode": "plan dans la spec (constat mineur)"
+    },
+    "QA1-P3-F1-formulaire-etapes-5-4": {
+      "dependsOn": [],
+      "status": "dispatched",
+      "worktree": "qa1-p3-f1-formulaire-etapes-5-4",
+      "pr": null,
+      "mode": "plan dans la spec"
     }
   },
   "pendingIntegrations": []

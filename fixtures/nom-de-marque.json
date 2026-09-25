@@ -1,0 +1,47 @@
+[
+  {
+    "input": {
+      "secteur": "Torréfaction de café artisanale",
+      "valeurs": "Origine traçable, savoir-faire, convivialité",
+      "style": "classique"
+    },
+    "text": "- Torrefacto\n- Grain & Origine\n- Maison Torréfié\n- L'Atelier du Café\n- Clairgrain",
+    "usage": { "inputTokens": 90, "outputTokens": 35, "cachedInputTokens": 0 }
+  },
+  {
+    "input": {
+      "secteur": "Application de méditation",
+      "valeurs": "Calme, simplicité, accessibilité",
+      "style": "moderne"
+    },
+    "text": "- Halo\n- Sereo\n- Pausel\n- Mindwell\n- Calmly",
+    "usage": { "inputTokens": 88, "outputTokens": 30, "cachedInputTokens": 0 }
+  },
+  {
+    "input": {
+      "secteur": "Garderie pour animaux",
+      "valeurs": "Bienveillance, jeu, confiance",
+      "style": "ludique"
+    },
+    "text": "- PattesFolles\n- Woufy\n- Le Repaire\n- MiaouClub\n- Câlin & Cie",
+    "usage": { "inputTokens": 92, "outputTokens": 32, "cachedInputTokens": 0 }
+  },
+  {
+    "input": {
+      "secteur": "Studio de design graphique",
+      "valeurs": "Audace, précision, sur-mesure",
+      "style": "moderne"
+    },
+    "text": "- Faune Studio\n- Pixel & Trait\n- Verve Design\n- Clairval\n- Studio Némo",
+    "usage": { "inputTokens": 91, "outputTokens": 33, "cachedInputTokens": 0 }
+  },
+  {
+    "input": {
+      "secteur": "Librairie indépendante",
+      "valeurs": "Curiosité, transmission, quartier",
+      "style": "classique"
+    },
+    "text": "- La Page Libre\n- Cabinet de Lecture\n- L'Établi des Mots\n- Le Recueil\n- Maison Lettres",
+    "usage": { "inputTokens": 93, "outputTokens": 34, "cachedInputTokens": 0 }
+  }
+]

@@ -1,0 +1,59 @@
+{
+  "slug": "nom-de-marque",
+  "name": "NomDeMarque",
+  "status": "test",
+  "locale": "fr",
+  "branding": {},
+  "landing": {
+    "headline": "Trouvez le nom de votre marque en 15 secondes",
+    "subheadline": "Décrivez votre secteur et vos valeurs, recevez une liste de noms de marque disponibles à explorer, prêts à tester.",
+    "faq": [
+      {
+        "question": "Combien de noms est-ce que je reçois ?",
+        "answer": "Une liste de plusieurs propositions par génération, à affiner en régénérant avec des mots-clés différents."
+      },
+      {
+        "question": "Les noms sont-ils vérifiés juridiquement ?",
+        "answer": "Non : ce sont des pistes créatives. Vérifiez toujours la disponibilité du nom et du domaine avant de vous engager."
+      },
+      {
+        "question": "Combien coûte une génération ?",
+        "answer": "1 crédit par liste générée. 3 crédits offerts à l'inscription, et la première génération est gratuite même sans compte."
+      }
+    ],
+    "seoTitle": "Générateur de noms de marque IA",
+    "seoDescription": "Générez des idées de noms de marque originaux en 15 secondes grâce à l'IA. Gratuit à l'essai, sans carte bancaire.",
+    "exampleOutput": "- Lumio\n- Verdance\n- Nordik Studio\n- Faune & Co\n- Clairval",
+    "steps": [
+      { "title": "Décrivez votre marque", "description": "Secteur d'activité et valeurs que le nom doit porter." },
+      { "title": "Choisissez un style", "description": "Moderne, classique ou ludique." },
+      { "title": "Recevez vos idées", "description": "Une liste de noms à tester, générée en quelques secondes." }
+    ]
+  },
+  "inputs": [
+    { "key": "secteur", "label": "Secteur d'activité", "type": "text", "required": true },
+    { "key": "valeurs", "label": "Valeurs de la marque", "type": "textarea", "required": true },
+    {
+      "key": "style",
+      "label": "Style souhaité",
+      "type": "select",
+      "required": true,
+      "options": ["moderne", "classique", "ludique"]
+    }
+  ],
+  "generation": {
+    "model": "anthropic/claude-haiku-4.5",
+    "systemPrompt": "Tu es un consultant en naming. Tu proposes des noms de marque courts, mémorisables et prononçables, cohérents avec le secteur et les valeurs donnés, jamais de nom de marque existante connue.",
+    "promptTemplate": "Propose 5 noms de marque pour un projet dans le secteur {{secteur}}, portant les valeurs suivantes : {{valeurs}}. Style souhaité : {{style}}. Réponds sous forme de liste à puces, un nom par ligne, sans explication.",
+    "outputType": "markdown"
+  },
+  "pricing": {
+    "freeCreditsOnSignup": 3,
+    "anonymousFreeGenerations": 1,
+    "costPerGeneration": 1,
+    "packs": [
+      { "id": "pack-10", "credits": 10, "priceCents": 490 },
+      { "id": "pack-50", "credits": 50, "priceCents": 1490, "recommended": true }
+    ]
+  }
+}

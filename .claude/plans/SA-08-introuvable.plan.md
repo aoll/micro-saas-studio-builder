@@ -126,3 +126,31 @@ the final build (404 + SA-08 UI for unknown and killed), `pnpm check`. Code fixe
 - [ ] Task 1 outcome recorded in the layout comment and PR body; outcome C reported as blocking
 - [ ] fr/en keys identical, checked in `next dev`
 - [ ] No frozen contract changed; `pnpm check` and `pnpm build` green; PR title `feat(app): SA-08 product not found page`
+
+## Orchestrator decisions, round 2 (binding, after the Task 1 spike)
+
+3. Spike result (re-checked on a clean build, in a browser): a `notFound()` thrown by the root layout `[app]/layout.tsx`
+   is rendered by the parent segment's not-found, never by `[app]/not-found.tsx`; `global-not-found` only serves
+   unmatched URLs (`/` here). A `not-found.tsx` at `app/(products)/` returning a full `<html>` document renders the
+   SA-08 UI with a real 404 for unknown and killed slugs.
+4. **Périmètre extended by the human (« OK SA-08 », 2026-09-25):** add `app/(products)/not-found.tsx` (full
+   `<html lang={product?.locale ?? "fr"}>` document, imports `@/app/globals.css`, body `flex min-h-dvh flex-col`) and a
+   shared SA-08 content component used by both not-found files (e.g. `app/(products)/_components/product-not-found.tsx`,
+   rendering what `[app]/not-found.tsx` renders today). `[app]/not-found.tsx` stays for a missing page under an active
+   product (« Page introuvable »). No config change, no `global-not-found`, no `experimental` flag.
+5. Known limit, stated in the PR: on these root-layout 404s the server HTML is an empty shell and the page renders in
+   the browser (same as Next's own 404); status is a real 404.
+
+## Tasks, round 2
+
+- R1. Merge origin/integration/v1 (merge commit).
+- R2. Extract the SA-08 content into the shared component (existing `not-found.test.tsx` cases move/keep green; no
+  assertion weakened).
+- R3. `app/(products)/not-found.tsx` + test (jsdom; mocks as in `not-found.test.tsx`): renders `<html lang>` from the
+  product locale (fr fallback), the shared SA-08 content, no theme style.
+- R4. Update the layout / not-found comments (remove the outcome-C note; record outcome 3 above).
+- R5. Real check: `pnpm build && pnpm start --port 3108`, Playwright/Chromium on `/zz-unknown` (404 + SA-08 texts +
+  active products), a temporary killed product (404 + « … » a fermé, no self link; row deleted after), `/lettre-pro`
+  200, `/lettre-pro/nope` « Page introuvable ». Stop the server. Update `e2e/not-found.spec.ts` comments so its
+  assertions hold.
+- R6. Full checks: knip, typecheck, lint, format:check, test, test:coverage, build, check.

@@ -1,18 +1,16 @@
 "use client";
 
-import type { ProductConfig } from "@/lib/schemas/product-config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/components/utils";
-import { moveItem } from "./form-values";
+import { moveItem, type LandingDraft, type LandingStepDraft } from "./form-values";
 
 const SEO_TITLE_MAX = 60;
 const SEO_DESCRIPTION_MAX = 160;
 
-type Landing = ProductConfig["landing"];
-type LandingStepEntry = NonNullable<Landing["steps"]>[number];
+type Landing = LandingDraft;
 
 function CharCounter({ value, max }: { value: string; max: number }) {
   const over = value.length > max;
@@ -44,12 +42,12 @@ export function LandingStep({
 
   const steps = landing.steps ?? [];
 
-  function updateStep(index: number, patch: Partial<LandingStepEntry>) {
+  function updateStep(index: number, patch: Partial<LandingStepDraft>) {
     onChange({ steps: steps.map((step, i) => (i === index ? { ...step, ...patch } : step)) });
   }
 
   function addStep() {
-    onChange({ steps: [...steps, { title: "", description: "" }] });
+    onChange({ steps: [...steps, { id: crypto.randomUUID(), title: "", description: "" }] });
   }
 
   function removeStep(index: number) {
@@ -98,49 +96,67 @@ export function LandingStep({
             Ajouter une étape
           </Button>
         </div>
-        {steps.map((step, index) => (
-          <div key={index} className="grid gap-2 rounded-md border p-3">
-            <div className="grid gap-1.5">
-              <Label htmlFor={`landing-step-title-${index}`}>{`Titre de l'étape ${index + 1}`}</Label>
-              <Input
-                id={`landing-step-title-${index}`}
-                value={step.title}
-                onChange={(event) => updateStep(index, { title: event.target.value })}
-              />
+        {steps.map((step, index) => {
+          const titleError = errors[`landing.steps.${index}.title`];
+          const descriptionError = errors[`landing.steps.${index}.description`];
+          return (
+            <div key={step.id} className="grid gap-2 rounded-md border p-3">
+              <div className="grid gap-1.5">
+                <Label htmlFor={`landing-step-title-${step.id}`}>{`Titre de l'étape ${index + 1}`}</Label>
+                <Input
+                  id={`landing-step-title-${step.id}`}
+                  value={step.title}
+                  onChange={(event) => updateStep(index, { title: event.target.value })}
+                  aria-invalid={titleError ? "true" : undefined}
+                  aria-describedby={titleError ? `landing-step-title-${step.id}-error` : undefined}
+                />
+                {titleError ? (
+                  <p id={`landing-step-title-${step.id}-error`} className="text-sm text-destructive">
+                    {titleError}
+                  </p>
+                ) : null}
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor={`landing-step-description-${step.id}`}>{`Description de l'étape ${index + 1}`}</Label>
+                <Textarea
+                  id={`landing-step-description-${step.id}`}
+                  value={step.description}
+                  onChange={(event) => updateStep(index, { description: event.target.value })}
+                  aria-invalid={descriptionError ? "true" : undefined}
+                  aria-describedby={descriptionError ? `landing-step-description-${step.id}-error` : undefined}
+                />
+                {descriptionError ? (
+                  <p id={`landing-step-description-${step.id}-error`} className="text-sm text-destructive">
+                    {descriptionError}
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={index === 0}
+                  onClick={() => onChange({ steps: moveItem(steps, index, "up") })}
+                >
+                  Monter
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={index === steps.length - 1}
+                  onClick={() => onChange({ steps: moveItem(steps, index, "down") })}
+                >
+                  Descendre
+                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => removeStep(index)}>
+                  Supprimer cette étape
+                </Button>
+              </div>
             </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor={`landing-step-description-${index}`}>{`Description de l'étape ${index + 1}`}</Label>
-              <Textarea
-                id={`landing-step-description-${index}`}
-                value={step.description}
-                onChange={(event) => updateStep(index, { description: event.target.value })}
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={index === 0}
-                onClick={() => onChange({ steps: moveItem(steps, index, "up") })}
-              >
-                Monter
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={index === steps.length - 1}
-                onClick={() => onChange({ steps: moveItem(steps, index, "down") })}
-              >
-                Descendre
-              </Button>
-              <Button type="button" variant="ghost" size="sm" onClick={() => removeStep(index)}>
-                Supprimer cette étape
-              </Button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="grid gap-2">

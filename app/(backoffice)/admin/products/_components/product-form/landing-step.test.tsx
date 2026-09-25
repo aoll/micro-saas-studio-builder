@@ -2,12 +2,12 @@
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ProductConfig } from "@/lib/schemas/product-config";
+import type { LandingDraft } from "./form-values";
 import { LandingStep } from "./landing-step";
 
 afterEach(cleanup);
 
-const baseLanding: ProductConfig["landing"] = {
+const baseLanding: LandingDraft = {
   headline: "",
   subheadline: "",
   faq: [],
@@ -15,7 +15,7 @@ const baseLanding: ProductConfig["landing"] = {
   seoDescription: "",
 };
 
-function setup(landing: ProductConfig["landing"] = baseLanding, errors: Record<string, string> = {}) {
+function setup(landing: LandingDraft = baseLanding, errors: Record<string, string> = {}) {
   const onChange = vi.fn();
   const view = render(<LandingStep landing={landing} errors={errors} onChange={onChange} />);
   return { onChange, ...view };
@@ -65,48 +65,60 @@ describe("LandingStep", () => {
     expect(onChange).toHaveBeenLastCalledWith({ exampleOutput: "✨ Une bio" });
   });
 
-  it("adds a 'how it works' step with empty title and description", () => {
+  // Review QA1-P1-M1 (MEDIUM #1): a reordered step needs a stable React key
+  // of its own, distinct from its array position — added a step now carries
+  // a fresh client-only `id`, mirroring FieldsStep's `id`-keyed rows.
+  it("adds a 'how it works' step with empty title and description, and a stable client id", () => {
     const { onChange } = setup();
     fireEvent.click(screen.getByRole("button", { name: "Ajouter une étape" }));
-    expect(onChange).toHaveBeenLastCalledWith({ steps: [{ title: "", description: "" }] });
+    const call = onChange.mock.calls[0]![0] as { steps: { id: string; title: string; description: string }[] };
+    expect(call.steps).toHaveLength(1);
+    expect(call.steps[0]?.id).toBeTruthy();
+    expect(call.steps[0]).toMatchObject({ title: "", description: "" });
   });
 
   it("edits a 'how it works' step's title and description", () => {
-    const withSteps = { ...baseLanding, steps: [{ title: "Titre", description: "Description" }] };
+    const withSteps = { ...baseLanding, steps: [{ id: "step-1", title: "Titre", description: "Description" }] };
     const { onChange } = setup(withSteps);
     fireEvent.change(screen.getByLabelText("Titre de l'étape 1"), { target: { value: "Nouveau titre" } });
-    expect(onChange).toHaveBeenLastCalledWith({ steps: [{ title: "Nouveau titre", description: "Description" }] });
+    expect(onChange).toHaveBeenLastCalledWith({
+      steps: [{ id: "step-1", title: "Nouveau titre", description: "Description" }],
+    });
     fireEvent.change(screen.getByLabelText("Description de l'étape 1"), { target: { value: "Nouvelle description" } });
-    expect(onChange).toHaveBeenLastCalledWith({ steps: [{ title: "Titre", description: "Nouvelle description" }] });
+    expect(onChange).toHaveBeenLastCalledWith({
+      steps: [{ id: "step-1", title: "Titre", description: "Nouvelle description" }],
+    });
   });
 
   it("removes a 'how it works' step", () => {
     const withSteps = {
       ...baseLanding,
       steps: [
-        { title: "Étape 1", description: "Description 1" },
-        { title: "Étape 2", description: "Description 2" },
+        { id: "step-1", title: "Étape 1", description: "Description 1" },
+        { id: "step-2", title: "Étape 2", description: "Description 2" },
       ],
     };
     const { onChange } = setup(withSteps);
     fireEvent.click(screen.getAllByRole("button", { name: "Supprimer cette étape" })[0]!);
-    expect(onChange).toHaveBeenLastCalledWith({ steps: [{ title: "Étape 2", description: "Description 2" }] });
+    expect(onChange).toHaveBeenLastCalledWith({
+      steps: [{ id: "step-2", title: "Étape 2", description: "Description 2" }],
+    });
   });
 
   it("reorders 'how it works' steps with Monter and Descendre", () => {
     const withSteps = {
       ...baseLanding,
       steps: [
-        { title: "Étape 1", description: "Description 1" },
-        { title: "Étape 2", description: "Description 2" },
+        { id: "step-1", title: "Étape 1", description: "Description 1" },
+        { id: "step-2", title: "Étape 2", description: "Description 2" },
       ],
     };
     const { onChange } = setup(withSteps);
     fireEvent.click(screen.getAllByRole("button", { name: "Descendre" })[0]!);
     expect(onChange).toHaveBeenLastCalledWith({
       steps: [
-        { title: "Étape 2", description: "Description 2" },
-        { title: "Étape 1", description: "Description 1" },
+        { id: "step-2", title: "Étape 2", description: "Description 2" },
+        { id: "step-1", title: "Étape 1", description: "Description 1" },
       ],
     });
   });
@@ -114,5 +126,28 @@ describe("LandingStep", () => {
   it("shows the preview when the steps list is rendered even if empty", () => {
     setup();
     expect(screen.getByRole("button", { name: "Ajouter une étape" })).toBeTruthy();
+  });
+
+  // Review QA1-P1-M1 (MEDIUM #2): title/description had no error wiring.
+  it("shows a 'how it works' step title error at its path, with aria-invalid and aria-describedby", () => {
+    const withSteps = { ...baseLanding, steps: [{ id: "step-1", title: "", description: "Description" }] };
+    setup(withSteps, { "landing.steps.0.title": "Ce champ est requis" });
+    const field = screen.getByLabelText("Titre de l'étape 1");
+    expect(field.getAttribute("aria-invalid")).toBe("true");
+    const errorId = field.getAttribute("aria-describedby");
+    expect(errorId).toBeTruthy();
+    const error = screen.getByText("Ce champ est requis");
+    expect(error.id).toBe(errorId);
+  });
+
+  it("shows a 'how it works' step description error at its path, with aria-invalid and aria-describedby", () => {
+    const withSteps = { ...baseLanding, steps: [{ id: "step-1", title: "Titre", description: "" }] };
+    setup(withSteps, { "landing.steps.0.description": "Ce champ est requis" });
+    const field = screen.getByLabelText("Description de l'étape 1");
+    expect(field.getAttribute("aria-invalid")).toBe("true");
+    const errorId = field.getAttribute("aria-describedby");
+    expect(errorId).toBeTruthy();
+    const error = screen.getByText("Ce champ est requis");
+    expect(error.id).toBe(errorId);
   });
 });

@@ -228,13 +228,14 @@
         "BO-05b-generation-publication",
         "BO-07-themes"
       ],
-      "status": "blocked",
+      "status": "dispatched",
       "worktree": "security",
       "pr": null,
-      "step": "plan",
+      "step": "tdd",
       "humanDecision": {
-        "pending": true,
-        "question": "Périmètre extension needed: package.json+pnpm-lock.yaml (pnpm add botid); lib/env.ts+lib/env.test.ts+.env.example (GENERATION_RATE_LIMIT_PER_MINUTE, bullet 2 says N in lib/env.ts); lib/dal/generations.ts+test (additive countRecentGenerations: lib/rate-limit.ts may not import lib/db); README.md (bullet 3); lib/dal/contract-shape.test.ts (add next/headers + botid/server mocks, separate explained commit)"
+        "pending": false,
+        "answer": "OK SECURITY (2026-09-25)",
+        "extension": "package.json, pnpm-lock.yaml, lib/env.ts(+test), .env.example, lib/dal/generations.ts(+test) additive countRecentGenerations, README.md, lib/dal/contract-shape.test.ts mocks only"
       }
     },
     "I18N-SEO": {
@@ -485,6 +486,12 @@
       "blockedOn": "BO-04-activite",
       "what": "link the BO-03 product sheet to /admin/products/[slug]/activity (reuse BO-04 ProductTabs in sheet-header or a [slug]/layout.tsx)",
       "resolved": false
+    },
+    {
+      "spec": "SA-02-outil",
+      "blockedOn": "SECURITY",
+      "what": "api/generate/route.ts should import clientIp from lib/rate-limit.ts instead of its private copy (parity test meanwhile)",
+      "resolved": false
     }
   ],
   "notes": [
@@ -553,6 +560,10 @@
     {
       "for": "CONTRACT (human)",
       "note": "events: track() dedupe (follow-up SA-03/SA-05) filters signup by user_id and purchase by metadata->>purchaseKey on top of the (product_id, type, created_at) index; add (product_id, type, user_id) and a purchase_key column or expression index on metadata->>purchaseKey when volume grows"
+    },
+    {
+      "for": "CONTRACT (human)",
+      "note": "SECURITY follow-ups: raw Better Auth /api/auth/sign-in/magic-link not behind guardRequest; login timing side-channel in lib/auth.ts (dummy verifyPassword on reject path); a shared Postgres limiter (rate_limit_hits table or Better Auth rateLimit storage database) for test-prompt, signup, login and events"
     }
   ]
 }

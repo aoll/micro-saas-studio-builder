@@ -33,4 +33,17 @@ describe("ProductTabs", () => {
     expect(activity.className).toContain("border-foreground");
     expect(overview.className).not.toContain("border-foreground");
   });
+
+  // components/backoffice/nav-link.tsx:13 convention: the current tab carries
+  // aria-current="page" for assistive tech, not just a visual class.
+  it("sets aria-current=page on the active tab only, for both values of active", () => {
+    const { unmount } = render(<ProductTabs slug="nom-de-marque" active="overview" />);
+    expect(screen.getByRole("link", { name: "Vue d'ensemble" }).getAttribute("aria-current")).toBe("page");
+    expect(screen.getByRole("link", { name: "Activité" }).getAttribute("aria-current")).toBeNull();
+    unmount();
+
+    render(<ProductTabs slug="nom-de-marque" active="activity" />);
+    expect(screen.getByRole("link", { name: "Vue d'ensemble" }).getAttribute("aria-current")).toBeNull();
+    expect(screen.getByRole("link", { name: "Activité" }).getAttribute("aria-current")).toBe("page");
+  });
 });

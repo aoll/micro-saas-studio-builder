@@ -15,12 +15,14 @@ export function ProductTabs({ slug, active }: { slug: string; active: "overview"
       <Link
         href={`/admin/products/${slug}` as Route}
         className={cn(TAB_BASE, active === "overview" ? TAB_ACTIVE : TAB_INACTIVE)}
+        aria-current={active === "overview" ? "page" : undefined}
       >
         Vue d&apos;ensemble
       </Link>
       <Link
         href={`/admin/products/${slug}/activity` as Route}
         className={cn(TAB_BASE, active === "activity" ? TAB_ACTIVE : TAB_INACTIVE)}
+        aria-current={active === "activity" ? "page" : undefined}
       >
         Activité
       </Link>

@@ -111,5 +111,8 @@ describe("SheetHeader", () => {
     expect(activity.getAttribute("href")).toBe("/admin/products/my-product/activity");
     expect(overview.className).toContain("border-foreground");
     expect(activity.className).not.toContain("border-foreground");
+    // components/backoffice/nav-link.tsx:13 convention.
+    expect(overview.getAttribute("aria-current")).toBe("page");
+    expect(activity.getAttribute("aria-current")).toBeNull();
   });
 });

@@ -141,7 +141,10 @@ export function ToolForm({
 
   return (
     <div className="grid gap-6">
-      <form onSubmit={handleSubmit} className="grid gap-4">
+      {/* noValidate: required fields are checked by toolInputSchema, whose
+          translated message shows under the field, not by the browser's own
+          tooltip in the browser's language (QA1 B9). */}
+      <form onSubmit={handleSubmit} noValidate className="grid gap-4">
         {inputs.map((field) => (
           <DynamicField
             key={field.key}

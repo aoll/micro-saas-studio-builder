@@ -12,6 +12,23 @@ import { requireDatabaseUrl } from "../lib/require-database-url";
 // beacon), api/events/route.ts (identity only from that cookie) and
 // <TrackVisit> (no longer mints its own id) — this test exercises all
 // three together, through a real browser.
+//
+// Not run to green in this session: `playwright.config.ts`'s webServer
+// readiness check polls `url: baseURL` (`http://localhost:3100/`, no
+// path), and `GET /` 404s in this app (the `[app]` root param has no
+// route without a slug — confirmed with a direct curl against a running
+// `next start`). Playwright's default webServer check only accepts a 2xx
+// response, so it always times out at the configured 300s regardless of
+// how fast the app is actually ready (confirmed: `pnpm db:migrate && pnpm
+// db:seed && pnpm build` alone completed in ~15s unloaded, and the app
+// served /lettre-pro with 200 well before the timeout). This is a
+// pre-existing webServer config issue outside this spec's Périmètre
+// (playwright.config.ts is shared infra, not listed here) that would
+// block every e2e spec in the repo, not specific to this fix; left for
+// the orchestrator to address (e.g. point `url` at a route that exists).
+// The exact same acceptance bullet is proven at the unit and real-Postgres
+// level by route.test.ts's B4 reproduction, route.db.test.ts's
+// concurrent-beacon cases, track-visit.test.tsx and proxy.test.ts.
 const ANONYMOUS_ID_COOKIE = "anonymous_id";
 
 test.describe("A first visit counts one visit (QA1-P1-B4)", () => {

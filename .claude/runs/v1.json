@@ -37,9 +37,9 @@
         "CONTRACT-data",
         "CONTRACT-ui"
       ],
-      "status": "dispatched",
-      "worktree": "sa-01-landing",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 16
     },
     "SA-08-introuvable": {
       "dependsOn": [

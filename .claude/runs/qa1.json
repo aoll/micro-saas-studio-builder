@@ -42,6 +42,13 @@
       "findings": 1,
       "retained": 1,
       "scope": "scenario creation-produit, recheck B-P5-1"
+    },
+    {
+      "n": 7,
+      "report": ".claude/qa/reports/2026-09-25-full-4.md",
+      "findings": 0,
+      "retained": 0,
+      "scope": "scenario full, complet, recheck of every fixed finding"
     }
   ],
   "setAside": [

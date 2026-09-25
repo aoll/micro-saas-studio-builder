@@ -181,6 +181,18 @@ describe("CheckoutFlow — router refresh outside the pricing page (A2)", () => 
     await screen.findByText("Le paiement a échoué, réessayez");
     expect(refresh).not.toHaveBeenCalled();
   });
+
+  it("does not refresh again on unmount outside the pricing page (only the immediate refresh happened)", async () => {
+    purchase.mockResolvedValue({ ok: true, balance: 50 });
+    const { unmount } = renderFlow("modal", 0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Payer 14,90 € (simulé)" }));
+    await screen.findByText("+50 crédits");
+    expect(refresh).toHaveBeenCalledOnce();
+
+    unmount();
+    expect(refresh).toHaveBeenCalledOnce();
+  });
 });
 
 // QA1-P1-B3 (.claude/qa/reports/2026-09-25-full.md › B3,
@@ -204,6 +216,40 @@ describe("CheckoutFlow — over the pricing page (A1, A3)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reprendre ma génération →" }));
     expect(back).toHaveBeenCalledOnce();
     expect(replace).not.toHaveBeenCalled();
+  });
+
+  // QA1-P1-B3 (.claude/plans/QA1-P1-B3.plan.md, step 6): the refresh skipped
+  // on success above happens on unmount instead, once the router's action
+  // queue holds the restored /pricing tree (no interception route, no
+  // Next-Url sent) — covering Reprendre, Escape / backdrop / the close
+  // button (RouteModal's own router.back()), and the browser's back button.
+  it("refreshes on unmount after a successful purchase over the pricing page", async () => {
+    purchase.mockResolvedValue({ ok: true, balance: 10 });
+    const { unmount } = renderFlowOverPricingPage(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Payer 14,90 € (simulé)" }));
+    await screen.findByText("+50 crédits");
+    expect(refresh).not.toHaveBeenCalled();
+
+    unmount();
+    expect(refresh).toHaveBeenCalledOnce();
+  });
+
+  it("does not refresh on unmount when nothing was ever paid", () => {
+    const { unmount } = renderFlowOverPricingPage(0);
+    unmount();
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it("does not refresh on unmount after a failed purchase over the pricing page", async () => {
+    purchase.mockResolvedValue({ ok: false, error: "failed" });
+    const { unmount } = renderFlowOverPricingPage(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Payer 14,90 € (simulé)" }));
+    await screen.findByText("Le paiement a échoué, réessayez");
+
+    unmount();
+    expect(refresh).not.toHaveBeenCalled();
   });
 });
 

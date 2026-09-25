@@ -4,7 +4,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { startTransition, useRef, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
 import { Loader2Icon } from "lucide-react";
 import { useBalanceDelta } from "@/components/product/balance";
 import { RouteModal } from "@/components/product/route-modal";
@@ -56,6 +56,23 @@ export function CheckoutFlow({
   // (.claude/qa/reports/2026-09-25-full.md › B3). Set once, at the moment
   // of paying, so handleResume reads the same value handlePay computed.
   const overPricingPageRef = useRef(false);
+  // QA1-P1-B3 (plan step 6): set only when a purchase over /pricing
+  // succeeded while the refresh was skipped above. Read once, on unmount.
+  const refreshOnLeaveRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      // Runs after the router's action queue holds the restored /pricing
+      // tree (modal slot back to default, no interception route): the
+      // refresh then sends no Next-Url, and /pricing renders as a page
+      // instead of the modal that caused B3 (design decision 3). Covers
+      // Reprendre, Escape / backdrop / the close button (RouteModal's own
+      // router.back()), and the browser's back button — every way this
+      // component can unmount after a successful purchase over /pricing.
+      if (refreshOnLeaveRef.current) router.refresh();
+      // useRouter() is stable; this cleanup must run only on unmount.
+    };
+  }, []);
 
   function handlePay() {
     if (status === "pending") return;
@@ -77,8 +94,10 @@ export function CheckoutFlow({
         // refresh re-fetches the /pricing background kept behind the modal,
         // gets intercepted by @modal/(.)pricing, and forces a hard reload).
         // Refreshing here is safe everywhere except over the full /pricing
-        // page, where the modal is still mounted right after this call.
-        if (!overPricingPageRef.current) router.refresh();
+        // page, where the modal is still mounted right after this call: the
+        // unmount effect above refreshes once it has left instead.
+        if (overPricingPageRef.current) refreshOnLeaveRef.current = true;
+        else router.refresh();
       } else {
         setStatus("error");
         setErrorCode(result.error);

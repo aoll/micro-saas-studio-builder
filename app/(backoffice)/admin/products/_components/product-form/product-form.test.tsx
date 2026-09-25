@@ -1,10 +1,14 @@
 // @vitest-environment jsdom
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { screen, waitFor } from "@testing-library/dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Theme } from "@/lib/dal/themes";
 import type { ThemeTokens } from "@/lib/schemas/theme-tokens";
 import { newProductDraft } from "./form-values";
+
+const bioInstagramFixture = readFileSync(join(process.cwd(), "fixtures/bio-instagram.config.json"), "utf-8");
 
 vi.mock("next/font/google", () => {
   const loader = () => ({ variable: "--font-theme", className: "font-mock" });
@@ -298,5 +302,103 @@ describe("ProductForm · generation, pricing, publication", () => {
     fireEvent.click(screen.getByRole("button", { name: "Publier" }));
     await waitFor(() => expect(publish).toHaveBeenCalledTimes(2));
     expect(publish.mock.calls[1]![0]).toBe("bio-instagram");
+  });
+});
+
+// QA1-P1-M1 (specs/qa/QA1-P1-M1-config-complete.md): pasting a ready
+// config on step 1 fills every step, validated by the same shared schema.
+// `productConfigSchema` requires a real uuid `themeId` (unlike the rest of
+// this file's `"theme-editorial"` fixture id, never itself schema-checked
+// outside a save/publish action's mocked response), so importing needs a
+// theme list whose id actually validates.
+describe("ProductForm · import a pasted config", () => {
+  const importThemeId = "3f6a6a1e-6b0b-4e9a-8b1a-2f6a1a2b3c4d";
+  const importThemeOptions: Theme[] = [{ ...themeOptions[0]!, id: importThemeId }];
+
+  it("shows the import panel on step 1 in create mode", () => {
+    render(
+      <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
+    );
+    expect(screen.getByLabelText("Coller une configuration JSON")).toBeTruthy();
+  });
+
+  it("does not show the import panel in edit mode", () => {
+    render(
+      <ProductForm
+        mode="edit"
+        slug="lettre-pro"
+        initialDraft={{ ...newProductDraft("theme-editorial"), slug: "lettre-pro" }}
+        themes={themeOptions}
+      />,
+    );
+    expect(screen.queryByLabelText("Coller une configuration JSON")).toBeNull();
+  });
+
+  it("fills every step from a pasted config, with no error badge, theme kept (fallback)", async () => {
+    render(
+      <ProductForm
+        mode="create"
+        slug={null}
+        initialDraft={newProductDraft(importThemeId)}
+        themes={importThemeOptions}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("Coller une configuration JSON"), {
+      target: { value: bioInstagramFixture },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Importer" }));
+    await act(() => Promise.resolve());
+
+    goToStep(3);
+    expect(screen.getByLabelText("Exemple de résultat")).toHaveProperty(
+      "value",
+      expect.stringContaining("Coffee-first"),
+    );
+    expect(screen.getByText("Tell us your niche")).toBeTruthy();
+
+    goToStep(5);
+    expect(screen.getByLabelText("Prompt système")).toHaveProperty(
+      "value",
+      expect.stringContaining("social media copywriter"),
+    );
+
+    // fixture has no themeId: the mocked single theme is kept (fallback).
+    goToStep(2);
+    const themeGroup = screen.getByRole("radiogroup", { name: "Thème" });
+    const checkedTheme = Array.from(themeGroup.querySelectorAll('[role="radio"]')).find(
+      (option) => option.getAttribute("aria-checked") === "true",
+    );
+    expect(checkedTheme?.textContent).toContain("Editorial");
+
+    expect(checkSlug).toHaveBeenCalledWith("bio-instagram");
+
+    for (const step of [1, 2, 3, 4, 5, 6, 7]) {
+      goToStep(step);
+      const nav = screen.getByRole("button", { name: new RegExp(`^${step}\\.`) });
+      expect(nav.getAttribute("data-has-error")).toBeNull();
+    }
+  });
+
+  it("surfaces per-step errors from an invalid pasted config, without a separate error UI", () => {
+    render(
+      <ProductForm
+        mode="create"
+        slug={null}
+        initialDraft={newProductDraft(importThemeId)}
+        themes={importThemeOptions}
+      />,
+    );
+    const invalid = {
+      ...JSON.parse(bioInstagramFixture),
+      landing: { ...JSON.parse(bioInstagramFixture).landing, headline: "" },
+    };
+    fireEvent.change(screen.getByLabelText("Coller une configuration JSON"), {
+      target: { value: JSON.stringify(invalid) },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Importer" }));
+
+    goToStep(3);
+    expect(screen.getByText("Ce champ est requis")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /3\. Landing/ }).getAttribute("data-has-error")).toBe("true");
   });
 });

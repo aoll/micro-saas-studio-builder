@@ -37,9 +37,9 @@
     },
     "QA1-P1-B3-paiement-pricing": {
       "dependsOn": [],
-      "status": "dispatched",
-      "worktree": "qa1-p1-b3-paiement-pricing",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 63
     },
     "QA1-P1-B4-visite-double": {
       "dependsOn": [],
@@ -75,18 +75,17 @@
       "dependsOn": [
         "QA1-P1-B3-paiement-pricing"
       ],
-      "status": "pending",
-      "worktree": null,
+      "status": "dispatched",
+      "worktree": "qa1-p1-b14-cache-components",
       "pr": null
     },
     "QA1-P1-M1-config-complete": {
       "dependsOn": [
         "QA1-P1-L1-lot-leger"
       ],
-      "status": "dispatched",
-      "worktree": "qa1-p1-m1-config-complete",
-      "pr": null,
-      "note": "planning early to use free worktree slots; TDD starts once dependsOn are merged"
+      "status": "merged",
+      "worktree": null,
+      "pr": 62
     },
     "QA1-P1-Q2-inscription-par-produit": {
       "dependsOn": [

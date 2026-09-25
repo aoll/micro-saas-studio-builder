@@ -141,8 +141,11 @@ describe("POST [app]/api/generate — rejections before any write", () => {
   it("400s with fieldErrors when a required tool field is missing", async () => {
     getSession.mockResolvedValue(null);
     const { POST } = await import("./route");
-    const { poste: _poste, ...rest } = validInput;
-    const response = await POST(postRequest({ input: rest, idempotencyKey: randomUUID() }), ctx());
+    const { entreprise, experience, ton } = validInput;
+    const response = await POST(
+      postRequest({ input: { entreprise, experience, ton }, idempotencyKey: randomUUID() }),
+      ctx(),
+    );
     expect(response.status).toBe(400);
     const body = await response.json();
     expect(body.fieldErrors).toEqual({ poste: "required" });

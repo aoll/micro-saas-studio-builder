@@ -25,8 +25,8 @@ describe("toolInputSchema", () => {
   });
 
   it("rejects a missing required field with the 'required' issue", () => {
-    const { poste: _poste, ...rest } = validInput;
-    const result = toolInputSchema(lettreProFields, rest);
+    const { entreprise, experience, ton } = validInput;
+    const result = toolInputSchema(lettreProFields, { entreprise, experience, ton });
     expect(result).toEqual({ success: false, fieldErrors: { poste: "required" } });
   });
 

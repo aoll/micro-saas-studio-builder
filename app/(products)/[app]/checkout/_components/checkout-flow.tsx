@@ -70,8 +70,10 @@ export function CheckoutFlow({
       // router.back()), and the browser's back button — every way this
       // component can unmount after a successful purchase over /pricing.
       if (refreshOnLeaveRef.current) router.refresh();
-      // useRouter() is stable; this cleanup must run only on unmount.
     };
+    // useRouter() is stable; this cleanup must run only on unmount, not on
+    // every render (a `router` dependency would re-run it needlessly).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handlePay() {

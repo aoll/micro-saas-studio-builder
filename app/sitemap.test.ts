@@ -10,7 +10,7 @@ function product(overrides: Partial<{ slug: string; status: string }>) {
 }
 
 describe("sitemap", () => {
-  it("lists the landing of every non-killed product", async () => {
+  it("lists the root landing and every non-killed product", async () => {
     listProducts.mockResolvedValue([
       product({ slug: "lettre-pro", status: "test" }),
       product({ slug: "descri-pro", status: "learn" }),
@@ -19,6 +19,7 @@ describe("sitemap", () => {
     const { default: sitemap } = await import("./sitemap");
     const result = await sitemap();
     expect(result.map((entry) => entry.url).sort()).toEqual([
+      "https://studio.example.com",
       "https://studio.example.com/descri-pro",
       "https://studio.example.com/lettre-pro",
       "https://studio.example.com/nom-de-marque",
@@ -29,13 +30,13 @@ describe("sitemap", () => {
     listProducts.mockResolvedValue([product({ slug: "killed-one", status: "killed" })]);
     const { default: sitemap } = await import("./sitemap");
     const result = await sitemap();
-    expect(result).toEqual([]);
+    expect(result).toEqual([{ url: "https://studio.example.com" }]);
   });
 
-  it("returns an empty sitemap when there are no products", async () => {
+  it("keeps only the root landing when there are no products", async () => {
     listProducts.mockResolvedValue([]);
     const { default: sitemap } = await import("./sitemap");
     const result = await sitemap();
-    expect(result).toEqual([]);
+    expect(result).toEqual([{ url: "https://studio.example.com" }]);
   });
 });

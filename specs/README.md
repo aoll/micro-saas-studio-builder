@@ -78,3 +78,4 @@ Spec : specs/<REF>-<nom>.md, dans ton worktree <chemin>.
 | `BO-09-seuils` | V3 | E | BO-02 | Indispensable |
 | `BO-08-editeur-theme` | V3 | G | BO-07 | Bonus, coupé en premier |
 | `E2E-demo` | V4 | — | Tout | Indispensable |
+| `SA-09-facture` | V5 | — | LEDGER | Bonus |

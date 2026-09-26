@@ -43,6 +43,12 @@ export function JobStatusList({
   const [jobs, setJobs] = useState<InvoiceJob[]>(initialJobs);
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+  // Bumped after a successful retry, same trick as the parent's
+  // refreshSignal: retryInvoice only re-queues one job, it doesn't touch
+  // refreshSignal, so without this the polling effect below (already
+  // stopped, since every job it last saw was settled) never restarts and
+  // the list freezes on "Échec" even though the job is being reprocessed.
+  const [retryTick, setRetryTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,15 +73,17 @@ export function JobStatusList({
       if (timeoutId !== undefined) clearTimeout(timeoutId);
     };
     // refreshSignal (bumped by the parent after a fresh generateInvoices()
-    // call) restarts this effect — and so this polling loop — even after a
+    // call) and retryTick (bumped below, after a successful retry) both
+    // restart this effect — and so this polling loop — even after a
     // previous run had already settled and stopped scheduling itself.
-  }, [slug, refreshSignal]);
+  }, [slug, refreshSignal, retryTick]);
 
   function handleRetry(jobId: string) {
     setRetryingId(jobId);
     startTransition(async () => {
       await retryInvoice(slug, jobId);
       setRetryingId(null);
+      setRetryTick((value) => value + 1);
     });
   }
 

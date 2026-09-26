@@ -203,4 +203,38 @@ describe("JobStatusList — retry", () => {
     });
     expect(retryInvoice).toHaveBeenCalledWith("bio-insta", "j1");
   });
+
+  // Regression (found by e2e/invoices.spec.ts against the real DAL, not
+  // reproducible with mocks alone until this exact sequence is asserted):
+  // the poll had already stopped scheduling itself before the click (every
+  // job it last saw was "failed", i.e. settled), and retryInvoice alone
+  // doesn't change refreshSignal — without retryTick, the list stayed frozen
+  // on "Échec" forever even though the job was correctly re-queued server-side.
+  it("resumes polling after a successful retry, even though every job had already settled", async () => {
+    const jobs = [job({ id: "j1", status: "failed" })];
+    getInvoiceJobs.mockResolvedValue({ ok: true, jobs });
+    retryInvoice.mockResolvedValue({ ok: true });
+    renderList(jobs);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(getInvoiceJobs).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000);
+    });
+    // Already settled (failed): the one immediate poll never scheduled a next one.
+    expect(getInvoiceJobs).toHaveBeenCalledTimes(1);
+
+    getInvoiceJobs.mockResolvedValue({ ok: true, jobs: [job({ id: "j1", status: "queued" })] });
+    fireEvent.click(screen.getByRole("button", { name: "Réessayer" }));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(retryInvoice).toHaveBeenCalledWith("bio-insta", "j1");
+    expect(getInvoiceJobs).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("En attente")).toBeTruthy();
+  });
 });

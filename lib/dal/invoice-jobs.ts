@@ -100,13 +100,13 @@ export async function claimNextInvoiceJob({
   return db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`invoice-pool:${userId}:${productId}`}, 0))`);
 
-    const [{ count }] = await tx
+    const [processingRow] = await tx
       .select({ count: sql<number>`count(*)::int` })
       .from(invoiceJobs)
       .where(
         and(eq(invoiceJobs.userId, userId), eq(invoiceJobs.productId, productId), eq(invoiceJobs.status, "processing")),
       );
-    if (count >= MAX_CONCURRENT_INVOICE_JOBS) return null;
+    if ((processingRow?.count ?? 0) >= MAX_CONCURRENT_INVOICE_JOBS) return null;
 
     const next = await tx.query.invoiceJobs.findFirst({
       where: and(

@@ -34,6 +34,13 @@ function sheet(overrides: Partial<ProductSheetViewModel> = {}): ProductSheetView
       suggestion: null,
       badge: null,
     },
+    decisionMetrics: { visits: 1200, signupToPurchaseRate: 0.07, marginPerGenerationMicros: 500_000 },
+    thresholds: {
+      minVisits: 1000,
+      killMaxConversion: 0.02,
+      scaleMinConversion: 0.05,
+      scaleRequiresPositiveMargin: true,
+    },
     ...overrides,
   };
 }

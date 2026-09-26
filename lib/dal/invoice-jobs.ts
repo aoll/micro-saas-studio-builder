@@ -7,6 +7,12 @@ import { invoiceJobs } from "@/lib/db/schema";
 // convention as Debit/Purchase in lib/dal/credits.ts), never derives it
 // itself.
 
+// Shared by claimNextInvoiceJob (enforces it) and the caller that drives the
+// pool (must run this many concurrent worker loops for jobs to actually
+// process in parallel, not just be allowed to) — one source of truth so the
+// two never drift apart.
+export const MAX_CONCURRENT_INVOICE_JOBS = 2;
+
 export type InvoiceJobStatus = (typeof invoiceJobs.status.enumValues)[number];
 
 export type InvoiceJob = {

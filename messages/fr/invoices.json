@@ -1,0 +1,26 @@
+{
+  "title": "Mes factures",
+  "loading": "Chargement des factures…",
+  "months": {
+    "title": "Mois facturables",
+    "empty": "Aucun mois facturable pour le moment"
+  },
+  "generate": {
+    "button": "Générer",
+    "pending": "Génération…",
+    "error": "Impossible de lancer la génération, réessayez"
+  },
+  "jobs": {
+    "title": "Mes factures générées",
+    "empty": "Aucune facture générée pour le moment",
+    "download": "Télécharger",
+    "retry": "Réessayer",
+    "retrying": "Nouvelle tentative…"
+  },
+  "status": {
+    "queued": "En attente",
+    "processing": "En cours",
+    "done": "Terminé",
+    "failed": "Échec"
+  }
+}

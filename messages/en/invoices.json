@@ -1,0 +1,26 @@
+{
+  "title": "My invoices",
+  "loading": "Loading invoices…",
+  "months": {
+    "title": "Invoiceable months",
+    "empty": "No invoiceable month yet"
+  },
+  "generate": {
+    "button": "Generate",
+    "pending": "Generating…",
+    "error": "Could not start the generation, try again"
+  },
+  "jobs": {
+    "title": "My generated invoices",
+    "empty": "No invoice generated yet",
+    "download": "Download",
+    "retry": "Retry",
+    "retrying": "Retrying…"
+  },
+  "status": {
+    "queued": "Queued",
+    "processing": "Processing",
+    "done": "Done",
+    "failed": "Failed"
+  }
+}

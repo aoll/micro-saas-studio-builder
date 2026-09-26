@@ -33,14 +33,38 @@ function decision(overrides: Partial<DecisionCopy> = {}): DecisionCopy {
 }
 
 const product = { productId: "p1", slug: "my-product", name: "My Product", status: "test" as const };
+const thresholds = {
+  minVisits: 1000,
+  killMaxConversion: 0.02,
+  scaleMinConversion: 0.05,
+  scaleRequiresPositiveMargin: true,
+};
+const metrics = { visits: 1200, signupToPurchaseRate: 0.07, marginPerGenerationMicros: 500_000 };
 
 describe("DecisionPanel", () => {
   it("shows every threshold line and the current values", () => {
-    render(<DecisionPanel decision={decision()} product={product} />);
+    render(<DecisionPanel decision={decision()} product={product} metrics={metrics} thresholds={thresholds} />);
     expect(screen.getByText("Visites minimales")).toBeTruthy();
     expect(screen.getByText("1 000")).toBeTruthy();
     expect(screen.getByText("1 200")).toBeTruthy();
     expect(screen.getByText("0,50 €")).toBeTruthy();
+  });
+
+  it("renders the threshold gauge with a marker for the current conversion rate", () => {
+    render(<DecisionPanel decision={decision()} product={product} metrics={metrics} thresholds={thresholds} />);
+    expect(screen.getByTestId("gauge-marker")).toBeTruthy();
+  });
+
+  it("shows the visits-gate note instead of a marker note when below minVisits", () => {
+    render(
+      <DecisionPanel
+        decision={decision()}
+        product={product}
+        metrics={{ ...metrics, visits: 400 }}
+        thresholds={thresholds}
+      />,
+    );
+    expect(screen.getByText(/Seuil de visites non atteint/)).toBeTruthy();
   });
 
   it("shows the suggestion headline and detail when there is one", () => {
@@ -51,6 +75,8 @@ describe("DecisionPanel", () => {
           badge: "kill",
         })}
         product={product}
+        metrics={metrics}
+        thresholds={thresholds}
       />,
     );
     expect(screen.getByText("Seuil de décision atteint")).toBeTruthy();
@@ -58,7 +84,14 @@ describe("DecisionPanel", () => {
   });
 
   it("shows nothing where the suggestion goes when there isn't one", () => {
-    render(<DecisionPanel decision={decision({ suggestion: null })} product={product} />);
+    render(
+      <DecisionPanel
+        decision={decision({ suggestion: null })}
+        product={product}
+        metrics={metrics}
+        thresholds={thresholds}
+      />,
+    );
     expect(screen.queryByTestId("decision-suggestion")).toBeNull();
   });
 
@@ -73,6 +106,8 @@ describe("DecisionPanel", () => {
           badge: "kill",
         })}
         product={product}
+        metrics={metrics}
+        thresholds={thresholds}
       />,
     );
     const box = screen.getByTestId("decision-suggestion");
@@ -89,6 +124,8 @@ describe("DecisionPanel", () => {
           badge: "scale",
         })}
         product={product}
+        metrics={metrics}
+        thresholds={thresholds}
       />,
     );
     expect(screen.getByRole("button", { name: "Changer de statut" })).toBeTruthy();
@@ -102,13 +139,22 @@ describe("DecisionPanel", () => {
           badge: null,
         })}
         product={product}
+        metrics={metrics}
+        thresholds={thresholds}
       />,
     );
     expect(screen.queryByRole("button", { name: "Changer de statut" })).toBeNull();
   });
 
   it("does not mount the status-change trigger when there is no suggestion at all", () => {
-    render(<DecisionPanel decision={decision({ suggestion: null })} product={product} />);
+    render(
+      <DecisionPanel
+        decision={decision({ suggestion: null })}
+        product={product}
+        metrics={metrics}
+        thresholds={thresholds}
+      />,
+    );
     expect(screen.queryByRole("button", { name: "Changer de statut" })).toBeNull();
   });
 });

@@ -1,6 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { DecisionMetrics } from "@/lib/decision";
+import type { Thresholds } from "@/lib/dal/thresholds";
 import type { ProductStatus } from "@/lib/schemas/product-config";
 import type { DecisionCopy } from "./decision-copy";
+import { DecisionGauge } from "./decision-gauge";
 import { StatusChange } from "./status/status-change";
 
 export type DecisionPanelProduct = { productId: string; slug: string; name: string; status: ProductStatus };
@@ -15,7 +18,17 @@ export type DecisionPanelProduct = { productId: string; slug: string; name: stri
 // `scale`, not the "not enough visits" or "no suggestion" copies), the box also mounts
 // `StatusChange`, preselected on that suggestion, so the admin can act right where the numbers
 // justify it — a second mount point next to the header's (BO-06 task item 2).
-export function DecisionPanel({ decision, product }: { decision: DecisionCopy; product: DecisionPanelProduct }) {
+export function DecisionPanel({
+  decision,
+  product,
+  metrics,
+  thresholds,
+}: {
+  decision: DecisionCopy;
+  product: DecisionPanelProduct;
+  metrics: DecisionMetrics;
+  thresholds: Thresholds;
+}) {
   return (
     <Card>
       <CardHeader>
@@ -30,6 +43,7 @@ export function DecisionPanel({ decision, product }: { decision: DecisionCopy; p
             </div>
           ))}
         </dl>
+        <DecisionGauge metrics={metrics} thresholds={thresholds} />
         <dl className="grid grid-cols-3 gap-2 border-t pt-3 text-sm">
           <div>
             <dt className="text-muted-foreground">Visites</dt>

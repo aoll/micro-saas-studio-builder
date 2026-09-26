@@ -21,6 +21,7 @@ Acceptation :
   → `processing` → `done`), sans re-sélection ni ré-appui du visiteur
 - Un job terminé produit un vrai PDF (récapitulatif des achats du mois : packs, crédits,
   montant, date), stocké sur Vercel Blob ; la ligne affiche un lien de téléchargement
+  individuel — un fichier par mois, jamais groupé
 - Un job qui dépasse son délai (15 s) passe `failed` avec un message clair, sans bloquer
   ni faire échouer les autres jobs du pool ; un bouton « réessayer » ne relance que ce
   job-là (repasse à `queued`, redébloque un slot pour lui)
@@ -39,4 +40,5 @@ Périmètre   : [app]/account/invoices/** (dont _actions.ts et _components/),
               e2e/invoices.spec.ts, package.json (ajout de `@react-pdf/renderer`)
 Hors périmètre : envoi de la facture par email, export comptable, TVA/mentions légales
               réelles (mentions de démo suffisent), job pooling partagé entre produits
-              ou entre utilisateurs (le pool est scoped à un couple utilisateur+produit)
+              ou entre utilisateurs (le pool est scoped à un couple utilisateur+produit),
+              téléchargement groupé (zip) des factures sélectionnées

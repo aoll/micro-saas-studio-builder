@@ -1,5 +1,6 @@
 import type { DailyPoint, Funnel, FunnelStep, ProductMetrics } from "@/lib/dal/metrics";
 import type { ProductStatus } from "@/lib/schemas/product-config";
+import type { DecisionMetrics } from "@/lib/decision";
 import type { Thresholds } from "@/lib/dal/thresholds";
 import {
   formatEuroCents,
@@ -74,6 +75,8 @@ export type ProductSheetViewModel = {
   funnelRows: FunnelRow[];
   trend: TrendPoint[];
   decision: DecisionCopy;
+  decisionMetrics: DecisionMetrics;
+  thresholds: Thresholds;
 };
 
 // The product sheet's (BO-03) full view model, computed once on the server from `getFunnel` and
@@ -92,5 +95,11 @@ export function toProductSheet(funnel: Funnel, thresholds: Thresholds): ProductS
     funnelRows: toFunnelRows(funnel.steps, metrics.visits),
     trend: toTrendPoints(funnel.daily),
     decision: toDecisionCopy(metrics, thresholds),
+    decisionMetrics: {
+      visits: metrics.visits,
+      signupToPurchaseRate: metrics.signupToPurchaseRate,
+      marginPerGenerationMicros: metrics.marginPerGenerationMicros,
+    },
+    thresholds,
   };
 }

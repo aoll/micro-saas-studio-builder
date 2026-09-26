@@ -37,6 +37,8 @@ export function ProductSheetView({ sheet }: { sheet: ProductSheetViewModel }) {
       <DecisionPanel
         decision={sheet.decision}
         product={{ productId: sheet.productId, slug: sheet.slug, name: sheet.name, status: sheet.status }}
+        metrics={sheet.decisionMetrics}
+        thresholds={sheet.thresholds}
       />
     </div>
   );

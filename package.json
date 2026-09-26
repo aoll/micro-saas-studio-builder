@@ -29,6 +29,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.9.0",
     "@t3-oss/env-nextjs": "^0.13.11",
     "@vercel/blob": "^2.8.0",
     "ai": "^7.0.114",

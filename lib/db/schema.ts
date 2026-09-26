@@ -52,6 +52,7 @@ export const eventType = pgEnum("event_type", eventTypeSchema.options as unknown
 // shared input schema references them).
 export const creditReason = pgEnum("credit_reason", ["signup_bonus", "purchase", "generation", "refund"]);
 export const generationStatus = pgEnum("generation_status", ["pending", "succeeded", "failed"]);
+export const invoiceJobStatus = pgEnum("invoice_job_status", ["queued", "processing", "done", "failed"]);
 
 const timestamptz = (name: string) => timestamp(name, { withTimezone: true });
 
@@ -168,6 +169,37 @@ export const purchases = pgTable(
   (table) => [
     check("purchases_credits_positive", sql`${table.credits} > 0`),
     check("purchases_amount_cents_positive", sql`${table.amountCents} > 0`),
+  ],
+);
+
+// specs/SA-09-facture.md: one row per (user, product, billing month) the
+// visitor asked for. The pool (lib/dal/invoice-jobs.ts) claims `queued` rows
+// and caps how many sit `processing` at once, per (user_id, product_id) —
+// never a global or cross-product limit (spec's "Hors périmètre").
+// `idempotencyKey` is `${userId}:${productId}:${month}` so re-selecting the
+// same month never creates a second job.
+export const invoiceJobs = pgTable(
+  "invoice_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id),
+    month: text("month").notNull(), // "YYYY-MM", always a closed month (never the current one)
+    status: invoiceJobStatus("status").notNull().default("queued"),
+    blobUrl: text("blob_url"),
+    error: text("error"),
+    idempotencyKey: text("idempotency_key").notNull().unique(),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+    startedAt: timestamptz("started_at"),
+    finishedAt: timestamptz("finished_at"),
+  },
+  (table) => [
+    check("invoice_jobs_month_format", sql`${table.month} ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'`),
+    index("invoice_jobs_user_product_status_idx").on(table.userId, table.productId, table.status),
   ],
 );
 

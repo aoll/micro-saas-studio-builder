@@ -14,6 +14,15 @@ import type { ProductConfig } from "@/lib/schemas/product-config";
 const getSession = vi.fn();
 vi.mock("@/lib/dal/session", () => ({ getSession: () => getSession() }));
 
+// guardRequest("purchase") (lib/security.ts) reads headers() directly (the
+// QA bypass check, SECURITY follow-up) before ever reaching checkBotId() —
+// outside a real request scope, Next's own `headers()` throws. Same mock as
+// signup/_actions.test.ts, api/generate/route.test.ts and the other test
+// files that exercise a guardRequest()-gated Server Action or route.
+vi.mock("next/headers", () => ({
+  headers: async () => new Headers(),
+}));
+
 // next/server's after() and next/cache's refresh() both need a real
 // request context (route.test.ts's same trick): after() just collects
 // tasks so this test can await them, refresh() is a no-op spy. next/cache's

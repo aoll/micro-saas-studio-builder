@@ -27,6 +27,9 @@ npm-debug.log*
 # Vercel CLI project link, machine-local
 .vercel
 
+# Claude Code personal permission overrides, machine-local
+.claude/settings.local.json
+
 # Understand-Anything knowledge graph: commit .ua/knowledge-graph.json,
 # .ua/meta.json, .ua/.understandignore and .ua/config.json; never the
 # pipeline's own scratch (docs/13-candidature.md-style convention, upstream

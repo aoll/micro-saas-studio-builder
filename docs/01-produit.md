@@ -317,4 +317,4 @@ Dotworld le dit : **« We develop with AI, not alongside it »**, et Claude Code
 
 **Le découpage en specs** : 28 specs minimales réparties en 5 vagues, dans l'onglet Specs. La méthode pour les faire avancer en parallèle est décrite dans l'onglet Implémentation.
 
-**Ce que ça démontre** : le même mode opératoire que chez Trusk (SDD + TDD, 100 % du code produit par agents, 100 % relu par un humain), appliqué au métier de Dotworld.
+**Ce que ça démontre** : le même socle méthodologique que chez Trusk — SDD + TDD, 100 % du code produit par agents —, appliqué au métier de Dotworld ; ici, la revue est elle aussi agentique, sous plusieurs angles, et l'humain ne tranche que sur les specs.

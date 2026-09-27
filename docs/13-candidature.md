@@ -4,7 +4,7 @@ Comment la démo est construite dans le temps, puis présentée à Dotworld.
 
 ## Planning
 
-**Environ 14,5 jours de travail, soit 3 semaines à temps plein**, en delivery agentique (SDD + TDD, relecture humaine). L'ordre est pensé pour avoir une démo présentable dès la fin de la semaine 1, puis l'enrichir.
+**Environ 14,5 jours de travail, soit 3 semaines à temps plein**, en delivery agentique (SDD + TDD, revue agentique sous plusieurs angles). L'ordre est pensé pour avoir une démo présentable dès la fin de la semaine 1, puis l'enrichir.
 
 | # | Lot | Contenu | Estimation |
 | --- | --- | --- | --- |
@@ -51,7 +51,7 @@ Un recruteur ne clonera pas le repo et n'aura peut-être que deux minutes. Le pa
 1. Ce que c'est, en 3 lignes, avec une capture et le lien vers la vidéo.
 2. Pourquoi : le lien avec le modèle d'un SaaS studio (plusieurs produits, socle commun, Test / Learn / Scale).
 3. Ce que ça montre techniquement : Next.js 16.3 (Cache Components, root params, intercepting routes), AI SDK, ledger de crédits idempotent.
-4. **Comment c'est construit** : specs, TDD, part du code produite par agents, relecture humaine, durée réelle. C'est la partie qui répond à « We develop with AI, not alongside it ».
+4. **Comment c'est construit** : specs, TDD, part du code produite par agents, revue agentique sous plusieurs angles, durée réelle. C'est la partie qui répond à « We develop with AI, not alongside it ».
 5. Lancer en local en 3 commandes, en mode mock (sans clé IA).
 6. Ce que je ferais ensuite : vrai paiement, A/B tests, produits à sortie image.
 
@@ -64,7 +64,7 @@ Un recruteur ne clonera pas le repo et n'aura peut-être que deux minutes. Le pa
 **Trois messages à faire passer**, quelle que soit la question :
 
 1. **J'ai compris votre métier** : plusieurs produits, un socle commun, des décisions prises sur la donnée (funnel, marge, statut Test / Learn / Scale).
-2. **Je livre vite et proprement avec des agents** : specs, tests, relecture, et les outils agents officiels de Next.js.
+2. **Je livre vite et proprement avec des agents** : specs, tests, revue agentique sous plusieurs angles, et les outils agents officiels de Next.js.
 3. **Je sais où mettre la rigueur** : le ledger de crédits (argent), la sécurité des Server Actions, le coût IA par génération. Et je sais simplifier ailleurs (paiement simulé, pas de Redis, pas de glisser-déposer).
 
 **Questions attendues**
@@ -73,7 +73,7 @@ Un recruteur ne clonera pas le repo et n'aura peut-être que deux minutes. Le pa
 | --- | --- |
 | Pourquoi pas de vrai Stripe ? | Le sujet est la logique de crédits ; `purchase()` est le seul point à brancher sur un webhook, le modèle de données ne change pas |
 | Comment ça tiendrait à 50 M de visiteurs ? | Landings pré-rendues (CDN), cache tagué, events à sortir vers un entrepôt de données, rate limit vers Redis, cache `use cache: remote` |
-| Quelle part du code a été écrite par des agents ? | Le chiffre réel, les specs, les tests, et ce que la relecture humaine a corrigé |
+| Quelle part du code a été écrite par des agents ? | Le chiffre réel, les specs, les tests, et ce que le cycle de revue agentique a corrigé |
 | Pourquoi l'AI SDK plutôt que le SDK Anthropic ? | Modèle configurable par produit, produits image, streaming UI, coût par génération |
 | Qu'est-ce qui a été le plus dur ? | À noter pendant le projet, avec un exemple concret |
 | Et une v2 ? | A/B tests avec le Flags SDK, produits image, vrai paiement, entrepôt de données pour le funnel |

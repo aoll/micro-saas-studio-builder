@@ -325,6 +325,27 @@ describe("products", () => {
         .values({ slug: slug("bad-locale"), themeId, currentVersion: 1, locale: "de", createdBy: ownerId }),
     );
   });
+
+  // QA2-P1-B1 (specs/qa/QA2-P1-B1-brouillon-publie.md): `current_version IS
+  // NULL` now means "never published" — a product row can be inserted
+  // without it (omitted ⇒ NULL, no default), and the positive-value check
+  // still applies whenever a value is actually set.
+  it("accepts a product row with current_version omitted (never published)", async () => {
+    const [row] = await db
+      .insert(products)
+      .values({ slug: slug("never-published"), themeId, locale: "fr", createdBy: ownerId })
+      .returning({ id: products.id, currentVersion: products.currentVersion });
+    expect(row?.currentVersion).toBeNull();
+    await db.delete(products).where(sql`${products.id} = ${row!.id}`);
+  });
+
+  it("still rejects current_version = 0 when a value is set", async () => {
+    await expectViolation(
+      db
+        .insert(products)
+        .values({ slug: slug("zero-version"), themeId, currentVersion: 0, locale: "fr", createdBy: ownerId }),
+    );
+  });
 });
 
 describe("events", () => {

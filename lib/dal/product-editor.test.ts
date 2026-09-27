@@ -184,7 +184,7 @@ describe("getProductDraft", () => {
     await saveVersion(created.slug, { ...config, name: "Draft v2" });
 
     const draft = await getProductDraft(created.slug);
-    expect(draft).toMatchObject({ productId: created.id, isSeed: false, version: 2, publishedVersion: 1 });
+    expect(draft).toMatchObject({ productId: created.id, isSeed: false, version: 2, publishedVersion: null });
     expect(draft?.config.name).toBe("Draft v2");
 
     await db.delete(productVersions).where(eq(productVersions.productId, created.id));

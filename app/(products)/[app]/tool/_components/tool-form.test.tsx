@@ -162,7 +162,7 @@ describe("ToolForm — status branches", () => {
     await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/lettre-pro/signup"));
   });
 
-  it("redirects to /signup after the last free generation (x-free-generations-left: 0)", async () => {
+  it("shows the result and an inline signup link after the last free generation, without navigating away", async () => {
     vi.stubGlobal(
       "fetch",
       vi
@@ -175,7 +175,9 @@ describe("ToolForm — status branches", () => {
     fillValidForm();
     fireEvent.click(screen.getByRole("button", { name: "Générer · 1 crédit" }));
     await screen.findByText("Bonjour");
-    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/lettre-pro/signup"));
+    const link = await screen.findByRole("link", { name: "Créer un compte pour continuer" });
+    expect(link.getAttribute("href")).toBe("/lettre-pro/signup");
+    expect(push).not.toHaveBeenCalled();
   });
 
   it("shows a translated, remboursed error and a retry button on a stream error chunk", async () => {

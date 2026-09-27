@@ -4,6 +4,10 @@
   "generating": "Generating…",
   "results": "Result",
   "retry": "Retry",
+  "freeTrialUsed": {
+    "message": "Your free try is used up.",
+    "cta": "Create an account to keep going"
+  },
   "errors": {
     "required": "This field is required.",
     "too_long": "This field is too long.",

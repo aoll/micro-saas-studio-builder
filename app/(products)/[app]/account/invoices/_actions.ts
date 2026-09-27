@@ -1,35 +1,30 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
-import { put } from "@vercel/blob";
+import { send } from "@vercel/queue";
 import { unstable_rethrow } from "next/navigation";
 import { after } from "next/server";
 import { z } from "zod";
 import { listPurchases } from "@/lib/dal/account";
-import {
-  claimNextInvoiceJob,
-  completeInvoiceJob,
-  enqueueInvoiceMonths,
-  failInvoiceJob,
-  listInvoiceJobs,
-  MAX_CONCURRENT_INVOICE_JOBS,
-  retryInvoiceJob,
-  type InvoiceJob,
-} from "@/lib/dal/invoice-jobs";
-import { renderInvoicePdf } from "@/lib/invoice/render";
+import { enqueueInvoiceMonths, listInvoiceJobs, retryInvoiceJob, type InvoiceJob } from "@/lib/dal/invoice-jobs";
 import { getProduct } from "@/lib/dal/products";
 import { getSession } from "@/lib/dal/session";
-import { env } from "@/lib/env";
 import { slugSchema } from "@/lib/schemas/product-config";
-import { invoiceableMonths, monthKey } from "./_components/invoiceable-months";
+import type { InvoiceQueueMessage } from "@/app/api/queues/invoices/route";
+import { invoiceableMonths } from "./_components/invoiceable-months";
 
-// SA-09 (specs/SA-09-facture.md): the invoices page's Server Actions,
-// following checkout/_actions.ts's shape — session first, Zod-parse input,
-// re-derive everything server-side, never trust the client, unstable_rethrow
-// before mapping to a typed failure. `months` isn't in lib/schemas/**
-// (frozen, out of this spec's Périmètre): validated with a local schema
-// instead, same rule ("shared Zod schema"), just not the shared module.
-const RENDER_TIMEOUT_MS = 15_000;
+// SA-09 (specs/SA-09-facture.md) + CONTRACT-invoices-queue: the invoices
+// page's Server Actions, following checkout/_actions.ts's shape — session
+// first, Zod-parse input, re-derive everything server-side, never trust the
+// client, unstable_rethrow before mapping to a typed failure. `months` isn't
+// in lib/schemas/** (frozen, out of this spec's Périmètre): validated with a
+// local schema instead, same rule ("shared Zod schema"), just not the shared
+// module.
+//
+// The pool itself (claim, render, upload, complete/fail) no longer lives
+// here: app/api/queues/invoices/route.ts is now the Vercel Queues consumer
+// that does that work, once per message, at the platform's own concurrency
+// limit. These actions only ever enqueue — enqueueInvoiceMonths() for the DB
+// row, `send()` for the message that gets it actually processed.
 
 const monthStringSchema = z.string().regex(/^\d{4}-\d{2}$/);
 const monthsInputSchema = z.array(monthStringSchema).min(1);
@@ -43,7 +38,40 @@ export type RetryInvoiceResult =
 export type InvoiceJobsResult =
   { ok: true; jobs: InvoiceJob[] } | { ok: false; error: "unauthenticated" | "invalid_request" };
 
-type PoolContext = { userId: string; productId: string; productName: string; buyerEmail: string };
+// Publishes one Vercel Queues message per job — the actual work (render,
+// upload, complete/fail) happens in app/api/queues/invoices/route.ts,
+// invoked by Vercel itself. A `send()` that throws for one job (network
+// hiccup, auth) is logged and skipped rather than aborting the others: the
+// job stays `queued` in the DB and the user can select it again, same as
+// any other job that never got picked up.
+//
+// No `idempotencyKey` here: this function is also how a manual retry
+// re-publishes the SAME job.id after a genuine failure, and Queues'
+// deduplication window (up to 24h) would silently drop that second message
+// if it reused the job id as the key — retry would look like it worked but
+// nothing would ever be redelivered. Message-level dedup isn't needed
+// anyway: enqueueInvoiceMonths' unique idempotency key and
+// startInvoiceJob's status guard already make double-processing impossible
+// at the DB layer, and this code never retries a `send()` call itself.
+async function enqueueForProcessing(jobs: InvoiceJob[], context: { productName: string; buyerEmail: string }) {
+  await Promise.all(
+    jobs.map(async (job) => {
+      const message: InvoiceQueueMessage = {
+        jobId: job.id,
+        userId: job.userId,
+        productId: job.productId,
+        month: job.month,
+        productName: context.productName,
+        buyerEmail: context.buyerEmail,
+      };
+      try {
+        await send("invoices", message);
+      } catch (error) {
+        console.error("[invoices] send() failed", job.id, error);
+      }
+    }),
+  );
+}
 
 export async function generateInvoices(slug: string, months: string[]): Promise<GenerateInvoicesResult> {
   const session = await getSession();
@@ -71,10 +99,8 @@ export async function generateInvoices(slug: string, months: string[]): Promise<
 
     // Fire-and-forget (docs/04-nextjs.md, checkout/_actions.ts's own
     // tracking call): the client starts polling getInvoiceJobs right after
-    // this action returns, it never awaits the pool itself.
-    after(() =>
-      runInvoicePool({ userId, productId: product.id, productName: product.name, buyerEmail: session.user.email }),
-    );
+    // this action returns, it never awaits the queue itself.
+    after(() => enqueueForProcessing(jobs, { productName: product.name, buyerEmail: session.user.email }));
 
     return { ok: true, jobs };
   } catch (error) {
@@ -108,11 +134,10 @@ export async function retryInvoice(slug: string, jobId: string): Promise<RetryIn
 
     await retryInvoiceJob(job.id);
 
-    // A slot may now be claimable again (spec: "redébloque un slot pour
-    // lui"): kick the pool the same way generateInvoices does.
-    after(() =>
-      runInvoicePool({ userId, productId: product.id, productName: product.name, buyerEmail: session.user.email }),
-    );
+    // Re-queued in the DB, but Vercel Queues has no memory of it — publish a
+    // fresh message the same way generateInvoices does (spec: "redébloque un
+    // slot pour lui").
+    after(() => enqueueForProcessing([job], { productName: product.name, buyerEmail: session.user.email }));
 
     return { ok: true };
   } catch (error) {
@@ -134,58 +159,4 @@ export async function getInvoiceJobs(slug: string): Promise<InvoiceJobsResult> {
 
   const jobs = await listInvoiceJobs({ userId: session.user.id, productId: product.id });
   return { ok: true, jobs };
-}
-
-// Spawns exactly MAX_CONCURRENT_INVOICE_JOBS concurrent worker loops
-// (lib/dal/invoice-jobs.ts: "one source of truth so the two never drift
-// apart" — claimNextInvoiceJob enforces the same constant on its side).
-async function runInvoicePool(context: PoolContext): Promise<void> {
-  await Promise.all(Array.from({ length: MAX_CONCURRENT_INVOICE_JOBS }, () => runInvoiceWorker(context)));
-}
-
-async function runInvoiceWorker(context: PoolContext): Promise<void> {
-  for (;;) {
-    const job = await claimNextInvoiceJob({ userId: context.userId, productId: context.productId });
-    if (!job) return;
-    await processInvoiceJob(job, context);
-  }
-}
-
-async function processInvoiceJob(job: InvoiceJob, context: Pick<PoolContext, "productName" | "buyerEmail">) {
-  try {
-    const monthPurchases = (await listPurchases(job.userId, job.productId)).filter(
-      (purchase) => monthKey(purchase.createdAt) === job.month,
-    );
-
-    const buffer = await Promise.race([
-      renderInvoicePdf({
-        productName: context.productName,
-        buyerEmail: context.buyerEmail,
-        month: job.month,
-        purchases: monthPurchases,
-      }),
-      new Promise<never>((_resolve, reject) => {
-        setTimeout(() => reject(new Error("Délai dépassé (15 s)")), RENDER_TIMEOUT_MS);
-      }),
-    ]);
-
-    // Vercel Blob upload convention (app/(backoffice)/admin/products/_actions.ts's
-    // uploadLogo): random pathname and filename, never a client-supplied one.
-    const blob = await put(`invoices/${job.userId}/${job.productId}/${randomUUID()}.pdf`, buffer, {
-      access: "public",
-      addRandomSuffix: true,
-      contentType: "application/pdf",
-      token: env.BLOB_READ_WRITE_TOKEN,
-    });
-
-    await completeInvoiceJob(job.id, blob.url);
-  } catch (error) {
-    unstable_rethrow(error);
-    // A timeout or render/upload failure never bubbles up: it only ever
-    // fails this one job, the other workers of the pool keep running
-    // (spec: "sans bloquer ni faire échouer les autres jobs du pool").
-    const message = error instanceof Error ? error.message : "Erreur inconnue";
-    console.error("[invoices] job failed", job.id, error);
-    await failInvoiceJob(job.id, message);
-  }
 }

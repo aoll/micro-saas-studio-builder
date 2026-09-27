@@ -118,6 +118,6 @@ written first > readability for the reviewer > minimal code** (`ponytail`).
 | Agent | `e2e-runner` | Write and run Playwright journeys |
 | Skill | `orchestrator` | Run every approved spec to a PR, 10 worktrees in parallel |
 | Skill | `tdd-workflow`, `verification-loop`, `worktrees`, `ponytail`, `ponytail-review` | Loaded on demand |
-| Skill | `qa` | Run a local QA pass on the dev server (full platform, or one scenario of `.claude/skills/qa/scenarios/`); findings go to `.claude/qa/reports/` as BUG or MANQUE |
+| Skill | `qa` | Run a QA pass — `env=local` (default, dev server, full destructive personas), `env=preview` or `env=prod` (a deployed URL, read-only smoke pass: no mutation, no AI call, no account) — full platform or one scenario of `.claude/skills/qa/scenarios/`; findings go to `.claude/qa/reports/` as BUG or MANQUE |
 | Skill | `qa-orchestrator` | Run QA passes until no finding is left: the human validates the findings, each one becomes a fix spec in `specs/qa/`, fixed in worktrees with the `orchestrator` flow on the run's own integration branch |
 | Command | `/plan`, `/tdd`, `/verify`, `/review` | The workflow above |

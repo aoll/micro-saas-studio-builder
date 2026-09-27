@@ -7,20 +7,31 @@ corrige ce fichier dans une PR `docs(tooling)`, pas pendant la passe.
 
 ## Cible
 
-- **Local uniquement.** `http://localhost:3000` dans le checkout principal
-  (`pnpm dev`, CLAUDE.md) ; `http://localhost:3200` par défaut depuis un
-  worktree (3100 est réservé aux E2E, `E2E_PORT`). Jamais une URL Vercel.
-- `AI_MODE=mock` (posé par `pnpm dev`) : chaque produit rejoue sa fixture
-  `fixtures/<slug>.json`, streamée ; zéro token.
-- `DEMO_MODE=false` en local : pas de bandeau « Démo ». Pour vérifier le
-  bandeau, relance le serveur avec `DEMO_MODE=true` (le seed, lui, refuse
-  `DEMO_MODE=true` avec les identifiants de dev : ne re-seed pas dans ce mode).
-- Paiement et email **simulés** en v1 (docs/01 › Paiement, docs/08 › Email
-  simulé) : aucun débit réel possible, aucun email envoyé.
-- Pas de page `/` : l'arborescence (docs/09) n'a pas de `app/page.tsx`, `/`
-  répond 404.
+Trois environnements, choisis par le paramètre `env` de la skill (§0). Ce
+qu'ils ont en commun : paiement et email **simulés** en v1 (docs/01 ›
+Paiement, docs/08 › Email simulé), aucun débit réel, aucun email envoyé.
 
-## Environnement
+- **`local`** (défaut). `http://localhost:3000` dans le checkout principal
+  (`pnpm dev`, CLAUDE.md) ; `http://localhost:3200` par défaut depuis un
+  worktree (3100 est réservé aux E2E, `E2E_PORT`). `AI_MODE=mock` (posé par
+  `pnpm dev`) : chaque produit rejoue sa fixture `fixtures/<slug>.json`,
+  streamée, zéro token. `DEMO_MODE=false` : pas de bandeau « Démo ». Pour le
+  vérifier, relance le serveur avec `DEMO_MODE=true` (le seed refuse
+  `DEMO_MODE=true` avec les identifiants de dev : ne re-seed pas dans ce
+  mode). Base et serveur jetables, propres à la passe : toutes les personas,
+  toutes les mutations.
+- **`preview`** et **`prod`** : une vraie URL Vercel, aucun serveur ni base à
+  gérer. `AI_MODE=live` (vrais tokens facturés) et la base est celle du
+  projet Vercel — rien dans le repo (`vercel.json`, docs/06) ne documente de
+  base isolée par preview, donc les deux comptent comme **partagées avec la
+  vraie démo publique** que voient les recruteurs, jusqu'à preuve du
+  contraire. Mêmes garde-fous que `prod` par défaut (§ Garde-fous) : lecture
+  seule, aucune mutation. Détail dans « Environnements déployés » plus bas.
+- **`/` répond 200** (`app/(marketing)/page.tsx`, la landing recruteur) :
+  seule route de `app/` sans layout de sub-app ni de backoffice — corrigé
+  ici le 2026-09-27, cette note datait d'avant la landing.
+
+## Environnement (`env=local`)
 
 ```bash
 # Postgres local (le hook SessionStart le fait déjà)
@@ -60,6 +71,53 @@ Jamais de `until`/`while pgrep -f …` : la boucle se voit elle-même et ne sort
 jamais. Pour savoir si un port est pris : `fuser <port>/tcp` (`lsof` ne voit
 pas les sockets dans ce conteneur). Le premier rendu d'une route compile (5 à
 15 s en Turbopack) : c'est le `--max-time` qui le couvre, pas un `sleep`.
+
+## Environnements déployés (`env=preview`, `env=prod`)
+
+Pas de serveur à lancer, pas de base à migrer ni re-seed : la cible est déjà
+vivante. Deux choses à régler avant de naviguer.
+
+**1. L'URL.**
+
+- `prod` : `https://micro-saas-studio-builder.vercel.app` (domaine Vercel par
+  défaut du projet ; si un domaine personnalisé a été attaché depuis, ce
+  fichier a pris du retard — corrige-le dans une PR `docs(tooling)`). Le
+  paramètre `url` de la skill peut le surcharger.
+- `preview` : `url` est obligatoire (aucune convention pour deviner l'URL
+  d'une preview) — demande-la si elle manque, ou retrouve-la sur la PR
+  concernée (statut de déploiement Vercel).
+
+**2. Le certificat du proxy sortant du conteneur.** Un navigateur réel
+(Chromium) ne connaît pas la CA du proxy agent de cet environnement
+(`/root/.ccr/README.md`) : toute navigation HTTPS échoue en
+`net::ERR_CERT_AUTHORITY_INVALID`, quel que soit le protocole servi par la
+cible (constaté le 2026-09-27 : ce n'est pas HTTP/2, `curl` passe sans rien
+faire de spécial parce qu'il ne négocie que du HTTP/1.1 par défaut). Ne
+jamais désactiver la vérification TLS en général (`--ignore-certificate-errors`
+seul, `ignoreHTTPSErrors`) : épingler précisément cette CA avec son hash SPKI,
+recalculé à chaque passe (la CA peut tourner d'une session à l'autre) :
+
+```bash
+SPKI=$(openssl x509 -in /root/.ccr/agent-proxy-ca.crt -pubkey -noout \
+  | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64)
+```
+
+Repli Playwright (agent-browser ne passe pas ces options en ligne de commande) :
+
+```js
+import { createRequire } from "node:module";
+const require = createRequire("/chemin/du/checkout/package.json"); // le checkout testé
+const { chromium } = require("@playwright/test"); // pas "playwright-core" : pnpm ne le hisse pas à la racine
+const browser = await chromium.launch({
+  executablePath: "/opt/pw-browsers/chromium",
+  proxy: { server: process.env.HTTPS_PROXY },
+  args: [`--ignore-certificate-errors-spki-list=${process.env.SPKI}`],
+});
+const page = await browser.newPage();
+// même API que la section Outillage (console, pageerror, response) ;
+// captures dans $QA comme en local.
+await page.goto("https://micro-saas-studio-builder.vercel.app/lettre-pro", { waitUntil: "networkidle" });
+```
 
 ## Outillage
 
@@ -183,7 +241,14 @@ scénario en profondeur (et la table se complète dans une PR `docs(tooling)`).
 
 ## Garde-fous (non négociables)
 
-- Local seulement ; jamais d'URL déployée.
+- **`env=preview` et `env=prod` : lecture seule, sans exception.** Aucune
+  mutation : pas de génération IA (`AI_MODE=live`, tokens réels facturés),
+  pas d'inscription, pas de paiement (même simulé), pas d'écriture admin, pas
+  de « Réinitialiser la démo ». Rien dans le repo ne documente de base
+  isolée par environnement Vercel (docs/06, `vercel.json`) : `preview` et
+  `prod` comptent comme la même donnée partagée que voient les recruteurs,
+  jusqu'à preuve du contraire. Une étape de scénario qui a besoin d'une
+  mutation est `NON TESTÉ` avec cette raison, jamais tentée « pour voir ».
 - Paiement simulé : la mention « Paiement simulé pour la démo » doit être
   visible avant « Payer … (simulé) ».
 - « Réinitialiser la démo » (`/admin/ops`) : uniquement en dernière étape d'un

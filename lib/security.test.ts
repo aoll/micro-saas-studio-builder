@@ -27,7 +27,9 @@ vi.mock("next/headers", () => ({ headers: () => headersMock() }));
 // lib/dal/generations import) keeps working: mocking "@/lib/env" replaces
 // the whole module for every importer in this file's graph, hashIp
 // included.
-const envMock: { VERCEL?: string; BETTER_AUTH_SECRET: string } = { BETTER_AUTH_SECRET: "a".repeat(32) };
+const envMock: { VERCEL?: string; QA_BYPASS_SECRET?: string; BETTER_AUTH_SECRET: string } = {
+  BETTER_AUTH_SECRET: "a".repeat(32),
+};
 vi.mock("@/lib/env", () => ({ env: envMock }));
 
 afterEach(() => {
@@ -36,6 +38,7 @@ afterEach(() => {
   getSession.mockReset();
   headersMock.mockReset();
   delete envMock.VERCEL;
+  delete envMock.QA_BYPASS_SECRET;
 });
 
 function human() {
@@ -158,5 +161,44 @@ describe("guardRequest › BotID enforcement scoped to Vercel (env.VERCEL)", () 
     checkBotId.mockResolvedValue({ isBot: true, isHuman: false, isVerifiedBot: false, bypassed: false });
     const { guardRequest } = await import("./security");
     expect(await guardRequest("signup")).toEqual({ ok: false, reason: "bot" });
+  });
+});
+
+// QA bypass (human decision, 2026-09-27): a secret header lets an
+// authorized QA pass skip checkBotId() on a real Vercel deployment.
+describe("guardRequest › QA bypass (env.QA_BYPASS_SECRET)", () => {
+  it("skips checkBotId when the header matches the configured secret", async () => {
+    envMock.QA_BYPASS_SECRET = "qa-secret";
+    headersMock.mockResolvedValue(new Headers({ "x-qa-bypass-secret": "qa-secret" }));
+    const { guardRequest } = await import("./security");
+    expect(await guardRequest("signup")).toEqual({ ok: true });
+    expect(checkBotId).not.toHaveBeenCalled();
+  });
+
+  it.each(["", "wrong-secret"])("still runs checkBotId when the header is %j", async (headerValue) => {
+    envMock.QA_BYPASS_SECRET = "qa-secret";
+    checkBotId.mockResolvedValue(human());
+    headersMock.mockResolvedValue(headerValue ? new Headers({ "x-qa-bypass-secret": headerValue }) : new Headers());
+    const { guardRequest } = await import("./security");
+    await guardRequest("signup");
+    expect(checkBotId).toHaveBeenCalledTimes(1);
+  });
+
+  it("runs checkBotId as usual when QA_BYPASS_SECRET is unset, even with the header present", async () => {
+    checkBotId.mockResolvedValue(human());
+    headersMock.mockResolvedValue(new Headers({ "x-qa-bypass-secret": "anything" }));
+    const { guardRequest } = await import("./security");
+    await guardRequest("signup");
+    expect(checkBotId).toHaveBeenCalledTimes(1);
+  });
+
+  it("still enforces the rate limiter for generate when bypassed", async () => {
+    envMock.QA_BYPASS_SECRET = "qa-secret";
+    getSession.mockResolvedValue(null);
+    headersMock.mockResolvedValue(new Headers({ "x-qa-bypass-secret": "qa-secret" }));
+    isGenerationRateLimited.mockResolvedValue(true);
+    const { guardRequest } = await import("./security");
+    expect(await guardRequest("generate")).toEqual({ ok: false, reason: "rate_limited" });
+    expect(checkBotId).not.toHaveBeenCalled();
   });
 });

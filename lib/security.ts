@@ -33,8 +33,11 @@ export type GuardResult = { ok: true } | { ok: false; reason: "bot" | "rate_limi
 // cannot work at all: the Postgres rate limit below still applies
 // everywhere, on Vercel or not.
 export const guardRequest: (kind: GuardKind) => Promise<GuardResult> = async (kind) => {
-  const bot = await checkBotId({ developmentOptions: { isDevelopment: env.VERCEL !== "1" } });
-  if (bot.isBot) return { ok: false, reason: "bot" };
+  const requestHeaders = await headers();
+  if (!isQaBypass(requestHeaders)) {
+    const bot = await checkBotId({ developmentOptions: { isDevelopment: env.VERCEL !== "1" } });
+    if (bot.isBot) return { ok: false, reason: "bot" };
+  }
 
   // Only `generate` is rate-limited (SECURITY plan, decision D1): the cost
   // that justifies a Postgres rate limit is the AI call it precedes.
@@ -42,9 +45,23 @@ export const guardRequest: (kind: GuardKind) => Promise<GuardResult> = async (ki
 
   const session = await getSession();
   const userId = session?.user.id ?? null;
-  const ipHash = hashIp(clientIp(await headers()));
+  const ipHash = hashIp(clientIp(requestHeaders));
   const limited = await isGenerationRateLimited({ userId, ipHash });
   if (limited) return { ok: false, reason: "rate_limited" };
 
   return { ok: true };
 };
+
+// QA bypass (human decision, 2026-09-27): on a real Vercel deployment,
+// checkBotId() correctly classifies a headless/automated QA browser as a
+// bot (it has no way to tell that apart from a real one), which otherwise
+// makes `generate`, `signup`, `purchase` and `test-prompt` untestable
+// end-to-end against `preview`/`prod`. Off by default everywhere:
+// QA_BYPASS_SECRET is only set in the environment for the duration of a QA
+// pass, and even then only a caller who sends the exact matching header is
+// exempted — every other caller, bots included, still goes through
+// checkBotId() as before. Never skips the Postgres rate limit above.
+function isQaBypass(requestHeaders: Headers): boolean {
+  const secret = env.QA_BYPASS_SECRET;
+  return secret !== undefined && requestHeaders.get("x-qa-bypass-secret") === secret;
+}

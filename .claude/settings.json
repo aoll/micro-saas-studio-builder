@@ -23,6 +23,7 @@
       "Bash(gh pr ready:*)",
       "Bash(docker compose ps:*)",
       "Bash(docker compose up -d postgres)",
+      "Bash(curl https://api.vercel.com/v9/projects/prj_vnOsRpX9GGxSEb1rqEAoc76EOAC3/env*)",
       "mcp__next-devtools",
       "mcp__context7"
     ],

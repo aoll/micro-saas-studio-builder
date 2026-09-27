@@ -125,7 +125,10 @@ async function seedSucceededGenerations(count: number, anonymousId: string): Pro
     await db.insert(generations).values(
       Array.from({ length: count }, (_, index) => ({
         productId: product.id,
-        productVersion: product.currentVersion,
+        // QA2-P1-B1: lettre-pro is seeded and always published, so
+        // current_version is never null here — the `!` only narrows the
+        // type (now `number | null` since the schema change).
+        productVersion: product.currentVersion!,
         userId: null,
         anonymousId,
         ipHash: E2E_IP_HASH,

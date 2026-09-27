@@ -94,6 +94,16 @@ async function readBalance(tx: Tx, userId: string, productId: string): Promise<n
 async function readConfig(tx: Tx, productId: string): Promise<ProductConfig> {
   const product = await tx.query.products.findFirst({ where: eq(products.id, productId) });
   if (!product) throw new Error(`readConfig: product ${productId} not found`);
+  // QA2-P1-B1: type-safety guard, not a reachable runtime path — every
+  // caller (grantSignupBonus, purchase) resolves productId via a prior
+  // getProduct(slug) call that already returns null (and bails out) for a
+  // never-published product, so product.currentVersion is never null here
+  // in practice. Required so `product.currentVersion` (now `number | null`)
+  // narrows to `number` before comparing it against the NOT NULL
+  // `productVersions.version` column below.
+  if (product.currentVersion === null) {
+    throw new Error(`readConfig: product ${productId} has never been published`);
+  }
   const version = await tx.query.productVersions.findFirst({
     where: and(eq(productVersions.productId, productId), eq(productVersions.version, product.currentVersion)),
   });

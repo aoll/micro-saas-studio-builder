@@ -171,8 +171,11 @@ describe("claimSignupBonus: real ledger and events (called twice, and across pro
   async function createProduct(): Promise<{ id: string; slug: string }> {
     const lettrePro = await db.query.products.findFirst({ where: eq(products.slug, "lettre-pro") });
     const editorial = await db.query.themes.findFirst({ where: eq(themes.slug, "editorial") });
+    // QA2-P1-B1: lettre-pro is a seeded, always-published product, so its
+    // current_version is never null in practice — the `!` only narrows the
+    // type (now `number | null` since the schema change) for this comparison.
     const version = await db.query.productVersions.findFirst({
-      where: and(eq(productVersions.productId, lettrePro!.id), eq(productVersions.version, lettrePro!.currentVersion)),
+      where: and(eq(productVersions.productId, lettrePro!.id), eq(productVersions.version, lettrePro!.currentVersion!)),
     });
     const admin = await db.query.users.findFirst({ where: eq(users.role, "admin") });
     const slug = `claim-test-${randomUUID()}`;

@@ -15,4 +15,4 @@
 - [ ] `/verify` is READY (`pnpm check` green)
 - [ ] Tests added or updated
 - [ ] Drizzle migration generated and reviewed (if the schema changed)
-- [ ] Agent-written code reviewed line by line
+- [ ] Agentic multi-angle review passed (code-reviewer + specialists)

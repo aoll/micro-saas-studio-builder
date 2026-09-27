@@ -111,12 +111,12 @@ Le dépôt n'autorise que le **squash merge** pour les PR de spec, avec le titre
 - [ ] `/verify` is READY (`pnpm check` green)
 - [ ] Tests added or updated
 - [ ] Drizzle migration generated and reviewed (if the schema changed)
-- [ ] Agent-written code reviewed line by line
+- [ ] Agentic multi-angle review passed (code-reviewer + specialists)
 ```
 
 Commits, titres et descriptions de PR sont rédigés en anglais.
 
-La dernière case rend visible le principe « 100 % produit par agent, 100 % relu par un humain ».
+La dernière case rend visible le principe « 100 % produit par agent, 100 % passé par une revue agentique sous plusieurs angles ».
 
 ## Previews Vercel
 

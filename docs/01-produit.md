@@ -8,7 +8,7 @@ Un backoffice Next.js qui permet à un SaaS studio de **lancer un nouveau micro-
 
 Chaque produit est un **outil IA avec crédits**, servi par une sub-app dynamique sur `/{slug}`. La sub-app charge sa configuration et devient immédiatement utilisable : landing, outil, compte, crédits, paiement.
 
-**Pourquoi pour Dotworld** : c'est leur modèle en miniature. Plusieurs SaaS en parallèle sur un socle commun, la méthode Test → Learn → Scale, des produits B2C tirés par l'acquisition, un système de crédits, et la stack de leurs offres (Next.js, TypeScript, Tailwind, shadcn, server actions).
+**Pourquoi pour Dotworld** : ce n'est pas leur modèle en miniature — Dotworld, ce sont 50 personnes autofinancées et plusieurs SaaS qui marchent déjà, une autre échelle. C'est une façon d'effleurer le sujet qui les occupe (plusieurs SaaS en parallèle sur un socle commun, la méthode Test → Learn → Scale, un système de crédits, une stack proche de la leur) et de montrer l'envie d'aller plus loin avec eux.
 
 **Le moment clé de la démo** : je crée « Générateur de bio Instagram » dans le formulaire, j'ouvre `/bio-instagram`, je génère, je tombe sur le paywall, j'achète un pack (paiement simulé), et les chiffres apparaissent dans le dashboard. Deux minutes pour montrer tout le modèle.
 
@@ -310,11 +310,11 @@ Dotworld le dit : **« We develop with AI, not alongside it »**, et Claude Code
 
 - `specs/` : une spec par fonctionnalité (SDD), écrite avant le code. Elle couvre le comportement attendu, les cas limites et les critères d'acceptation.
 - `CLAUDE.md` : les conventions du projet, les commandes et les règles (pas de logique métier dans les composants, tout débit passe par le ledger…).
-- **TDD sur le cœur métier** : les tests du ledger (concurrence, idempotence, remboursement) et de purchase() sont écrits avant l'implémentation.
+- **TDD sur toute l'implémentation** : chaque comportement d'acceptation est testé avant d'être codé, rouge puis vert.
 - **Un test end-to-end Playwright** qui rejoue le script de démo complet.
-- **Un historique de PR lisible**, une PR par spec, chacune relue par un humain.
+- **Un historique de PR lisible**, une PR par spec, chacune passée par une revue agentique sous plusieurs angles (correction, Next.js, base de données, sécurité) avant d'être mergée.
 - **Un README** qui raconte le process : combien de temps, quelle part du code produite par agents, où l'humain a tranché.
 
 **Le découpage en specs** : 28 specs minimales réparties en 5 vagues, dans l'onglet Specs. La méthode pour les faire avancer en parallèle est décrite dans l'onglet Implémentation.
 
-**Ce que ça démontre** : le même mode opératoire que chez Trusk (SDD + TDD, 100 % du code produit par agents, 100 % relu par un humain), appliqué au métier de Dotworld.
+**Ce que ça démontre** : le même socle méthodologique que chez Trusk — SDD + TDD, 100 % du code produit par agents —, appliqué au métier de Dotworld ; ici, la revue est elle aussi agentique, sous plusieurs angles, et l'humain ne tranche que sur les specs.

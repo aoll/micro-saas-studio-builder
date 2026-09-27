@@ -11,12 +11,13 @@ const POINTS = [
       "Une spec par fonctionnalité, écrite avant l'implémentation : comportement, cas limites, critères d'acceptation.",
   },
   {
-    title: "TDD sur le cœur métier",
-    description: "Le ledger de crédits, l'idempotence, le paiement simulé : testés avant d'être codés.",
+    title: "TDD sur toute l'implémentation",
+    description: "Chaque comportement d'acceptation est testé avant d'être codé, rouge puis vert.",
   },
   {
-    title: "Une PR par spec, relue par un humain",
-    description: "Chaque fonctionnalité passe par une revue avant d'être mergée ; rien n'est déployé sans relecture.",
+    title: "Une spec, une revue agentique sous plusieurs angles, une PR",
+    description:
+      "Chaque fonctionnalité passe par plusieurs agents de revue spécialisés — correction, Next.js, base de données, sécurité — avant d'être mergée.",
   },
 ];
 

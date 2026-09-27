@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRightIcon } from "lucide-react";
+import { ArrowRightIcon, PlusIcon } from "lucide-react";
 import { listProducts } from "@/lib/dal/products";
 
 // Public showcase of the studio's live products: `listProducts()` is the
@@ -21,7 +21,8 @@ export async function ProductsShowcase() {
     <section id="produits" className="mx-auto max-w-5xl px-4 py-16">
       <h2 className="text-center text-2xl font-bold tracking-tight">Les produits du studio</h2>
       <p className="mx-auto mt-2 max-w-xl text-center text-muted-foreground">
-        Chacun est une configuration du même socle, servie sur sa propre URL.
+        Chacun est une configuration du même socle, servie sur sa propre URL : cliquez une carte pour l&apos;essayer en
+        direct.
       </p>
       <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {products.map((product) => (
@@ -30,16 +31,24 @@ export async function ProductsShowcase() {
             href={`/${product.slug}`}
             className="group block rounded-xl border bg-card p-6 shadow-sm transition-colors hover:bg-accent"
           >
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="font-semibold">{product.name}</h3>
-              <ArrowRightIcon
-                aria-hidden="true"
-                className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
-              />
-            </div>
+            <h3 className="font-semibold">{product.name}</h3>
             <p className="mt-2 text-sm text-muted-foreground">{product.landing.headline}</p>
+            <p className="mt-4 flex items-center gap-1 text-sm font-medium">
+              Essayer en direct
+              <ArrowRightIcon aria-hidden="true" className="size-4 transition-transform group-hover:translate-x-0.5" />
+            </p>
           </Link>
         ))}
+        <Link
+          href="/admin/login"
+          className="group block rounded-xl border border-dashed p-6 text-center transition-colors hover:bg-accent"
+        >
+          <PlusIcon aria-hidden="true" className="mx-auto size-5 text-muted-foreground" />
+          <h3 className="mt-2 font-semibold">Créer un nouveau produit</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Un formulaire dans le backoffice suffit pour en lancer un nouveau, en quelques minutes.
+          </p>
+        </Link>
       </div>
     </section>
   );

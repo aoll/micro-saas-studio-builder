@@ -2,7 +2,8 @@ import type { MetadataRoute } from "next";
 import { listProducts } from "@/lib/dal/products";
 import { env } from "@/lib/env";
 
-// I18N-SEO (specs/I18N-SEO.md): the recruiter landing at `/`, plus one entry
+// I18N-SEO (specs/I18N-SEO.md): the recruiter landing at `/` and its
+// making-of at `/making-off`, plus one entry
 // per landing of every product that is not `killed` (test, learn, scale).
 // `listProducts` is already `'use cache'`-tagged `products`
 // (lib/dal/products.ts), so this stays cheap and up to date with the
@@ -12,6 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const products = await listProducts();
   return [
     { url: baseUrl },
+    { url: `${baseUrl}/making-off` },
     ...products
       .filter((product) => product.status !== "killed")
       .map((product) => ({ url: `${baseUrl}/${product.slug}` })),

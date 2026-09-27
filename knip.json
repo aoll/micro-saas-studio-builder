@@ -3,5 +3,6 @@
   "entry": ["scripts/*.ts", ".claude/hooks/*.mjs"],
   "ignoreExportsUsedInFile": true,
   "ignoreDependencies": ["babel-plugin-react-compiler", "tailwindcss"],
-  "ignoreBinaries": ["psql"]
+  "ignoreBinaries": ["psql"],
+  "ignore": ["public/architecture/**"]
 }

@@ -26,8 +26,11 @@ test.describe("Landing /lettre-pro (SA-01)", () => {
     try {
       const row = await db.query.products.findFirst({ where: eq(products.slug, "lettre-pro") });
       if (!row) throw new Error("Seed missing: lettre-pro (run pnpm db:seed)");
+      // QA2-P1-B1: lettre-pro is seeded and always published, so
+      // current_version is never null here — the `!` only narrows the type
+      // (now `number | null` since the schema change).
       const version = await db.query.productVersions.findFirst({
-        where: and(eq(productVersions.productId, row.id), eq(productVersions.version, row.currentVersion)),
+        where: and(eq(productVersions.productId, row.id), eq(productVersions.version, row.currentVersion!)),
       });
       if (!version) throw new Error("Seed missing: lettre-pro product_versions row");
       config = productConfigSchema.parse({

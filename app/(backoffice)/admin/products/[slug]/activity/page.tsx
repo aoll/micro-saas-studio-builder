@@ -17,7 +17,10 @@ import { readPageParam } from "./_lib/pagination";
 // (docs/04-nextjs.md), so it streams under <Suspense> while the shell above
 // renders instantly. notFound() for an unknown slug; a killed product still
 // shows its history (plan § "killed product still shows its history").
-async function Activity({
+// Exported (not just used by the default export below) so page.test.ts can call it directly:
+// it's wrapped in <Suspense> in ProductActivityPage, so rendering the default export with RTL
+// wouldn't let a thrown notFound() propagate to a test assertion the way HistoryPage's does.
+export async function Activity({
   params,
   searchParams,
 }: {

@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/auth-schema";
+import { products, themes } from "@/lib/db/schema";
 import { productConfigSchema } from "@/lib/schemas/product-config";
+import { SEED_OWNER } from "@/scripts/seed";
 
 const cacheLife = vi.fn();
 const cacheTag = vi.fn();
@@ -10,6 +15,21 @@ afterEach(() => {
   cacheLife.mockClear();
   cacheTag.mockClear();
 });
+
+// QA2-P1-B1 (specs/qa/QA2-P1-B1-brouillon-publie.md): a real "never
+// published" row (current_version IS NULL) — created directly, bypassing
+// createProduct()/requireAdmin(), since getProduct/listProducts read
+// straight from the catalogue with no session check of their own.
+async function insertNeverPublishedProduct(): Promise<{ id: string; slug: string }> {
+  const owner = await db.query.users.findFirst({ where: eq(users.email, SEED_OWNER.email) });
+  const editorial = await db.query.themes.findFirst({ where: eq(themes.slug, "editorial") });
+  const productSlug = `never-published-${randomUUID()}`;
+  const [row] = await db
+    .insert(products)
+    .values({ slug: productSlug, themeId: editorial!.id, locale: "fr", createdBy: owner!.id })
+    .returning({ id: products.id });
+  return { id: row!.id, slug: productSlug };
+}
 
 describe("getProduct", () => {
   it("resolves the seeded lettre-pro product (specs/CONTRACT-data.md: widened to Product | null)", async () => {
@@ -68,6 +88,14 @@ describe("getProduct", () => {
     expect(cacheTag).toHaveBeenCalledWith("product:lettre-pro");
     expect(cacheLife).toHaveBeenCalledWith("max");
   });
+
+  it("resolves to null for a never-published product (current_version IS NULL)", async () => {
+    const created = await insertNeverPublishedProduct();
+    const { getProduct } = await import("./products");
+    const product = await getProduct(created.slug);
+    expect(product).toBeNull();
+    await db.delete(products).where(eq(products.id, created.id));
+  });
 });
 
 describe("listProducts", () => {
@@ -79,6 +107,14 @@ describe("listProducts", () => {
     expect(lettrePro).toMatchObject({ name: "LettrePro", version: 1, isSeed: true });
     expect(cacheTag).toHaveBeenCalledWith("products");
     expect(cacheLife).toHaveBeenCalledWith("max");
+  });
+
+  it("never includes a never-published product (current_version IS NULL)", async () => {
+    const created = await insertNeverPublishedProduct();
+    const { listProducts } = await import("./products");
+    const result = await listProducts();
+    expect(result.map((product) => product.slug)).not.toContain(created.slug);
+    await db.delete(products).where(eq(products.id, created.id));
   });
 });
 

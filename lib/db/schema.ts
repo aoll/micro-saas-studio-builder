@@ -79,7 +79,10 @@ export const products = pgTable(
     themeId: uuid("theme_id")
       .notNull()
       .references(() => themes.id),
-    currentVersion: integer("current_version").notNull(),
+    // QA2-P1-B1 (specs/qa/QA2-P1-B1-brouillon-publie.md): nullable — NULL
+    // means "never published" (createProduct() no longer sets it; only
+    // publishProduct() does, docs/07 "jamais de modification en place").
+    currentVersion: integer("current_version"),
     locale: text("locale").notNull(),
     isSeed: boolean("is_seed").notNull().default(false),
     createdBy: text("created_by")
@@ -91,7 +94,7 @@ export const products = pgTable(
   },
   (table) => [
     check("products_slug_format", sql`${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$'`),
-    check("products_current_version_positive", sql`${table.currentVersion} >= 1`),
+    check("products_current_version_positive", sql`${table.currentVersion} IS NULL OR ${table.currentVersion} >= 1`),
     check("products_locale_valid", sql`${table.locale} IN ('fr', 'en')`),
   ],
 );

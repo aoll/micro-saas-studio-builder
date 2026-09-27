@@ -15,7 +15,10 @@ const RANGE_DAYS = 30;
 // <Suspense> while the shell above renders instantly. notFound() for an unknown slug
 // (docs/02-ecrans.md › SA-08-like "produit introuvable" for the backoffice); a killed product
 // still renders (ProductSheetView's own banner), it just isn't notFound()'d.
-async function ProductSheet({ params }: { params: Promise<{ slug: string }> }) {
+// Exported (not just used by the default export below) so page.test.ts can call it directly:
+// it's wrapped in <Suspense> in ProductSheetPage, so rendering the default export with RTL
+// wouldn't let a thrown notFound() propagate to a test assertion the way HistoryPage's does.
+export async function ProductSheet({ params }: { params: Promise<{ slug: string }> }) {
   await requireAdmin();
   const { slug } = await params;
   const product = await getProduct(slug);

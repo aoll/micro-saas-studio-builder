@@ -10,6 +10,7 @@ next-env.d.ts
 .env
 .env.local
 .env.*.local
+.env*
 !.env.example
 
 # Tests and coverage
@@ -25,4 +26,12 @@ npm-debug.log*
 
 # Vercel CLI project link, machine-local
 .vercel
-.env*
+
+# Understand-Anything knowledge graph: commit .ua/knowledge-graph.json,
+# .ua/meta.json, .ua/.understandignore and .ua/config.json; never the
+# pipeline's own scratch (docs/13-candidature.md-style convention, upstream
+# README's "Share the Graph with Your Team").
+.ua/intermediate/
+.ua/tmp/
+.ua/.trash-*/
+.ua/diff-overlay.json

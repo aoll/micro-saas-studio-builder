@@ -1,0 +1,61 @@
+--- a/packages/dashboard/src/components/CodeViewer.tsx
++++ b/packages/dashboard/src/components/CodeViewer.tsx
+@@ -25,6 +25,25 @@
+   | { status: "loaded"; source: SourceFile; error: null }
+   | { status: "error"; source: null; error: string };
+ 
++// Static-demo fork: the real dashboard reads source files from a dev-server
++// endpoint (/file-content.json) that only exists when Vite's own server is
++// running. A `build:demo` bundle has no server at all, so CodeViewer's demo
++// branch below fetches a single pre-baked JSON map (path -> SourceFile)
++// instead, generated at graph-build time and served next to
++// knowledge-graph.json.
++const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
++let demoSourceFilesPromise: Promise<Record<string, SourceFile>> | null = null;
++function loadDemoSourceFiles(): Promise<Record<string, SourceFile>> {
++  if (!demoSourceFilesPromise) {
++    const base = import.meta.env.BASE_URL || "/";
++    const url = `${base.endsWith("/") ? base : `${base}/`}source-files.json`;
++    demoSourceFilesPromise = fetch(url)
++      .then((res) => (res.ok ? (res.json() as Promise<Record<string, SourceFile>>) : {}))
++      .catch(() => ({}));
++  }
++  return demoSourceFilesPromise;
++}
++
+ function fileContentUrl(filePath: string, token: string): string {
+   const params = new URLSearchParams({ token, path: filePath });
+   return `/file-content.json?${params.toString()}`;
+@@ -152,6 +171,22 @@
+       return;
+     }
+ 
++    const controller = new AbortController();
++    setState({ status: "loading", source: null, error: null });
++
++    if (DEMO_MODE) {
++      loadDemoSourceFiles().then((files) => {
++        if (controller.signal.aborted) return;
++        const source = node.filePath ? files[node.filePath] : undefined;
++        if (source) {
++          setState({ status: "loaded", source, error: null });
++        } else {
++          setState({ status: "error", source: null, error: "Source not available for this file." });
++        }
++      });
++      return () => controller.abort();
++    }
++
+     if (accessToken === "__demo__") {
+       setState({
+         status: "error",
+@@ -161,9 +196,6 @@
+       return;
+     }
+ 
+-    const controller = new AbortController();
+-    setState({ status: "loading", source: null, error: null });
+-
+     fetch(fileContentUrl(node.filePath, accessToken), { signal: controller.signal })
+       .then(async (res) => {
+         const data = (await res.json()) as SourceFile | { error?: string };

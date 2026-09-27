@@ -29,5 +29,9 @@ export default defineConfig([
     "playwright-report/**",
     "test-results/**",
     "drizzle/**",
+    // Vendored static build of the Understand-Anything dashboard
+    // (third-party minified bundle, not our source — see
+    // public/architecture/LICENSE).
+    "public/architecture/**",
   ]),
 ]);

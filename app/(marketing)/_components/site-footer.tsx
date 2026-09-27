@@ -30,6 +30,14 @@ export function SiteFooter() {
           <Link href="/making-of" className="hover:text-foreground hover:underline">
             Making-of
           </Link>
+          <a
+            href="/architecture/index.html"
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-foreground hover:underline"
+          >
+            Architecture
+          </a>
           <Link href="/admin/login" className="hover:text-foreground hover:underline">
             Backoffice admin
           </Link>

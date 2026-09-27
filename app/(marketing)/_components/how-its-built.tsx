@@ -45,6 +45,11 @@ export function HowItsBuilt() {
               Voir le code sur GitHub
             </a>
           </Button>
+          <Button asChild variant="outline">
+            <a href="/architecture/index.html" target="_blank" rel="noreferrer">
+              Explorer l&apos;architecture technique
+            </a>
+          </Button>
         </div>
       </div>
     </section>

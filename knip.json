@@ -1,7 +1,8 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["scripts/*.ts", ".claude/hooks/*.mjs"],
+  "entry": ["scripts/*.ts", ".claude/hooks/*.mjs", ".claude/skills/architecture-graph/*.mjs"],
   "ignoreExportsUsedInFile": true,
   "ignoreDependencies": ["babel-plugin-react-compiler", "tailwindcss"],
-  "ignoreBinaries": ["psql"]
+  "ignoreBinaries": ["psql"],
+  "ignore": ["public/architecture/**"]
 }

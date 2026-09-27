@@ -310,7 +310,7 @@ Dotworld le dit : **« We develop with AI, not alongside it »**, et Claude Code
 
 - `specs/` : une spec par fonctionnalité (SDD), écrite avant le code. Elle couvre le comportement attendu, les cas limites et les critères d'acceptation.
 - `CLAUDE.md` : les conventions du projet, les commandes et les règles (pas de logique métier dans les composants, tout débit passe par le ledger…).
-- **TDD sur le cœur métier** : les tests du ledger (concurrence, idempotence, remboursement) et de purchase() sont écrits avant l'implémentation.
+- **TDD sur toute l'implémentation** : chaque comportement d'acceptation est testé avant d'être codé, rouge puis vert — pas seulement le ledger (concurrence, idempotence, remboursement) et purchase().
 - **Un test end-to-end Playwright** qui rejoue le script de démo complet.
 - **Un historique de PR lisible**, une PR par spec, chacune relue par un humain.
 - **Un README** qui raconte le process : combien de temps, quelle part du code produite par agents, où l'humain a tranché.

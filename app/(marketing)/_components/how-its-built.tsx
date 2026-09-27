@@ -11,8 +11,9 @@ const POINTS = [
       "Une spec par fonctionnalité, écrite avant l'implémentation : comportement, cas limites, critères d'acceptation.",
   },
   {
-    title: "TDD sur le cœur métier",
-    description: "Le ledger de crédits, l'idempotence, le paiement simulé : testés avant d'être codés.",
+    title: "TDD sur toute l'implémentation",
+    description:
+      "Chaque comportement d'acceptation est testé avant d'être codé, rouge puis vert — pas seulement le ledger de crédits ou le paiement simulé.",
   },
   {
     title: "Une PR par spec, relue par un humain",

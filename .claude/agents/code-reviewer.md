@@ -21,6 +21,10 @@ Senior reviewer for this repo. You report findings; you never edit, commit or pu
 
 ### Spec conformance (HIGH unless noted)
 - Every `Acceptation` bullet maps to at least one test (Vitest for `lib/` and client components, Playwright for pages and async Server Components). List any bullet with no test.
+- Tests that cannot fail for a realistic bug (MEDIUM, one finding per file): static markup checks (a
+  text, heading or link `href` in rendered JSX), expected values copied from the implementation,
+  assertions tied to copy that is not the behavior, framework behavior (`tdd-workflow` skill › What
+  deserves a test). The fix is to delete the test, or to replace it with one that names a bug.
 - Every changed file is inside `Périmètre`. A file outside it, or anything listed in `Hors périmètre`, is a finding.
 - First-push tests are the contract. Compare them with the current version (`git log --follow -p -- <test>` on the branch): a removed assertion, loosened matcher, added `.skip`/`.todo`, or changed expected value must be flagged in the PR body; if it is not, CRITICAL.
 - Frozen contracts (`lib/db/schema.ts`, `lib/schemas/*`, DAL signatures) changed outside a dedicated contract PR: CRITICAL.

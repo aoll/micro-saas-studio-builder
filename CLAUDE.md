@@ -48,6 +48,9 @@ through the classic ECC flow below.
    commits and pushes at every green step, and keeps going without waiting
    for anything until the spec is done. It stays inside `Périmètre`. A
    committed test is never weakened silently: its commit message says why.
+   A test must be able to fail for a bug nothing else catches: no static
+   markup, mirror or copy-coupled tests (`tdd-workflow` › What deserves a
+   test); links and static content are covered by Playwright journeys.
 4. **Code review.** `/review`: `code-reviewer` plus the specialists; findings
    go back to `tdd-guide` until no CRITICAL or HIGH is left.
 5. **Verify.** `/verify` (`pnpm check`, spec conformance) must end READY

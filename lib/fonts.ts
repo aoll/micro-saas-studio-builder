@@ -5,9 +5,9 @@
 // seed (plan decision 1): editorial -> serif, neon -> grotesk,
 // corporate -> sans, playful -> rounded.
 import { Fraunces, Inter, Nunito, Space_Grotesk } from "next/font/google";
+import { FONT_KEYS, type FontKey } from "./font-keys";
 
-export const FONT_KEYS = ["serif", "grotesk", "sans", "rounded"] as const;
-export type FontKey = (typeof FONT_KEYS)[number];
+export { FONT_KEYS, type FontKey };
 
 // Every loader shares the same `variable`: the theme applies its font by
 // putting the matching `className` on `<html>`, and `--font-theme` is read

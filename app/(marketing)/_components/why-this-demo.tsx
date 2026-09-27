@@ -25,9 +25,9 @@ export function WhyThisDemo() {
     <section className="mx-auto max-w-5xl px-4 py-16">
       <h2 className="text-center text-2xl font-bold tracking-tight">Pourquoi ce projet</h2>
       <p className="mx-auto mt-2 max-w-xl text-center text-muted-foreground">
-        Dotworld, ce sont 50 personnes autofinancées et plusieurs SaaS qui marchent déjà. Cette démo est ma façon de
-        montrer, concrètement, l&apos;envie d&apos;apprendre ce modèle et d&apos;y contribuer, en explorant son cœur de
-        métier à mon échelle.
+        Autofinancé, rentable depuis la première année, passé de 1 à plus de 50 personnes en quatre ans : un modèle qui
+        a fait ses preuves. Cette démo est ma façon de montrer, concrètement, l&apos;envie d&apos;apprendre ce modèle et
+        d&apos;y contribuer, en explorant son cœur de métier à mon échelle.
       </p>
       <div className="mt-10 grid gap-6 sm:grid-cols-3">
         {REASONS.map((reason) => (

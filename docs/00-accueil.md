@@ -20,9 +20,9 @@ Bonjour, je suis **Alexandre Ollivier**, développeur fullstack senior. En déco
 
 ## Pourquoi ce projet
 
-Dotworld, ce sont 50 personnes autofinancées et plusieurs SaaS qui marchent déjà. Cette démo est ma façon de
-montrer, concrètement, l'envie d'apprendre ce modèle et d'y contribuer, en explorant son cœur de métier à mon
-échelle :
+Autofinancé, rentable depuis la première année, passé de 1 à plus de 50 personnes en quatre ans : un modèle qui a
+fait ses preuves. Cette démo est ma façon de montrer, concrètement, l'envie d'apprendre ce modèle et d'y
+contribuer, en explorant son cœur de métier à mon échelle :
 
 - **Plusieurs produits sur un socle commun, à petite échelle** : même stack, mêmes thèmes, même système de crédits
   pour les quelques produits de la démo — une façon d'explorer l'idée, pas de la démontrer à votre échelle.

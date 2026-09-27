@@ -8,7 +8,7 @@ Un backoffice Next.js qui permet à un SaaS studio de **lancer un nouveau micro-
 
 Chaque produit est un **outil IA avec crédits**, servi par une sub-app dynamique sur `/{slug}`. La sub-app charge sa configuration et devient immédiatement utilisable : landing, outil, compte, crédits, paiement.
 
-**Pourquoi pour Dotworld** : c'est leur modèle en miniature. Plusieurs SaaS en parallèle sur un socle commun, la méthode Test → Learn → Scale, des produits B2C tirés par l'acquisition, un système de crédits, et la stack de leurs offres (Next.js, TypeScript, Tailwind, shadcn, server actions).
+**Pourquoi pour Dotworld** : ce n'est pas leur modèle en miniature — Dotworld, ce sont 50 personnes autofinancées et plusieurs SaaS qui marchent déjà, une autre échelle. C'est une façon d'effleurer le sujet qui les occupe (plusieurs SaaS en parallèle sur un socle commun, la méthode Test → Learn → Scale, un système de crédits, une stack proche de la leur) et de montrer l'envie d'aller plus loin avec eux.
 
 **Le moment clé de la démo** : je crée « Générateur de bio Instagram » dans le formulaire, j'ouvre `/bio-instagram`, je génère, je tombe sur le paywall, j'achète un pack (paiement simulé), et les chiffres apparaissent dans le dashboard. Deux minutes pour montrer tout le modèle.
 

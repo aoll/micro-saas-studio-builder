@@ -18,13 +18,18 @@ Bonjour, je suis **Alexandre Ollivier**, développeur fullstack senior. En déco
 
 [image: La démo en chiffres : 17 écrans, 4 thèmes, moins de 2 $ de coût IA, 14,5 jours de delivery agentique\]
 
-## Pourquoi cette démo
+## Pourquoi ce projet
 
-Elle reprend votre métier en miniature :
+Ce n'est pas votre métier en miniature : Dotworld, ce sont 50 personnes autofinancées et une série de SaaS qui
+marchent déjà, une échelle que ce projet solo de quelques jours n'a pas la prétention d'approcher. C'est une démo
+pour effleurer le sujet et montrer l'envie d'apprendre à vos côtés :
 
-- **Plusieurs SaaS sur un socle commun** : même stack, mêmes thèmes, même système de crédits ; un nouveau produit est une configuration, pas un projet.
-- **Test → Learn → Scale** : chaque produit a son funnel, son coût IA, sa marge, et un statut qui aide à décider.
-- **Votre stack et votre façon de travailler** : Next.js, TypeScript, Tailwind, shadcn, server actions ; développée avec Claude Code, specs et tests à l'appui.
+- **Plusieurs produits sur un socle commun, à petite échelle** : même stack, mêmes thèmes, même système de crédits
+  pour les quelques produits de la démo — une façon d'explorer l'idée, pas de la démontrer à votre échelle.
+- **Test → Learn → Scale, en mécanique** : chaque produit a son funnel, son coût IA, sa marge, et un statut qui
+  aide à décider ; les chiffres sont ceux d'une démo de quelques jours.
+- **Une stack proche, une méthode encore à apprendre** : Next.js, TypeScript, Tailwind, shadcn, server actions ;
+  développée avec Claude Code, specs et tests à l'appui.
 
 [image: Test, Learn, Scale appliqués à chaque produit de la démo\]
 

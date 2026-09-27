@@ -26,9 +26,9 @@
   "specs": {
     "QA2-P1-B1-brouillon-publie": {
       "dependsOn": [],
-      "status": "dispatched",
-      "worktree": "/home/user/micro-saas-studio-builder-qa2-p1-b1-brouillon-publie",
-      "pr": null,
+      "status": "merged",
+      "worktree": null,
+      "pr": 95,
       "note": "CONTRACT spec: lib/db/schema.ts's products.current_version is NOT NULL, so createProduct() must set it at insert time today; human explicitly authorized a schema change to represent an unpublished draft."
     },
     "QA2-P1-B2-og-icon-404": {

@@ -78,6 +78,10 @@ describe("slugSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("rejects making-of, the static route of the demo's making-of page", () => {
+    expect(slugSchema.safeParse("making-of").success).toBe(false);
+  });
+
   it.each(["Lettre-Pro", "lettre_pro", "-x", "x-", "a--b", "sitemap.xml", "a"])(
     "rejects the malformed slug %s",
     (slug) => {

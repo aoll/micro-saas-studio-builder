@@ -5,8 +5,10 @@ import { packSchema } from "./pack";
 // relevés en lisant la doc): `[app]` captures every top-level segment, so a
 // product cannot use a name that collides with a static route or a
 // public/ entry served without an extension. Any extension-less file added
-// to public/ (e.g. a new well-known file) must be added to this list too.
-export const RESERVED_SLUGS = ["admin", "api"] as const;
+// to public/ (e.g. a new well-known file) must be added to this list too,
+// and so must every static top-level page (`making-of`, the recruiter
+// landing's making-of in app/(marketing)/).
+export const RESERVED_SLUGS = ["admin", "api", "making-of"] as const;
 
 const MIN_SLUG_LENGTH = 2;
 const MAX_SLUG_LENGTH = 60;

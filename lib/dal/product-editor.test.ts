@@ -136,7 +136,7 @@ describe("saveVersion", () => {
     expect(v3).toMatchObject({ version: 3 });
 
     const after = await db.query.products.findFirst({ where: eq(products.id, created.id) });
-    expect(after?.currentVersion).toBe(1);
+    expect(after?.currentVersion).toBeNull();
     expect(after?.updatedAt).toEqual(before?.updatedAt);
 
     const v1 = await db.query.productVersions.findFirst({

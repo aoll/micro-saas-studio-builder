@@ -1,20 +1,18 @@
 import { listProducts } from "@/lib/dal/products";
 
 // What the demo actually is (1 Next.js app driving live sub-apps, counted the
-// same way as ProductsShowcase) plus repo-scale figures. Agents launched is
-// the v1 run's own frozen count (app/(marketing)/making-of/_data/run.ts's
-// KEY_FIGURES, private to that page per docs/09-arborescence.md's `_`
-// convention) — no live source exists to recompute it. PRs and tests instead
-// track the whole repo since, so they're re-verified by hand against GitHub
-// (`is:pr is:merged`) and `pnpm vitest run`'s total, not copied from that
-// run's snapshot.
+// same way as ProductsShowcase) plus repo-scale figures. "8 agents
+// spécialisés" counts .claude/agents/*.md (planner, tdd-guide, 5 reviewers,
+// e2e-runner) — a design fact, not a run statistic, so unlike a launched-
+// agent tally it never goes stale. PRs and tests are re-verified by hand
+// against GitHub (`is:pr is:merged`) and `pnpm vitest run`'s total.
 export async function KeyNumbers() {
   const subApps = (await listProducts()).filter((product) => product.status !== "killed").length;
 
   const numbers = [
     { value: "1", label: "app Next.js" },
     { value: String(subApps), label: "sub-apps dynamiques" },
-    { value: "258", label: "agents lancés" },
+    { value: "8", label: "agents spécialisés" },
     { value: "98", label: "pull requests mergées" },
     { value: "1 833", label: "tests verts" },
   ];

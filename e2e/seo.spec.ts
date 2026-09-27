@@ -207,11 +207,47 @@ test.describe("Icon and Open Graph image", () => {
     expect(pixel).toEqual(expectedRgb);
   });
 
+  // QA2-P1-B2 (specs/qa/QA2-P1-B2-og-icon-404.md): the QA report's repro
+  // was a direct `curl -I` on the literal, undecorated route path, not on
+  // whatever href the landing's own <link>/<meta> tags happen to point at.
+  // Statically prerendering these two Route Handlers per slug made Next.js
+  // publish the generated image under a content-hashed path (e.g.
+  // `/lettre-pro/icon-1rxrqy`) instead of `/lettre-pro/icon` itself: the
+  // test above passes even with the bug present, because it always follows
+  // whatever href Next put in the tag. This test hits the literal path
+  // directly, like the QA repro and like any external tool that assumes
+  // the documented, un-hashed URL (a link-preview crawler, for instance).
+  test("the literal /icon and /opengraph-image paths themselves respond 200, not just whatever href the page links to", async ({
+    request,
+  }) => {
+    for (const slug of ["lettre-pro", "descri-pro", "nom-de-marque"]) {
+      const iconResponse = await request.get(`/${slug}/icon`);
+      expect(iconResponse.status(), `/${slug}/icon`).toBe(200);
+      expect(iconResponse.headers()["content-type"]).toBe("image/png");
+
+      const ogResponse = await request.get(`/${slug}/opengraph-image`);
+      expect(ogResponse.status(), `/${slug}/opengraph-image`).toBe(200);
+      expect(ogResponse.headers()["content-type"]).toBe("image/png");
+    }
+  });
+
   test("404s (icon and OG image) for an unknown product", async ({ request }) => {
     const iconResponse = await request.get(`/introuvable-${randomUUID()}/icon`);
     expect(iconResponse.status()).toBe(404);
     const ogResponse = await request.get(`/introuvable-${randomUUID()}/opengraph-image`);
     expect(ogResponse.status()).toBe(404);
+  });
+
+  test("404s (icon and OG image) for a killed product", async ({ request }) => {
+    const created = await createEnglishProduct({ status: "killed", themeSlug: "neon" });
+    try {
+      const iconResponse = await request.get(`/${created.slug}/icon`);
+      expect(iconResponse.status()).toBe(404);
+      const ogResponse = await request.get(`/${created.slug}/opengraph-image`);
+      expect(ogResponse.status()).toBe(404);
+    } finally {
+      await created.cleanup();
+    }
   });
 });
 

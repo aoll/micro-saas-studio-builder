@@ -198,6 +198,7 @@ rm -rf public/architecture
 mkdir -p public/architecture
 cp -r "$PLUGIN_ROOT/packages/dashboard/dist/." public/architecture/
 cp "$UA_DIR/knowledge-graph.json" public/architecture/knowledge-graph.json
+cp "$UA_DIR/meta.json" public/architecture/meta.json
 cp "$UA_DIR/source-files-tmp.json" public/architecture/source-files.json
 rm "$UA_DIR/source-files-tmp.json"
 ```
@@ -222,7 +223,10 @@ DATABASE_URL="postgres://postgres:postgres@localhost:5432/msb" BETTER_AUTH_SECRE
 Ouvre `public/architecture/index.html` dans un navigateur (`python3 -m
 http.server` depuis `public/`, ou `pnpm dev` une fois committé) et vérifie
 au moins : le graphe se charge, une recherche renvoie un résultat, « Open
-code » sur un fichier affiche du vrai code.
+code » sur un fichier affiche du vrai code, et `ls public/architecture/`
+contient `meta.json` (sinon oubli de la commande précédente : la page se
+charge quand même mais le badge « dernière analyse » du dashboard reste
+vide — trouvé lors de la QA prod du 27/09/2026).
 
 ## 5. Commit
 

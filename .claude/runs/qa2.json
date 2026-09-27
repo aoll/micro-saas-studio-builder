@@ -26,14 +26,14 @@
   "specs": {
     "QA2-P1-B1-brouillon-publie": {
       "dependsOn": [],
-      "status": "pending",
+      "status": "ready",
       "worktree": null,
       "pr": null,
       "note": "CONTRACT spec: lib/db/schema.ts's products.current_version is NOT NULL, so createProduct() must set it at insert time today; human explicitly authorized a schema change to represent an unpublished draft."
     },
     "QA2-P1-B2-og-icon-404": {
       "dependsOn": [],
-      "status": "pending",
+      "status": "ready",
       "worktree": null,
       "pr": null
     }

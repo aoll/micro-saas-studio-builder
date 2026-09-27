@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/auth-schema";
+import { products, themes } from "@/lib/db/schema";
+import { SEED_OWNER } from "@/scripts/seed";
 
 class RedirectMarker extends Error {
   constructor(public url: string) {
@@ -18,7 +23,14 @@ const updateStatus = vi.fn();
 vi.mock("@/lib/dal/product-status", () => ({ updateStatus: (...args: unknown[]) => updateStatus(...args) }));
 
 const updateTag = vi.fn();
-vi.mock("next/cache", () => ({ updateTag: (tag: string) => updateTag(tag) }));
+// cacheLife/cacheTag are no-ops here except for the QA2-P1-B1 real-getProduct test below, where
+// the real (unmocked) getProduct's "use cache" needs a request-free stand-in (docs/09 test
+// pattern, same as lib/dal/metrics.test.ts).
+vi.mock("next/cache", () => ({
+  updateTag: (tag: string) => updateTag(tag),
+  cacheLife: vi.fn(),
+  cacheTag: vi.fn(),
+}));
 
 afterEach(() => {
   requireAdmin.mockReset();
@@ -155,5 +167,37 @@ describe("setProductStatus", () => {
     expect(consoleError).not.toHaveBeenCalled();
     expect(updateTag).not.toHaveBeenCalled();
     consoleError.mockRestore();
+  });
+
+  // QA2-P1-B1 code review (MEDIUM finding, specs/qa/QA2-P1-B1-brouillon-publie.md): every test
+  // above mocks getProduct, so "returns a form error when the product is unknown" only proves
+  // the action's own null-handling, not what the real getProduct(slug) — the same public,
+  // cached DAL function this spec changed to return null for a never-published product
+  // (current_version IS NULL) — actually does for one. This test uses the real getProduct and
+  // a real inserted row instead (vi.doUnmock, mirrors lib/dal/products.test.ts's
+  // insertNeverPublishedProduct()), to confirm end to end that the admin gets a clean form
+  // error, not a silent success or a crash.
+  it("returns a form error for a real never-published product (current_version IS NULL), via the real getProduct", async () => {
+    currentAdmin();
+    vi.doUnmock("@/lib/dal/products");
+    vi.resetModules();
+
+    const owner = await db.query.users.findFirst({ where: eq(users.email, SEED_OWNER.email) });
+    const editorial = await db.query.themes.findFirst({ where: eq(themes.slug, "editorial") });
+    const slug = `bo06-never-published-${randomUUID()}`;
+    const [row] = await db
+      .insert(products)
+      .values({ slug, themeId: editorial!.id, locale: "fr", createdBy: owner!.id })
+      .returning({ id: products.id });
+
+    const { setProductStatus } = await import("./_actions");
+    const result = await setProductStatus(slug, {}, formDataFor({ status: "scale" }));
+    expect(result.formError).toBe("Produit introuvable");
+    expect(updateStatus).not.toHaveBeenCalled();
+    expect(updateTag).not.toHaveBeenCalled();
+
+    await db.delete(products).where(eq(products.id, row!.id));
+    vi.doMock("@/lib/dal/products", () => ({ getProduct: (s: string) => getProduct(s) }));
+    vi.resetModules();
   });
 });

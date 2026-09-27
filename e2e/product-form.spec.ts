@@ -81,17 +81,31 @@ test("creates a product through steps 1-4, then saves a second draft version", a
     await expect(page).toHaveURL(new RegExp(`/admin/products/${uniqueSlug}/edit$`));
     await expect(page.getByText(/Brouillon enregistré · version 1/)).toBeVisible();
 
-    // Save again from the edit page → a second draft version, current_version still 1.
+    // Save again from the edit page → a second draft version, current_version stays NULL
+    // (QA2-P1-B1: "never published" until Publier runs, not moved by "Enregistrer").
     await page.getByRole("button", { name: "Enregistrer" }).click();
     await expect(page.getByText(/Brouillon enregistré · version 2/)).toBeVisible();
 
     const productRow = await db.query.products.findFirst({ where: eq(products.slug, uniqueSlug) });
     createdProductId = productRow?.id;
-    expect(productRow?.currentVersion).toBe(1);
+    expect(productRow?.currentVersion).toBeNull();
     const versions = await db.query.productVersions.findMany({
       where: eq(productVersions.productId, productRow!.id),
     });
     expect(versions).toHaveLength(2);
+
+    // QA2-P1-B1's own repro: a brand-new product, saved twice with
+    // "Enregistrer" and never "Publier", must not be served publicly.
+    // Unauthenticated context: `/{slug}` is public, no admin cookie needed.
+    const anonymousContext = await page.context().browser()!.newContext();
+    const anonymousPage = await anonymousContext.newPage();
+    try {
+      const response = await anonymousPage.goto(`/${uniqueSlug}`);
+      expect(response?.status()).toBe(404);
+      await expect(anonymousPage.getByText(/introuvable|404/i)).toBeVisible();
+    } finally {
+      await anonymousContext.close();
+    }
   } finally {
     if (createdProductId) {
       await db.delete(productVersions).where(eq(productVersions.productId, createdProductId));

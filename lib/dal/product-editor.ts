@@ -25,7 +25,8 @@ export const createProduct: (config: ProductConfig) => Promise<{ id: string; slu
         slug: parsed.slug,
         status: parsed.status,
         themeId: parsed.themeId,
-        currentVersion: 1,
+        // QA2-P1-B1: omitted on purpose — `current_version` stays NULL
+        // ("never published") until publishProduct() runs (BO-05b).
         locale: parsed.locale,
         createdBy: session.user.id,
       })
@@ -112,7 +113,7 @@ export async function getProductDraft(slug: string): Promise<{
   productId: string;
   isSeed: boolean;
   version: number;
-  publishedVersion: number;
+  publishedVersion: number | null;
   config: ProductConfig;
 } | null> {
   await requireAdmin();

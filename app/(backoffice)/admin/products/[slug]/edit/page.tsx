@@ -26,7 +26,7 @@ async function EditProductForm({ params }: { params: Promise<{ slug: string }> }
       initialDraft={fromConfig(draft.config)}
       themes={themes}
       draftVersion={draft.version}
-      publishedVersion={draft.publishedVersion}
+      publishedVersion={draft.publishedVersion ?? undefined}
     />
   );
 }

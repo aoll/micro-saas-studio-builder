@@ -118,6 +118,24 @@ async function cleanupProduct(id: string): Promise<void> {
   await db.delete(products).where(eq(products.id, id));
 }
 
+// QA2-P1-B1 (specs/qa/QA2-P1-B1-brouillon-publie.md): a real "never
+// published" row (current_version IS NULL, no product_versions row either —
+// createProduct() no longer inserts one before publishProduct() runs).
+async function createNeverPublishedProduct(): Promise<{ id: string; slug: string }> {
+  const owner = await anyUserId();
+  const themeId = await editorialThemeId();
+  const slug = `metrics-never-published-${randomUUID()}`;
+  const [row] = await db
+    .insert(products)
+    .values({ slug, themeId, locale: "fr", createdBy: owner })
+    .returning({ id: products.id });
+  return { id: row!.id, slug };
+}
+
+async function cleanupNeverPublishedProduct(id: string): Promise<void> {
+  await db.delete(products).where(eq(products.id, id));
+}
+
 // Pure mapping (no DB, no session mock): restores the coverage commit
 // 62927a3 dropped when it removed the "empty config" DB test (specs/
 // BO-02-portefeuille.md review round). That commit's claim that the
@@ -273,6 +291,28 @@ describe("getPortfolioMetrics", () => {
       expect(product!.marginPerGenerationMicros).toBeNull();
 
       await cleanupProduct(id);
+    });
+
+    // QA2-P1-B1 (specs/qa/QA2-P1-B1-brouillon-publie.md): selectProductRows's
+    // INNER JOIN on `pv.version = p.current_version` already excludes a
+    // never-published row (comparison with NULL is never true) — this test
+    // confirms it instead of only assuming it, and that it contributes
+    // nothing to the portfolio's totals either.
+    it("excludes a never-published product (current_version IS NULL) from products and totals", async () => {
+      requireAdmin.mockResolvedValue({ user: { role: "admin" } });
+      const { id } = await createNeverPublishedProduct();
+
+      const { getPortfolioMetrics } = await import("./metrics");
+      const before = await getPortfolioMetrics({ days: 30 });
+      const beforeVisits = before.totals.visits;
+
+      await db.insert(events).values({ productId: id, type: "visit", anonymousId: randomUUID() });
+      const metrics = await getPortfolioMetrics({ days: 30 });
+      expect(metrics.products.find((row) => row.productId === id)).toBeUndefined();
+      expect(metrics.totals.visits).toBe(beforeVisits);
+
+      await db.delete(events).where(eq(events.productId, id));
+      await cleanupNeverPublishedProduct(id);
     });
   });
 

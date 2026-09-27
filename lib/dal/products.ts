@@ -52,7 +52,10 @@ export async function getProduct(slug: string): Promise<Product | null> {
   cacheLife("max");
   cacheTag(`product:${slug}`);
   const row = await db.query.products.findFirst({ where: eq(products.slug, slug) });
-  if (!row) return null;
+  // QA2-P1-B1: `current_version IS NULL` means "never published" — a
+  // legitimate state, not a data-integrity break. Only a `current_version`
+  // that's set but points at a missing `product_versions` row still throws.
+  if (!row || row.currentVersion === null) return null;
   const version = await db.query.productVersions.findFirst({
     where: and(eq(productVersions.productId, row.id), eq(productVersions.version, row.currentVersion)),
   });

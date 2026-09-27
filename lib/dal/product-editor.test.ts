@@ -74,7 +74,7 @@ describe("createProduct", () => {
     expect(result.id).toBeTruthy();
 
     const productRow = await db.query.products.findFirst({ where: eq(products.id, result.id) });
-    expect(productRow).toMatchObject({ slug: config.slug, status: "test", currentVersion: 1 });
+    expect(productRow).toMatchObject({ slug: config.slug, status: "test", currentVersion: null });
 
     const versionRow = await db.query.productVersions.findFirst({
       where: eq(productVersions.productId, result.id),
@@ -136,7 +136,7 @@ describe("saveVersion", () => {
     expect(v3).toMatchObject({ version: 3 });
 
     const after = await db.query.products.findFirst({ where: eq(products.id, created.id) });
-    expect(after?.currentVersion).toBe(1);
+    expect(after?.currentVersion).toBeNull();
     expect(after?.updatedAt).toEqual(before?.updatedAt);
 
     const v1 = await db.query.productVersions.findFirst({
@@ -184,7 +184,7 @@ describe("getProductDraft", () => {
     await saveVersion(created.slug, { ...config, name: "Draft v2" });
 
     const draft = await getProductDraft(created.slug);
-    expect(draft).toMatchObject({ productId: created.id, isSeed: false, version: 2, publishedVersion: 1 });
+    expect(draft).toMatchObject({ productId: created.id, isSeed: false, version: 2, publishedVersion: null });
     expect(draft?.config.name).toBe("Draft v2");
 
     await db.delete(productVersions).where(eq(productVersions.productId, created.id));

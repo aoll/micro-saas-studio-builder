@@ -74,7 +74,7 @@ describe("createProduct", () => {
     expect(result.id).toBeTruthy();
 
     const productRow = await db.query.products.findFirst({ where: eq(products.id, result.id) });
-    expect(productRow).toMatchObject({ slug: config.slug, status: "test", currentVersion: 1 });
+    expect(productRow).toMatchObject({ slug: config.slug, status: "test", currentVersion: null });
 
     const versionRow = await db.query.productVersions.findFirst({
       where: eq(productVersions.productId, result.id),

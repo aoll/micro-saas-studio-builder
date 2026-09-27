@@ -87,6 +87,10 @@ pnpm test:coverage   # queued, 4 slots per machine
 - Testing implementation details (internal state) instead of behaviour
 - Tests depending on each other (shared state) -- isolate by data, one fresh user or product per test
 - Asserting too little (passing tests that don't verify anything)
+- Tests no realistic bug could fail: rendering static markup to find a text or a link `href`,
+  expected values copied from the implementation, assertions on copy that is not the behavior,
+  framework behavior. Name the bug a test catches before writing it (`tdd-workflow` skill ›
+  What deserves a test); static content is covered by Playwright journeys in the E2E phase
 - Mocking the database in DAL tests: constraints and transactions are what they verify
 - Calling a live model: AI runs with `AI_MODE=mock` and `MockLanguageModelV4` fixtures
 
@@ -118,7 +122,8 @@ pnpm test:coverage   # queued, 4 slots per machine
 
 ## Quality Checklist
 
-- [ ] Every acceptance bullet has at least one test
+- [ ] Every acceptance bullet has at least one test, in the runner that can actually fail for it
+- [ ] Every test can fail for a bug you can name, that typecheck, lint or another test would miss
 - [ ] All public functions in `lib/**` have unit tests
 - [ ] Every DAL function and Server Action has integration tests
 - [ ] Edge cases covered (null, empty, invalid, boundaries, races)

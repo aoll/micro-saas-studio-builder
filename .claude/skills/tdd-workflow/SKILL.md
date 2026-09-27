@@ -23,6 +23,30 @@ One behavior at a time, without stopping between behaviors:
 A committed test is part of the contract with the reviewer. Changing one later is allowed only in its
 own commit, whose message says why.
 
+## What deserves a test
+
+A test earns its place only if it can fail for a realistic bug that nothing else catches: not the
+typechecker (`typedRoutes`, strict types), not lint, not another test. Before writing one, name that
+bug in a sentence ("the refund is not written when the model throws"). No bug to name, no test.
+
+Do not write:
+
+- **Static markup tests.** Rendering a component only to assert that a heading, a text or a link with a
+  given `href` is present. The JSX already says it; the test restates it and breaks on every copy edit.
+  That a link leads somewhere is checked by following it in Playwright, not by reading its `href`.
+- **Mirror tests.** An expected value copied from the implementation (a constant, a config literal, a
+  list) so the test passes by construction: it can only fail when both are edited together.
+- **Copy-coupled assertions.** Match on copy only when the copy is the behavior: an error or empty-state
+  message, or a wording the spec requires. Otherwise locate by role and assert on the effect.
+- **Framework tests.** That Next.js routes, that `<Link>` renders an `<a>`, that React renders a prop.
+
+The smell to watch for: a rename or a copy change that updates the code and its test in the same
+mechanical edit. That test protected nothing; delete or rewrite it.
+
+A spec bullet about static content (a link on a page, a section's copy) is covered by the Playwright
+journey that uses it, in the E2E phase; it gets no Vitest test of its own. "Every bullet has a test"
+never justifies a test from the list above.
+
 ## Where each test goes
 
 | What | Runner | Location |
@@ -146,6 +170,8 @@ For every write keyed by `idempotency_key` (purchase, signup bonus, generation d
 - Mocking the database in DAL tests, or mocking the unit under test.
 - Tests that depend on execution order or on data left by another test.
 - Assertions that cannot fail (`expect(result).toBeDefined()` as the only check).
+- Tests that no realistic bug could fail: static markup, mirror, copy-coupled or framework tests
+  (see "What deserves a test").
 - Rewriting a committed test to match the implementation without saying why in its commit.
 
 <!-- Adapted from everything-claude-code (MIT). See .claude/THIRD_PARTY.md -->

@@ -58,7 +58,9 @@ through the classic ECC flow below.
 6. **Pull request and merge.** The orchestrator opens the PR against the
    integration branch and squash-merges it once `/verify` is READY and the
    review is clean, and takes over any spec that gets stuck. Other agents never
-   merge; nobody but a human merges into `main`.
+   merge; only the orchestrator merges, and only into `main`, via the
+   integration branch's own PR once every spec of the run has merged and
+   `/verify` is READY on it.
 7. **E2E phase.** Once the features are done, Playwright journeys and fixes,
    with `next-dev-loop` and `agent-browser` on a running dev server.
 
@@ -92,10 +94,11 @@ written first > readability for the reviewer > minimal code** (`ponytail`).
 - Each orchestration run has its own integration branch, named by the
   orchestrator and created from `main` with `pnpm tsx scripts/worktree.ts
   integration <branch>`; `git config msb.integration` gives its name. Feature
-  branches start from it and their PRs target it. `main` is production: a
-  human reviews the integration branch and merges it into `main` once every
-  spec of the run is merged; the orchestrator merges the spec PRs into the
-  integration branch as they pass.
+  branches start from it and their PRs target it. `main` is production: once
+  every spec of the run is merged, the orchestrator opens the integration
+  branch's own PR against `main` and merges it once `/verify` is READY on it;
+  the orchestrator merges the spec PRs into the integration branch as they
+  pass, the same way.
 - Commit messages and PR titles and bodies in English.
 - Branches `feat/<slug>`, one worktree each. Conventional PR titles:
   `feat(<scope>): …` with scopes `bo`, `app`, `credits`, `ai`, `db`, `auth`,

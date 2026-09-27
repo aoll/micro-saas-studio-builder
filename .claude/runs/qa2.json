@@ -1,0 +1,42 @@
+{
+  "integration": "integration/qa2",
+  "base": "main",
+  "scenario": "full",
+  "passes": [
+    {
+      "n": 1,
+      "report": ".claude/qa/reports/2026-09-27-full.md",
+      "findings": 4,
+      "retained": 2,
+      "scope": "B1-B4 already validated by the human before this run started (no fresh QA pass run for this registry entry); B3 and B4 diagnosed during spec-writing as the same root cause (env.BETTER_AUTH_URL misconfigured in the Vercel project, not application code) and set aside for the human to fix directly in the Vercel dashboard."
+    }
+  ],
+  "setAside": [
+    {
+      "finding": "B3",
+      "report": ".claude/qa/reports/2026-09-27-full.md",
+      "reason": "root cause confirmed identical to B4: app/robots.ts and lib/auth.ts both read env.BETTER_AUTH_URL as the canonical base URL, and it is set to the wrong Vercel deployment alias in the project's Production env vars — not an app code bug. Human chose to fix the Vercel env var directly (dashboard) rather than a defensive code spec."
+    },
+    {
+      "finding": "B4",
+      "report": ".claude/qa/reports/2026-09-27-full.md",
+      "reason": "same as B3 (see above) — env.BETTER_AUTH_URL misconfigured in Vercel, human fixes directly in the dashboard, no code spec in this run."
+    }
+  ],
+  "specs": {
+    "QA2-P1-B1-brouillon-publie": {
+      "dependsOn": [],
+      "status": "pending",
+      "worktree": null,
+      "pr": null,
+      "note": "CONTRACT spec: lib/db/schema.ts's products.current_version is NOT NULL, so createProduct() must set it at insert time today; human explicitly authorized a schema change to represent an unpublished draft."
+    },
+    "QA2-P1-B2-og-icon-404": {
+      "dependsOn": [],
+      "status": "pending",
+      "worktree": null,
+      "pr": null
+    }
+  },
+  "pendingIntegrations": []
+}

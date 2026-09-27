@@ -41,6 +41,15 @@ async function jobsFor(userId: string, productId: string) {
   });
 }
 
+// CONTRACT-invoices-queue: claimNextInvoiceJob is gone (Vercel Queues invokes
+// the consumer route directly, no claim loop left to test) — test setup that
+// used to call it just to get a job into `processing` now calls its
+// replacement, startInvoiceJob, exercised on its own further down too.
+async function markProcessing(jobId: string): Promise<void> {
+  const { startInvoiceJob } = await import("./invoice-jobs");
+  await startInvoiceJob(jobId);
+}
+
 afterAll(async () => {
   for (const id of createdProductIds) {
     await db.delete(invoiceJobs).where(eq(invoiceJobs.productId, id));
@@ -113,96 +122,55 @@ describe("enqueueInvoiceMonths", () => {
   });
 });
 
-describe("claimNextInvoiceJob", () => {
-  it("returns null when there is no queued job", async () => {
+describe("startInvoiceJob", () => {
+  it("marks a queued job processing and sets startedAt", async () => {
     const userId = await createUser();
     const productId = (await createProduct()).id;
+    const { enqueueInvoiceMonths, startInvoiceJob } = await import("./invoice-jobs");
+    const [job] = await enqueueInvoiceMonths({ userId, productId, months: ["2026-01"] });
 
-    const { claimNextInvoiceJob } = await import("./invoice-jobs");
-    expect(await claimNextInvoiceJob({ userId, productId })).toBeNull();
+    const started = await startInvoiceJob(job!.id);
+
+    expect(started).toMatchObject({ id: job!.id, status: "processing" });
+    expect(started!.startedAt).not.toBeNull();
   });
 
-  it("claims the oldest queued job, setting status processing and startedAt", async () => {
+  it("is a no-op (returns null) on a job already done — a redelivered message never reprocesses", async () => {
     const userId = await createUser();
     const productId = (await createProduct()).id;
-    const { enqueueInvoiceMonths, claimNextInvoiceJob } = await import("./invoice-jobs");
-    const [older] = await enqueueInvoiceMonths({ userId, productId, months: ["2024-07"] });
-    // Force a deterministic ordering: back-date the first job so it is
-    // unambiguously the oldest queued one.
-    await db
-      .update(invoiceJobs)
-      .set({ createdAt: new Date(Date.now() - 60_000) })
-      .where(eq(invoiceJobs.id, older!.id));
-    await enqueueInvoiceMonths({ userId, productId, months: ["2024-08"] });
+    const { enqueueInvoiceMonths, startInvoiceJob, completeInvoiceJob } = await import("./invoice-jobs");
+    const [job] = await enqueueInvoiceMonths({ userId, productId, months: ["2026-02"] });
+    await startInvoiceJob(job!.id);
+    await completeInvoiceJob(job!.id, "https://blob.example/done.pdf");
 
-    const claimed = await claimNextInvoiceJob({ userId, productId });
-    expect(claimed).not.toBeNull();
-    expect(claimed!.id).toBe(older!.id);
-    expect(claimed!.status).toBe("processing");
-    expect(claimed!.startedAt).not.toBeNull();
+    const result = await startInvoiceJob(job!.id);
+
+    expect(result).toBeNull();
+    const row = await db.query.invoiceJobs.findFirst({ where: eq(invoiceJobs.id, job!.id) });
+    expect(row).toMatchObject({ status: "done", blobUrl: "https://blob.example/done.pdf" });
   });
 
-  it("returns null (no side effects) once already at MAX_CONCURRENT_INVOICE_JOBS processing jobs", async () => {
+  it("is a no-op (returns null) on a job already failed — a manual retry, not a redelivery, must re-queue it first", async () => {
     const userId = await createUser();
     const productId = (await createProduct()).id;
-    const { enqueueInvoiceMonths, claimNextInvoiceJob, MAX_CONCURRENT_INVOICE_JOBS } = await import("./invoice-jobs");
-    await enqueueInvoiceMonths({
-      userId,
-      productId,
-      months: Array.from({ length: MAX_CONCURRENT_INVOICE_JOBS + 1 }, (_unused, index) => `2024-0${index + 1}`),
-    });
+    const { enqueueInvoiceMonths, startInvoiceJob, failInvoiceJob } = await import("./invoice-jobs");
+    const [job] = await enqueueInvoiceMonths({ userId, productId, months: ["2026-03"] });
+    await startInvoiceJob(job!.id);
+    await failInvoiceJob(job!.id, "boom");
 
-    for (let i = 0; i < MAX_CONCURRENT_INVOICE_JOBS; i++) {
-      const claimed = await claimNextInvoiceJob({ userId, productId });
-      expect(claimed).not.toBeNull();
-    }
-
-    const extra = await claimNextInvoiceJob({ userId, productId });
-    expect(extra).toBeNull();
-
-    const rows = await jobsFor(userId, productId);
-    expect(rows.filter((job) => job.status === "queued")).toHaveLength(1);
-    expect(rows.filter((job) => job.status === "processing")).toHaveLength(MAX_CONCURRENT_INVOICE_JOBS);
+    expect(await startInvoiceJob(job!.id)).toBeNull();
   });
 
-  it("never claims a job for a different (userId, productId) pair", async () => {
+  it("re-entering processing on a redelivery (already processing) is harmless and refreshes startedAt", async () => {
     const userId = await createUser();
     const productId = (await createProduct()).id;
-    const otherUserId = await createUser();
-    const otherProductId = (await createProduct()).id;
-    const { enqueueInvoiceMonths, claimNextInvoiceJob } = await import("./invoice-jobs");
-    await enqueueInvoiceMonths({ userId, productId, months: ["2024-09"] });
-    await enqueueInvoiceMonths({ userId: otherUserId, productId: otherProductId, months: ["2024-09"] });
+    const { enqueueInvoiceMonths, startInvoiceJob } = await import("./invoice-jobs");
+    const [job] = await enqueueInvoiceMonths({ userId, productId, months: ["2026-04"] });
+    const first = await startInvoiceJob(job!.id);
+    const redelivered = await startInvoiceJob(job!.id);
 
-    const claimed = await claimNextInvoiceJob({ userId, productId });
-    expect(claimed).not.toBeNull();
-    expect(claimed).toMatchObject({ userId, productId });
-
-    const otherRows = await jobsFor(otherUserId, otherProductId);
-    expect(otherRows).toHaveLength(1);
-    expect(otherRows[0]!.status).toBe("queued");
-  });
-
-  it("concurrency: parallel claims over more queued jobs than the cap never exceed the cap", async () => {
-    const userId = await createUser();
-    const productId = (await createProduct()).id;
-    const { enqueueInvoiceMonths, claimNextInvoiceJob, MAX_CONCURRENT_INVOICE_JOBS } = await import("./invoice-jobs");
-    const monthCount = MAX_CONCURRENT_INVOICE_JOBS + 3;
-    await enqueueInvoiceMonths({
-      userId,
-      productId,
-      months: Array.from({ length: monthCount }, (_unused, index) => `2025-${String(index + 1).padStart(2, "0")}`),
-    });
-
-    const results = await Promise.all(
-      Array.from({ length: monthCount }, () => claimNextInvoiceJob({ userId, productId })),
-    );
-
-    const claimedCount = results.filter((result) => result !== null).length;
-    expect(claimedCount).toBe(MAX_CONCURRENT_INVOICE_JOBS);
-
-    const rows = await jobsFor(userId, productId);
-    expect(rows.filter((job) => job.status === "processing")).toHaveLength(MAX_CONCURRENT_INVOICE_JOBS);
+    expect(redelivered).toMatchObject({ id: job!.id, status: "processing" });
+    expect(redelivered!.startedAt!.getTime()).toBeGreaterThanOrEqual(first!.startedAt!.getTime());
   });
 });
 
@@ -210,13 +178,13 @@ describe("completeInvoiceJob", () => {
   it("marks a job done with the blob url and finishedAt set", async () => {
     const userId = await createUser();
     const productId = (await createProduct()).id;
-    const { enqueueInvoiceMonths, claimNextInvoiceJob, completeInvoiceJob } = await import("./invoice-jobs");
-    await enqueueInvoiceMonths({ userId, productId, months: ["2024-10"] });
-    const claimed = await claimNextInvoiceJob({ userId, productId });
+    const { enqueueInvoiceMonths, completeInvoiceJob } = await import("./invoice-jobs");
+    const [job] = await enqueueInvoiceMonths({ userId, productId, months: ["2024-10"] });
+    await markProcessing(job!.id);
 
-    await completeInvoiceJob(claimed!.id, "https://blob.example/invoice.pdf");
+    await completeInvoiceJob(job!.id, "https://blob.example/invoice.pdf");
 
-    const row = await db.query.invoiceJobs.findFirst({ where: eq(invoiceJobs.id, claimed!.id) });
+    const row = await db.query.invoiceJobs.findFirst({ where: eq(invoiceJobs.id, job!.id) });
     expect(row).toMatchObject({ status: "done", blobUrl: "https://blob.example/invoice.pdf" });
     expect(row!.finishedAt).not.toBeNull();
   });
@@ -226,13 +194,13 @@ describe("failInvoiceJob", () => {
   it("marks a job failed with the error message and finishedAt set", async () => {
     const userId = await createUser();
     const productId = (await createProduct()).id;
-    const { enqueueInvoiceMonths, claimNextInvoiceJob, failInvoiceJob } = await import("./invoice-jobs");
-    await enqueueInvoiceMonths({ userId, productId, months: ["2024-11"] });
-    const claimed = await claimNextInvoiceJob({ userId, productId });
+    const { enqueueInvoiceMonths, failInvoiceJob } = await import("./invoice-jobs");
+    const [job] = await enqueueInvoiceMonths({ userId, productId, months: ["2024-11"] });
+    await markProcessing(job!.id);
 
-    await failInvoiceJob(claimed!.id, "timeout after 15s");
+    await failInvoiceJob(job!.id, "timeout after 15s");
 
-    const row = await db.query.invoiceJobs.findFirst({ where: eq(invoiceJobs.id, claimed!.id) });
+    const row = await db.query.invoiceJobs.findFirst({ where: eq(invoiceJobs.id, job!.id) });
     expect(row).toMatchObject({ status: "failed", error: "timeout after 15s" });
     expect(row!.finishedAt).not.toBeNull();
   });
@@ -242,15 +210,14 @@ describe("retryInvoiceJob", () => {
   it("resets a failed job back to queued, clearing error/startedAt/finishedAt", async () => {
     const userId = await createUser();
     const productId = (await createProduct()).id;
-    const { enqueueInvoiceMonths, claimNextInvoiceJob, failInvoiceJob, retryInvoiceJob } =
-      await import("./invoice-jobs");
-    await enqueueInvoiceMonths({ userId, productId, months: ["2024-12"] });
-    const claimed = await claimNextInvoiceJob({ userId, productId });
-    await failInvoiceJob(claimed!.id, "boom");
+    const { enqueueInvoiceMonths, failInvoiceJob, retryInvoiceJob } = await import("./invoice-jobs");
+    const [job] = await enqueueInvoiceMonths({ userId, productId, months: ["2024-12"] });
+    await markProcessing(job!.id);
+    await failInvoiceJob(job!.id, "boom");
 
-    await retryInvoiceJob(claimed!.id);
+    await retryInvoiceJob(job!.id);
 
-    const row = await db.query.invoiceJobs.findFirst({ where: eq(invoiceJobs.id, claimed!.id) });
+    const row = await db.query.invoiceJobs.findFirst({ where: eq(invoiceJobs.id, job!.id) });
     expect(row).toMatchObject({ status: "queued", error: null, startedAt: null, finishedAt: null });
   });
 

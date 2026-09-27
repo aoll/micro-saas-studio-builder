@@ -1,19 +1,19 @@
 import "server-only";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { invoiceJobs } from "@/lib/db/schema";
 
-// Frozen contract (specs/SA-09-facture.md, C0): signatures only, filled in
-// by the spec's TDD loop. Every function takes an already-validated userId
-// (the caller — a Server Action — re-checks the session first, same
-// convention as Debit/Purchase in lib/dal/credits.ts), never derives it
-// itself.
-
-// Shared by claimNextInvoiceJob (enforces it) and the caller that drives the
-// pool (must run this many concurrent worker loops for jobs to actually
-// process in parallel, not just be allowed to) — one source of truth so the
-// two never drift apart.
-export const MAX_CONCURRENT_INVOICE_JOBS = 2;
+// Frozen contract (specs/SA-09-facture.md, C0, amended by
+// CONTRACT-invoices-queue): every function takes an already-validated
+// userId (the caller — a Server Action or the Queues consumer route —
+// re-checks the session first, same convention as Debit/Purchase in
+// lib/dal/credits.ts), never derives it itself.
+//
+// claimNextInvoiceJob and MAX_CONCURRENT_INVOICE_JOBS lived here before
+// CONTRACT-invoices-queue: a job pool now means a Vercel Queues topic
+// invoking app/api/queues/invoices/route.ts directly, so there is no claim
+// loop left to serialize — the platform's own consumer-group concurrency
+// limit is the pool.
 
 export type InvoiceJobStatus = (typeof invoiceJobs.status.enumValues)[number];
 
@@ -77,54 +77,20 @@ export async function enqueueInvoiceMonths({
   });
 }
 
-// Atomically: counts this (userId, productId)'s `processing` jobs; if under
-// MAX_CONCURRENT_INVOICE_JOBS, flips the oldest `queued` one to `processing`
-// and returns it (sets startedAt); otherwise returns null without side
-// effects — including when there is simply no `queued` job left. Never
-// claims a job for a different (userId, productId) than asked.
-//
-// Concurrency: a naive "select count, then update if under the cap" races
-// under read-committed — two concurrent callers can both read a count under
-// the cap before either commits, over-claiming past it. A Postgres advisory
-// transaction lock scoped to this (userId, productId) pair (same idiom as
-// lib/dal/generations.ts's recordAnonymousGeneration and lib/dal/events.ts's
-// insertDeduped) serializes every claim for that pair, so the count-then-
-// claim below is effectively atomic across concurrent worker loops.
-export async function claimNextInvoiceJob({
-  userId,
-  productId,
-}: {
-  userId: string;
-  productId: string;
-}): Promise<InvoiceJob | null> {
-  return db.transaction(async (tx) => {
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`invoice-pool:${userId}:${productId}`}, 0))`);
-
-    const [processingRow] = await tx
-      .select({ count: sql<number>`count(*)::int` })
-      .from(invoiceJobs)
-      .where(
-        and(eq(invoiceJobs.userId, userId), eq(invoiceJobs.productId, productId), eq(invoiceJobs.status, "processing")),
-      );
-    if ((processingRow?.count ?? 0) >= MAX_CONCURRENT_INVOICE_JOBS) return null;
-
-    const next = await tx.query.invoiceJobs.findFirst({
-      where: and(
-        eq(invoiceJobs.userId, userId),
-        eq(invoiceJobs.productId, productId),
-        eq(invoiceJobs.status, "queued"),
-      ),
-      orderBy: [asc(invoiceJobs.createdAt)],
-    });
-    if (!next) return null;
-
-    const [claimed] = await tx
-      .update(invoiceJobs)
-      .set({ status: "processing", startedAt: new Date() })
-      .where(eq(invoiceJobs.id, next.id))
-      .returning();
-    return claimed ?? null;
-  });
+// Marks a job `processing`, called by the Queues consumer route at the start
+// of a delivery attempt — replaces claimNextInvoiceJob's role now that each
+// message already names its own job (no "find the oldest queued one" to do).
+// Guarded to `queued`/`processing` so a message redelivered after the job
+// already reached a terminal state (`done`, or `failed` and not yet retried
+// by the user) is a no-op: the caller must treat a `null` return as "nothing
+// to do", never retry the work.
+export async function startInvoiceJob(jobId: string): Promise<InvoiceJob | null> {
+  const [row] = await db
+    .update(invoiceJobs)
+    .set({ status: "processing", startedAt: new Date() })
+    .where(and(eq(invoiceJobs.id, jobId), inArray(invoiceJobs.status, ["queued", "processing"])))
+    .returning();
+  return row ?? null;
 }
 
 export async function completeInvoiceJob(jobId: string, blobUrl: string): Promise<void> {

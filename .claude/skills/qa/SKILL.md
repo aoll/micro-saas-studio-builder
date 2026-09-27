@@ -2,21 +2,25 @@
 name: qa
 description: >
   Passe QA de la plateforme, sur trois environnements possibles (`env`) :
-  `local` (défaut, serveur de dev, Postgres migré et seedé, AI_MODE=mock,
-  toutes les personas et mutations) ou `preview`/`prod` (une URL Vercel déjà
-  vivante, passe en lecture seule : aucune génération IA, aucune inscription,
-  aucun paiement, aucune écriture admin). Pilote un vrai navigateur (skill
-  next-dev-loop + agent-browser en local, repli Playwright partout, obligatoire
-  sur une URL déployée) et le MCP next-devtools en local, et confronte l'app
-  au dossier docs/ et aux specs/. Rejoue un scénario de scenarios/ (full par
-  défaut : toute la plateforme) et consigne chaque écart en BUG ou MANQUE dans
+  `local` (défaut, serveur de dev, Postgres migré et seedé, AI_MODE=mock) ou
+  `preview`/`prod` (une URL Vercel déjà vivante, AI_MODE=live). Toute
+  opération — génération IA, inscription, paiement simulé, connexion et
+  écriture admin, « Réinitialiser la démo » — est permise sur les trois
+  environnements (décision humaine du 2026-09-27 : c'est une démo, les mêmes
+  personas et le même scénario y jouent partout), avec les garde-fous de bon
+  sens de la section 5 (compte jetable, état restauré, mention « paiement
+  simulé »). Pilote un vrai navigateur (skill next-dev-loop + agent-browser en
+  local, repli Playwright partout, obligatoire sur une URL déployée) et le MCP
+  next-devtools en local, et confronte l'app au dossier docs/ et aux specs/.
+  Rejoue un scénario de scenarios/ (full par défaut : toute la plateforme) et
+  consigne chaque écart en BUG ou MANQUE dans
   .claude/qa/reports/<date>-<scénario>.md. En local et en mode delta (défaut),
   approfondit ce qui a changé depuis la baseline .claude/qa/route-baseline.json
   et ne fait qu'une régression légère ailleurs. Constat seulement, aucune
   correction (c'est la skill qa-orchestrator qui fait corriger). Utiliser pour
   une passe QA complète, pour la QA d'une feature après une implémentation ou
-  un run d'orchestration, ou pour vérifier un déploiement (preview ou prod)
-  sans y toucher.
+  un run d'orchestration, ou pour tester un déploiement (preview ou prod) de
+  bout en bout, y compris ses mutations.
 ---
 
 # QA de la plateforme
@@ -30,11 +34,12 @@ de ce fichier : lis-le avant de commencer, ne le recopie pas de mémoire.
 
 ## 0. Paramètres
 
-- **`env`** : `local` (défaut), `preview` ou `prod`. `local` seul autorise les
-  mutations (génération IA, inscription, paiement, écritures admin, reset
-  démo) ; `preview` et `prod` sont **toujours en lecture seule** (§5). Change
-  la section 2 (comment atteindre la cible) et la 2 bis (mode delta : local
-  seulement).
+- **`env`** : `local` (défaut), `preview` ou `prod`. Les trois autorisent
+  toute opération (génération IA, inscription, paiement, écritures admin,
+  reset démo) : décision humaine du 2026-09-27, plus de distinction lecture
+  seule pour `preview`/`prod` (§5). Change la section 2 (comment atteindre la
+  cible) et la 2 bis (mode delta : local seulement, faute de baseline de code
+  pertinente pour une URL déployée).
 - **`url`** (obligatoire si `env=preview`, optionnel si `env=prod` pour
   surcharger l'URL par défaut de `config.md` › Cible ; ignoré en `local`).
 - **`scenario`** : un nom de fichier de `scenarios/` (`creation-produit`,
@@ -47,8 +52,8 @@ de ce fichier : lis-le avant de commencer, ne le recopie pas de mémoire.
   `delta`, la profondeur de chaque étape vient du diff contre la baseline
   (section 2 bis) ; sans baseline (première passe), `delta` vaut `complet`.
   `complet` teste tout en profondeur. En `preview`/`prod`, ce paramètre est
-  ignoré : la profondeur est fixée par ce qui est testable en lecture seule
-  (§2 bis).
+  ignoré : pas de baseline de code pertinente pour une URL déjà déployée,
+  donc tout le scénario est joué en profondeur, mutations comprises (§2 bis).
 - **`recheck`** (optionnel) : le chemin d'un rapport précédent. Chaque constat
   de ce rapport est rejoué d'après sa repro, et reçoit un verdict dans la
   section « Recheck » du nouveau rapport, quel que soit le mode.
@@ -145,14 +150,13 @@ pnpm tsx scripts/qa-baseline.ts diff   # A / M / D par fichier, puis le décompt
 La colonne « Profondeur » du rapport dit, pour chaque étape, laquelle a été
 appliquée et pourquoi (le fichier `M` qui l'a déclenchée).
 
-**`env=preview`/`prod`, toujours en « smoke ».** Pas de baseline de code
-pertinente pour une URL déjà déployée. Chaque étape qui ne demande aucune
-mutation (§5) passe en profondeur **lecture seule** : la route répond (pas de
-4xx/5xx inattendu), le contenu visible correspond au dossier/spec, aucune
-erreur console ni requête réseau en échec. Toute étape qui a besoin d'une
-mutation est `NON TESTÉ (mutation interdite hors local)`, sans variantes ni
-tentative. La colonne « Profondeur » du rapport dit `smoke (lecture seule)`
-pour ces étapes.
+**`env=preview`/`prod`, toujours en profondeur.** Pas de baseline de code
+pertinente pour une URL déjà déployée : chaque étape du scénario est jouée en
+profondeur, mutations comprises (génération, inscription, paiement, écriture
+admin, reset démo), avec les mêmes variantes qu'en local (§6.5). La colonne
+« Profondeur » du rapport dit `complet (déployé)` pour ces étapes. Une étape
+reste `NON TESTÉ` si un prérequis technique manque (outil absent, cible
+inatteignable), jamais parce que c'est `preview`/`prod`.
 
 ## 3. L'outillage
 
@@ -191,29 +195,33 @@ pour ces étapes.
 
 ## 4. Personas et comptes
 
-Détail et identifiants : `config.md` › Personas. **`env=local` seulement**
-pour les trois dernières lignes : elles s'authentifient ou se créent, donc
-sont des mutations interdites en `preview`/`prod` (§5).
+Détail et identifiants : `config.md` › Personas. Les cinq personas jouent sur
+les trois `env` : en `preview`/`prod`, l'admin et l'owner utilisent les
+identifiants réels de la démo publique (donnés au paramètre de la skill ou
+`SEED_ADMIN_*`/`SEED_OWNER_*` documentés), jamais ceux de `scripts/seed.ts`
+qui sont locaux.
 
 | Persona | Entrée | Compte |
 |---|---|---|
 | Visiteur anonyme, navigation seule | pages publiques (`/{slug}`, `/`, `/{slug}/pricing`…), sans lancer de génération | aucun ; disponible sur les trois `env` |
-| Visiteur anonyme, génération gratuite | `/{slug}/tool`, génère réellement | aucun ; cookie `anonymous_id` neuf, IP simulée propre au parcours ; **`env=local` seulement** |
-| Inscrit | modale `/{slug}/signup`, lien magique via la boîte de réception simulée | jetable, un par parcours ; **`env=local` seulement** |
-| Admin de démo | `/admin/login` | seed : `DEV_ADMIN` de `scripts/seed.ts`, ou `SEED_ADMIN_*` ; **`env=local` seulement** |
-| Owner | `/admin/login` puis `/admin/ops` | seed : `DEV_OWNER`, ou `SEED_OWNER_*` ; **`env=local` seulement** |
+| Visiteur anonyme, génération gratuite | `/{slug}/tool`, génère réellement | aucun ; cookie `anonymous_id` neuf, IP simulée propre au parcours ; disponible sur les trois `env` (tokens réels en `preview`/`prod`, `AI_MODE=live`) |
+| Inscrit | modale `/{slug}/signup`, lien magique via la boîte de réception simulée | jetable, un par parcours ; disponible sur les trois `env` |
+| Admin de démo | `/admin/login` | `SEED_ADMIN_*`, ou identifiants fournis pour la passe en `preview`/`prod` ; `DEV_ADMIN` de `scripts/seed.ts` en local seulement |
+| Owner | `/admin/login` puis `/admin/ops` | `SEED_OWNER_*`, ou identifiants fournis pour la passe en `preview`/`prod` ; `DEV_OWNER` en local seulement |
 
 N'écris jamais un vrai secret dans le rapport : cite la constante ou la
 variable d'environnement.
 
 ## 5. Garde-fous
 
-- **`env=preview` et `env=prod` : lecture seule, sans exception**
-  (`config.md` › Garde-fous a le détail et pourquoi). Aucune génération IA
-  (tokens réels), aucune inscription, aucun paiement même simulé, aucune
-  écriture admin, jamais « Réinitialiser la démo ». Une étape qui en a besoin
-  est `NON TESTÉ (mutation interdite hors local)`, jamais tentée « pour
-  voir ». Le reste de cette section est `env=local` uniquement.
+Ces règles s'appliquent sur les trois `env` (décision humaine du
+2026-09-27 : plus de restriction « lecture seule » propre à `preview`/`prod`,
+`config.md` › Garde-fous en garde le détail). Elles remplacent la prudence
+par défaut, pas la vigilance : `preview` et `prod` restent la donnée
+partagée que voient les recruteurs (`config.md` › Cible), donc chaque
+mutation y est faite comme en local — proprement, journalisée, réversible —
+jamais « pour voir ».
+
 - **Paiement simulé** : vérifie la mention « paiement simulé » avant de payer ;
   si elle manque, arrête ce parcours et consigne un BUG bloquant.
 - **« Réinitialiser la démo » (`/admin/ops`)** efface les produits et l'usage
@@ -238,10 +246,10 @@ Pour chaque étape du scénario :
    un libellé introuvable dans le code est un indice de MANQUE, pas une raison
    d'improviser.
 2. **Agis comme la persona** dans le navigateur, puis vérifie le résultat
-   attendu et sa référence (spec › Acceptation, docs › section, maquette). En
-   `preview`/`prod`, une étape qui exige une mutation (génération, inscription,
-   paiement, écriture admin, reset démo) n'est **pas tentée** : `NON TESTÉ
-   (mutation interdite hors local)` directement, passe à la suivante.
+   attendu et sa référence (spec › Acceptation, docs › section, maquette).
+   Sur les trois `env`, une étape qui exige une mutation (génération,
+   inscription, paiement, écriture admin, reset démo) est jouée normalement,
+   avec les garde-fous de la section 5.
 3. **Capture le réseau** de chaque mutation (Server Action, `POST
    /{slug}/api/generate`, `/api/auth/*`) : statut et corps. Une mutation en
    4xx/5xx est un échec serveur ; une mutation en 200 avec une UI figée est un

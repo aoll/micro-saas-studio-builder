@@ -25,8 +25,10 @@ Paiement, docs/08 › Email simulé), aucun débit réel, aucun email envoyé.
   projet Vercel — rien dans le repo (`vercel.json`, docs/06) ne documente de
   base isolée par preview, donc les deux comptent comme **partagées avec la
   vraie démo publique** que voient les recruteurs, jusqu'à preuve du
-  contraire. Mêmes garde-fous que `prod` par défaut (§ Garde-fous) : lecture
-  seule, aucune mutation. Détail dans « Environnements déployés » plus bas.
+  contraire. Décision humaine du 2026-09-27 : toute opération y est permise,
+  comme en local (§ Garde-fous) — la vigilance porte sur le soin apporté à
+  chaque mutation (compte jetable, état restauré), pas sur son interdiction.
+  Détail dans « Environnements déployés » plus bas.
 - **`/` répond 200** (`app/(marketing)/page.tsx`, la landing recruteur) :
   seule route de `app/` sans layout de sub-app ni de backoffice — corrigé
   ici le 2026-09-27, cette note datait d'avant la landing.
@@ -241,14 +243,15 @@ scénario en profondeur (et la table se complète dans une PR `docs(tooling)`).
 
 ## Garde-fous (non négociables)
 
-- **`env=preview` et `env=prod` : lecture seule, sans exception.** Aucune
-  mutation : pas de génération IA (`AI_MODE=live`, tokens réels facturés),
-  pas d'inscription, pas de paiement (même simulé), pas d'écriture admin, pas
-  de « Réinitialiser la démo ». Rien dans le repo ne documente de base
-  isolée par environnement Vercel (docs/06, `vercel.json`) : `preview` et
-  `prod` comptent comme la même donnée partagée que voient les recruteurs,
-  jusqu'à preuve du contraire. Une étape de scénario qui a besoin d'une
-  mutation est `NON TESTÉ` avec cette raison, jamais tentée « pour voir ».
+- **`env=preview` et `env=prod` : toute opération est permise** (décision
+  humaine du 2026-09-27), y compris génération IA (`AI_MODE=live`, tokens
+  réels facturés), inscription, paiement simulé, écriture admin,
+  « Réinitialiser la démo ». Rien dans le repo ne documente de base isolée
+  par environnement Vercel (docs/06, `vercel.json`) : `preview` et `prod`
+  comptent comme la même donnée partagée que voient les recruteurs, jusqu'à
+  preuve du contraire — c'est justement pourquoi chaque mutation y suit les
+  mêmes garde-fous qu'en local (compte jetable, état restauré, ci-dessous),
+  au lieu d'être évitée.
 - Paiement simulé : la mention « Paiement simulé pour la démo » doit être
   visible avant « Payer … (simulé) ».
 - « Réinitialiser la démo » (`/admin/ops`) : uniquement en dernière étape d'un

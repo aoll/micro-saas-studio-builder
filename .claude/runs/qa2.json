@@ -15,12 +15,12 @@
     {
       "finding": "B3",
       "report": ".claude/qa/reports/2026-09-27-full.md",
-      "reason": "root cause confirmed identical to B4: app/robots.ts and lib/auth.ts both read env.BETTER_AUTH_URL as the canonical base URL, and it is set to the wrong Vercel deployment alias in the project's Production env vars — not an app code bug. Human chose to fix the Vercel env var directly (dashboard) rather than a defensive code spec."
+      "reason": "root cause confirmed identical to B4: app/robots.ts and lib/auth.ts both read env.BETTER_AUTH_URL as the canonical base URL, and it is set to the wrong Vercel deployment alias in the project's Production env vars — not an app code bug. Human chose to fix the Vercel env var directly (dashboard) rather than a defensive code spec. Fixed and rechecked 2026-09-27 (same day): BETTER_AUTH_URL corrected and redeployed by the human, robots.txt now points at the canonical host. No spec in this run."
     },
     {
       "finding": "B4",
       "report": ".claude/qa/reports/2026-09-27-full.md",
-      "reason": "same as B3 (see above) — env.BETTER_AUTH_URL misconfigured in Vercel, human fixes directly in the dashboard, no code spec in this run."
+      "reason": "same as B3 (see above) — env.BETTER_AUTH_URL misconfigured in Vercel, human fixes directly in the dashboard, no code spec in this run. Fixed and rechecked 2026-09-27 (same day): a fresh magic-link signup now lands directly on the canonical host's /tool page. No spec in this run."
     }
   ],
   "specs": {

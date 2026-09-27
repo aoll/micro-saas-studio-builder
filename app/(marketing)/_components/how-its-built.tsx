@@ -35,10 +35,15 @@ export function HowItsBuilt() {
             </li>
           ))}
         </ul>
-        <div className="mt-10 text-center">
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
           <Button asChild variant="outline">
             <a href="https://github.com/aoll/micro-saas-studio-builder" target="_blank" rel="noreferrer">
               Voir le code sur GitHub
+            </a>
+          </Button>
+          <Button asChild variant="outline">
+            <a href="/architecture/index.html" target="_blank" rel="noreferrer">
+              Explorer l&apos;architecture technique
             </a>
           </Button>
         </div>

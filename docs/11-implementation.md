@@ -13,7 +13,7 @@ Trois règles structurent tout l'onglet :
 | # | Étape | Qui | Sortie |
 | --- | --- | --- | --- |
 | 1 | Écrire la spec minimale de la feature | Moi, avec Claude | `specs/<REF>-<nom>.md`, une dizaine de lignes |
-| 2 | **Porte 1 : valider les specs** | Moi | Ma validation débloque le run ; la fusion de la spec sur `main` n'est plus un prérequis, elle peut arriver avant, pendant ou après l'implémentation |
+| 2 | Valider la spec | Moi | Le run démarre dès ma validation ; la fusion de la spec sur `main` n'est plus un prérequis, elle peut arriver avant, pendant ou après l'implémentation |
 | 3 | Plan : tâches, fichiers, risques (`/plan`) | Agent `planner` | `.claude/plans/<REF>.plan.md` commité |
 | 4 | Boucle TDD : un comportement à la fois, test rouge puis code vert, commit et push à chaque étape verte, sans pause jusqu'à la fin de la spec (`/tdd`) | Agent `tdd-guide` | Trace rouge → vert dans les commits, 80 % de couverture sur `lib/**` |
 | 5 | Revue de code (`/review`), corrections jusqu'à zéro CRITICAL ou HIGH | `code-reviewer` + spécialistes | Corrections commitées et poussées |
@@ -150,7 +150,7 @@ De mon côté, `monitor.ts live` affiche l'usage en temps réel : machine, files
 
 ### Rôles
 
-- **Moi** : architecte et relecteur. J'écris et valide les specs (porte 1) ; ma validation démarre le run, pas la fusion de la spec sur `main`. L'orchestrateur merge chaque PR de spec dans la branche d'intégration dès qu'elle passe `/verify` et la revue automatique, et reprend lui-même une spec bloquée. Une fois toutes les specs mergées, je relis la branche d'intégration (porte 2) puis je la merge dans `main`, qui part en prod.
+- **Moi** : architecte et relecteur. J'écris et valide les specs ; le run démarre dès ma validation, pas la fusion de la spec sur `main`. L'orchestrateur merge chaque PR de spec dans la branche d'intégration dès qu'elle passe `/verify` et la revue automatique, et reprend lui-même une spec bloquée. Une fois toutes les specs mergées, je relis la branche d'intégration (porte 2) puis je la merge dans `main`, qui part en prod.
 - **Orchestrateur et agents** : l'orchestrateur répartit les specs sur les worktrees et suit leur état ; dans chaque worktree, `planner` écrit le plan, `tdd-guide` écrit les tests et implémente, les relecteurs passent le diff, puis l'orchestrateur ouvre la PR.
 - **Ordre de merge dans une vague** : le lot qui porte un contrat réel passe en premier (B, qui remplace le stub `debit()`), puis les autres mergent la branche d'intégration dans leur branche (jamais de rebase d'une branche poussée). PR courtes : un lot peut en ouvrir plusieurs, une par écran.
 

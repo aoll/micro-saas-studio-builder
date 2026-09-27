@@ -36,7 +36,7 @@ describe("ProductsShowcase", () => {
     const { ProductsShowcase } = await import("./products-showcase");
     render(await ProductsShowcase());
     const links = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
-    expect(links).toEqual(["/descri-pro", "/lettre-pro", "/nom-de-marque"]);
+    expect(links).toEqual(["/descri-pro", "/lettre-pro", "/nom-de-marque", "/admin/login"]);
     expect(screen.getByText("Générez votre lettre de motivation en 30 secondes")).toBeTruthy();
   });
 
@@ -47,7 +47,10 @@ describe("ProductsShowcase", () => {
     ]);
     const { ProductsShowcase } = await import("./products-showcase");
     render(await ProductsShowcase());
-    expect(screen.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/lettre-pro"]);
+    expect(screen.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "/lettre-pro",
+      "/admin/login",
+    ]);
     expect(screen.queryByText("NomDeMarque")).toBeNull();
   });
 

@@ -9,7 +9,7 @@ afterEach(cleanup);
 describe("HowItsBuilt", () => {
   it("links to the making-of and to the code", () => {
     render(<HowItsBuilt />);
-    expect(screen.getByRole("link", { name: "Voir le making-of" }).getAttribute("href")).toBe("/making-off");
+    expect(screen.getByRole("link", { name: "Voir le making-of" }).getAttribute("href")).toBe("/making-of");
     expect(screen.getByRole("link", { name: "Voir le code sur GitHub" }).getAttribute("href")).toBe(
       "https://github.com/aoll/micro-saas-studio-builder",
     );

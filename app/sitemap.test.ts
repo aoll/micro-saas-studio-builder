@@ -22,7 +22,7 @@ describe("sitemap", () => {
       "https://studio.example.com",
       "https://studio.example.com/descri-pro",
       "https://studio.example.com/lettre-pro",
-      "https://studio.example.com/making-off",
+      "https://studio.example.com/making-of",
       "https://studio.example.com/nom-de-marque",
     ]);
   });
@@ -31,13 +31,13 @@ describe("sitemap", () => {
     listProducts.mockResolvedValue([product({ slug: "killed-one", status: "killed" })]);
     const { default: sitemap } = await import("./sitemap");
     const result = await sitemap();
-    expect(result).toEqual([{ url: "https://studio.example.com" }, { url: "https://studio.example.com/making-off" }]);
+    expect(result).toEqual([{ url: "https://studio.example.com" }, { url: "https://studio.example.com/making-of" }]);
   });
 
   it("keeps only the root landing and the making-of when there are no products", async () => {
     listProducts.mockResolvedValue([]);
     const { default: sitemap } = await import("./sitemap");
     const result = await sitemap();
-    expect(result).toEqual([{ url: "https://studio.example.com" }, { url: "https://studio.example.com/making-off" }]);
+    expect(result).toEqual([{ url: "https://studio.example.com" }, { url: "https://studio.example.com/making-of" }]);
   });
 });

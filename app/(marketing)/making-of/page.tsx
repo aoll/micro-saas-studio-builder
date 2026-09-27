@@ -15,10 +15,10 @@ export const metadata: Metadata = {
   title: "Making-of — Micro-SaaS Studio Builder",
   description:
     "258 agents IA, 30 heures : comment la démo a été construite par un orchestrateur, spec par spec, puis passée en QA jusqu'à zéro constat.",
-  alternates: { canonical: "/making-off" },
+  alternates: { canonical: "/making-of" },
 };
 
-export default function MakingOffPage() {
+export default function MakingOfPage() {
   return (
     <div
       className={`${mono.variable} ${sans.variable} min-h-dvh bg-[#0F1115] font-[family-name:var(--font-mo-sans)] text-[#E8EAEE]`}

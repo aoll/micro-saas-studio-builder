@@ -312,7 +312,7 @@ Dotworld le dit : **« We develop with AI, not alongside it »**, et Claude Code
 - `CLAUDE.md` : les conventions du projet, les commandes et les règles (pas de logique métier dans les composants, tout débit passe par le ledger…).
 - **TDD sur toute l'implémentation** : chaque comportement d'acceptation est testé avant d'être codé, rouge puis vert.
 - **Un test end-to-end Playwright** qui rejoue le script de démo complet.
-- **Un historique de PR lisible**, une PR par spec, chacune relue par un humain.
+- **Un historique de PR lisible**, une PR par spec, chacune passée par une revue agentique sous plusieurs angles (correction, Next.js, base de données, sécurité) avant d'être mergée.
 - **Un README** qui raconte le process : combien de temps, quelle part du code produite par agents, où l'humain a tranché.
 
 **Le découpage en specs** : 28 specs minimales réparties en 5 vagues, dans l'onglet Specs. La méthode pour les faire avancer en parallèle est décrite dans l'onglet Implémentation.

@@ -218,6 +218,7 @@ test.describe("Icon and Open Graph image", () => {
   // directly, like the QA repro and like any external tool that assumes
   // the documented, un-hashed URL (a link-preview crawler, for instance).
   test("the literal /icon and /opengraph-image paths themselves respond 200, not just whatever href the page links to", async ({
+    page,
     request,
   }) => {
     for (const slug of ["lettre-pro", "descri-pro", "nom-de-marque"]) {
@@ -229,6 +230,29 @@ test.describe("Icon and Open Graph image", () => {
       expect(ogResponse.status(), `/${slug}/opengraph-image`).toBe(200);
       expect(ogResponse.headers()["content-type"]).toBe("image/png");
     }
+
+    // Status and content-type alone would pass for a handler returning an
+    // empty 200 `image/png` body: decode real pixels off the literal path
+    // (like the landing test above, but hitting `/icon` and
+    // `/opengraph-image` directly) to prove actual image bytes come back,
+    // at the expected `size` from icon.tsx / opengraph-image.tsx.
+    await page.goto("/lettre-pro");
+    const dimensions = await page.evaluate(async () => {
+      const decode = async (url: string) => {
+        const blob = await fetch(url).then((response) => response.blob());
+        return createImageBitmap(blob);
+      };
+      const [iconBitmap, ogBitmap] = await Promise.all([
+        decode("/lettre-pro/icon"),
+        decode("/lettre-pro/opengraph-image"),
+      ]);
+      return {
+        icon: { width: iconBitmap.width, height: iconBitmap.height },
+        og: { width: ogBitmap.width, height: ogBitmap.height },
+      };
+    });
+    expect(dimensions.icon).toEqual({ width: 32, height: 32 });
+    expect(dimensions.og).toEqual({ width: 1200, height: 630 });
   });
 
   test("404s (icon and OG image) for an unknown product", async ({ request }) => {

@@ -11,10 +11,11 @@ import { describe, expect, it, vi } from "vitest";
 // routing behaviour, not something a unit test calling the function
 // directly can observe.
 const OG_RESPONSE = new Response("og-image-bytes");
-const OpengraphImage = vi.fn(async (_context: { params: Promise<{ app: string }> }) => OG_RESPONSE);
+const OpengraphImage = vi.fn(async (_context: RouteContext<"/[app]/opengraph-image">) => OG_RESPONSE);
 vi.mock("../opengraph-image", () => ({
-  default: (context: { params: Promise<{ app: string }> }) => OpengraphImage(context),
+  default: (context: RouteContext<"/[app]/opengraph-image">) => OpengraphImage(context),
 }));
+vi.mock("@/lib/dal/products", () => ({ listProductSlugs: vi.fn(async () => []) }));
 
 describe("[app]/opengraph-image/route", () => {
   it("GET forwards the { params } context to the opengraph-image.tsx default export and returns its response", async () => {

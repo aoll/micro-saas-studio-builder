@@ -10,8 +10,9 @@ import { describe, expect, it, vi } from "vitest";
 // by `e2e/seo.spec.ts`, since it's a routing behaviour, not something a
 // unit test calling the function directly can observe.
 const ICON_RESPONSE = new Response("icon-bytes");
-const Icon = vi.fn(async (_context: { params: Promise<{ app: string }> }) => ICON_RESPONSE);
-vi.mock("../icon", () => ({ default: (context: { params: Promise<{ app: string }> }) => Icon(context) }));
+const Icon = vi.fn(async (_context: RouteContext<"/[app]/icon">) => ICON_RESPONSE);
+vi.mock("../icon", () => ({ default: (context: RouteContext<"/[app]/icon">) => Icon(context) }));
+vi.mock("@/lib/dal/products", () => ({ listProductSlugs: vi.fn(async () => []) }));
 
 describe("[app]/icon/route", () => {
   it("GET forwards the { params } context to the icon.tsx default export and returns its response", async () => {

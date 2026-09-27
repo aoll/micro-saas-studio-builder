@@ -12,8 +12,7 @@ const POINTS = [
   },
   {
     title: "TDD sur toute l'implémentation",
-    description:
-      "Chaque comportement d'acceptation est testé avant d'être codé, rouge puis vert — pas seulement le ledger de crédits ou le paiement simulé.",
+    description: "Chaque comportement d'acceptation est testé avant d'être codé, rouge puis vert.",
   },
   {
     title: "Une PR par spec, relue par un humain",

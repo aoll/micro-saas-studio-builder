@@ -27,6 +27,9 @@ export function SiteFooter() {
           >
             LinkedIn
           </a>
+          <Link href="/making-of" className="hover:text-foreground hover:underline">
+            Making-of
+          </Link>
           <Link href="/admin/login" className="hover:text-foreground hover:underline">
             Backoffice admin
           </Link>

@@ -33,9 +33,9 @@
     },
     "QA2-P1-B2-og-icon-404": {
       "dependsOn": [],
-      "status": "dispatched",
-      "worktree": "/home/user/micro-saas-studio-builder-qa2-p1-b2-og-icon-404",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": 96
     }
   },
   "pendingIntegrations": []

@@ -10,11 +10,11 @@ export function Hero() {
     <section className="mx-auto max-w-3xl px-4 pt-20 pb-16 text-center">
       <p className="text-sm font-medium text-muted-foreground">Petite démo — candidature chez Dotworld</p>
       <h1 className="mt-4 text-4xl font-bold tracking-tight text-balance sm:text-5xl">
-        Un backoffice qui génère un micro-SaaS IA en quelques minutes, et le pilote par la donnée
+        Un backoffice qui génère et pilote des micro-SaaS IA en quelques minutes
       </h1>
       <p className="mt-6 text-lg text-balance text-muted-foreground">
-        Depuis le backoffice, on crée un nouveau produit en remplissant un formulaire, et on pilote chacun par la
-        donnée — funnel, coût IA, marge — jusqu&apos;à la décision : on scale, ou on coupe.
+        Depuis le backoffice, on crée un nouveau produit en remplissant un formulaire, et on pilote chacun par la donnée
+        — funnel, coût IA, marge — jusqu&apos;à la décision : on scale, ou on coupe.
       </p>
       <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
         <Button asChild size="lg">

@@ -4,6 +4,10 @@
   "generating": "Génération en cours…",
   "results": "Résultat",
   "retry": "Réessayer",
+  "freeTrialUsed": {
+    "message": "Votre essai gratuit est utilisé.",
+    "cta": "Créer un compte pour continuer"
+  },
   "errors": {
     "required": "Ce champ est obligatoire.",
     "too_long": "Ce champ est trop long.",

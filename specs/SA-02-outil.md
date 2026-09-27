@@ -10,7 +10,9 @@ Acceptation :
   streamText → la réponse s'affiche en streaming ; recordGeneration enregistre
   la génération (modèle, tokens, cost_micros)
 - Échec IA → markGenerationFailed, refund appelé, message « crédit remboursé »
-- Anonyme : 1 génération gratuite par cookie + IP, puis la modale /signup s'ouvre
+- Anonyme : 1 génération gratuite par cookie + IP ; le résultat reste affiché et un
+  lien discret vers /signup l'accompagne (pas d'ouverture automatique de la modale,
+  décision produit du 2026-09-27 : laisser le temps de lire le résultat)
 - Débit refusé (solde insuffisant) → 402, event credits_exhausted, la modale
   /pricing s'ouvre
 - Events first_generation et generation envoyés via track()

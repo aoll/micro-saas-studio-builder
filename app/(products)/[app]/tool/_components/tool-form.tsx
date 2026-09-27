@@ -2,6 +2,7 @@
 
 import type { Route } from "next";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { startTransition, useRef, useState } from "react";
 import { useBalanceDelta } from "@/components/product/balance";
@@ -20,6 +21,14 @@ type Status = "idle" | "submitting" | "streaming" | "error";
 // orchestrator decision 4: no @ai-sdk/react), and applies the optimistic
 // balance overlay (components/product/balance.tsx) for the whole submit →
 // stream → refresh transition.
+//
+// Product decision (2026-09-27): once the free generation is used up, the
+// result stays on screen and a plain inline CTA invites signup — no more
+// navigating away to the /signup modal the instant the stream ends, so the
+// visitor has time to read what they just generated. The intercepting
+// modal itself isn't removed: /signup still opens it, whether reached
+// through this CTA or through a second, deliberate generate attempt (401
+// below).
 export function ToolForm({
   slug,
   inputs,
@@ -38,6 +47,7 @@ export function ToolForm({
   const [text, setText] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [generationId, setGenerationId] = useState<string | null>(null);
+  const [freeTrialUsed, setFreeTrialUsed] = useState(false);
   const lastInputRef = useRef<Record<string, string> | null>(null);
 
   function statusMessage(httpStatus: number): string {
@@ -57,6 +67,7 @@ export function ToolForm({
     setFieldErrors({});
     setErrorMessage(null);
     setText("");
+    setFreeTrialUsed(false);
     setStatus("submitting");
     lastInputRef.current = inputValues;
     const idempotencyKey = crypto.randomUUID();
@@ -104,8 +115,7 @@ export function ToolForm({
           }
           setStatus("idle");
           if (response.headers.get("x-free-generations-left") === "0") {
-            // Same as above: router.push() is outside JSX, so the cast stays.
-            router.push(`/${slug}/signup` as Route);
+            setFreeTrialUsed(true);
           }
         } catch (streamError) {
           setStatus("error");
@@ -178,6 +188,15 @@ export function ToolForm({
           onRegenerate={handleRegenerate}
           streaming={status === "streaming"}
         />
+      ) : null}
+
+      {freeTrialUsed ? (
+        <p className="text-sm text-muted-foreground">
+          {t("freeTrialUsed.message")}{" "}
+          <Link href={`/${slug}/signup`} className="underline">
+            {t("freeTrialUsed.cta")}
+          </Link>
+        </p>
       ) : null}
     </div>
   );

@@ -2,8 +2,13 @@ import { expect, test } from "@playwright/test";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { FONT_KEYS } from "../lib/fonts";
 import { products, themes } from "../lib/db/schema";
+// Not "../lib/fonts": that module imports next/font/google at the top
+// level, which only resolves inside Next's compiler (its own SWC plugin
+// statically rewrites the call) — a plain Node e2e run crashes trying to
+// resolve it directly. FONT_KEYS lives in lib/font-keys.ts precisely so it
+// has no such import.
+import { FONT_KEYS } from "../lib/font-keys";
 import { requireDatabaseUrl } from "../lib/require-database-url";
 import { themeTokensSchema } from "../lib/schemas/theme-tokens";
 

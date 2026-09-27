@@ -10,7 +10,7 @@ La doc Next.js 16.3 le dit d'entrée : le framework est **« unopinionated »** 
 - **La colocation est sûre** : un dossier de `app/` ne devient public que s'il contient `page` ou `route`. Les dossiers `_prefixés` sortent du routing, eux et tous leurs sous-dossiers. On en profite pour trier les fichiers dans l'éditeur et pour éviter les conflits avec de futures conventions Next.js.
 - **Deux pièges relevés en lisant la doc** :
   - La page cachée `/admin/_ops` prévue plus haut **ne serait pas routable**, puisque `_ops` est un dossier privé. On la renomme `admin/ops/` : elle reste « cachée » parce qu'aucun lien n'y mène et qu'elle est réservée au rôle `owner`. `%5Fops` marcherait aussi, mais c'est moins lisible.
-  - `[app]` capte tout segment de premier niveau, il faut donc **réserver des slugs** (`admin`, `api`, et les noms des fichiers de `public/`) dans le schéma Zod de création produit. Côté Next, les segments statiques gagnent sur le dynamique, donc aucun conflit de route ; en revanche un produit nommé `admin` serait inatteignable.
+  - `[app]` capte tout segment de premier niveau, il faut donc **réserver des slugs** (`admin`, `api`, `making-of` pour la page making-of, et les noms des fichiers de `public/`) dans le schéma Zod de création produit. Côté Next, les segments statiques gagnent sur le dynamique, donc aucun conflit de route ; en revanche un produit nommé `admin` serait inatteignable.
 
 ## Arborescence complète
 

@@ -25,6 +25,12 @@ export function Hero() {
         </Button>
       </div>
       <p className="mt-4 text-sm text-muted-foreground">Démo publique : le paiement et l&apos;email y sont simulés.</p>
+      <p className="mt-2 text-sm">
+        Construite en 30 heures par 258 agents IA :{" "}
+        <Link href="/making-of" className="font-medium underline underline-offset-4 hover:text-foreground/80">
+          Découvrir le making-of
+        </Link>
+      </p>
     </section>
   );
 }

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 // docs/01-produit.md's "Méthode de delivery agentique" and
@@ -36,6 +37,9 @@ export function HowItsBuilt() {
           ))}
         </ul>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+          <Button asChild>
+            <Link href="/making-of">Voir le making-of</Link>
+          </Button>
           <Button asChild variant="outline">
             <a href="https://github.com/aoll/micro-saas-studio-builder" target="_blank" rel="noreferrer">
               Voir le code sur GitHub

@@ -9,6 +9,13 @@
       "findings": 4,
       "retained": 2,
       "scope": "B1-B4 already validated by the human before this run started (no fresh QA pass run for this registry entry); B3 and B4 diagnosed during spec-writing as the same root cause (env.BETTER_AUTH_URL misconfigured in the Vercel project, not application code) and set aside for the human to fix directly in the Vercel dashboard."
+    },
+    {
+      "n": 2,
+      "report": ".claude/qa/reports/2026-09-27-full-2.md",
+      "findings": 0,
+      "retained": 0,
+      "scope": "targeted recheck, env=local, focus=BO-05a/BO-05b/I18N-SEO, recheck=2026-09-27-full.md — B1 and B2 both CORRIGÉ (repro replayed, non-regression checked), B3/B4 confirmed already fixed outside this run. No new finding."
     }
   ],
   "setAside": [

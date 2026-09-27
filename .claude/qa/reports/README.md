@@ -44,13 +44,15 @@ en **À qualifier** (en fin de rapport), avec les deux lectures possibles.
 
 | | |
 |---|---|
-| Commit | <SHA de 40 caractères> (`<branche>`) |
-| Base | `msb_<…>`, seed `scripts/seed.ts` (re-seed : oui / non) |
-| Serveur | `pnpm dev -p <port>`, AI_MODE=mock, DEMO_MODE=<…>, autres variables posées |
-| Outils | MCP next-devtools : oui / non (repli `/_next/mcp`) · agent-browser <version> / repli Playwright · next-dev-loop : oui / non |
-| Personas | anonyme (IP simulées …), inscrits jetables (emails), admin, owner |
+| Env | `local` · `preview` · `prod` |
+| URL | `http://localhost:<port>` (local) · l'URL Vercel testée (preview/prod) |
+| Commit | <SHA de 40 caractères> (`<branche>`), ou « inconnu » sur une URL déployée sans meta exposée |
+| Base | `msb_<…>`, seed `scripts/seed.ts` (re-seed : oui / non) — local seulement |
+| Serveur | `pnpm dev -p <port>`, AI_MODE=mock, DEMO_MODE=<…>, autres variables posées — local seulement ; « aucun (URL déjà déployée) » sinon |
+| Outils | MCP next-devtools : oui / non (repli `/_next/mcp`) · agent-browser <version> / repli Playwright · next-dev-loop : oui / non — en preview/prod, toujours repli Playwright (proxy + épinglage SPKI, `config.md`) |
+| Personas | anonyme (IP simulées …), inscrits jetables (emails), admin, owner — les trois dernières sont `NON TESTÉ` hors `local` (mutation) |
 | Focus | <routes ou specs, ou « aucun »> |
-| Mode | delta contre `<commitSha>` de la baseline (<A> ajoutés, <M> modifiés, <D> supprimés) · complet · delta sans baseline (= complet) |
+| Mode | delta contre `<commitSha>` de la baseline (<A> ajoutés, <M> modifiés, <D> supprimés) · complet · delta sans baseline (= complet) — local seulement ; « smoke (lecture seule) » en preview/prod |
 | Recheck | `<chemin du rapport précédent>`, ou « aucun » |
 | Artefacts | `<scratchpad>/qa/<date>-<scénario>/` |
 
@@ -68,6 +70,7 @@ en **À qualifier** (en fin de rapport), avec les deux lectures possibles.
 | 3.7 | profondeur (M `admin/products/_actions.ts`) | BUG | « Tester le prompt » renvoie 500 | B1 |
 | 6.4 | profondeur (A `activity/_components/purchases.tsx`) | MANQUE | pas de pagination des achats | M1 |
 | 10.3 | légère | NON TESTÉ | pas assez de crédits pour dépasser N | — |
+| 2.1 | smoke (lecture seule) | NON TESTÉ | mutation interdite hors local | — |
 
 ## Recheck
 

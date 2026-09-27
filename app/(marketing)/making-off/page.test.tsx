@@ -25,8 +25,10 @@ describe("MakingOffPage", () => {
     const timeline = screen.getByRole("list", { name: "Worktrees du run" });
     const lanes = within(timeline).getAllByRole("listitem");
     expect(lanes).toHaveLength(59);
-    expect(within(lanes[0]).getByText("SETUP-SKELETON")).toBeTruthy();
-    expect(lanes[0].querySelector("[title]")?.getAttribute("title")).toBe("SETUP-SKELETON · 22:24 → 23:33 · 10 agents");
+    const [first] = lanes;
+    if (!first) throw new Error("the timeline has no lane");
+    expect(within(first).getByText("SETUP-SKELETON")).toBeTruthy();
+    expect(first.querySelector("[title]")?.getAttribute("title")).toBe("SETUP-SKELETON · 22:24 → 23:33 · 10 agents");
   });
 
   it("offers the timeline as a table too", async () => {
@@ -42,8 +44,8 @@ describe("MakingOffPage", () => {
     const passes = screen.getByRole("list", { name: "Constats par passe QA" });
     const items = within(passes).getAllByRole("listitem");
     expect(items).toHaveLength(7);
-    expect(items[0].textContent).toContain("22 constats");
-    expect(items[6].textContent).toContain("0 constat");
+    expect(items.at(0)?.textContent).toContain("22 constats");
+    expect(items.at(-1)?.textContent).toContain("0 constat");
   });
 
   it("links back to the landing", async () => {

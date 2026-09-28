@@ -3,9 +3,9 @@
   "specs": {
     "I18N-MARKETING": {
       "dependsOn": [],
-      "status": "dispatched",
-      "worktree": "/home/user/micro-saas-studio-builder-i18n-marketing",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": "https://github.com/aoll/micro-saas-studio-builder/pull/108"
     },
     "I18N-BACKOFFICE": {
       "dependsOn": [],

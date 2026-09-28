@@ -35,7 +35,8 @@ export async function PurchasesCard({
   currentPages: Partial<Record<ActivityListKey, number>>;
 }) {
   const listKey: ActivityListKey = "purchases";
-  const [t, locale] = await Promise.all([getTranslations("backoffice-product-sheet"), getLocale()]);
+  const [t, localeRaw] = await Promise.all([getTranslations("backoffice-product-sheet"), getLocale()]);
+  const locale = localeRaw as "fr" | "en";
   const [headline, breakdown] = purchaseSummaryLines(summary, t, locale);
   const paginationNav = await PaginationNav({ slug, listKey, page, hasMore, currentPages });
 

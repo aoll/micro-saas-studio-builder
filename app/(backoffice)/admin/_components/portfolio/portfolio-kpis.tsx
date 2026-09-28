@@ -17,7 +17,7 @@ function grossMarginRate(totals: PortfolioMetrics["totals"]): number | null {
 // per-request config directly — no explicit locale argument needed.
 export async function PortfolioKpis({ totals }: { totals: PortfolioMetrics["totals"] }) {
   const t = await getTranslations("backoffice-portfolio");
-  const locale = await getLocale();
+  const locale = (await getLocale()) as "fr" | "en";
   return (
     <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
       <KpiCard label={t("portfolio.kpis.visits")} value={formatNumber(totals.visits, locale)} />

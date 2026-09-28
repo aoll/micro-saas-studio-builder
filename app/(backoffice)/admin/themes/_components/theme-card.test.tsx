@@ -8,6 +8,7 @@ import type { LandingVariant, ThemeTokens } from "@/lib/schemas/theme-tokens";
 import en from "@/messages/en/backoffice-themes.json";
 import fr from "@/messages/fr/backoffice-themes.json";
 import { ThemeCard } from "./theme-card";
+import type { ThemesTranslator } from "./theme-usage";
 
 vi.mock("next/font/google", () => {
   const loader = () => ({ variable: "--font-theme", className: "font-mock" });
@@ -22,8 +23,16 @@ afterEach(cleanup);
 // composes safely inside another Server Component's returned tree without
 // an RSC-aware renderer, unlike a function prop crossing into a Client
 // Component).
-const t = createTranslator({ locale: "fr", messages: { "backoffice-themes": fr }, namespace: "backoffice-themes" });
-const tEn = createTranslator({ locale: "en", messages: { "backoffice-themes": en }, namespace: "backoffice-themes" });
+const t = createTranslator({
+  locale: "fr",
+  messages: { "backoffice-themes": fr },
+  namespace: "backoffice-themes",
+}) as unknown as ThemesTranslator;
+const tEn = createTranslator({
+  locale: "en",
+  messages: { "backoffice-themes": en },
+  namespace: "backoffice-themes",
+}) as unknown as ThemesTranslator;
 
 const tokens: ThemeTokens = {
   light: {

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { Product } from "@/lib/dal/products";
 import en from "@/messages/en/backoffice-themes.json";
 import fr from "@/messages/fr/backoffice-themes.json";
-import { formatUsage, productsByTheme } from "./theme-usage";
+import { formatUsage, productsByTheme, type ThemesTranslator } from "./theme-usage";
 
 const THEME_A = "11111111-1111-1111-1111-111111111111";
 const THEME_B = "22222222-2222-2222-2222-222222222222";
@@ -75,8 +75,16 @@ describe("productsByTheme", () => {
 // return) and renders the `usage.none` / `usage.summary` keys of the
 // backoffice-themes zone, `summary` using ICU plural (`count`) rather than
 // a hand-picked singular/plural noun.
-const t = createTranslator({ locale: "fr", messages: { "backoffice-themes": fr }, namespace: "backoffice-themes" });
-const tEn = createTranslator({ locale: "en", messages: { "backoffice-themes": en }, namespace: "backoffice-themes" });
+const t = createTranslator({
+  locale: "fr",
+  messages: { "backoffice-themes": fr },
+  namespace: "backoffice-themes",
+}) as unknown as ThemesTranslator;
+const tEn = createTranslator({
+  locale: "en",
+  messages: { "backoffice-themes": en },
+  namespace: "backoffice-themes",
+}) as unknown as ThemesTranslator;
 
 describe("formatUsage", () => {
   it("returns the 'no product' message for zero products", () => {

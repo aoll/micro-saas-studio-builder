@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import en from "@/messages/en/backoffice-themes.json";
 import fr from "@/messages/fr/backoffice-themes.json";
 import { UsageWarning } from "./usage-warning";
+import type { ThemesTranslator } from "../../_components/theme-usage";
 
 afterEach(cleanup);
 
@@ -13,8 +14,16 @@ afterEach(cleanup);
 // prop, resolved once by the async ThemeEditorLoader — same reasoning as
 // ThemeCard (lot 7's theme-card.tsx comment): stays a synchronous Server
 // Component.
-const t = createTranslator({ locale: "fr", messages: { "backoffice-themes": fr }, namespace: "backoffice-themes" });
-const tEn = createTranslator({ locale: "en", messages: { "backoffice-themes": en }, namespace: "backoffice-themes" });
+const t = createTranslator({
+  locale: "fr",
+  messages: { "backoffice-themes": fr },
+  namespace: "backoffice-themes",
+}) as unknown as ThemesTranslator;
+const tEn = createTranslator({
+  locale: "en",
+  messages: { "backoffice-themes": en },
+  namespace: "backoffice-themes",
+}) as unknown as ThemesTranslator;
 
 describe("UsageWarning", () => {
   it("shows 'Aucun produit' with no status role for a theme used by nobody", () => {

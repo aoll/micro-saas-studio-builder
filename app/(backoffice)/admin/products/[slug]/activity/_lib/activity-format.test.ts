@@ -10,22 +10,25 @@ import {
   movementLabel,
   purchaseSummaryLines,
   summarizeOutput,
+  type Translate,
 } from "./activity-format";
 
 // I18N-BACKOFFICE-STRINGS: formatRelative/movementLabel/generationStatus/purchaseSummaryLines now
 // take a translator (like `now`, this keeps them pure functions of their arguments) — a real
 // next-intl translator built from the committed messages, so a wrong key or a missing message
-// fails these tests, not a hand-rolled fake.
+// fails these tests, not a hand-rolled fake. `Translate`'s `key: string` is intentionally wider
+// than next-intl's own `NamespacedMessageKeys` (activity-format.ts's own comment): sound at
+// runtime, just not something `tsc` can verify through the structural type on its own.
 const tFr = createTranslator({
   locale: "fr",
   messages: { "backoffice-product-sheet": frSheet },
   namespace: "backoffice-product-sheet",
-});
+}) as unknown as Translate;
 const tEn = createTranslator({
   locale: "en",
   messages: { "backoffice-product-sheet": enSheet },
   namespace: "backoffice-product-sheet",
-});
+}) as unknown as Translate;
 
 describe("formatCostMicros", () => {
   it("formats micros as euros with 3 decimals", () => {

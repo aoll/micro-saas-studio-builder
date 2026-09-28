@@ -600,7 +600,6 @@ describe("ProductForm · English locale", () => {
     render(
       <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
       "en",
-      en,
     );
     expect(screen.getByRole("button", { name: en.productForm.previous })).toBeTruthy();
     expect(screen.getByRole("button", { name: en.productForm.save })).toBeTruthy();
@@ -612,7 +611,6 @@ describe("ProductForm · English locale", () => {
     render(
       <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
       "en",
-      en,
     );
     fireEvent.click(screen.getByRole("button", { name: en.productForm.save }));
     await vi.waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Draft saved · version 1"));
@@ -628,7 +626,6 @@ describe("ProductForm · English locale", () => {
         themes={themeOptions}
       />,
       "en",
-      en,
     );
     fireEvent.click(screen.getByRole("button", { name: /7\./ }));
     fireEvent.click(screen.getByRole("button", { name: "Publish" }));
@@ -652,7 +649,6 @@ describe("ProductForm · English locale", () => {
         themes={[{ ...themeOptions[0]!, id: importThemeId }]}
       />,
       "en",
-      en,
     );
     fireEvent.change(screen.getByLabelText("Paste a JSON configuration"), {
       target: { value: bioInstagramFixture },
@@ -672,7 +668,6 @@ describe("ProductForm · English locale", () => {
         publishedVersion={1}
       />,
       "en",
-      en,
     );
     expect(screen.getByText("draft v2 · live v1")).toBeTruthy();
   });
@@ -682,7 +677,6 @@ describe("ProductForm · English locale", () => {
     render(
       <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
       "en",
-      en,
     );
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "LettrePro bis" } });
     fireEvent.change(screen.getByLabelText("Slug"), { target: { value: "lettre-pro" } });
@@ -694,7 +688,6 @@ describe("ProductForm · English locale", () => {
     render(
       <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
       "en",
-      en,
     );
     expect(screen.getByText(/\/your-product/)).toBeTruthy();
   });
@@ -704,7 +697,6 @@ describe("ProductForm · English locale", () => {
     render(
       <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
       "en",
-      en,
     );
     fireEvent.click(screen.getByRole("button", { name: en.productForm.save }));
     await screen.findByText(en.productForm.stepUnavailableBanner);

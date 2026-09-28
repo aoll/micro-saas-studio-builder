@@ -46,7 +46,8 @@ export async function GenerationsTable({
   currentPages: Partial<Record<ActivityListKey, number>>;
 }) {
   const listKey: ActivityListKey = "generations";
-  const [t, locale] = await Promise.all([getTranslations("backoffice-product-sheet"), getLocale()]);
+  const [t, localeRaw] = await Promise.all([getTranslations("backoffice-product-sheet"), getLocale()]);
+  const locale = localeRaw as "fr" | "en";
   const paginationNav = await PaginationNav({ slug, listKey, page, hasMore, currentPages });
 
   return (

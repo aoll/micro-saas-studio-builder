@@ -3,18 +3,21 @@ import { describe, expect, it } from "vitest";
 import { thresholdsInputSchema } from "@/lib/schemas/inputs";
 import fr from "@/messages/fr/backoffice-settings.json";
 import en from "@/messages/en/backoffice-settings.json";
-import { issuesToErrors } from "./validation";
+import { issuesToErrors, type Translate } from "./validation";
 
+// `Translate`'s `key: string` is intentionally wider than next-intl's own
+// `NamespacedMessageKeys` (validation.ts's own comment): sound at runtime, just not something
+// `tsc` can verify through the structural type on its own.
 const tFr = createTranslator({
   locale: "fr",
   messages: { "backoffice-settings": fr },
   namespace: "backoffice-settings",
-});
+}) as unknown as Translate;
 const tEn = createTranslator({
   locale: "en",
   messages: { "backoffice-settings": en },
   namespace: "backoffice-settings",
-});
+}) as unknown as Translate;
 
 describe("issuesToErrors", () => {
   it("translates the minVisits lower bound (fr)", () => {

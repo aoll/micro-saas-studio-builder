@@ -25,12 +25,13 @@ export async function ProductSheet({ params }: { params: Promise<{ slug: string 
   const product = await getProduct(slug);
   if (!product) notFound();
 
-  const [funnel, thresholds, t, locale] = await Promise.all([
+  const [funnel, thresholds, t, localeRaw] = await Promise.all([
     getFunnel(product.id, { days: RANGE_DAYS }),
     getThresholds(product.id),
     getTranslations("backoffice-product-sheet"),
     getLocale(),
   ]);
+  const locale = localeRaw as "fr" | "en";
   const sheet = toProductSheet(funnel, thresholds, t, locale);
 
   return <ProductSheetView sheet={sheet} />;

@@ -7,11 +7,14 @@ import { issuesToErrors, stepOfPath, toFrenchMessage, validateStep, type Message
 // committed English messages, the same way other zones' tests do
 // (e.g. app/(products)/_components/product-not-found.test.tsx) — catches a
 // stale key or a missing message, not just a hand-rolled stub.
-const tEnglish: MessageTranslator = createTranslator({
+// `MessageTranslator`'s `key: string` is intentionally wider than next-intl's own
+// `NamespacedMessageKeys` (validation.ts's own comment): sound at runtime, just not something
+// `tsc` can verify through the structural type on its own.
+const tEnglish = createTranslator({
   locale: "en",
   messages: { "backoffice-product-form-b2": en },
   namespace: "backoffice-product-form-b2" as never,
-});
+}) as unknown as MessageTranslator;
 
 describe("stepOfPath", () => {
   it("maps a slug path to step 1", () => {

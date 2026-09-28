@@ -18,7 +18,7 @@ const NEW_PRODUCT_HREF = "/admin/products/new";
 // row re-reading the ambient request config.
 async function Portfolio() {
   await requireAdmin();
-  const locale = await getLocale();
+  const locale = (await getLocale()) as "fr" | "en";
   const metrics = await getPortfolioMetrics({ days: 30 });
   const thresholdsById = Object.fromEntries(
     await Promise.all(

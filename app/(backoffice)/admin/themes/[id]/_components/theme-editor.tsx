@@ -59,7 +59,7 @@ const initialState: SaveThemeState = {};
 // Server Action).
 export function ThemeEditor({ theme, sampleProductName }: { theme: Theme; sampleProductName?: string }) {
   const t = useTranslations("backoffice-themes");
-  const locale = useLocale();
+  const locale = useLocale() as "fr" | "en";
   const [tokens, setTokens] = useState<ThemeTokens>(theme.tokens);
   const [landingVariant, setLandingVariant] = useState<LandingVariant>(theme.landingVariant);
   const [mode, setMode] = useState<"light" | "dark">("light");

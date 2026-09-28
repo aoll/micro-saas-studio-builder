@@ -88,7 +88,7 @@ export function ProductForm({
   // I18N-BACKOFFICE-STRINGS: bound into every Server Action call below, and
   // into `validateStep`'s translator — the cookie/root-param locale isn't
   // readable from inside a Server Action (docs/08-stack.md › i18n).
-  const locale = useLocale();
+  const locale = useLocale() as "fr" | "en";
   const tValidation = useTranslations("backoffice-product-form-b2");
   const router = useRouter();
   const [draft, setDraft] = useState<ProductDraft>(initialDraft);

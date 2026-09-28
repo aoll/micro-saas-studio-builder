@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import frDecision from "@/messages/fr/backoffice-decision.json";
 import enDecision from "@/messages/en/backoffice-decision.json";
+import type { StatusChangeProps } from "./status-change";
 
 const { setProductStatus, toastSuccess, toastError } = vi.hoisted(() => ({
   setProductStatus: vi.fn(),
@@ -24,11 +25,11 @@ afterEach(() => {
   toastError.mockClear();
 });
 
-const baseProps = {
+const baseProps: StatusChangeProps = {
   productId: "p1",
   slug: "my-product",
   name: "My Product",
-  status: "test" as const,
+  status: "test",
   decision: null,
   justification: { visits: "1 200", conversion: "7 %", margin: "0,50 €" },
 };

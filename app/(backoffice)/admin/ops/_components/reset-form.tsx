@@ -30,7 +30,7 @@ async function callResetDemoAction(
 // runs from the second, explicit click.
 export function ResetForm() {
   const t = useTranslations("backoffice-portfolio");
-  const locale = useLocale();
+  const locale = useLocale() as "fr" | "en";
   const [confirming, setConfirming] = useState(false);
   const [state, formAction, pending] = useActionState(callResetDemoAction.bind(null, locale), initialState);
 

@@ -4,22 +4,25 @@ import frSheet from "@/messages/fr/backoffice-product-sheet.json";
 import enSheet from "@/messages/en/backoffice-product-sheet.json";
 import type { DailyPoint, Funnel, FunnelStep, ProductMetrics } from "@/lib/dal/metrics";
 import type { Thresholds } from "@/lib/dal/thresholds";
-import { toFunnelRows, toKpis, toProductSheet, toTrendPoints } from "./sheet";
+import { toFunnelRows, toKpis, toProductSheet, toTrendPoints, type Translate } from "./sheet";
 
 // I18N-BACKOFFICE-STRINGS: toKpis/toFunnelRows/toProductSheet now take a translator (like
 // formatRelative etc. in activity-format.ts take `now`, this stays a pure function of its
 // arguments) — a real next-intl translator built from the committed messages, so a wrong key or
-// a missing message would fail these tests, not a hand-rolled fake.
+// a missing message would fail these tests, not a hand-rolled fake. `Translate`'s `key: string`
+// is intentionally wider than next-intl's own `NamespacedMessageKeys` (sheet.ts's own comment):
+// sound at runtime (this namespace's real translator accepts any of its own keys, and every call
+// below passes one), just not something `tsc` can verify through the structural type on its own.
 const tFr = createTranslator({
   locale: "fr",
   messages: { "backoffice-product-sheet": frSheet },
   namespace: "backoffice-product-sheet",
-});
+}) as unknown as Translate;
 const tEn = createTranslator({
   locale: "en",
   messages: { "backoffice-product-sheet": enSheet },
   namespace: "backoffice-product-sheet",
-});
+}) as unknown as Translate;
 
 function metrics(overrides: Partial<ProductMetrics> = {}): ProductMetrics {
   return {

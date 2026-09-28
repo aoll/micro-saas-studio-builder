@@ -13,9 +13,11 @@ export type Translate = (key: string, values?: Record<string, string | number>) 
 
 export function toMessage(issue: z.core.$ZodIssue, t: Translate): string {
   if (issue.code === "too_small" && issue.origin === "number") {
-    return t("errors.minVisitsTooSmall", { minimum: issue.minimum });
+    return t("errors.minVisitsTooSmall", { minimum: Number(issue.minimum) });
   }
-  if (issue.code === "too_big" && issue.origin === "number") return t("errors.tooBig", { maximum: issue.maximum });
+  if (issue.code === "too_big" && issue.origin === "number") {
+    return t("errors.tooBig", { maximum: Number(issue.maximum) });
+  }
   if (issue.code === "invalid_type") return t("errors.invalidValue");
   if (issue.message === "scaleMinConversion must be greater than killMaxConversion") {
     return t("errors.scaleGreaterThanKill");

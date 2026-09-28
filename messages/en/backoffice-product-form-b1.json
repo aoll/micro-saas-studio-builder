@@ -20,5 +20,20 @@
     "imageComingSoon": "Image (soon)",
     "comingSoonTooltip": "Coming soon",
     "unmatchedVariable": "Variable '{{'{variable}'}}' has no matching field"
+  },
+  "pricingStep": {
+    "freeCreditsLabel": "Credits granted on signup",
+    "anonymousGenerationsLabel": "Free anonymous generations",
+    "costPerGenerationLabel": "Cost per generation (credits)",
+    "packsTitle": "Credit packs",
+    "addPack": "Add a pack",
+    "marginHint": "Margin per generation estimated from a {source}.",
+    "costSourceMeasured": "measured cost",
+    "costSourceEstimated": "estimated cost",
+    "packCreditsLabel": "Credits",
+    "packPriceLabel": "Price (€)",
+    "packRecommendedLabel": "Recommended",
+    "packMargin": "{price} · {margin} margin per generation",
+    "removePack": "Remove this pack"
   }
 }

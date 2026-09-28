@@ -20,5 +20,20 @@
     "imageComingSoon": "Image (bientôt)",
     "comingSoonTooltip": "Bientôt disponible",
     "unmatchedVariable": "Variable '{{'{variable}'}}' sans champ correspondant"
+  },
+  "pricingStep": {
+    "freeCreditsLabel": "Crédits offerts à l'inscription",
+    "anonymousGenerationsLabel": "Générations anonymes gratuites",
+    "costPerGenerationLabel": "Coût par génération (crédits)",
+    "packsTitle": "Packs de crédits",
+    "addPack": "Ajouter un pack",
+    "marginHint": "Marge par génération estimée à partir d'un {source}.",
+    "costSourceMeasured": "coût mesuré",
+    "costSourceEstimated": "coût estimé",
+    "packCreditsLabel": "Crédits",
+    "packPriceLabel": "Prix (€)",
+    "packRecommendedLabel": "Recommandé",
+    "packMargin": "{price} · marge {margin} par génération",
+    "removePack": "Supprimer ce pack"
   }
 }

@@ -10,5 +10,15 @@
       "pricing": "Pricing",
       "summary": "Récapitulatif"
     }
+  },
+  "generationStep": {
+    "systemPromptLabel": "Prompt système",
+    "modelLabel": "Modèle",
+    "promptTemplateLabel": "Template de prompt",
+    "outputTypeLabel": "Type de sortie",
+    "markdown": "Markdown",
+    "imageComingSoon": "Image (bientôt)",
+    "comingSoonTooltip": "Bientôt disponible",
+    "unmatchedVariable": "Variable '{{'{variable}'}}' sans champ correspondant"
   }
 }

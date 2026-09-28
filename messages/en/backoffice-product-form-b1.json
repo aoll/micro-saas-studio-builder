@@ -10,5 +10,15 @@
       "pricing": "Pricing",
       "summary": "Summary"
     }
+  },
+  "generationStep": {
+    "systemPromptLabel": "System prompt",
+    "modelLabel": "Model",
+    "promptTemplateLabel": "Prompt template",
+    "outputTypeLabel": "Output type",
+    "markdown": "Markdown",
+    "imageComingSoon": "Image (soon)",
+    "comingSoonTooltip": "Coming soon",
+    "unmatchedVariable": "Variable '{{'{variable}'}}' has no matching field"
   }
 }

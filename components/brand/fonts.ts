@@ -1,9 +1,9 @@
 import { Archivo, IBM_Plex_Mono, Manrope } from "next/font/google";
 
-// The `(marketing)` look, shared by the landing and the making-of: Archivo
-// for headings, Manrope for the prose, IBM Plex Mono for URLs and data
-// labels. Set as CSS variables on the marketing root layout, so the products
-// keep their own theme fonts (lib/fonts.ts).
+// The studio's own look ("bleu diffus"), shared by the landing, the
+// making-of and the backoffice: Archivo for headings, Manrope for the prose,
+// IBM Plex Mono for URLs and data labels. Set as CSS variables on those root
+// layouts, so the products keep their own theme fonts (lib/fonts.ts).
 // Archivo is loaded as its variable font: listing static weights makes
 // Turbopack fail to resolve the font files (its CSS carries `font-stretch`).
 export const display = Archivo({

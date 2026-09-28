@@ -81,9 +81,10 @@
 }
 
 /*
- * `(marketing)` pages only (the landing and the making-of): one fixed light
- * look, "bleu diffus" with a white-to-pink accent, independent from the
- * product themes above. Fonts come from app/(marketing)/_components/fonts.ts.
+ * The studio's own pages (the landing, the making-of and, through
+ * `mk-theme` below, the backoffice): one fixed light look, "bleu diffus"
+ * with a white-to-pink accent, independent from the product themes above.
+ * Fonts come from components/brand/fonts.ts.
  */
 @theme {
   --color-mk-ground: oklch(0.985 0.008 240);
@@ -178,6 +179,64 @@
   box-shadow:
     0 1px 2px 0 oklch(0.2 0.02 250 / 0.05),
     0 8px 20px -8px oklch(0.2 0.02 250 / 0.12);
+}
+
+/*
+ * The same look for the backoffice: its root layout puts `mk-theme` on
+ * <html>, which remaps the shadcn tokens onto the palette above (light only,
+ * like the marketing pages). `html.mk-theme` outranks `:root`, including the
+ * dark-mode block. Theme previews inside the backoffice set these tokens on
+ * their own root element (preview-vars.ts, landing-preview.tsx), so they
+ * still show the product's theme.
+ */
+html.mk-theme {
+  color-scheme: light;
+  --background: var(--color-mk-ground);
+  --foreground: var(--color-mk-ink);
+  --card: var(--color-mk-surface);
+  --card-foreground: var(--color-mk-ink);
+  --primary: var(--color-mk-link);
+  --primary-foreground: oklch(0.985 0.005 240);
+  --secondary: var(--color-mk-chip);
+  --secondary-foreground: var(--color-mk-chip-ink);
+  --muted: var(--color-mk-subtle);
+  --muted-foreground: var(--color-mk-muted);
+  --accent: oklch(0.94 0.025 235);
+  --accent-foreground: var(--color-mk-chip-ink);
+  --border: var(--color-mk-line);
+  --input: var(--color-mk-line);
+  --ring: var(--color-mk-rose);
+  --radius: 0.75rem;
+  --font-theme: var(--font-mk-sans);
+}
+
+/* shadcn's usual default border colour, which this file never set (Tailwind
+   v4 falls back to currentColor). In the base layer, so a utility such as
+   `border-destructive` still wins. */
+@layer base {
+  html.mk-theme *,
+  html.mk-theme ::before,
+  html.mk-theme ::after {
+    border-color: var(--border);
+  }
+}
+
+html.mk-theme :is(h1, h2) {
+  font-family: var(--font-mk-display), var(--font-sans);
+  letter-spacing: -0.02em;
+}
+
+/* Primary buttons get the white-to-pink gradient of `mk-cta`; the flat
+   `--primary` blue stays for text, bars and badges. */
+html.mk-theme [data-slot="button"][data-variant="default"] {
+  background-image:
+    linear-gradient(135deg, oklch(1 0 0 / 0.5) 0%, transparent 45%),
+    linear-gradient(135deg, oklch(0.995 0.006 350) 0%, oklch(0.93 0.055 350) 50%, oklch(0.86 0.1 355) 100%);
+  color: var(--color-mk-rose-ink);
+  font-weight: 700;
+  box-shadow:
+    inset 0 0 0 1px var(--color-mk-rose-line),
+    0 8px 20px -8px oklch(0.6 0.12 355 / 0.3);
 }
 
 /* BalanceBadge replays this on every optimistic delta (components/product/balance.tsx). */

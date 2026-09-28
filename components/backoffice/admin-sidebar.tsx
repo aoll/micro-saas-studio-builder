@@ -14,8 +14,8 @@ export async function AdminSidebar() {
   if (!session || !ADMIN_ROLES.has(session.user.role)) return null;
 
   return (
-    <nav className="flex w-56 flex-col justify-between border-r p-4">
-      <ul className="grid gap-2">
+    <nav className="flex w-56 shrink-0 flex-col justify-between border-r bg-card/60 p-4 backdrop-blur">
+      <ul className="grid gap-1">
         <li>
           <NavLink href="/admin">Portefeuille</NavLink>
         </li>

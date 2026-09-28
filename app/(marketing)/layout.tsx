@@ -1,7 +1,7 @@
 import "@/app/globals.css";
 import type { Metadata } from "next";
 import { env } from "@/lib/env";
-import { display, mono, sans } from "./_components/fonts";
+import { display, mono, sans } from "@/components/brand/fonts";
 
 // Root layout for `/`: a third root layout alongside `(backoffice)` and
 // `(products)/[app]` (docs/09-arborescence.md's "multiple root layouts"

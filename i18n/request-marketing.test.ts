@@ -12,6 +12,15 @@ vi.mock("next/root-params", () => ({ app: () => app() }));
 const getProduct = vi.fn();
 vi.mock("@/lib/dal/products", () => ({ getProduct: (slug: string) => getProduct(slug) }));
 
+// Needed since the merge of I18N-BACKOFFICE's branch 3 (own commit, see its
+// message): the "falls back to fr" cases below now fall all the way
+// through to the real backofficeLocale(), which calls next/headers'
+// cookies() — unmocked, that throws "called outside a request scope"
+// under Vitest. Same mock as i18n/request.test.ts (the sister spec's own
+// file); an empty cookie jar reproduces the same fr fallback these tests
+// already asserted before the merge, so no assertion below changes.
+vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined }) }));
+
 describe("i18n/request — marketing branch", () => {
   it("resolves the locale the marketing middleware chose (en)", async () => {
     app.mockResolvedValue(undefined);

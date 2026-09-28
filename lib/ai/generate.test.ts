@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import lettreProConfig from "@/fixtures/lettre-pro.config.json";
 import lettreProFixtures from "@/fixtures/lettre-pro.json";
 import type { ProductConfig } from "@/lib/schemas/product-config";
-import { costMicros, PLATFORM_MAX_OUTPUT_TOKENS, streamGeneration } from "./generate";
+import { costMicros, PLATFORM_MAX_OUTPUT_TOKENS, REFUSAL_MESSAGES, streamGeneration } from "./generate";
 
 const resolveModel = vi.fn();
 vi.mock("@/lib/ai/model", () => ({ resolveModel: (...args: unknown[]) => resolveModel(...args) }));
@@ -174,6 +174,44 @@ describe("streamGeneration", () => {
       .map((part) => part.text)
       .join("");
     expect(userText).toContain(`<poste>${fixture!.input.poste}</poste>`);
+  });
+
+  // AI-GUARD (docs/05-ia.md): the system prompt must carry the exact
+  // refusal sentences so the model can reproduce them word for word, and
+  // reading the constants (not copy-pasting the string) means the prompt
+  // and `isRefusal`'s detection can never drift apart.
+  it("prefixes the system prompt with both exact REFUSAL_MESSAGES sentences", async () => {
+    let captured: { prompt?: unknown } = {};
+    resolveModel.mockReturnValue(fixtureModel((options) => (captured = options as typeof captured)));
+    const result = streamGeneration({ product, inputs: fixture!.input, onSuccess: vi.fn(), onError: vi.fn() });
+    await result.consumeStream();
+
+    const promptMessages = captured.prompt as Array<{ role: string; content: unknown }>;
+    const systemMessage = promptMessages.find((message) => message.role === "system");
+    expect(systemMessage?.content).toContain(REFUSAL_MESSAGES.fr);
+    expect(systemMessage?.content).toContain(REFUSAL_MESSAGES.en);
+  });
+
+  it("still carries both refusal sentences even with a product-level systemPrompt appended", async () => {
+    let captured: { prompt?: unknown } = {};
+    resolveModel.mockReturnValue(fixtureModel((options) => (captured = options as typeof captured)));
+    const withSystemPrompt: ProductConfig = {
+      ...product,
+      generation: { ...product.generation, systemPrompt: "Tu es un rédacteur de lettres de motivation." },
+    };
+    const result = streamGeneration({
+      product: withSystemPrompt,
+      inputs: fixture!.input,
+      onSuccess: vi.fn(),
+      onError: vi.fn(),
+    });
+    await result.consumeStream();
+
+    const promptMessages = captured.prompt as Array<{ role: string; content: unknown }>;
+    const systemMessage = promptMessages.find((message) => message.role === "system");
+    expect(systemMessage?.content).toContain(REFUSAL_MESSAGES.fr);
+    expect(systemMessage?.content).toContain(REFUSAL_MESSAGES.en);
+    expect(systemMessage?.content).toContain("Tu es un rédacteur de lettres de motivation.");
   });
 
   it("forwards the product's fallback models to the AI Gateway provider options", async () => {

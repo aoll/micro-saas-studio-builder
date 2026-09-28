@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import NextLink from "next/link";
 import { Link } from "@/i18n/marketing-navigation";
+import { HeroCta } from "./hero-cta";
 
 // A product's life in the studio, shown next to the pitch: the status the
 // backoffice drives each product through (docs/01-produit.md). `badge` is a
@@ -19,7 +20,10 @@ const STAGE_KEYS = [
 // specific slug, so this component stays independent from the product list.
 // `/admin/login` and `#produits` are outside the marketing i18n routing
 // (proxy.ts's R4), so they stay plain `next/link`; `/making-of` uses the
-// marketing `Link` to keep the current locale's prefix.
+// marketing `Link` to keep the current locale's prefix. `#produits` is
+// `HeroCta`, a client leaf (hero-cta.tsx): a plain href only scrolls when
+// the hash actually changes, so a browser Back from a product page (hash
+// already `#produits`) needs an unconditional scroll on click.
 export async function Hero() {
   const t = await getTranslations("marketing.hero");
   return (
@@ -34,9 +38,7 @@ export async function Hero() {
         </h1>
         <p className="max-w-xl text-lg leading-relaxed text-mk-muted">{t("description")}</p>
         <div className="flex flex-wrap gap-3">
-          <NextLink href="#produits" className="mk-cta min-h-12 px-5 text-[15px]">
-            {t("ctaProduct")}
-          </NextLink>
+          <HeroCta className="mk-cta min-h-12 px-5 text-[15px]">{t("ctaProduct")}</HeroCta>
           <NextLink href="/admin/login" className="mk-button min-h-12 px-5 text-[15px]">
             {t("ctaAdmin")}
           </NextLink>

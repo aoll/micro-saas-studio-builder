@@ -152,7 +152,7 @@ export function PricingStep({
                     <p className="text-sm text-destructive">{errors[`pricing.packs.${index}.priceCents`]}</p>
                   ) : null}
                 </div>
-                <div className="flex items-end gap-2">
+                <div className="flex items-end gap-2 pb-1.5">
                   <input
                     id={`pricing-pack-recommended-${index}`}
                     type="checkbox"

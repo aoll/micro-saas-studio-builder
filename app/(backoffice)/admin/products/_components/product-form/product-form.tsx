@@ -335,8 +335,10 @@ export function ProductForm({
   const margins = estimateMargins(draft.pricing.packs, draft.pricing.costPerGeneration, aiCostMicros);
 
   return (
-    <div className="grid grid-cols-[200px_1fr_320px] gap-6">
-      <StepNav current={currentStep} onSelect={setCurrentStep} stepErrors={stepHasError} />
+    <div className="grid grid-cols-[200px_1fr_320px] items-start gap-6">
+      <div className="sticky top-6">
+        <StepNav current={currentStep} onSelect={setCurrentStep} stepErrors={stepHasError} />
+      </div>
       <form action={formAction} className="grid gap-6">
         <input type="hidden" name="config" value={configJson} readOnly />
 
@@ -464,13 +466,15 @@ export function ProductForm({
       </form>
 
       {selectedTheme ? (
-        <LandingPreview
-          slug={draft.slug || t("previewSlugPlaceholder")}
-          landing={draft.landing}
-          pricing={draft.pricing}
-          theme={selectedTheme}
-          branding={draft.branding}
-        />
+        <div className="sticky top-6">
+          <LandingPreview
+            slug={draft.slug || t("previewSlugPlaceholder")}
+            landing={draft.landing}
+            pricing={draft.pricing}
+            theme={selectedTheme}
+            branding={draft.branding}
+          />
+        </div>
       ) : null}
     </div>
   );

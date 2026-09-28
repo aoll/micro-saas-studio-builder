@@ -62,19 +62,14 @@ function ScreenFigure({ screen, sizes }: { screen: Screen; sizes: string }) {
 export function BackofficeScreens() {
   return (
     <section aria-labelledby="backoffice-screens" className="mx-auto flex max-w-6xl flex-col gap-10 px-4 pt-24 sm:px-8">
-      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
-        <div className="flex flex-col gap-2">
-          <p className="text-[13px] font-semibold text-mk-link">Le backoffice</p>
-          <h2
-            id="backoffice-screens"
-            className="font-[family-name:var(--font-mk-display)] text-3xl font-extrabold tracking-[-0.03em] sm:text-4xl"
-          >
-            Le backoffice en images
-          </h2>
-        </div>
-        <p className="max-w-md leading-relaxed text-mk-muted">
-          Trois écrans clés, capturés sur les données de la démo : on lance un produit, on le mesure, on décide.
-        </p>
+      <div className="flex flex-col gap-2">
+        <p className="text-[13px] font-semibold text-mk-link">Le backoffice</p>
+        <h2
+          id="backoffice-screens"
+          className="font-[family-name:var(--font-mk-display)] text-3xl font-extrabold tracking-[-0.03em] sm:text-4xl"
+        >
+          Le backoffice en images
+        </h2>
       </div>
       <ScreenFigure screen={PORTFOLIO} sizes="(min-width: 1152px) 1088px, 100vw" />
       <div className="grid gap-10 lg:grid-cols-2 lg:gap-6">

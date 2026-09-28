@@ -42,7 +42,7 @@ export function LandingPreview({
   return (
     <div
       aria-label="Aperçu de la landing"
-      className={cn(font.className, "grid gap-4 border p-4 text-left")}
+      className={cn(font.className, "grid content-start gap-4 border p-4 text-left")}
       style={rootStyle}
     >
       <p className="text-xs font-medium" style={{ color: light.mutedForeground }}>

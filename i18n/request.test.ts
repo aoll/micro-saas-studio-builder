@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 // next-intl picks its server vs. client implementation of getRequestConfig
 // via the "react-server" package export condition, which Vitest's plain
@@ -26,6 +26,11 @@ vi.mock("next/headers", () => ({
 
 const params = { requestLocale: Promise.resolve(undefined) };
 
+afterEach(() => {
+  cookieJar.clear();
+  vi.clearAllMocks();
+});
+
 describe("i18n/request", () => {
   it("resolves the locale and messages of the current product", async () => {
     app.mockResolvedValue("bio-insta");
@@ -50,5 +55,92 @@ describe("i18n/request", () => {
     const { default: getRequestConfig } = await import("./request");
     const config = await getRequestConfig(params);
     expect(config.locale).toBe("fr");
+  });
+});
+
+describe("backoffice branch", () => {
+  it("reads the admin_locale cookie when there is no root param", async () => {
+    app.mockResolvedValue(undefined);
+    cookieJar.set("admin_locale", { value: "en" });
+    const { default: getRequestConfig } = await import("./request");
+    const config = await getRequestConfig(params);
+    expect(config.locale).toBe("en");
+    expect((config.messages!.backoffice as { localeSwitcher: { label: string } }).localeSwitcher.label).toBe(
+      "Backoffice language",
+    );
+  });
+
+  it("falls back to fr when there is no admin_locale cookie", async () => {
+    app.mockResolvedValue(undefined);
+    const { default: getRequestConfig } = await import("./request");
+    const config = await getRequestConfig(params);
+    expect(config.locale).toBe("fr");
+  });
+
+  it.each(["de", "EN", ""])("falls back to fr for an invalid cookie value %j", async (value) => {
+    app.mockResolvedValue(undefined);
+    cookieJar.set("admin_locale", { value });
+    const { default: getRequestConfig } = await import("./request");
+    const config = await getRequestConfig(params);
+    expect(config.locale).toBe("fr");
+  });
+
+  it("never reads headers() (no browser detection behind auth)", async () => {
+    app.mockResolvedValue(undefined);
+    const { default: getRequestConfig } = await import("./request");
+    await getRequestConfig(params);
+    expect(headersSpy).not.toHaveBeenCalled();
+  });
+
+  it("keeps the product branch unchanged: a product's own locale wins over the cookie, cookies() is never called", async () => {
+    app.mockResolvedValue("bio-insta");
+    getProduct.mockResolvedValue({ locale: "en" });
+    cookieJar.set("admin_locale", { value: "fr" });
+    const cookiesModule = await import("next/headers");
+    const cookiesSpy = vi.spyOn(cookiesModule, "cookies");
+    const { default: getRequestConfig } = await import("./request");
+    const config = await getRequestConfig(params);
+    expect(config.locale).toBe("en");
+    expect(cookiesSpy).not.toHaveBeenCalled();
+  });
+
+  it("keeps the unknown-product fallback unchanged: cookies() is never called", async () => {
+    app.mockResolvedValue("unknown-slug");
+    getProduct.mockResolvedValue(null);
+    cookieJar.set("admin_locale", { value: "en" });
+    const cookiesModule = await import("next/headers");
+    const cookiesSpy = vi.spyOn(cookiesModule, "cookies");
+    const { default: getRequestConfig } = await import("./request");
+    const config = await getRequestConfig(params);
+    expect(config.locale).toBe("fr");
+    expect(cookiesSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("explicit locale (Server Actions)", () => {
+  it("wins over everything else and calls neither app() nor cookies()", async () => {
+    app.mockRejectedValue(new Error("app() is not supported in Server Actions"));
+    cookieJar.set("admin_locale", { value: "fr" });
+    const cookiesModule = await import("next/headers");
+    const cookiesSpy = vi.spyOn(cookiesModule, "cookies");
+    const { default: getRequestConfig } = await import("./request");
+    const config = await getRequestConfig({ locale: "en", requestLocale: params.requestLocale });
+    expect(config.locale).toBe("en");
+    expect((config.messages!.backoffice as { localeSwitcher: { label: string } }).localeSwitcher.label).toBe(
+      "Backoffice language",
+    );
+    expect(app).not.toHaveBeenCalled();
+    expect(cookiesSpy).not.toHaveBeenCalled();
+  });
+
+  it("falls back to fr for an invalid explicit locale, still without calling app() or cookies()", async () => {
+    app.mockRejectedValue(new Error("app() is not supported in Server Actions"));
+    const cookiesModule = await import("next/headers");
+    const cookiesSpy = vi.spyOn(cookiesModule, "cookies");
+    const { default: getRequestConfig } = await import("./request");
+    const config = await getRequestConfig({ locale: "de", requestLocale: params.requestLocale });
+    expect(config.locale).toBe("fr");
+    expect(app).not.toHaveBeenCalled();
+    expect(cookiesSpy).not.toHaveBeenCalled();
   });
 });

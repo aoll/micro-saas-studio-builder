@@ -22,7 +22,7 @@ export async function PortfolioKpis({ totals }: { totals: PortfolioMetrics["tota
     <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
       <KpiCard label={t("portfolio.kpis.visits")} value={formatNumber(totals.visits, locale)} />
       <KpiCard label={t("portfolio.kpis.revenue")} value={formatEuroCents(totals.revenueCents, locale)} />
-      <KpiCard label={t("portfolio.kpis.aiCost")} value={formatEuroMicros(totals.aiCostMicros, locale)} />
+      <KpiCard label={t("portfolio.kpis.aiCost")} value={formatEuroMicros(totals.aiCostMicros, 2, locale)} />
       <KpiCard label={t("portfolio.kpis.grossMargin")} value={formatPercent(grossMarginRate(totals), locale)} />
     </div>
   );

@@ -67,7 +67,7 @@ function toRow(product: ProductMetrics, thresholds: Thresholds | undefined, loca
       visits: formatNumber(product.visits, locale),
       conversion: formatPercent(product.signupToPurchaseRate, locale),
       revenue: formatEuroCents(product.revenueCents, locale),
-      aiCost: formatEuroMicros(product.aiCostMicros, locale),
+      aiCost: formatEuroMicros(product.aiCostMicros, 2, locale),
       margin: formatPercent(rate, locale),
     },
   };

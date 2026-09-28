@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HeroCta } from "./hero-cta";
 
 // A product's life in the studio, shown next to the pitch: the status the
 // backoffice drives each product through (docs/01-produit.md).
@@ -12,7 +13,8 @@ const STAGES = [
 // Static content, entirely pre-rendered: the first thing a recruiter opens
 // should ship almost no JavaScript (docs/04-nextjs.md). The primary CTA
 // scrolls to ProductsShowcase's `#produits` instead of linking to one
-// specific slug, so this component stays independent from the product list.
+// specific slug, so this component stays independent from the product list
+// — only that one link is `HeroCta`, a client leaf (hero-cta.tsx).
 export function Hero() {
   return (
     <section className="mx-auto grid max-w-6xl gap-12 px-4 pt-16 pb-12 sm:px-8 lg:grid-cols-12 lg:items-center lg:pt-24">
@@ -29,9 +31,7 @@ export function Hero() {
           donnée — funnel, coût IA, marge — jusqu&apos;à la décision : on scale, ou on coupe.
         </p>
         <div className="flex flex-wrap gap-3">
-          <Link href="#produits" className="mk-cta min-h-12 px-5 text-[15px]">
-            Voir un produit en direct
-          </Link>
+          <HeroCta className="mk-cta min-h-12 px-5 text-[15px]">Voir un produit en direct</HeroCta>
           <Link href="/admin/login" className="mk-button min-h-12 px-5 text-[15px]">
             Ouvrir le backoffice admin
           </Link>

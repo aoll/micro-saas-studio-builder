@@ -12,16 +12,31 @@ import { SEED_ADMIN } from "../scripts/seed";
 // seeded, AI_MODE=mock).
 
 test.describe("BO-01 · Connexion admin", () => {
-  test("the login page shows empty fields, no seeded credentials, no demo-prefill button", async ({ page }) => {
+  // BO-01, human decision of 2026-09-28: the fields are prefilled with the
+  // owner's credentials when SEED_OWNER_EMAIL and SEED_OWNER_PASSWORD are set
+  // (the demo deployment), empty otherwise; the admin's never appear.
+  const OWNER_PREFILL =
+    process.env.SEED_OWNER_EMAIL && process.env.SEED_OWNER_PASSWORD
+      ? { email: process.env.SEED_OWNER_EMAIL, password: process.env.SEED_OWNER_PASSWORD }
+      : undefined;
+
+  test("the login page prefills the owner's credentials when set, never the admin's", async ({ page }) => {
     await page.goto("/admin/login");
 
-    await expect(page.getByLabel("Email")).toHaveValue("");
-    await expect(page.getByLabel("Mot de passe")).toHaveValue("");
+    await expect(page.getByLabel("Email")).toHaveValue(OWNER_PREFILL?.email ?? "");
+    await expect(page.getByLabel("Mot de passe")).toHaveValue(OWNER_PREFILL?.password ?? "");
     await expect(page.getByRole("button", { name: /accès démo/i })).toHaveCount(0);
 
     const content = await page.content();
     expect(content).not.toContain(SEED_ADMIN.email);
     expect(content).not.toContain(SEED_ADMIN.password);
+  });
+
+  test("the prefilled owner credentials sign in with one click", async ({ page }) => {
+    test.skip(!OWNER_PREFILL, "SEED_OWNER_EMAIL and SEED_OWNER_PASSWORD are not set for this run");
+    await page.goto("/admin/login");
+    await page.getByRole("button", { name: "Se connecter" }).click();
+    await expect(page).toHaveURL(/\/admin$/);
   });
 
   test("a wrong password and an unknown email show the exact same generic error", async ({ page }) => {

@@ -34,6 +34,11 @@ export const createAppEnv = (source: Record<string, string | undefined>) =>
       // (lib/security.ts's `guardRequest`) without disabling it for anyone
       // else.
       QA_BYPASS_SECRET: z.string().optional(),
+      // BO-01 (human decision, 2026-09-28): the owner account the seed
+      // creates (scripts/seed.ts reads them too). When both are set,
+      // /admin/login is prefilled with them to ease the demo.
+      SEED_OWNER_EMAIL: z.email().optional(),
+      SEED_OWNER_PASSWORD: z.string().optional(),
       // TOOLING-test-transaction: read once here instead of `process.env`
       // scattered in application code. `lib/db/index.ts` uses it to pick the
       // Postgres pool size and to decide whether `db` routes through the

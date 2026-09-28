@@ -5,24 +5,46 @@ import { act, cleanup, fireEvent, render as rtlRender } from "@testing-library/r
 import { screen, waitFor } from "@testing-library/dom";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import enA from "@/messages/en/backoffice-product-form-a.json";
 import en from "@/messages/en/backoffice-product-form-b1.json";
+import enB2 from "@/messages/en/backoffice-product-form-b2.json";
+import frA from "@/messages/fr/backoffice-product-form-a.json";
 import fr from "@/messages/fr/backoffice-product-form-b1.json";
+import frB2 from "@/messages/fr/backoffice-product-form-b2.json";
 import type { Theme } from "@/lib/dal/themes";
 import type { ThemeTokens } from "@/lib/schemas/theme-tokens";
 import { newProductDraft } from "./form-values";
 
 const bioInstagramFixture = readFileSync(join(process.cwd(), "fixtures/bio-instagram.config.json"), "utf-8");
 
-// I18N-BACKOFFICE-STRINGS (lot 5): ProductForm (and the StepNav,
-// GenerationStep, PricingStep it renders) reads its own zone's messages, so
-// every test needs the NextIntlClientProvider the real backoffice layout
-// provides at runtime (app/(backoffice)/layout.tsx). Shadows
-// @testing-library/react's `render` so every existing call site below keeps
-// working unchanged, in French by default; the new English-locale tests
-// pass an explicit locale/messages pair.
-function render(ui: React.ReactElement, locale: "fr" | "en" = "fr", messages: Record<string, unknown> = fr) {
+// I18N-BACKOFFICE-STRINGS: `fr`/`en` above stay the plain b1-zone
+// dictionaries every assertion in this file already reads strings from
+// (e.g. `en.productForm.save`); these two bags are only what the provider
+// needs to render ProductForm and every step it renders
+// (IdentityStep/ThemeStep/LandingStep/FieldsStep/ImportConfigPanel from lot
+// 4's `backoffice-product-form-a`; StepNav/GenerationStep/PricingStep from
+// this zone; SummaryStep/PromptTester/LandingPreview from lot 6's
+// `backoffice-product-form-b2`) — the real backoffice layout provides them
+// the same way (app/(backoffice)/layout.tsx forwards every `backoffice-*`
+// zone).
+const providerMessagesFr = {
+  "backoffice-product-form-a": frA,
+  "backoffice-product-form-b1": fr,
+  "backoffice-product-form-b2": frB2,
+};
+const providerMessagesEn = {
+  "backoffice-product-form-a": enA,
+  "backoffice-product-form-b1": en,
+  "backoffice-product-form-b2": enB2,
+};
+
+// Shadows @testing-library/react's `render` so every existing call site
+// below keeps working unchanged, in French by default; the new
+// English-locale tests pass locale="en" (the messages param no longer
+// needs to be passed explicitly — it's derived from the locale).
+function render(ui: React.ReactElement, locale: "fr" | "en" = "fr") {
   return rtlRender(
-    <NextIntlClientProvider locale={locale} messages={{ "backoffice-product-form-b1": messages }}>
+    <NextIntlClientProvider locale={locale} messages={locale === "en" ? providerMessagesEn : providerMessagesFr}>
       {ui}
     </NextIntlClientProvider>,
   );
@@ -176,7 +198,7 @@ describe("ProductForm", () => {
     );
     fireEvent.change(screen.getByLabelText("Slug"), { target: { value: "lettre-pro" } });
     await act(() => Promise.resolve());
-    expect(checkSlug).toHaveBeenCalledWith("lettre-pro");
+    expect(checkSlug).toHaveBeenCalledWith("lettre-pro", "fr");
     await screen.findByText("Ce slug est déjà utilisé");
   });
 
@@ -508,7 +530,7 @@ describe("ProductForm · import a pasted config", () => {
     );
     expect(checkedTheme?.textContent).toContain("Editorial");
 
-    expect(checkSlug).toHaveBeenCalledWith("bio-instagram");
+    expect(checkSlug).toHaveBeenCalledWith("bio-instagram", "fr");
 
     for (const step of [1, 2, 3, 4, 5, 6, 7]) {
       goToStep(step);
@@ -609,7 +631,7 @@ describe("ProductForm · English locale", () => {
       en,
     );
     fireEvent.click(screen.getByRole("button", { name: /7\./ }));
-    fireEvent.click(screen.getByRole("button", { name: "Publier" }));
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
     await vi.waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Product published · version 3"));
   });
 
@@ -632,10 +654,10 @@ describe("ProductForm · English locale", () => {
       "en",
       en,
     );
-    fireEvent.change(screen.getByLabelText("Coller une configuration JSON"), {
+    fireEvent.change(screen.getByLabelText("Paste a JSON configuration"), {
       target: { value: bioInstagramFixture },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Importer" }));
+    fireEvent.click(screen.getByRole("button", { name: "Import" }));
     expect(toastSuccess).toHaveBeenCalledWith(en.productForm.configImported);
   });
 
@@ -662,7 +684,7 @@ describe("ProductForm · English locale", () => {
       "en",
       en,
     );
-    fireEvent.change(screen.getByLabelText("Nom"), { target: { value: "LettrePro bis" } });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "LettrePro bis" } });
     fireEvent.change(screen.getByLabelText("Slug"), { target: { value: "lettre-pro" } });
     fireEvent.click(screen.getByRole("button", { name: en.productForm.next }));
     await screen.findByText(en.productForm.slugCheckFailed);

@@ -1,8 +1,8 @@
 "use client";
 
 import type { Route } from "next";
-import { useTranslations } from "next-intl";
-import { Activity, useActionState, useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { Activity, useActionState, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Theme } from "@/lib/dal/themes";
@@ -85,6 +85,11 @@ export function ProductForm({
   publishedVersion?: number;
 }) {
   const t = useTranslations("backoffice-product-form-b1.productForm");
+  // I18N-BACKOFFICE-STRINGS: bound into every Server Action call below, and
+  // into `validateStep`'s translator — the cookie/root-param locale isn't
+  // readable from inside a Server Action (docs/08-stack.md › i18n).
+  const locale = useLocale();
+  const tValidation = useTranslations("backoffice-product-form-b2");
   const router = useRouter();
   const [draft, setDraft] = useState<ProductDraft>(initialDraft);
   const [slugEdited, setSlugEdited] = useState(mode === "edit");
@@ -96,7 +101,14 @@ export function ProductForm({
   // disabled for that one round trip and a second click during it is a
   // no-op.
   const [checkingSlug, setCheckingSlug] = useState(false);
-  const [state, formAction, pending] = useActionState(saveProduct.bind(null, slug), initialState);
+  // I18N-BACKOFFICE-STRINGS: saveProduct's `locale` param sits after
+  // `formData` (last), so `.bind()` — which only ever prepends — can't
+  // place it there; a small wrapper does instead.
+  const boundSaveProduct = useCallback(
+    (prevState: SaveProductState, formData: FormData) => saveProduct(slug, prevState, formData, locale),
+    [slug, locale],
+  );
+  const [state, formAction, pending] = useActionState(boundSaveProduct, initialState);
 
   // A create-mode publish creates the product on its first success: every
   // publish after that must take the edit path (saveVersion + publish),
@@ -109,10 +121,11 @@ export function ProductForm({
   // (and its rebind) happens before anything else can dispatch a submit.
   const [createdSlug, setCreatedSlug] = useState<string | null>(null);
   const publishSlug = mode === "edit" ? slug : createdSlug;
-  const [publishState, publishFormAction, publishPending] = useActionState(
-    publish.bind(null, publishSlug),
-    initialPublishState,
+  const boundPublish = useCallback(
+    (prevState: PublishState, formData: FormData) => publish(publishSlug, prevState, formData, locale),
+    [publishSlug, locale],
   );
+  const [publishState, publishFormAction, publishPending] = useActionState(boundPublish, initialPublishState);
 
   // Step 5's « Tester le prompt » result, lifted so step 6's margin panel
   // can prefer the measured cost over the reference estimate once a test
@@ -121,13 +134,13 @@ export function ProductForm({
   const [estimatedCostMicros, setEstimatedCostMicros] = useState(0);
   useEffect(() => {
     let cancelled = false;
-    estimateGenerationCost(draft.generation.model).then((result) => {
+    estimateGenerationCost(draft.generation.model, locale).then((result) => {
       if (!cancelled) setEstimatedCostMicros(result.costMicros);
     });
     return () => {
       cancelled = true;
     };
-  }, [draft.generation.model]);
+  }, [draft.generation.model, locale]);
 
   // Derived state, adjusted during render rather than in an effect (React's
   // documented pattern for "adjusting state when a value changes"): each
@@ -204,7 +217,7 @@ export function ProductForm({
     setSlugEdited(true);
     setErrors({});
     toast.success(t("configImported"));
-    checkSlug(config.slug).then((result) => {
+    checkSlug(config.slug, locale).then((result) => {
       if (!result.available) setErrors((current) => ({ ...current, slug: result.error ?? t("slugUnavailable") }));
     });
   }
@@ -233,7 +246,7 @@ export function ProductForm({
       // expired session) is silently ignored rather than left unhandled —
       // `handleNext`'s own, guarded check is the authoritative one that
       // blocks Suivant and surfaces an error.
-      checkSlug(candidate)
+      checkSlug(candidate, locale)
         .then((result) => {
           if (result.available) clearError("slug");
           else setErrors((current) => ({ ...current, slug: result.error ?? t("slugUnavailable") }));
@@ -245,7 +258,7 @@ export function ProductForm({
   async function handleUploadLogo(file: File) {
     const data = new FormData();
     data.set("file", file);
-    return uploadLogo({}, data);
+    return uploadLogo({}, data, locale);
   }
 
   async function handleTestPrompt(sample: Record<string, string>): Promise<PromptTestResult> {
@@ -253,7 +266,7 @@ export function ProductForm({
     const config = toConfig(draft);
     data.set("config", JSON.stringify({ inputs: config.inputs, generation: config.generation }));
     data.set("sample", JSON.stringify(sample));
-    return testPrompt(publishSlug, {}, data);
+    return testPrompt(publishSlug, {}, data, locale);
   }
 
   // QA1-P2-S1 (specs/qa/QA1-P2-S1-slug-pris.md): `validateStep` only checks
@@ -267,7 +280,7 @@ export function ProductForm({
   // happens to hold at click time.
   async function handleNext() {
     if (checkingSlug) return; // a check is already in flight; the button is disabled too
-    const stepErrors = validateStep(currentStep, stepPatch(currentStep, draft));
+    const stepErrors = validateStep(currentStep, stepPatch(currentStep, draft), tValidation);
     // QA1-P4-E1 (.claude/qa/reports/2026-09-25-creation-produit.md ›
     // B-P4-1): drop every stale error that belongs to the current step
     // before re-adding whatever `validateStep` still reports, so a fixed
@@ -287,7 +300,7 @@ export function ProductForm({
     if (currentStep === 1 && mode === "create") {
       setCheckingSlug(true);
       try {
-        const result = await checkSlug(draft.slug);
+        const result = await checkSlug(draft.slug, locale);
         if (!result.available) {
           setErrors((current) => ({ ...current, slug: result.error ?? t("slugUnavailable") }));
           return;

@@ -33,19 +33,32 @@ function thresholds(overrides: Partial<Thresholds> = {}): Thresholds {
   };
 }
 
+// I18N-BACKOFFICE-STRINGS (lot 3): toDecisionCopy() must stay a pure,
+// translation-free function so it keeps being unit-testable without a
+// next-intl mock (its only caller, DecisionPanel, is an async Server
+// Component that turns each structural key below into text with
+// getTranslations("backoffice-decision")). These assertions were rewritten
+// from hardcoded French strings to the key-based shape for that reason —
+// the previous behaviour (which threshold/suggestion is picked for which
+// metrics) is unchanged and still fully covered.
 describe("toDecisionCopy", () => {
-  it("shows the 4 threshold lines and the current values", () => {
+  it("shows the 4 threshold keys and the current values", () => {
     const copy = toDecisionCopy(
       metrics({ visits: 1200, signupToPurchaseRate: 0.07, marginPerGenerationMicros: 500_000 }),
       thresholds(),
     );
     expect(copy.thresholds).toEqual([
-      { label: "Visites minimales", value: "1 000" },
-      { label: "Conversion « à couper » sous", value: "2 %" },
-      { label: "Conversion « à scaler » à partir de", value: "5 %" },
-      { label: "Marge positive exigée", value: "Oui" },
+      { key: "minVisits", value: "1 000" },
+      { key: "killMaxConversion", value: "2 %" },
+      { key: "scaleMinConversion", value: "5 %" },
+      { key: "positiveMarginRequired", value: true },
     ]);
     expect(copy.current).toEqual({ visits: "1 200", conversion: "7 %", margin: "0,50 €" });
+  });
+
+  it("carries the raw boolean for positiveMarginRequired, not a localized yes/no", () => {
+    const copy = toDecisionCopy(metrics(), thresholds({ scaleRequiresPositiveMargin: false }));
+    expect(copy.thresholds).toContainEqual({ key: "positiveMarginRequired", value: false });
   });
 
   it("shows an em dash for the current margin when it is null", () => {
@@ -55,10 +68,7 @@ describe("toDecisionCopy", () => {
 
   it("suggests nothing under the minimum-visits volume gate", () => {
     const copy = toDecisionCopy(metrics({ visits: 10 }), thresholds({ minVisits: 1000 }));
-    expect(copy.suggestion).toEqual({
-      headline: "Pas assez de visites pour décider",
-      detail: "10 / 1 000",
-    });
+    expect(copy.suggestion).toEqual({ kind: "notEnoughVisits", visits: "10", minVisits: "1 000" });
   });
 
   it("suggests killing when the conversion is below the kill threshold", () => {
@@ -66,10 +76,7 @@ describe("toDecisionCopy", () => {
       metrics({ visits: 1100, signupToPurchaseRate: 0.01 }),
       thresholds({ minVisits: 1000, killMaxConversion: 0.02 }),
     );
-    expect(copy.suggestion).toEqual({
-      headline: "Seuil de décision atteint",
-      detail: "Statut suggéré : Killed (à couper)",
-    });
+    expect(copy.suggestion).toEqual({ kind: "thresholdReached", decision: "kill" });
   });
 
   it("suggests scaling when the conversion clears the scale threshold and the margin rule passes", () => {
@@ -77,10 +84,7 @@ describe("toDecisionCopy", () => {
       metrics({ visits: 1100, signupToPurchaseRate: 0.07, marginPerGenerationMicros: 100 }),
       thresholds({ minVisits: 1000, scaleMinConversion: 0.05, scaleRequiresPositiveMargin: true }),
     );
-    expect(copy.suggestion).toEqual({
-      headline: "Seuil de décision atteint",
-      detail: "Statut suggéré : Scale (à scaler)",
-    });
+    expect(copy.suggestion).toEqual({ kind: "thresholdReached", decision: "scale" });
   });
 
   it("does not suggest scaling when the margin rule is required but the margin is not positive", () => {
@@ -88,10 +92,7 @@ describe("toDecisionCopy", () => {
       metrics({ visits: 1100, signupToPurchaseRate: 0.07, marginPerGenerationMicros: -1 }),
       thresholds({ minVisits: 1000, scaleMinConversion: 0.05, scaleRequiresPositiveMargin: true }),
     );
-    expect(copy.suggestion).toEqual({
-      headline: "Pas de suggestion",
-      detail: "on continue d'observer",
-    });
+    expect(copy.suggestion).toEqual({ kind: "none" });
   });
 
   it("suggests scaling on conversion alone when the margin rule is not required", () => {
@@ -99,10 +100,7 @@ describe("toDecisionCopy", () => {
       metrics({ visits: 1100, signupToPurchaseRate: 0.07, marginPerGenerationMicros: -1 }),
       thresholds({ minVisits: 1000, scaleMinConversion: 0.05, scaleRequiresPositiveMargin: false }),
     );
-    expect(copy.suggestion).toEqual({
-      headline: "Seuil de décision atteint",
-      detail: "Statut suggéré : Scale (à scaler)",
-    });
+    expect(copy.suggestion).toEqual({ kind: "thresholdReached", decision: "scale" });
   });
 
   it("suggests nothing between the two thresholds", () => {
@@ -110,7 +108,7 @@ describe("toDecisionCopy", () => {
       metrics({ visits: 1100, signupToPurchaseRate: 0.03 }),
       thresholds({ minVisits: 1000, killMaxConversion: 0.02, scaleMinConversion: 0.05 }),
     );
-    expect(copy.suggestion).toEqual({ headline: "Pas de suggestion", detail: "on continue d'observer" });
+    expect(copy.suggestion).toEqual({ kind: "none" });
   });
 
   it("suggests nothing for a killed product, regardless of the metrics", () => {

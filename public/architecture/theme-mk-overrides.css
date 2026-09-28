@@ -1,0 +1,30 @@
+/*
+ * mk-theme brand pass for the Understand-Anything dashboard (public/architecture/).
+ * Unlayered on purpose: Tailwind's own `@layer theme` in index-*.css always loses to any
+ * unlayered rule, so this overrides the bundle's tokens without touching the built CSS.
+ *
+ * Colors driven by the dashboard's own theme switcher (root/surface/text/most node types,
+ * borders, glass, glow, scrollbar, accent) are patched in the JS bundle instead — see
+ * .claude/skills/architecture-graph/apply-mk-theme.mjs — because that system also flips
+ * React Flow's own light/dark tokens. Only the few node types and the diff colors the
+ * switcher never touches (fixed in the built CSS regardless of theme) are re-tuned here,
+ * darkened by the same ratio Understand-Anything's own "Light Minimal" preset applies to
+ * its node colors, to stay readable on a light background. Fonts are re-tuned here too:
+ * the switcher has no notion of font family, only of which of --font-serif/--font-mono it
+ * points --font-heading at.
+ */
+:root,
+:host {
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Archivo", Georgia, serif;
+  --font-mono: "IBM Plex Mono", "Fira Code", monospace;
+
+  --color-node-article: #a8835c;
+  --color-node-entity: #61829f;
+  --color-node-topic: #9f8b56;
+  --color-node-claim: #588b61;
+  --color-node-source: #6d6d6d;
+  --color-diff-changed: #b14141;
+  --color-diff-affected: #a87f26;
+  --color-diff-changed-dim: #b1414140;
+}

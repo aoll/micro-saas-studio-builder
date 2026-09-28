@@ -1,0 +1,37 @@
+{
+  "title": "Réglages des seuils",
+  "defaultsForm": {
+    "heading": "Seuils par défaut du studio",
+    "minVisits": "Visites minimales",
+    "killConversion": "Conversion « à couper » (%)",
+    "scaleConversion": "Conversion « à scaler » (%)",
+    "positiveMargin": "Marge positive exigée pour scaler",
+    "submit": "Enregistrer",
+    "saved": "Seuils par défaut enregistrés"
+  },
+  "overrideForm": {
+    "heading": "Surcharge par produit",
+    "empty": "Aucun produit à surcharger.",
+    "pickerLabel": "Produit à surcharger",
+    "productTitle": "{name}{overridden, select, yes { (surchargé)} other {}}",
+    "minVisits": "Visites minimales (produit)",
+    "killConversion": "Conversion « à couper » (%) (produit)",
+    "scaleConversion": "Conversion « à scaler » (%) (produit)",
+    "positiveMargin": "Marge positive exigée pour scaler (produit)",
+    "submit": "Enregistrer la surcharge",
+    "reset": "Réinitialiser",
+    "saved": "Surcharge enregistrée",
+    "resetDone": "Surcharge réinitialisée"
+  },
+  "preview": {
+    "heading": "Badges qui changeraient :"
+  },
+  "errors": {
+    "minVisitsTooSmall": "Doit être au moins {minimum}",
+    "tooBig": "Ne doit pas dépasser {maximum}",
+    "invalidValue": "Valeur invalide",
+    "scaleGreaterThanKill": "Le seuil « à scaler » doit être supérieur au seuil « à couper »",
+    "invalidProduct": "Produit invalide",
+    "productNotFound": "Produit introuvable"
+  }
+}

@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/react";
 import { fireEvent, screen } from "@testing-library/dom";
+import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import fr from "@/messages/fr/backoffice-shell.json";
+import en from "@/messages/en/backoffice-shell.json";
 import { SignOutButton } from "./sign-out-button";
 
 const { signOut, push, refresh, toastError } = vi.hoisted(() => ({
@@ -15,6 +18,14 @@ vi.mock("@/lib/auth-client", () => ({ authClient: { signOut } }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh }) }));
 vi.mock("sonner", () => ({ toast: { error: toastError } }));
 
+function renderUi(locale: "fr" | "en" = "fr") {
+  return render(
+    <NextIntlClientProvider locale={locale} messages={{ "backoffice-shell": locale === "fr" ? fr : en }}>
+      <SignOutButton />
+    </NextIntlClientProvider>,
+  );
+}
+
 afterEach(() => {
   cleanup();
   signOut.mockClear();
@@ -26,7 +37,7 @@ afterEach(() => {
 describe("SignOutButton", () => {
   it("signs out then redirects to /admin/login and refreshes", async () => {
     signOut.mockResolvedValue({ data: {}, error: null });
-    render(<SignOutButton />);
+    renderUi();
     fireEvent.click(screen.getByRole("button"));
     await vi.waitFor(() => expect(signOut).toHaveBeenCalled());
     expect(push).toHaveBeenCalledWith("/admin/login");
@@ -36,7 +47,7 @@ describe("SignOutButton", () => {
 
   it("shows a toast and never navigates when signOut() resolves an error", async () => {
     signOut.mockResolvedValue({ data: null, error: { message: "Network error" } });
-    render(<SignOutButton />);
+    renderUi();
     fireEvent.click(screen.getByRole("button"));
     await vi.waitFor(() => expect(toastError).toHaveBeenCalled());
     expect(push).not.toHaveBeenCalled();
@@ -45,10 +56,18 @@ describe("SignOutButton", () => {
 
   it("shows a toast and never navigates when signOut() throws, never swallowed", async () => {
     signOut.mockRejectedValue(new Error("boom"));
-    render(<SignOutButton />);
+    renderUi();
     fireEvent.click(screen.getByRole("button"));
     await vi.waitFor(() => expect(toastError).toHaveBeenCalled());
     expect(push).not.toHaveBeenCalled();
     expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it("renders the English label and error toast when the locale is en", async () => {
+    signOut.mockResolvedValue({ data: null, error: { message: "Network error" } });
+    renderUi("en");
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button"));
+    await vi.waitFor(() => expect(toastError).toHaveBeenCalledWith("Unable to sign out"));
   });
 });

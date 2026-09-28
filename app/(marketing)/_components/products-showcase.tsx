@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRightIcon, PlusIcon } from "lucide-react";
 import { listProducts } from "@/lib/dal/products";
@@ -9,7 +10,10 @@ import { listProducts } from "@/lib/dal/products";
 // product created live during a demo, or a reset, shows up on its own. It
 // never reads status or business metrics: those come from
 // `getPortfolioMetrics`, which requires an admin session and has no place on
-// a public page.
+// a public page. Each card previews its product with the product's own Open
+// Graph image (app/(products)/[app]/opengraph-image.tsx): name and headline
+// on the product's theme colours, already prerendered per slug, so a product
+// created live gets its preview too.
 export async function ProductsShowcase() {
   const products = (await listProducts())
     .filter((product) => product.status !== "killed")
@@ -36,31 +40,48 @@ export async function ProductsShowcase() {
           <Link
             key={product.slug}
             href={`/${product.slug}`}
-            className="group flex flex-col items-start gap-3 mk-card bg-mk-surface p-6 transition-colors hover:border-mk-dash"
+            className="group flex flex-col overflow-hidden mk-card bg-mk-surface transition-colors hover:border-mk-dash"
           >
-            <span className="rounded-full bg-mk-chip px-2.5 py-0.5 font-[family-name:var(--font-mk-mono)] text-xs text-mk-chip-ink">
-              /{product.slug}
-            </span>
-            <h3 className="font-[family-name:var(--font-mk-display)] text-xl font-bold">{product.name}</h3>
-            <p className="flex-1 text-[15px] leading-relaxed text-mk-muted">{product.landing.headline}</p>
-            <p className="flex items-center gap-1 text-sm font-bold text-mk-link">
-              Essayer en direct
-              <ArrowRightIcon aria-hidden="true" className="size-4 transition-transform group-hover:translate-x-0.5" />
-            </p>
+            <Image
+              src={`/${product.slug}/opengraph-image`}
+              alt=""
+              width={1200}
+              height={630}
+              sizes="(min-width: 1024px) 18rem, (min-width: 640px) 50vw, 100vw"
+              className="aspect-[1200/630] w-full border-b border-mk-line object-cover"
+            />
+            <div className="flex flex-1 flex-col items-start gap-3 p-5">
+              <span className="rounded-full bg-mk-chip px-2.5 py-0.5 font-[family-name:var(--font-mk-mono)] text-xs text-mk-chip-ink">
+                /{product.slug}
+              </span>
+              <h3 className="font-[family-name:var(--font-mk-display)] text-xl font-bold">{product.name}</h3>
+              <p className="flex-1 text-[15px] leading-relaxed text-mk-muted">{product.landing.headline}</p>
+              <p className="flex items-center gap-1 text-sm font-bold text-mk-link">
+                Essayer en direct
+                <ArrowRightIcon
+                  aria-hidden="true"
+                  className="size-4 transition-transform group-hover:translate-x-0.5"
+                />
+              </p>
+            </div>
           </Link>
         ))}
         <Link
           href="/admin/login"
-          className="group flex flex-col items-start gap-3 rounded-xl border border-dashed border-mk-dash bg-mk-surface/40 p-6 transition-colors hover:bg-mk-surface/80"
+          className="group flex flex-col overflow-hidden rounded-xl border border-dashed border-mk-dash bg-mk-surface/40 transition-colors hover:bg-mk-surface/80"
         >
-          <span className="mk-cta size-8">
-            <PlusIcon aria-hidden="true" className="size-4" />
+          <span className="flex aspect-[1200/630] w-full items-center justify-center border-b border-dashed border-mk-dash">
+            <span className="mk-cta size-10">
+              <PlusIcon aria-hidden="true" className="size-5" />
+            </span>
           </span>
-          <h3 className="font-[family-name:var(--font-mk-display)] text-xl font-bold">Créer un nouveau produit</h3>
-          <p className="flex-1 text-[15px] leading-relaxed text-mk-muted">
-            Un formulaire dans le backoffice suffit pour en lancer un nouveau, en quelques minutes.
-          </p>
-          <p className="text-sm font-bold text-mk-chip-ink">Ouvrir le backoffice →</p>
+          <div className="flex flex-1 flex-col items-start gap-3 p-5">
+            <h3 className="font-[family-name:var(--font-mk-display)] text-xl font-bold">Créer un nouveau produit</h3>
+            <p className="flex-1 text-[15px] leading-relaxed text-mk-muted">
+              Un formulaire dans le backoffice suffit pour en lancer un nouveau, en quelques minutes.
+            </p>
+            <p className="text-sm font-bold text-mk-chip-ink">Ouvrir le backoffice →</p>
+          </div>
         </Link>
       </div>
     </section>

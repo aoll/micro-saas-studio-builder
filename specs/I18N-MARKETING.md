@@ -25,7 +25,9 @@ Périmètre   : proxy.ts, i18n/marketing-routing.ts, i18n/marketing-navigation.t
               app/(marketing)/layout.tsx, app/(marketing)/page.tsx,
               app/(marketing)/making-of/page.tsx, app/(marketing)/_components/**,
               app/(marketing)/making-of/_components/**, app/(marketing)/making-of/_data/run.ts,
-              app/(marketing)/_components/locale-switcher.tsx, e2e/marketing-locale.spec.ts
+              app/(marketing)/_components/locale-switcher.tsx, e2e/marketing-locale.spec.ts,
+              e2e/home.spec.ts, e2e/making-of.spec.ts (pin `test.use({ locale: "fr-FR" })`,
+              precondition change only, documented in the commit)
 Hors périmètre : la locale des produits (`(products)/[app]`, inchangée), le sélecteur du
               backoffice (I18N-BACKOFFICE), toute traduction du contenu déjà spécifique à un
               produit

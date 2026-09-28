@@ -2,8 +2,9 @@ import type { ProductStatus } from "@/lib/schemas/product-config";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/components/utils";
 
-// Backoffice stays in French (docs/08-stack.md): the badge labels are not
-// translated.
+// The 4 statuses stay identical in French and English: they're already
+// English loanwords in the French UI, so the same literal is correct in
+// both locales (specs/I18N-BACKOFFICE-STRINGS.md › Décisions de portée).
 const LABELS: Record<ProductStatus, string> = {
   test: "Test",
   learn: "Learn",

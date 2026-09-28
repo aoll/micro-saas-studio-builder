@@ -80,3 +80,4 @@ Spec : specs/<REF>-<nom>.md, dans ton worktree <chemin>.
 | `E2E-demo` | V4 | — | Tout | Indispensable |
 | `SA-09-facture` | V5 | — | LEDGER | Bonus |
 | `CONTRACT-invoices-queue` | V5 | — | SA-09-facture | Bonus |
+| `AI-GUARD-role-produit` | V6 | — | SA-02, BO-05b, SECURITY | Indispensable |

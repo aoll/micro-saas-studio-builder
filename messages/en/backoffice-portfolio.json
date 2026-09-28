@@ -1,0 +1,53 @@
+{
+  "login": {
+    "brand": "SaaS Studio",
+    "subtitle": "Sign in to the backoffice",
+    "ownerPrefillNote": "Demo: the owner account's credentials are prefilled from the environment variables (<email>SEED_OWNER_EMAIL</email>, <password>SEED_OWNER_PASSWORD</password>) to make the visit easier. Just click “{submit}”.",
+    "emailLabel": "Email",
+    "passwordLabel": "Password",
+    "submit": "Sign in",
+    "genericError": "Invalid credentials"
+  },
+  "portfolio": {
+    "title": "Portfolio",
+    "newProduct": "New product",
+    "kpis": {
+      "visits": "Visits · 30 d",
+      "revenue": "Revenue · 30 d",
+      "aiCost": "AI cost · 30 d",
+      "grossMargin": "Gross margin"
+    },
+    "empty": {
+      "title": "No products",
+      "description": "Create your first product to see its metrics appear here.",
+      "cta": "Create a product"
+    },
+    "table": {
+      "product": "Product",
+      "status": "Status",
+      "visits": "Visits",
+      "conversion": "Conversion",
+      "revenue": "Revenue",
+      "aiCost": "AI cost",
+      "margin": "Margin",
+      "count": "{count, plural, one {Product (#)} other {Products (#)}}"
+    },
+    "decision": {
+      "cut": "cut",
+      "scale": "scale"
+    }
+  },
+  "ops": {
+    "title": "Operations",
+    "description": "Deletes the products created by visitors and all activity, then replays the seed (themes, LettrePro, DescriPro, NomDeMarque, admin and owner accounts, default thresholds).",
+    "resetButton": "Reset the demo",
+    "confirmMessage": "This action deletes the products created by visitors and all activity, then replays the seed. Irreversible.",
+    "cancel": "Cancel",
+    "confirm": "Confirm the reset",
+    "successToast": "Demo reset",
+    "ownerOnlyError": "Reserved to the demo's owner",
+    "failedError": "The reset failed",
+    "notFoundTitle": "Page not found",
+    "loading": "Loading…"
+  }
+}

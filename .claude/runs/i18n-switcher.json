@@ -1,0 +1,8 @@
+{
+  "integration": "integration/i18n-switcher",
+  "specs": {
+    "I18N-MARKETING": { "dependsOn": [], "status": "ready", "worktree": null, "pr": null },
+    "I18N-BACKOFFICE": { "dependsOn": [], "status": "ready", "worktree": null, "pr": null }
+  },
+  "pendingIntegrations": []
+}

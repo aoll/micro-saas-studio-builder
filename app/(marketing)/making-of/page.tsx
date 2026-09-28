@@ -6,6 +6,7 @@ import { ControlRoomHeader } from "./_components/control-room-header";
 import { CycleCards } from "./_components/cycle-cards";
 import { ProcessSteps } from "./_components/process-steps";
 import { RunTimeline } from "./_components/run-timeline";
+import { SinceLaunch } from "./_components/since-launch";
 
 // The making-of, next to the recruiter landing (same `(marketing)` root
 // layout): how the demo was built by an orchestrator and its agents, in two
@@ -40,6 +41,7 @@ export default async function MakingOfPage() {
       <RunTimeline />
       <CycleCards />
       <AgentRoles />
+      <SinceLaunch />
       <footer className="flex flex-col justify-between gap-3 border-t border-mk-line pt-6 text-[13px] text-mk-muted sm:flex-row">
         <span>{t("stack")}</span>
         <span>{t("usage")}</span>

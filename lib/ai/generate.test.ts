@@ -53,6 +53,33 @@ function failingModel() {
   });
 }
 
+// AI-GUARD: a model that streams `deltas` (one or several chunks) as its
+// full response text, with realistic usage, then finishes normally — used
+// to drive `onFinish`'s refusal detection through the real `streamText`
+// pipeline instead of asserting on `isRefusal` in isolation.
+function textModel(deltas: string[]) {
+  return new MockLanguageModelV4({
+    doStream: async () => ({
+      stream: simulateReadableStream({
+        chunkDelayInMs: 0,
+        chunks: [
+          { type: "text-start", id: "1" },
+          ...deltas.map((delta) => ({ type: "text-delta" as const, id: "1", delta })),
+          { type: "text-end", id: "1" },
+          {
+            type: "finish",
+            finishReason: { unified: "stop", raw: undefined },
+            usage: {
+              inputTokens: { total: 50, noCache: 50, cacheRead: 0, cacheWrite: undefined },
+              outputTokens: { total: 20, text: 20, reasoning: undefined },
+            },
+          },
+        ],
+      }),
+    }),
+  });
+}
+
 afterEach(() => {
   resolveModel.mockReset();
 });
@@ -257,5 +284,58 @@ describe("streamGeneration", () => {
 
     await vi.waitFor(() => expect(onError).toHaveBeenCalledTimes(1));
     expect(onSuccess).not.toHaveBeenCalled();
+  });
+
+  // AI-GUARD (docs/05-ia.md › Demande hors du rôle du produit): a refusal
+  // must be indistinguishable from a real generation only in how it
+  // streams to the user — not in how it is billed and stored. `includes`
+  // instead of `startsWith` would wrongly catch a real answer that merely
+  // quotes the sentence later; no stripping of quotes/whitespace would
+  // miss a model that wraps its refusal in punctuation.
+  describe("refusal detection", () => {
+    it.each([
+      ["fr, verbatim", [REFUSAL_MESSAGES.fr]],
+      ["en, verbatim", [REFUSAL_MESSAGES.en]],
+      ["fr, leading spaces and French guillemets", [`  « ${REFUSAL_MESSAGES.fr} »`]],
+      ["en, wrapped in straight quotes", [`"${REFUSAL_MESSAGES.en}"`]],
+      ["fr, wrapped in curly quotes", [`“${REFUSAL_MESSAGES.fr}”`]],
+      ["en, leading newlines", [`\n\n${REFUSAL_MESSAGES.en}`]],
+      ["fr, with trailing padding after the sentence", [`${REFUSAL_MESSAGES.fr} Voici tout de même une idée.`]],
+      [
+        "fr, split over three streamed deltas",
+        [REFUSAL_MESSAGES.fr.slice(0, 20), REFUSAL_MESSAGES.fr.slice(20, 40), REFUSAL_MESSAGES.fr.slice(40)],
+      ],
+    ])(
+      "%s: routes to onError with a GenerationRefusedError, never onSuccess, and the text still streams",
+      async (_label, deltas) => {
+        resolveModel.mockReturnValue(textModel(deltas));
+        const onSuccess = vi.fn();
+        const onError = vi.fn();
+
+        const result = streamGeneration({ product, inputs: fixture!.input, onSuccess, onError });
+        const chunks: string[] = [];
+        for await (const delta of result.textStream) chunks.push(delta);
+        expect(chunks.join("")).toBe(deltas.join(""));
+
+        await vi.waitFor(() => expect(onError).toHaveBeenCalledTimes(1));
+        expect(onError).toHaveBeenCalledWith(expect.any(Error));
+        expect((onError.mock.calls[0]?.[0] as Error).name).toBe("GenerationRefusedError");
+        expect(onSuccess).not.toHaveBeenCalled();
+      },
+    );
+
+    it("a text that merely contains the refusal sentence later stays a success", async () => {
+      const deltas = [`Voici votre réponse. Note : "${REFUSAL_MESSAGES.fr}" est un exemple de refus à éviter.`];
+      resolveModel.mockReturnValue(textModel(deltas));
+      const onSuccess = vi.fn();
+      const onError = vi.fn();
+
+      const result = streamGeneration({ product, inputs: fixture!.input, onSuccess, onError });
+      await result.consumeStream();
+
+      await vi.waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
+      expect(onSuccess).toHaveBeenCalledWith(expect.objectContaining({ output: deltas.join("") }));
+      expect(onError).not.toHaveBeenCalled();
+    });
   });
 });

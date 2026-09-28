@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +33,8 @@ export function LandingStep({
   errors: Record<string, string>;
   onChange: (patch: Partial<Landing>) => void;
 }) {
+  const t = useTranslations("backoffice-product-form-a");
+
   function updateFaqEntry(index: number, patch: Partial<Landing["faq"][number]>) {
     onChange({ faq: landing.faq.map((entry, i) => (i === index ? { ...entry, ...patch } : entry)) });
   }
@@ -57,7 +60,7 @@ export function LandingStep({
   return (
     <div className="grid gap-4">
       <div className="grid gap-1.5">
-        <Label htmlFor="landing-headline">Titre</Label>
+        <Label htmlFor="landing-headline">{t("landingStep.headlineLabel")}</Label>
         <Input
           id="landing-headline"
           value={landing.headline}
@@ -68,7 +71,7 @@ export function LandingStep({
       </div>
 
       <div className="grid gap-1.5">
-        <Label htmlFor="landing-subheadline">Sous-titre</Label>
+        <Label htmlFor="landing-subheadline">{t("landingStep.subheadlineLabel")}</Label>
         <Input
           id="landing-subheadline"
           value={landing.subheadline}
@@ -81,7 +84,7 @@ export function LandingStep({
       </div>
 
       <div className="grid gap-1.5">
-        <Label htmlFor="landing-example-output">Exemple de résultat</Label>
+        <Label htmlFor="landing-example-output">{t("landingStep.exampleOutputLabel")}</Label>
         <Textarea
           id="landing-example-output"
           value={landing.exampleOutput ?? ""}
@@ -91,9 +94,9 @@ export function LandingStep({
 
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Comment ça marche</span>
+          <span className="text-sm font-medium">{t("landingStep.howItWorksTitle")}</span>
           <Button type="button" variant="outline" size="sm" onClick={addStep}>
-            Ajouter une étape
+            {t("landingStep.addStep")}
           </Button>
         </div>
         {steps.map((step, index) => {
@@ -102,7 +105,9 @@ export function LandingStep({
           return (
             <div key={step.id} className="grid gap-2 rounded-md border p-3">
               <div className="grid gap-1.5">
-                <Label htmlFor={`landing-step-title-${step.id}`}>{`Titre de l'étape ${index + 1}`}</Label>
+                <Label htmlFor={`landing-step-title-${step.id}`}>
+                  {t("landingStep.stepTitleLabel", { number: index + 1 })}
+                </Label>
                 <Input
                   id={`landing-step-title-${step.id}`}
                   value={step.title}
@@ -117,7 +122,9 @@ export function LandingStep({
                 ) : null}
               </div>
               <div className="grid gap-1.5">
-                <Label htmlFor={`landing-step-description-${step.id}`}>{`Description de l'étape ${index + 1}`}</Label>
+                <Label htmlFor={`landing-step-description-${step.id}`}>
+                  {t("landingStep.stepDescriptionLabel", { number: index + 1 })}
+                </Label>
                 <Textarea
                   id={`landing-step-description-${step.id}`}
                   value={step.description}
@@ -139,7 +146,7 @@ export function LandingStep({
                   disabled={index === 0}
                   onClick={() => onChange({ steps: moveItem(steps, index, "up") })}
                 >
-                  Monter
+                  {t("common.moveUp")}
                 </Button>
                 <Button
                   type="button"
@@ -148,10 +155,10 @@ export function LandingStep({
                   disabled={index === steps.length - 1}
                   onClick={() => onChange({ steps: moveItem(steps, index, "down") })}
                 >
-                  Descendre
+                  {t("common.moveDown")}
                 </Button>
                 <Button type="button" variant="ghost" size="sm" onClick={() => removeStep(index)}>
-                  Supprimer cette étape
+                  {t("landingStep.removeStep")}
                 </Button>
               </div>
             </div>
@@ -161,20 +168,20 @@ export function LandingStep({
 
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">FAQ</span>
+          <span className="text-sm font-medium">{t("landingStep.faqTitle")}</span>
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={() => onChange({ faq: [...landing.faq, { question: "", answer: "" }] })}
           >
-            Ajouter une question
+            {t("landingStep.addFaqQuestion")}
           </Button>
         </div>
         {landing.faq.map((entry, index) => (
           <div key={index} className="grid gap-2 rounded-md border p-3">
             <div className="grid gap-1.5">
-              <Label htmlFor={`faq-question-${index}`}>Question</Label>
+              <Label htmlFor={`faq-question-${index}`}>{t("landingStep.faqQuestionLabel")}</Label>
               <Input
                 id={`faq-question-${index}`}
                 value={entry.question}
@@ -186,7 +193,7 @@ export function LandingStep({
               ) : null}
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor={`faq-answer-${index}`}>Réponse</Label>
+              <Label htmlFor={`faq-answer-${index}`}>{t("landingStep.faqAnswerLabel")}</Label>
               <Textarea
                 id={`faq-answer-${index}`}
                 value={entry.answer}
@@ -198,14 +205,14 @@ export function LandingStep({
               ) : null}
             </div>
             <Button type="button" variant="ghost" size="sm" onClick={() => removeFaqEntry(index)}>
-              Supprimer cette question
+              {t("landingStep.removeFaqQuestion")}
             </Button>
           </div>
         ))}
       </div>
 
       <div className="grid gap-1.5">
-        <Label htmlFor="landing-seo-title">Titre SEO</Label>
+        <Label htmlFor="landing-seo-title">{t("landingStep.seoTitleLabel")}</Label>
         <Input
           id="landing-seo-title"
           value={landing.seoTitle}
@@ -217,7 +224,7 @@ export function LandingStep({
       </div>
 
       <div className="grid gap-1.5">
-        <Label htmlFor="landing-seo-description">Description SEO</Label>
+        <Label htmlFor="landing-seo-description">{t("landingStep.seoDescriptionLabel")}</Label>
         <Textarea
           id="landing-seo-description"
           value={landing.seoDescription}

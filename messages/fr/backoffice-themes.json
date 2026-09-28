@@ -1,0 +1,83 @@
+{
+  "library": {
+    "title": "Bibliothèque de thèmes",
+    "empty": "Aucun thème en base"
+  },
+  "usage": {
+    "none": "Aucun produit",
+    "summary": "Utilisé par {count, plural, one {# produit} other {# produits}} · {names}"
+  },
+  "usageWarning": {
+    "appliesImmediately": "{usage}. Les modifications s'appliquent immédiatement."
+  },
+  "landingVariant": {
+    "centered": "hero centré",
+    "split": "hero + exemple",
+    "minimal": "minimal"
+  },
+  "card": {
+    "variantLabel": "Variante « {variant} »"
+  },
+  "editor": {
+    "title": "Thème · {name}",
+    "savedToast": "Thème enregistré",
+    "hasErrors": "Ce thème contient des erreurs.",
+    "cancel": "Annuler",
+    "save": "Enregistrer"
+  },
+  "mode": {
+    "groupLabel": "Mode",
+    "light": "Clair",
+    "dark": "Sombre"
+  },
+  "sections": {
+    "colors": "Couleurs",
+    "typography": "Typographie",
+    "shape": "Forme",
+    "landing": "Landing"
+  },
+  "fields": {
+    "font": "Police",
+    "radius": "Radius",
+    "landingVariant": "Variante de landing"
+  },
+  "colorLabels": {
+    "background": "Arrière-plan",
+    "foreground": "Texte",
+    "card": "Carte",
+    "cardForeground": "Texte de la carte",
+    "primary": "Primaire",
+    "primaryForeground": "Texte sur primaire",
+    "secondary": "Secondaire",
+    "secondaryForeground": "Texte sur secondaire",
+    "muted": "Atténué",
+    "mutedForeground": "Texte atténué",
+    "accent": "Accent",
+    "accentForeground": "Texte sur accent",
+    "destructive": "Destructif",
+    "border": "Bordure",
+    "input": "Champ de saisie",
+    "ring": "Anneau de focus"
+  },
+  "fontLabels": {
+    "serif": "Serif (éditorial)",
+    "grotesk": "Grotesque (néon)",
+    "sans": "Sans-serif (corporate)",
+    "rounded": "Arrondie (ludique)"
+  },
+  "preview": {
+    "samplePlaceholder": "Produit exemple",
+    "subheadline": "Un sous-titre de démonstration pour l'aperçu.",
+    "tryButton": "Essayer",
+    "example": "Exemple de résultat",
+    "primary": "Primaire",
+    "secondary": "Secondaire",
+    "accent": "Accent",
+    "destructive": "Erreur"
+  },
+  "errors": {
+    "notFound": "Thème introuvable",
+    "unreadable": "Données illisibles",
+    "fontOutOfCatalogue": "Police hors catalogue"
+  }
+}

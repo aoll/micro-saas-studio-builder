@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { listThemeOptions } from "@/lib/dal/product-editor";
 import { listProducts } from "@/lib/dal/products";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -8,11 +9,19 @@ import { productsByTheme } from "./theme-usage";
 // laid out by page.tsx (plan's design decision 6). Both DAL reads run in
 // parallel; a rejection from either propagates to the caller, never caught
 // (plan's design decision 6, task 4 last bullet).
+//
+// I18N-BACKOFFICE-STRINGS (lot 7): the admin's ambient locale (the
+// admin_locale cookie, branch 3 of i18n/request.ts), read once here and
+// passed down to every ThemeCard — mirrors pricing/page.tsx.
 export async function ThemeLibrary() {
-  const [themes, products] = await Promise.all([listThemeOptions(), listProducts()]);
+  const [themes, products, t] = await Promise.all([
+    listThemeOptions(),
+    listProducts(),
+    getTranslations("backoffice-themes"),
+  ]);
 
   if (themes.length === 0) {
-    return <EmptyState title="Aucun thème en base" />;
+    return <EmptyState title={t("library.empty")} />;
   }
 
   const grouped = productsByTheme(products);
@@ -21,7 +30,7 @@ export async function ThemeLibrary() {
     <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {themes.map((theme) => (
         <li key={theme.id}>
-          <ThemeCard theme={theme} productNames={grouped.get(theme.id) ?? []} />
+          <ThemeCard theme={theme} productNames={grouped.get(theme.id) ?? []} t={t} />
         </li>
       ))}
     </ul>

@@ -1,6 +1,9 @@
 import { randomUUID } from "node:crypto";
+import { createTranslator } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { LandingVariant, ThemeTokens } from "@/lib/schemas/theme-tokens";
+import en from "@/messages/en/backoffice-themes.json";
+import fr from "@/messages/fr/backoffice-themes.json";
 
 class RedirectMarker extends Error {
   constructor(public url: string) {
@@ -23,6 +26,19 @@ vi.mock("next/font/google", () => {
   const loader = () => ({ variable: "--font-theme", className: "font-mock" });
   return { Fraunces: loader, Space_Grotesk: loader, Inter: loader, Nunito: loader };
 });
+
+// I18N-BACKOFFICE-STRINGS (lot 7): saveTheme receives the admin's locale
+// as an explicit argument (bound client-side from useLocale(), never read
+// from app() or cookies() — both throw in a Server Action) and calls
+// getTranslations({ locale, namespace: "backoffice-themes" }) for its own
+// copy — mocked with a real translator built from this spec's own
+// messages/{fr,en}/backoffice-themes.json, like purchase-list.test.tsx.
+vi.mock("next-intl/server", () => ({
+  getTranslations: async ({ locale, namespace }: { locale: "fr" | "en"; namespace: "backoffice-themes" }) => {
+    if (locale !== "fr" && locale !== "en") throw new Error(`unsupported locale: ${locale}`);
+    return createTranslator({ locale, messages: { "backoffice-themes": locale === "en" ? en : fr }, namespace });
+  },
+}));
 
 afterEach(() => {
   requireAdmin.mockReset();
@@ -73,7 +89,7 @@ describe("saveTheme", () => {
   it("checks admin before anything else", async () => {
     requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
     const { saveTheme } = await import("./_actions");
-    await expect(saveTheme(randomUUID(), {}, formDataFor({}))).rejects.toThrow("redirect:/admin/login");
+    await expect(saveTheme(randomUUID(), "fr", {}, formDataFor({}))).rejects.toThrow("redirect:/admin/login");
     expect(updateTheme).not.toHaveBeenCalled();
   });
 
@@ -82,6 +98,7 @@ describe("saveTheme", () => {
     const { saveTheme } = await import("./_actions");
     const result = await saveTheme(
       "not-a-uuid",
+      "fr",
       {},
       formDataFor({ tokens: validTokens(), landingVariant: "centered" }),
     );
@@ -90,12 +107,25 @@ describe("saveTheme", () => {
     expect(updateTag).not.toHaveBeenCalled();
   });
 
+  it("returns an English form error for a non-uuid id when the locale is en", async () => {
+    currentAdmin();
+    const { saveTheme } = await import("./_actions");
+    const result = await saveTheme(
+      "not-a-uuid",
+      "en",
+      {},
+      formDataFor({ tokens: validTokens(), landingVariant: "centered" }),
+    );
+    expect(result.formError).toBe("Theme not found");
+    expect(updateTheme).not.toHaveBeenCalled();
+  });
+
   it("returns a form error for unreadable JSON", async () => {
     currentAdmin();
     const { saveTheme } = await import("./_actions");
     const data = new FormData();
     data.set("payload", "{not json");
-    const result = await saveTheme(randomUUID(), {}, data);
+    const result = await saveTheme(randomUUID(), "fr", {}, data);
     expect(result.formError).toBe("Données illisibles");
     expect(updateTheme).not.toHaveBeenCalled();
   });
@@ -104,8 +134,17 @@ describe("saveTheme", () => {
     currentAdmin();
     const { saveTheme } = await import("./_actions");
     const bad = validTokens({ light: { ...COLOR_SET, background: "not-a-color" } });
-    const result = await saveTheme(randomUUID(), {}, formDataFor({ tokens: bad, landingVariant: "centered" }));
+    const result = await saveTheme(randomUUID(), "fr", {}, formDataFor({ tokens: bad, landingVariant: "centered" }));
     expect(result.errors?.["tokens.light.background"]).toBeTruthy();
+    expect(updateTheme).not.toHaveBeenCalled();
+  });
+
+  it("returns an English field error for an invalid color when the locale is en", async () => {
+    currentAdmin();
+    const { saveTheme } = await import("./_actions");
+    const bad = validTokens({ light: { ...COLOR_SET, background: "not-a-color" } });
+    const result = await saveTheme(randomUUID(), "en", {}, formDataFor({ tokens: bad, landingVariant: "centered" }));
+    expect(result.errors?.["tokens.light.background"]).toBe("Must be a valid CSS color (#hex or oklch/hsl/rgb…)");
     expect(updateTheme).not.toHaveBeenCalled();
   });
 
@@ -113,8 +152,17 @@ describe("saveTheme", () => {
     currentAdmin();
     const { saveTheme } = await import("./_actions");
     const bad = validTokens({ fontKey: "comic-sans" });
-    const result = await saveTheme(randomUUID(), {}, formDataFor({ tokens: bad, landingVariant: "centered" }));
+    const result = await saveTheme(randomUUID(), "fr", {}, formDataFor({ tokens: bad, landingVariant: "centered" }));
     expect(result.errors?.["tokens.fontKey"]).toBe("Police hors catalogue");
+    expect(updateTheme).not.toHaveBeenCalled();
+  });
+
+  it("returns an English field error for a fontKey outside the catalogue when the locale is en", async () => {
+    currentAdmin();
+    const { saveTheme } = await import("./_actions");
+    const bad = validTokens({ fontKey: "comic-sans" });
+    const result = await saveTheme(randomUUID(), "en", {}, formDataFor({ tokens: bad, landingVariant: "centered" }));
+    expect(result.errors?.["tokens.fontKey"]).toBe("Font outside the catalogue");
     expect(updateTheme).not.toHaveBeenCalled();
   });
 
@@ -123,6 +171,7 @@ describe("saveTheme", () => {
     const { saveTheme } = await import("./_actions");
     const result = await saveTheme(
       randomUUID(),
+      "fr",
       {},
       formDataFor({ tokens: validTokens(), landingVariant: "not-a-variant" }),
     );
@@ -135,7 +184,7 @@ describe("saveTheme", () => {
     const id = randomUUID();
     updateTheme.mockResolvedValue({ id, productSlugs: ["alpha", "zeta"] });
     const { saveTheme } = await import("./_actions");
-    const result = await saveTheme(id, {}, formDataFor({ tokens: validTokens(), landingVariant: "split" }));
+    const result = await saveTheme(id, "fr", {}, formDataFor({ tokens: validTokens(), landingVariant: "split" }));
 
     expect(result).toEqual({ ok: true });
     expect(updateTheme).toHaveBeenCalledWith(id, {
@@ -154,6 +203,7 @@ describe("saveTheme", () => {
     const { saveTheme } = await import("./_actions");
     const result = await saveTheme(
       randomUUID(),
+      "fr",
       {},
       formDataFor({ tokens: validTokens(), landingVariant: "centered" }),
     );
@@ -166,8 +216,16 @@ describe("saveTheme", () => {
     updateTheme.mockRejectedValue(new Error("locked"));
     const { saveTheme } = await import("./_actions");
     await expect(
-      saveTheme(randomUUID(), {}, formDataFor({ tokens: validTokens(), landingVariant: "centered" })),
+      saveTheme(randomUUID(), "fr", {}, formDataFor({ tokens: validTokens(), landingVariant: "centered" })),
     ).rejects.toThrow("locked");
     expect(updateTag).not.toHaveBeenCalled();
+  });
+
+  it("checks admin before ever resolving translations", async () => {
+    requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
+    const { saveTheme } = await import("./_actions");
+    // An invalid locale would make getTranslations() throw if it were ever
+    // reached before requireAdmin(): proves the guard really runs first.
+    await expect(saveTheme(randomUUID(), "de" as "fr", {}, formDataFor({}))).rejects.toThrow("redirect:/admin/login");
   });
 });

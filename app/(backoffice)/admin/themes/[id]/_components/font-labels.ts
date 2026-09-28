@@ -1,11 +1,12 @@
 import type { FontKey } from "@/lib/fonts";
+import type { ThemesTranslator } from "../../_components/theme-usage";
 
-// BO-08's font `<select>`: FONT_KEYS is the fixed catalogue
+// BO-08's font <select>: FONT_KEYS is the fixed catalogue
 // (lib/fonts.ts › "a theme can only reference a key of this catalogue,
-// never an arbitrary font"), each key carries a readable French label.
-export const FONT_LABELS: Record<FontKey, string> = {
-  serif: "Serif (éditorial)",
-  grotesk: "Grotesque (néon)",
-  sans: "Sans-serif (corporate)",
-  rounded: "Arrondie (ludique)",
-};
+// never an arbitrary font"). I18N-BACKOFFICE-STRINGS (lot 7): the readable
+// label comes from the "fontLabels" key of
+// messages/{fr,en}/backoffice-themes.json instead of a static French
+// Record.
+export function fontLabel(key: FontKey, t: ThemesTranslator): string {
+  return t(`fontLabels.${key}`);
+}

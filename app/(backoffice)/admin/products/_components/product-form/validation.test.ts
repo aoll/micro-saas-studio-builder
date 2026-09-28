@@ -1,5 +1,17 @@
+import { createTranslator } from "next-intl";
 import { describe, expect, it } from "vitest";
-import { stepOfPath, toFrenchMessage, validateStep } from "./validation";
+import en from "@/messages/en/backoffice-product-form-b2.json";
+import { issuesToErrors, stepOfPath, toFrenchMessage, validateStep, type MessageTranslator } from "./validation";
+
+// I18N-BACKOFFICE-STRINGS (lot 6): a real translator built from the
+// committed English messages, the same way other zones' tests do
+// (e.g. app/(products)/_components/product-not-found.test.tsx) — catches a
+// stale key or a missing message, not just a hand-rolled stub.
+const tEnglish: MessageTranslator = createTranslator({
+  locale: "en",
+  messages: { "backoffice-product-form-b2": en },
+  namespace: "backoffice-product-form-b2" as never,
+});
 
 describe("stepOfPath", () => {
   it("maps a slug path to step 1", () => {
@@ -281,5 +293,58 @@ describe("toFrenchMessage: number origin (QA1-P5-E2)", () => {
       message: "Invalid input: expected string, received number",
     });
     expect(message).toBe("Invalid input: expected string, received number");
+  });
+});
+
+// I18N-BACKOFFICE-STRINGS (lot 6): every message above stays French by
+// default (validation.test.ts's committed behaviour, untouched) — passing a
+// real English translator must switch every branch, not just the ones a
+// spec remembered to check.
+describe("toFrenchMessage: locale", () => {
+  it("translates the required-field message", () => {
+    const message = toFrenchMessage(
+      { code: "too_small", origin: "string", minimum: 1, inclusive: true, path: ["name"], message: "" },
+      tEnglish,
+    );
+    expect(message).toBe("This field is required");
+  });
+
+  it("translates a minimum-characters message with its bound", () => {
+    const message = toFrenchMessage(
+      { code: "too_small", origin: "string", minimum: 3, inclusive: true, path: ["name"], message: "" },
+      tEnglish,
+    );
+    expect(message).toBe("3 characters minimum");
+  });
+
+  it("translates a maximum-characters message with its bound", () => {
+    const message = toFrenchMessage(
+      { code: "too_big", origin: "string", maximum: 60, inclusive: true, path: ["landing", "seoTitle"], message: "" },
+      tEnglish,
+    );
+    expect(message).toBe("60 characters maximum");
+  });
+
+  it("translates the integer message", () => {
+    const message = toFrenchMessage(
+      { code: "invalid_type", expected: "int", path: ["pricing", "costPerGeneration"], message: "" },
+      tEnglish,
+    );
+    expect(message).toBe("Must be a whole number");
+  });
+
+  it("translates a mapped custom message (slug reserved)", () => {
+    const message = toFrenchMessage({ code: "custom", path: ["slug"], message: "slug is reserved" } as never, tEnglish);
+    expect(message).toBe("This slug is reserved");
+  });
+
+  it("issuesToErrors translates every issue with the given translator", () => {
+    const errors = issuesToErrors([{ code: "custom", path: ["slug"], message: "slug is reserved" } as never], tEnglish);
+    expect(errors).toEqual({ slug: "This slug is reserved" });
+  });
+
+  it("validateStep translates a step's issues with the given translator", () => {
+    const errors = validateStep(1, { slug: "admin" }, tEnglish);
+    expect(errors).toEqual({ slug: "This slug is reserved" });
   });
 });

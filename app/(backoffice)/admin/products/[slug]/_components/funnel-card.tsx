@@ -3,11 +3,13 @@ import type { FunnelRow } from "./sheet";
 
 // docs/02-ecrans.md › Funnel: "5 étapes avec volumes et taux de passage" — a row per step, label,
 // count, pass rate, and a bar whose width already carries the clamped percentage (sheet.ts).
-export function FunnelCard({ rows }: { rows: FunnelRow[] }) {
+// I18N-BACKOFFICE-STRINGS: `title` is translated by the caller (product-sheet-view.tsx), kept a
+// plain prop rather than an async self-translating component (product-tabs.tsx's comment).
+export function FunnelCard({ title, rows }: { title: string; rows: FunnelRow[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Funnel</CardTitle>
+        <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3">
         {rows.map((row) => (

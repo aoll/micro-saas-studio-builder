@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
+import { createTranslator, NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import frSheet from "@/messages/fr/backoffice-product-sheet.json";
+import enSheet from "@/messages/en/backoffice-product-sheet.json";
 import type { ProductSheetViewModel } from "./sheet";
-import { ProductSheetView } from "./product-sheet-view";
 
 // `ProductSheetView` renders `SheetHeader` and `DecisionPanel`, both of
 // which statically import `StatusChange`, which statically imports
@@ -16,6 +18,17 @@ import { ProductSheetView } from "./product-sheet-view";
 vi.mock("@/lib/dal/session", () => ({ requireAdmin: vi.fn() }));
 vi.mock("@/lib/dal/products", () => ({ getProduct: vi.fn() }));
 vi.mock("@/lib/dal/product-status", () => ({ updateStatus: vi.fn() }));
+
+// ProductSheetView and its nested SheetHeader/FunnelCard/EmptyState text are
+// Server Components: mocked with a real translator (product-tabs.test.tsx's
+// comment). TrendChart, the one 'use client' leaf, still reads its
+// translations from a NextIntlClientProvider (renderUi below) — both live
+// side by side here, mirroring production (app/(backoffice)/layout.tsx
+// forwards every backoffice* zone to the client provider).
+vi.mock("next-intl/server", () => ({
+  getTranslations: async (namespace: "backoffice-product-sheet") =>
+    createTranslator({ locale: "fr", messages: { "backoffice-product-sheet": frSheet }, namespace }),
+}));
 
 beforeAll(() => {
   class ResizeObserverStub {
@@ -56,16 +69,26 @@ function sheet(overrides: Partial<ProductSheetViewModel> = {}): ProductSheetView
   };
 }
 
+async function renderUi(model: ProductSheetViewModel) {
+  const { ProductSheetView } = await import("./product-sheet-view");
+  const ui = await ProductSheetView({ sheet: model });
+  return render(
+    <NextIntlClientProvider locale="fr" messages={{ "backoffice-product-sheet": frSheet }}>
+      {ui}
+    </NextIntlClientProvider>,
+  );
+}
+
 describe("ProductSheetView", () => {
-  it("shows the funnel and trend chart when there is data", () => {
-    render(<ProductSheetView sheet={sheet()} />);
+  it("shows the funnel and trend chart when there is data", async () => {
+    await renderUi(sheet());
     expect(screen.getByText("Visites landing")).toBeTruthy();
     expect(screen.getByText("Achats")).toBeTruthy(); // trend chart legend
     expect(screen.queryByText(/aucune donnée/i)).toBeNull();
   });
 
-  it("shows an EmptyState with a sub-app link instead of the funnel and chart when there is no data", () => {
-    render(<ProductSheetView sheet={sheet({ hasData: false })} />);
+  it("shows an EmptyState with a sub-app link instead of the funnel and chart when there is no data", async () => {
+    await renderUi(sheet({ hasData: false }));
     expect(screen.getByText(/aucune donnée/i)).toBeTruthy();
     expect(screen.queryByText("Visites landing")).toBeNull();
     // Two links point at the sub-app when there is no data: the header's and the EmptyState's.
@@ -74,9 +97,27 @@ describe("ProductSheetView", () => {
     for (const link of links) expect(link.getAttribute("href")).toBe("/my-product");
   });
 
-  it("always shows the KPIs and the decision panel, with or without data", () => {
-    render(<ProductSheetView sheet={sheet({ hasData: false })} />);
+  it("always shows the KPIs and the decision panel, with or without data", async () => {
+    await renderUi(sheet({ hasData: false }));
     expect(screen.getByText("Revenu · 30 j")).toBeTruthy();
     expect(screen.getByText("Statut et seuils de décision")).toBeTruthy();
+  });
+
+  it("renders the empty state and the funnel title in English", async () => {
+    vi.doMock("next-intl/server", () => ({
+      getTranslations: async (namespace: "backoffice-product-sheet") =>
+        createTranslator({ locale: "en", messages: { "backoffice-product-sheet": enSheet }, namespace }),
+    }));
+    vi.resetModules();
+    const { ProductSheetView } = await import("./product-sheet-view");
+    const ui = await ProductSheetView({ sheet: sheet({ hasData: false }) });
+    render(
+      <NextIntlClientProvider locale="en" messages={{ "backoffice-product-sheet": enSheet }}>
+        {ui}
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByText("No data yet")).toBeTruthy();
+    // Two links share the "view live" label here too (the header's and the EmptyState's).
+    expect(screen.getAllByRole("link", { name: /view \/my-product/i }).length).toBeGreaterThanOrEqual(2);
   });
 });

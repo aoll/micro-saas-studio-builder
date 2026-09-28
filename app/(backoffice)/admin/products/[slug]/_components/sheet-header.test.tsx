@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/react";
 import { screen, within } from "@testing-library/dom";
+import { createTranslator } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import frSheet from "@/messages/fr/backoffice-product-sheet.json";
+import enSheet from "@/messages/en/backoffice-product-sheet.json";
 import type { ProductSheetViewModel } from "./sheet";
-import { SheetHeader } from "./sheet-header";
 
 // `SheetHeader` statically imports `StatusChange`, which statically imports
 // `setProductStatus` from `../../_actions` (CLAUDE.md: every other
@@ -15,6 +17,14 @@ import { SheetHeader } from "./sheet-header";
 vi.mock("@/lib/dal/session", () => ({ requireAdmin: vi.fn() }));
 vi.mock("@/lib/dal/products", () => ({ getProduct: vi.fn() }));
 vi.mock("@/lib/dal/product-status", () => ({ updateStatus: vi.fn() }));
+
+// SheetHeader and the ProductTabs it nests are Server Components: mocked
+// with a real translator (product-tabs.test.tsx's comment) so this stays a
+// render-only test without a real next-intl request context.
+vi.mock("next-intl/server", () => ({
+  getTranslations: async (namespace: "backoffice-product-sheet") =>
+    createTranslator({ locale: "fr", messages: { "backoffice-product-sheet": frSheet }, namespace }),
+}));
 
 afterEach(cleanup);
 
@@ -46,8 +56,9 @@ function sheet(overrides: Partial<ProductSheetViewModel> = {}): ProductSheetView
 }
 
 describe("SheetHeader", () => {
-  it("shows the product name, its status badge and links to the sub-app and the editor", () => {
-    render(<SheetHeader sheet={sheet()} />);
+  it("shows the product name, its status badge and links to the sub-app and the editor", async () => {
+    const { SheetHeader } = await import("./sheet-header");
+    render(await SheetHeader({ sheet: sheet() }));
     expect(screen.getByText("My Product")).toBeTruthy();
     expect(screen.getByTestId("status-badge")).toBeTruthy();
     const subAppLink = screen.getByRole("link", { name: /my-product/i });
@@ -57,26 +68,28 @@ describe("SheetHeader", () => {
     expect(editLink.getAttribute("href")).toBe("/admin/products/my-product/edit");
   });
 
-  it("shows the DecisionBadge when there is a suggested decision", () => {
+  it("shows the DecisionBadge when there is a suggested decision", async () => {
+    const { SheetHeader } = await import("./sheet-header");
     render(
-      <SheetHeader
-        sheet={sheet({
+      await SheetHeader({
+        sheet: sheet({
           decision: {
             thresholds: [],
             current: { visits: "", conversion: "", margin: "" },
             suggestion: null,
             badge: "kill",
           },
-        })}
-      />,
+        }),
+      }),
     );
     expect(screen.getByText("à couper")).toBeTruthy();
   });
 
-  it("shows a closed banner instead of the DecisionBadge for a killed product", () => {
+  it("shows a closed banner instead of the DecisionBadge for a killed product", async () => {
+    const { SheetHeader } = await import("./sheet-header");
     render(
-      <SheetHeader
-        sheet={sheet({
+      await SheetHeader({
+        sheet: sheet({
           status: "killed",
           decision: {
             thresholds: [],
@@ -84,23 +97,25 @@ describe("SheetHeader", () => {
             suggestion: null,
             badge: null,
           },
-        })}
-      />,
+        }),
+      }),
     );
     expect(screen.getByText(/produit fermé/i)).toBeTruthy();
     expect(screen.getByText(/SA-08/)).toBeTruthy();
   });
 
-  it("still shows the sub-app link for a killed product", () => {
-    render(<SheetHeader sheet={sheet({ status: "killed", slug: "gone" })} />);
+  it("still shows the sub-app link for a killed product", async () => {
+    const { SheetHeader } = await import("./sheet-header");
+    render(await SheetHeader({ sheet: sheet({ status: "killed", slug: "gone" }) }));
     const subAppLink = screen.getByRole("link", { name: /gone/i });
     expect(subAppLink.getAttribute("href")).toBe("/gone");
   });
 
   // specs/mockups/BO-06.png: "Changer de statut" sits top-right, alongside
   // "Voir /{slug}" and "Modifier la config", not below the header row.
-  it("puts the status-change trigger in the top-right action group, next to the sub-app link and Modifier la config", () => {
-    render(<SheetHeader sheet={sheet()} />);
+  it("puts the status-change trigger in the top-right action group, next to the sub-app link and Modifier la config", async () => {
+    const { SheetHeader } = await import("./sheet-header");
+    render(await SheetHeader({ sheet: sheet() }));
     const actions = screen.getByTestId("sheet-actions");
     expect(within(actions).getByRole("link", { name: /my-product/i })).toBeTruthy();
     expect(within(actions).getByRole("link", { name: /modifier/i })).toBeTruthy();
@@ -110,8 +125,9 @@ describe("SheetHeader", () => {
   // specs/mockups/BO-03.png and BO-04.png: the same "Vue d'ensemble / Activité"
   // tabs appear on both screens, so a visitor on the sheet can reach the
   // activity screen and back.
-  it("mounts the Vue d'ensemble / Activité tabs, with Vue d'ensemble current", () => {
-    render(<SheetHeader sheet={sheet({ slug: "my-product" })} />);
+  it("mounts the Vue d'ensemble / Activité tabs, with Vue d'ensemble current", async () => {
+    const { SheetHeader } = await import("./sheet-header");
+    render(await SheetHeader({ sheet: sheet({ slug: "my-product" }) }));
     const overview = screen.getByRole("link", { name: "Vue d'ensemble" });
     const activity = screen.getByRole("link", { name: "Activité" });
     expect(overview.getAttribute("href")).toBe("/admin/products/my-product");
@@ -121,5 +137,32 @@ describe("SheetHeader", () => {
     // components/backoffice/nav-link.tsx:13 convention.
     expect(overview.getAttribute("aria-current")).toBe("page");
     expect(activity.getAttribute("aria-current")).toBeNull();
+  });
+
+  it("renders the edit link and the killed banner in English", async () => {
+    vi.doMock("next-intl/server", () => ({
+      getTranslations: async (namespace: "backoffice-product-sheet") =>
+        createTranslator({ locale: "en", messages: { "backoffice-product-sheet": enSheet }, namespace }),
+    }));
+    vi.resetModules();
+    const { SheetHeader } = await import("./sheet-header");
+    render(
+      await SheetHeader({
+        sheet: sheet({
+          status: "killed",
+          slug: "gone",
+          decision: {
+            thresholds: [],
+            current: { visits: "", conversion: "", margin: "" },
+            suggestion: null,
+            badge: null,
+          },
+        }),
+      }),
+    );
+    const editLink = screen.getByRole("link", { name: /edit configuration/i });
+    expect(editLink.getAttribute("href")).toBe("/admin/products/gone/edit");
+    expect(screen.getByText(/closed product \(Killed\)/i)).toBeTruthy();
+    expect(screen.getByText(/SA-08/)).toBeTruthy();
   });
 });

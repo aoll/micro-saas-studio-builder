@@ -12,6 +12,18 @@ vi.mock("next/root-params", () => ({ app: () => app() }));
 const getProduct = vi.fn();
 vi.mock("@/lib/dal/products", () => ({ getProduct: (slug: string) => getProduct(slug) }));
 
+// docs/08-stack.md › i18n: the backoffice branch reads the `admin_locale`
+// cookie and never `headers()` (no Accept-Language detection behind auth,
+// I18N-BACKOFFICE bullet 3). `cookieJar` is empty by default: every
+// existing test below never sets a cookie, and reaches this mock through
+// the "no root param" path without needing to know it exists.
+const cookieJar = new Map<string, { value: string }>();
+const headersSpy = vi.fn();
+vi.mock("next/headers", () => ({
+  cookies: async () => ({ get: (name: string) => cookieJar.get(name) }),
+  headers: headersSpy,
+}));
+
 const params = { requestLocale: Promise.resolve(undefined) };
 
 describe("i18n/request", () => {

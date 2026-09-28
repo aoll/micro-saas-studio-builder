@@ -39,6 +39,7 @@ vi.mock("next-intl/server", () => ({
   // DecisionGauge (lot 3) also calls getFormatter() for its locale-aware
   // number formatting (decision-gauge.test.tsx's own mock, reproduced here).
   getFormatter: async () => ({ number: (value: number) => new Intl.NumberFormat("fr").format(value) }),
+  getLocale: async () => "fr",
 }));
 
 beforeAll(() => {
@@ -119,6 +120,7 @@ describe("ProductSheetView", () => {
       getTranslations: async (namespace: "backoffice-product-sheet" | "backoffice-decision") =>
         createTranslator({ locale: "en", messages: messagesEn, namespace }),
       getFormatter: async () => ({ number: (value: number) => new Intl.NumberFormat("en").format(value) }),
+      getLocale: async () => "en",
     }));
     vi.resetModules();
     const { ProductSheetView } = await import("./product-sheet-view");

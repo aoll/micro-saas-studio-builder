@@ -7,6 +7,8 @@ import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import en from "@/messages/en/backoffice-product-form-a.json";
 import fr from "@/messages/fr/backoffice-product-form-a.json";
+import enValidation from "@/messages/en/backoffice-product-form-b2.json";
+import frValidation from "@/messages/fr/backoffice-product-form-b2.json";
 import type { Theme } from "@/lib/dal/themes";
 import { ImportConfigPanel } from "./import-config-panel";
 
@@ -34,8 +36,12 @@ function setup(uiLocale: "fr" | "en" = "fr") {
   const onImport = vi.fn();
   const onErrors = vi.fn();
   const messages = uiLocale === "fr" ? fr : en;
+  const validationMessages = uiLocale === "fr" ? frValidation : enValidation;
   const view = render(
-    <NextIntlClientProvider locale={uiLocale} messages={{ "backoffice-product-form-a": messages }}>
+    <NextIntlClientProvider
+      locale={uiLocale}
+      messages={{ "backoffice-product-form-a": messages, "backoffice-product-form-b2": validationMessages }}
+    >
       <ImportConfigPanel themes={themes} currentThemeId={currentThemeId} onImport={onImport} onErrors={onErrors} />
     </NextIntlClientProvider>,
   );

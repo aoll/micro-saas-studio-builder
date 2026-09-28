@@ -116,7 +116,7 @@ export function toProductSheet(
     kpis: toKpis(metrics, t, locale),
     funnelRows: toFunnelRows(funnel.steps, metrics.visits, t, locale),
     trend: toTrendPoints(funnel.daily),
-    decision: toDecisionCopy(metrics, thresholds),
+    decision: toDecisionCopy(metrics, thresholds, locale),
     decisionMetrics: {
       visits: metrics.visits,
       signupToPurchaseRate: metrics.signupToPurchaseRate,

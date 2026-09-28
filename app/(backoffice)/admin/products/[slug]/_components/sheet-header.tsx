@@ -24,7 +24,11 @@ function KilledBanner({ text }: { text: string }) {
 // (plan design decisions 2, 6, 8). I18N-BACKOFFICE-STRINGS: async, its own translator (mirrors
 // ProductTabs), rather than threading one down from the page.
 export async function SheetHeader({ sheet }: { sheet: ProductSheetViewModel }) {
-  const t = await getTranslations("backoffice-product-sheet");
+  const [t, tDecision] = await Promise.all([
+    getTranslations("backoffice-product-sheet"),
+    getTranslations("backoffice-decision"),
+  ]);
+  const decisionLabels = { cut: tDecision("gauge.zone.cut"), scale: tDecision("gauge.zone.scale") };
   const isKilled = sheet.status === "killed";
   return (
     <div className="grid gap-3">
@@ -32,7 +36,7 @@ export async function SheetHeader({ sheet }: { sheet: ProductSheetViewModel }) {
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-semibold">{sheet.name}</h1>
           <StatusBadge status={sheet.status} />
-          {!isKilled ? <DecisionBadge decision={sheet.decision.badge} /> : null}
+          {!isKilled ? <DecisionBadge decision={sheet.decision.badge} labels={decisionLabels} /> : null}
         </div>
         {/* specs/mockups/BO-06.png: "Changer de statut" sits top-right, next to "Modifier la config". */}
         <div className="flex items-center gap-2" data-testid="sheet-actions">

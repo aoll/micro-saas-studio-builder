@@ -28,9 +28,10 @@ export function ImportConfigPanel({
   const [raw, setRaw] = useState("");
   const [formError, setFormError] = useState<string | undefined>(undefined);
   const t = useTranslations("backoffice-product-form-a");
+  const tValidation = useTranslations("backoffice-product-form-b2");
 
   function handleImport() {
-    const result = parseImportedConfig(raw, themes, currentThemeId);
+    const result = parseImportedConfig(raw, themes, currentThemeId, tValidation);
     if (result.ok) {
       setFormError(undefined);
       onImport(result.config);

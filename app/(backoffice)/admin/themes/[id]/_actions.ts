@@ -7,7 +7,7 @@ import { z } from "zod";
 import { FONT_KEYS } from "@/lib/fonts";
 import { requireAdmin } from "@/lib/dal/session";
 import { updateTheme } from "@/lib/dal/themes";
-import type { ProductConfig } from "@/lib/schemas/product-config";
+import { localeSchema, type ProductConfig } from "@/lib/schemas/product-config";
 import { landingVariantSchema, themeTokensSchema } from "@/lib/schemas/theme-tokens";
 import { toThemeErrors } from "./_components/theme-errors";
 
@@ -35,11 +35,12 @@ const payloadSchema = z.object({ tokens: themeTokensSchema, landingVariant: land
 // run first no matter what, even for a malformed locale.
 export async function saveTheme(
   id: string,
-  locale: Locale,
+  rawLocale: Locale,
   _prevState: SaveThemeState,
   formData: FormData,
 ): Promise<SaveThemeState> {
   await requireAdmin();
+  const locale = localeSchema.safeParse(rawLocale).data ?? "fr";
   const t = await getTranslations({ locale, namespace: "backoffice-themes" });
 
   if (!z.uuid().safeParse(id).success) {

@@ -191,7 +191,7 @@ export function ProductForm({
       if (mode === "create") router.replace(`/admin/products/${state.slug}/edit` as Route);
     }
     if (state.formError) toast.error(state.formError);
-  }, [state, mode, router]);
+  }, [state, mode, router, t]);
 
   useEffect(() => {
     if (publishState.ok && publishState.slug) {
@@ -199,7 +199,7 @@ export function ProductForm({
       if (mode === "edit") router.refresh();
     }
     if (publishState.formError) toast.error(publishState.formError);
-  }, [publishState, mode, router]);
+  }, [publishState, mode, router, t]);
 
   function patchDraft(patch: Partial<ProductDraft>) {
     setDraft((current) => ({ ...current, ...patch }));

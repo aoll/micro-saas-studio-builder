@@ -28,6 +28,7 @@ vi.mock("next-intl/server", () => ({
   getFormatter: async () => ({
     number: (value: number) => new Intl.NumberFormat("fr").format(value),
   }),
+  getLocale: async () => "fr",
 }));
 
 afterEach(cleanup);

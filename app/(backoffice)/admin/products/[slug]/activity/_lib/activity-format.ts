@@ -101,8 +101,7 @@ export { excerpt, summarizeInput };
 // I18N-BACKOFFICE-STRINGS: "1 purchase" vs "14 purchases" genuinely differ in English) and, when
 // at least one pack was sold, a breakdown line ("Pack 10 : 11 · Pack 50 : 3"). Returned as lines
 // (not a single string) so the component decides how to lay them out, mirroring the mockup's
-// two-line card. The amount itself stays formatEuroCents (fr-FR, portfolio/format.ts): outside
-// this lot's Périmètre, not yet locale-aware (see this spec's report).
+// two-line card.
 export function purchaseSummaryLines(
   summary: PurchaseSummary,
   t: Translate,

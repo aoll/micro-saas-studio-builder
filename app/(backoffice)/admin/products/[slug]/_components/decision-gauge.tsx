@@ -1,4 +1,4 @@
-import { getFormatter, getTranslations } from "next-intl/server";
+import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 import type { DecisionMetrics } from "@/lib/decision";
 import type { Thresholds } from "@/lib/dal/thresholds";
 import { formatPercent } from "@/app/(backoffice)/admin/_components/portfolio/format";
@@ -25,8 +25,12 @@ const BAR_HEIGHT = 10;
 // composition also works with @testing-library/react's synchronous
 // `render()`, which cannot itself await a nested async Server Component.
 export async function DecisionGauge({ metrics, thresholds }: { metrics: DecisionMetrics; thresholds: Thresholds }) {
-  const t = await getTranslations("backoffice-decision");
-  const format = await getFormatter();
+  const [t, format, localeRaw] = await Promise.all([
+    getTranslations("backoffice-decision"),
+    getFormatter(),
+    getLocale(),
+  ]);
+  const locale = localeRaw as "fr" | "en";
   const ZONE_LABEL: Record<GaugeZone, string> = {
     kill: t("gauge.zone.cut"),
     neutral: t("gauge.zone.neutralZone"),
@@ -75,10 +79,10 @@ export async function DecisionGauge({ metrics, thresholds }: { metrics: Decision
           strokeWidth={2}
         />
         <text x={killEndX} y={BAR_Y - 6} textAnchor="middle" className="fill-muted-foreground text-[8px]">
-          {formatPercent(thresholds.killMaxConversion)}
+          {formatPercent(thresholds.killMaxConversion, locale)}
         </text>
         <text x={scaleStartX} y={BAR_Y - 6} textAnchor="middle" className="fill-muted-foreground text-[8px]">
-          {formatPercent(thresholds.scaleMinConversion)}
+          {formatPercent(thresholds.scaleMinConversion, locale)}
         </text>
         {markerX !== null && markerZone ? (
           <g data-testid="gauge-marker">
@@ -96,7 +100,7 @@ export async function DecisionGauge({ metrics, thresholds }: { metrics: Decision
               textAnchor="middle"
               className="fill-foreground text-[9px] font-medium"
             >
-              {formatPercent(metrics.signupToPurchaseRate)}
+              {formatPercent(metrics.signupToPurchaseRate, locale)}
             </text>
           </g>
         ) : null}

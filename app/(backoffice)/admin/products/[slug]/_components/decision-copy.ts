@@ -1,5 +1,6 @@
 import { evaluate, type Decision } from "@/lib/decision";
 import type { ProductMetrics } from "@/lib/dal/metrics";
+import type { ProductConfig } from "@/lib/schemas/product-config";
 import type { Thresholds } from "@/lib/dal/thresholds";
 import { formatEuroMicros, formatNumber, formatPercent } from "@/app/(backoffice)/admin/_components/portfolio/format";
 
@@ -30,21 +31,33 @@ export type DecisionCopy = {
 // unit-testable without a next-intl mock; DecisionPanel — its only caller, an async Server
 // Component — turns each key into text with getTranslations("backoffice-decision"). A killed
 // product never suggests anything: the decision has already been made.
-export function toDecisionCopy(metrics: ProductMetrics, thresholds: Thresholds): DecisionCopy {
+export function toDecisionCopy(
+  metrics: ProductMetrics,
+  thresholds: Thresholds,
+  locale: ProductConfig["locale"] = "fr",
+): DecisionCopy {
   const thresholdLines: ThresholdLine[] = [
-    { key: "minVisits", value: formatNumber(thresholds.minVisits) },
-    { key: "killMaxConversion", value: formatPercent(thresholds.killMaxConversion) },
-    { key: "scaleMinConversion", value: formatPercent(thresholds.scaleMinConversion) },
+    { key: "minVisits", value: formatNumber(thresholds.minVisits, locale) },
+    { key: "killMaxConversion", value: formatPercent(thresholds.killMaxConversion, locale) },
+    { key: "scaleMinConversion", value: formatPercent(thresholds.scaleMinConversion, locale) },
     { key: "positiveMarginRequired", value: thresholds.scaleRequiresPositiveMargin },
   ];
   const current = {
-    visits: formatNumber(metrics.visits),
-    conversion: formatPercent(metrics.signupToPurchaseRate),
-    margin: metrics.marginPerGenerationMicros === null ? EM_DASH : formatEuroMicros(metrics.marginPerGenerationMicros),
+    visits: formatNumber(metrics.visits, locale),
+    conversion: formatPercent(metrics.signupToPurchaseRate, locale),
+    margin:
+      metrics.marginPerGenerationMicros === null
+        ? EM_DASH
+        : formatEuroMicros(metrics.marginPerGenerationMicros, 2, locale),
   };
   const badge = toBadge(metrics, thresholds);
 
-  return { thresholds: thresholdLines, current, suggestion: toSuggestion(metrics, thresholds, badge), badge };
+  return {
+    thresholds: thresholdLines,
+    current,
+    suggestion: toSuggestion(metrics, thresholds, badge, locale),
+    badge,
+  };
 }
 
 function toBadge(metrics: ProductMetrics, thresholds: Thresholds): Decision {
@@ -59,13 +72,18 @@ function toBadge(metrics: ProductMetrics, thresholds: Thresholds): Decision {
   );
 }
 
-function toSuggestion(metrics: ProductMetrics, thresholds: Thresholds, badge: Decision): DecisionSuggestion {
+function toSuggestion(
+  metrics: ProductMetrics,
+  thresholds: Thresholds,
+  badge: Decision,
+  locale: ProductConfig["locale"],
+): DecisionSuggestion {
   if (metrics.status === "killed") return null;
   if (metrics.visits < thresholds.minVisits) {
     return {
       kind: "notEnoughVisits",
-      visits: formatNumber(metrics.visits),
-      minVisits: formatNumber(thresholds.minVisits),
+      visits: formatNumber(metrics.visits, locale),
+      minVisits: formatNumber(thresholds.minVisits, locale),
     };
   }
   if (badge === "kill") return { kind: "thresholdReached", decision: "kill" };

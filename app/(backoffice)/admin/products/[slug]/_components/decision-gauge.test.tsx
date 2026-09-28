@@ -25,6 +25,7 @@ function mockNextIntlServer(locale: "fr" | "en") {
     getFormatter: async () => ({
       number: (value: number) => new Intl.NumberFormat(locale).format(value),
     }),
+    getLocale: async () => locale,
   }));
 }
 

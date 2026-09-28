@@ -1,6 +1,6 @@
 import type { Theme } from "@/lib/dal/themes";
 import { productConfigSchema, type ProductConfig } from "@/lib/schemas/product-config";
-import { issuesToErrors } from "./validation";
+import { issuesToErrors, type MessageTranslator } from "./validation";
 
 // `formError` is a stable code, not a message: this is a plain function
 // (no `t()`, no locale) called synchronously from ImportConfigPanel, which
@@ -29,7 +29,12 @@ export function resolveImportedThemeId(candidate: unknown, themes: Theme[], fall
 // Pipeline: JSON.parse -> reject non-object candidates -> resolve themeId
 // -> validate with the same shared schema the backoffice form and the
 // `saveProduct` Server Action already use. Never throws.
-export function parseImportedConfig(raw: string, themes: Theme[], fallbackThemeId: string): ImportResult {
+export function parseImportedConfig(
+  raw: string,
+  themes: Theme[],
+  fallbackThemeId: string,
+  t?: MessageTranslator,
+): ImportResult {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -46,6 +51,6 @@ export function parseImportedConfig(raw: string, themes: Theme[], fallbackThemeI
   const withThemeId = { ...candidate, themeId: resolvedThemeId };
 
   const result = productConfigSchema.safeParse(withThemeId);
-  if (!result.success) return { ok: false, errors: issuesToErrors(result.error.issues) };
+  if (!result.success) return { ok: false, errors: issuesToErrors(result.error.issues, t) };
   return { ok: true, config: result.data };
 }

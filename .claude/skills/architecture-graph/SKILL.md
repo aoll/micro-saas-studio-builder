@@ -207,6 +207,48 @@ rm "$UA_DIR/source-files-tmp.json"
 `source-files.json`) est déjà commité — ne le régénère que si son contenu a
 vraiment besoin de changer.
 
+## 3bis. Thème mk-theme (décision humaine du 28/09/2026)
+
+Le dashboard doit reprendre le thème clair "bleu diffus" de la landing / du
+BO / du making-of (`app/globals.css` › `--color-mk-*`), pas son propre thème
+sombre ambre par défaut. Il a son propre système de thèmes (sélecteur en
+haut à droite, persistant en `localStorage["ua-theme"]`) : on y ajoute un
+preset clair `MSB Light` / accent `MSB Blue` plutôt que d'écraser ses
+couleurs au hasard, pour rester compatible avec ce sélecteur (et avec le
+mode clair/sombre natif de React Flow, piloté par le même `isDark`).
+
+```bash
+node ".claude/skills/architecture-graph/apply-mk-theme.mjs" public/architecture/assets
+```
+
+Ce script patche le bundle JS qui vient d'être copié (ancre sur du contenu
+littéral — ids et couleurs hex — pas sur les noms de variables minifiées, qui
+changent à chaque build) : ajoute le preset `MSB Light` (couleurs
+`app/globals.css`, mêmes couleurs de nœuds déjà retravaillées par
+`Light Minimal` pour un fond clair) et l'accent `MSB Blue`, et les met par
+défaut. Il échoue bruyamment si une ancre ne matche plus une seule fois —
+c'est le signal qu'une nouvelle release du dashboard a changé sa structure et
+qu'il faut mettre à jour le script (pas le contourner).
+
+Complète ensuite `public/architecture/theme-mk-overrides.css` (déjà commité,
+à recopier tel quel si `public/architecture/` a été vidé) : polices
+(`Archivo`/`Manrope`/`IBM Plex Mono`, comme `components/brand/fonts.ts`) et
+les quelques types de nœuds et couleurs de diff que le sélecteur de thème ne
+couvre pas (fixes dans le CSS buildé quel que soit le thème). Vérifie que
+`public/architecture/index.html` charge bien ce fichier après les deux
+feuilles de style du dashboard, et les polices Google Fonts
+Archivo/Manrope/IBM+Plex+Mono à la place d'Inter/DM Serif Display/JetBrains
+Mono :
+
+```html
+<link
+  href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+  rel="stylesheet"
+/>
+...
+<link rel="stylesheet" href="/architecture/theme-mk-overrides.css">
+```
+
 ## 4. Vérifier avant de commiter
 
 `eslint.config.mjs`, `.prettierignore` et `knip.json` ignorent déjà

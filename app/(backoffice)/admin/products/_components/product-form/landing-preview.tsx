@@ -1,6 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import type { Theme } from "@/lib/dal/themes";
 import { fontFor } from "@/lib/fonts";
 import type { ProductConfig } from "@/lib/schemas/product-config";
@@ -28,6 +29,8 @@ export function LandingPreview({
   theme: Theme;
   branding: ProductConfig["branding"];
 }) {
+  const t = useTranslations("backoffice-product-form-b2.landingPreview");
+  const locale = useLocale();
   const { light } = theme.tokens;
   const font = fontFor(theme.tokens.fontKey);
   const primary = branding.primaryColor ?? light.primary;
@@ -41,23 +44,23 @@ export function LandingPreview({
 
   return (
     <div
-      aria-label="Aperçu de la landing"
+      aria-label={t("ariaLabel")}
       className={cn(font.className, "grid content-start gap-4 border p-4 text-left")}
       style={rootStyle}
     >
       <p className="text-xs font-medium" style={{ color: light.mutedForeground }}>
-        {`Aperçu · /${slug}`}
+        {t("previewTitle", { slug })}
       </p>
 
       <div className="grid gap-2">
-        <h2 className="text-xl font-semibold">{landing.headline || "Votre titre apparaîtra ici"}</h2>
+        <h2 className="text-xl font-semibold">{landing.headline || t("headlinePlaceholder")}</h2>
         <p style={{ color: light.mutedForeground }}>{landing.subheadline}</p>
         <span
           data-testid="landing-preview-cta"
           className="inline-block w-fit rounded-md px-3 py-1.5 text-sm"
           style={{ backgroundColor: primary, color: light.primaryForeground, borderRadius: theme.tokens.radius }}
         >
-          Essayer gratuitement
+          {t("cta")}
         </span>
       </div>
 
@@ -99,7 +102,7 @@ export function LandingPreview({
       <div className="grid gap-1.5">
         {pricing.packs.map((pack, index) => (
           <p key={index} className="text-sm">
-            {`${pack.credits} crédits · ${formatEur(pack.priceCents)}`}
+            {t("pack", { credits: pack.credits, price: formatEur(pack.priceCents, locale) })}
           </p>
         ))}
       </div>

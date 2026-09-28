@@ -1,3 +1,4 @@
+import { getFormatter, getTranslations } from "next-intl/server";
 import type { DecisionMetrics } from "@/lib/decision";
 import type { Thresholds } from "@/lib/dal/thresholds";
 import { formatPercent } from "@/app/(backoffice)/admin/_components/portfolio/format";
@@ -5,7 +6,6 @@ import { computeThresholdGauge, type GaugeZone } from "./decision-gauge-data";
 
 const ZONE_COLOR: Record<GaugeZone, string> = { kill: "#dc2626", neutral: "#a1a1aa", scale: "#16a34a" };
 const ZONE_FILL: Record<GaugeZone, string> = { kill: "#fecaca", neutral: "#e4e4e7", scale: "#bbf7d0" };
-const ZONE_LABEL: Record<GaugeZone, string> = { kill: "à couper", neutral: "zone neutre", scale: "à scaler" };
 
 const AXIS_WIDTH = 300;
 const BAR_Y = 18;
@@ -17,7 +17,22 @@ const BAR_HEIGHT = 10;
 // just read. Server-rendered (no interactivity), driven by the same
 // primitives `evaluate()` reads — never a second source of truth for the
 // decision itself, only its geometry (decision-gauge-data.ts).
-export function DecisionGauge({ metrics, thresholds }: { metrics: DecisionMetrics; thresholds: Thresholds }) {
+//
+// I18N-BACKOFFICE-STRINGS (lot 3): async so it can call getTranslations /
+// getFormatter itself (docs/08-stack.md's `admin_locale` branch), instead
+// of a hardcoded `.toLocaleString("fr-FR")`. Its only caller, DecisionPanel,
+// awaits it explicitly (not `<DecisionGauge …/>` as plain JSX) so the
+// composition also works with @testing-library/react's synchronous
+// `render()`, which cannot itself await a nested async Server Component.
+export async function DecisionGauge({ metrics, thresholds }: { metrics: DecisionMetrics; thresholds: Thresholds }) {
+  const t = await getTranslations("backoffice-decision");
+  const format = await getFormatter();
+  const ZONE_LABEL: Record<GaugeZone, string> = {
+    kill: t("gauge.zone.cut"),
+    neutral: t("gauge.zone.neutralZone"),
+    scale: t("gauge.zone.scale"),
+  };
+
   const gauge = computeThresholdGauge(metrics, thresholds);
   const killEndX = gauge.zones.killEnd * AXIS_WIDTH;
   const scaleStartX = gauge.zones.scaleStart * AXIS_WIDTH;
@@ -26,12 +41,7 @@ export function DecisionGauge({ metrics, thresholds }: { metrics: DecisionMetric
 
   return (
     <div className="grid gap-2">
-      <svg
-        viewBox={`0 0 ${AXIS_WIDTH} 44`}
-        className="w-full"
-        role="img"
-        aria-label="Position par rapport aux seuils de décision"
-      >
+      <svg viewBox={`0 0 ${AXIS_WIDTH} 44`} className="w-full" role="img" aria-label={t("gauge.ariaLabel")}>
         <rect x={0} y={BAR_Y} width={killEndX} height={BAR_HEIGHT} rx={4} fill={ZONE_FILL.kill} />
         <rect
           x={killEndX}
@@ -101,8 +111,10 @@ export function DecisionGauge({ metrics, thresholds }: { metrics: DecisionMetric
       </ul>
       {!gauge.gate.met ? (
         <p className="text-xs text-muted-foreground">
-          Seuil de visites non atteint ({gauge.gate.visits.toLocaleString("fr-FR")} /{" "}
-          {gauge.gate.minVisits.toLocaleString("fr-FR")}) — tendance indicative seulement, pas encore de verdict.
+          {t("gauge.gateNotMet", {
+            visits: format.number(gauge.gate.visits),
+            minVisits: format.number(gauge.gate.minVisits),
+          })}
         </p>
       ) : null}
     </div>

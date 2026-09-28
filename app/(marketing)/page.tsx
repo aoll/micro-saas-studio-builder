@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Hero } from "./_components/hero";
 import { KeyNumbers } from "./_components/key-numbers";
+import { BackofficeScreens } from "./_components/backoffice-screens";
 import { WhyThisDemo } from "./_components/why-this-demo";
 import { ProductsShowcase } from "./_components/products-showcase";
 import { HowItsBuilt } from "./_components/how-its-built";
@@ -23,6 +24,7 @@ export default function HomePage() {
     <main>
       <Hero />
       <KeyNumbers />
+      <BackofficeScreens />
       <WhyThisDemo />
       <ProductsShowcase />
       <HowItsBuilt />

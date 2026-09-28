@@ -33,6 +33,9 @@ function productHref(slug: string): Route {
 
 export function PortfolioTable({ rows }: { rows: PortfolioRow[] }) {
   const t = useTranslations("backoffice-portfolio");
+  // DecisionBadge stays i18n-context-free (also reused by sheet-header.tsx
+  // outside this lot's Périmètre): its labels are passed explicitly.
+  const decisionLabels = { cut: t("portfolio.decision.cut"), scale: t("portfolio.decision.scale") };
   const [sort, setSort] = useState<{ column: SortColumn; direction: SortDirection }>(DEFAULT_SORT);
 
   function toggleSort(column: SortColumn) {
@@ -74,7 +77,7 @@ export function PortfolioTable({ rows }: { rows: PortfolioRow[] }) {
               <td className="py-2 pr-4">
                 <div className="flex items-center gap-2">
                   <StatusBadge status={row.status} />
-                  <DecisionBadge decision={row.decision} />
+                  <DecisionBadge decision={row.decision} labels={decisionLabels} />
                 </div>
               </td>
               <td className="py-2 pr-4">{row.display.visits}</td>

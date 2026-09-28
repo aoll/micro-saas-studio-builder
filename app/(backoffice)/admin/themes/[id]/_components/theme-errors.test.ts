@@ -39,6 +39,13 @@ function parseErrors(overrides: { light?: Partial<typeof VALID_COLOR_SET>; radiu
   return result.error.issues;
 }
 
+// I18N-BACKOFFICE-STRINGS (lot 7): toThemeErrors() now takes the admin's
+// locale as a second argument (default "fr", so every pre-existing call
+// site and this file's original assertions keep behaving exactly as
+// before) and picks its manual translation table accordingly — a straight
+// substitution table per locale, like validation.ts elsewhere in the run,
+// not next-intl messages: these keys are Zod's own English issue messages,
+// not application copy.
 describe("toThemeErrors", () => {
   it("translates an invalid color into a French message keyed by its dotted path", () => {
     const errors = toThemeErrors(parseErrors({ light: { background: "notacolor" } }));
@@ -64,5 +71,20 @@ describe("toThemeErrors", () => {
 
   it("returns an empty object for an empty issue list", () => {
     expect(toThemeErrors([])).toEqual({});
+  });
+
+  it("translates an invalid color into an English message for the en locale", () => {
+    const errors = toThemeErrors(parseErrors({ light: { background: "notacolor" } }), "en");
+    expect(errors["tokens.light.background"]).toBe("Must be a valid CSS color (#hex or oklch/hsl/rgb…)");
+  });
+
+  it("translates an invalid radius into an English message for the en locale", () => {
+    const errors = toThemeErrors(parseErrors({ radius: "not-a-length" }), "en");
+    expect(errors["tokens.radius"]).toBe("Must be a CSS length in rem or px (e.g. 0.5rem)");
+  });
+
+  it("keeps an unmapped issue message as-is for en too (Zod's own message is already English)", () => {
+    const errors = toThemeErrors(parseErrors({ landingVariant: "not-a-variant" }), "en");
+    expect(errors.landingVariant).toBe('Invalid option: expected one of "centered"|"split"|"minimal"');
   });
 });

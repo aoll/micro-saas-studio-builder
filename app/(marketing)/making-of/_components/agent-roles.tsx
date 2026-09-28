@@ -1,15 +1,20 @@
+import { getTranslations } from "next-intl/server";
 import { AGENT_ROLES } from "../_data/run";
 
 const LARGEST_ROLE = Math.max(...AGENT_ROLES.map((role) => role.count));
 
-export function AgentRoles() {
+export async function AgentRoles() {
+  const [t, tJobs] = await Promise.all([
+    getTranslations("making-of.agentRoles"),
+    getTranslations("making-of.agentRoles.jobs"),
+  ]);
   return (
     <section aria-labelledby="mo-roles" className="flex flex-col gap-5">
       <h2
         id="mo-roles"
         className="font-[family-name:var(--font-mk-mono)] text-sm tracking-[0.1em] text-mk-muted uppercase"
       >
-        03 · L&apos;équipe d&apos;agents
+        {t("heading")}
       </h2>
       <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {AGENT_ROLES.map((role) => (
@@ -27,7 +32,7 @@ export function AgentRoles() {
                 style={{ width: `${((role.count / LARGEST_ROLE) * 100).toFixed(1)}%` }}
               />
             </span>
-            <span className="text-[13px] text-mk-muted">{role.job}</span>
+            <span className="text-[13px] text-mk-muted">{tJobs(role.role)}</span>
           </li>
         ))}
       </ul>

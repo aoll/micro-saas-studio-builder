@@ -1,0 +1,100 @@
+{
+  "metadata": {
+    "title": "Micro-SaaS Studio Builder — démo pour Dotworld",
+    "description": "Un backoffice Next.js qui lance un micro-SaaS IA en quelques minutes et le pilote par la donnée : Test → Learn → Scale."
+  },
+  "localeSwitcher": {
+    "label": "Langue",
+    "fr": "Français",
+    "en": "English"
+  },
+  "hero": {
+    "eyebrow": "Petite démo — candidature chez Dotworld",
+    "title": "Un backoffice pour générer et piloter des micro-SaaS IA en quelques minutes",
+    "description": "Depuis le backoffice, on crée un nouveau produit en remplissant un formulaire, et on pilote chacun par la donnée — funnel, coût IA, marge — jusqu'à la décision : on scale, ou on coupe.",
+    "ctaProduct": "Voir un produit en direct",
+    "ctaAdmin": "Ouvrir le backoffice admin",
+    "demoNote": "Démo publique : le paiement et l'email y sont simulés.",
+    "buildNote": "Développée avec Claude Code, specs et tests à l'appui :",
+    "makingOfLink": "Découvrir le making-of",
+    "lifecycleLabel": "Cycle de vie d'un produit",
+    "stages": {
+      "test": { "status": "Test", "meaning": "Lancé depuis un formulaire" },
+      "learn": { "status": "Learn", "meaning": "Funnel, coût IA, marge" },
+      "scale": { "status": "Scale", "meaning": "On investit" },
+      "killed": { "status": "Killed", "meaning": "On coupe" }
+    }
+  },
+  "keyNumbers": {
+    "app": "app Next.js",
+    "subApps": "sub-apps dynamiques",
+    "agents": "agents spécialisés",
+    "pullRequests": "pull requests mergées",
+    "tests": "tests verts"
+  },
+  "backofficeScreens": {
+    "eyebrow": "Le backoffice",
+    "title": "Le backoffice en images",
+    "portfolio": {
+      "title": "Le portefeuille",
+      "description": "Tous les produits d'un coup d'œil : visites, conversion, revenu, coût IA, marge, et la suggestion « à scaler » ou « à couper ».",
+      "alt": "Portefeuille du backoffice : quatre KPI du studio sur 30 jours et le tableau des produits avec leur statut."
+    },
+    "product": {
+      "title": "La fiche produit",
+      "description": "Le funnel de chaque produit, de la visite à l'achat, et sa courbe de visites et d'achats.",
+      "alt": "Fiche du produit LettrePro : revenu, ARPU, coût IA, marge par génération et funnel de conversion."
+    },
+    "productForm": {
+      "title": "La création d'un produit",
+      "description": "Un formulaire en 7 étapes, avec l'aperçu de la landing qui se met à jour en direct.",
+      "alt": "Formulaire de création d'un produit, étape Landing et SEO, avec l'aperçu de la landing à droite."
+    }
+  },
+  "whyThisDemo": {
+    "eyebrow": "Le contexte",
+    "title": "Pourquoi ce projet",
+    "description": "Plusieurs SaaS en parallèle, une stack moderne, l'agentic au cœur du process de développement, autofinancé et rentable depuis la première année, passé de 1 à plus de 50 personnes en quatre ans : un modèle qui a fait ses preuves. Cette démo est ma façon de montrer, concrètement, l'envie d'apprendre ce modèle et d'y contribuer, en explorant son cœur de métier à mon échelle."
+  },
+  "productsShowcase": {
+    "eyebrow": "En ligne",
+    "title": "Les produits du studio",
+    "description": "Chacun est une configuration du même socle, servie sur sa propre URL : cliquez une carte pour l'essayer en direct.",
+    "tryLive": "Essayer en direct",
+    "createTitle": "Créer un nouveau produit",
+    "createDescription": "Un formulaire dans le backoffice suffit pour en lancer un nouveau, en quelques minutes.",
+    "createCta": "Ouvrir le backoffice →",
+    "imageAlt": "{name} — {headline}"
+  },
+  "howItsBuilt": {
+    "eyebrow": "La méthode",
+    "title": "Comment c'est construit",
+    "tagline": "« We develop with AI, not alongside it » : ce repo montre la méthode autant que le produit.",
+    "points": {
+      "specs": {
+        "title": "Specs avant le code",
+        "description": "Une spec par fonctionnalité, écrite avant l'implémentation : comportement, cas limites, critères d'acceptation."
+      },
+      "tdd": {
+        "title": "TDD sur toute l'implémentation",
+        "description": "Chaque comportement d'acceptation est testé avant d'être codé, rouge puis vert."
+      },
+      "review": {
+        "title": "Une spec, une revue agentique sous plusieurs angles, une PR",
+        "description": "Chaque fonctionnalité passe par plusieurs agents de revue spécialisés — correction, Next.js, base de données, sécurité — avant d'être mergée."
+      }
+    },
+    "ctaMakingOf": "Voir le making-of",
+    "ctaGithub": "Voir le code sur GitHub",
+    "ctaArchitecture": "Explorer l'architecture technique"
+  },
+  "footer": {
+    "name": "Alexandre Ollivier — développeur fullstack senior",
+    "note": "Démo de candidature : le paiement et l'email y sont simulés.",
+    "github": "GitHub",
+    "linkedin": "LinkedIn",
+    "makingOf": "Making-of",
+    "architecture": "Architecture",
+    "admin": "Backoffice admin"
+  }
+}

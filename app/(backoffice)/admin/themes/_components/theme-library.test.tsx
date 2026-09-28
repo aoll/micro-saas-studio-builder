@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
+import { createTranslator } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Product } from "@/lib/dal/products";
 import type { Theme } from "@/lib/dal/themes";
 import type { ThemeTokens } from "@/lib/schemas/theme-tokens";
+import en from "@/messages/en/backoffice-themes.json";
+import fr from "@/messages/fr/backoffice-themes.json";
 
 vi.mock("next/font/google", () => {
   const loader = () => ({ variable: "--font-theme", className: "font-mock" });
@@ -17,9 +20,25 @@ vi.mock("@/lib/dal/product-editor", () => ({ listThemeOptions: () => listThemeOp
 const listProducts = vi.fn();
 vi.mock("@/lib/dal/products", () => ({ listProducts: () => listProducts() }));
 
+// I18N-BACKOFFICE-STRINGS (lot 7): ThemeLibrary is a Server Component with
+// ambient locale (the admin_locale cookie, read by i18n/request.ts, not an
+// explicit locale argument), so it calls `getTranslations("backoffice-themes")`
+// the same way as pricing/page.tsx — mocked with a real translator, like
+// purchase-list.test.tsx, switchable per test via `currentLocale`.
+let currentLocale: "fr" | "en" = "fr";
+vi.mock("next-intl/server", () => ({
+  getTranslations: async (namespace: "backoffice-themes") =>
+    createTranslator({
+      locale: currentLocale,
+      messages: { "backoffice-themes": currentLocale === "en" ? en : fr },
+      namespace,
+    }),
+}));
+
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  currentLocale = "fr";
 });
 
 const tokens: ThemeTokens = {
@@ -185,6 +204,17 @@ describe("ThemeLibrary", () => {
     render(await ThemeLibrary());
 
     expect(screen.getByText("Aucun thème en base")).toBeTruthy();
+  });
+
+  it("shows the en empty state and card text when the admin_locale cookie is en", async () => {
+    currentLocale = "en";
+    listThemeOptions.mockResolvedValue(themes);
+    listProducts.mockResolvedValue(products);
+
+    const { ThemeLibrary } = await import("./theme-library");
+    render(await ThemeLibrary());
+
+    expect(screen.getByText("Used by 2 products · DescriPro, LettrePro")).toBeTruthy();
   });
 
   it("propagates a DAL rejection instead of swallowing it", async () => {

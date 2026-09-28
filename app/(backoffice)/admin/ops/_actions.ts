@@ -1,10 +1,12 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
 import { updateTag } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { listThemeOptions } from "@/lib/dal/product-editor";
 import { listProducts } from "@/lib/dal/products";
 import { requireAdmin } from "@/lib/dal/session";
+import type { ProductConfig } from "@/lib/schemas/product-config";
 // The one accepted exception to "only lib/dal touches the database"
 // (docs/09, plan's orchestrator decision 7): scripts/reset-demo.ts owns
 // its own Postgres client, exactly like scripts/seed.ts, so it stays
@@ -12,6 +14,7 @@ import { requireAdmin } from "@/lib/dal/session";
 import { resetDemo } from "@/scripts/reset-demo";
 
 export type ResetDemoState = { ok?: boolean; error?: string };
+type Locale = ProductConfig["locale"];
 
 // BO-01's admin/ops page (specs/DEMO-mode.md): owner-only, re-checked here
 // too (a Server Action is a public POST endpoint, CLAUDE.md), never just
@@ -19,10 +22,19 @@ export type ResetDemoState = { ok?: boolean; error?: string };
 // resetDemo runs, so every slug and seeded theme that existed a moment
 // ago (visitor-created products included) gets its cache tag cleared too,
 // not only the ones that survive the reset.
-export async function resetDemoAction(_prevState: ResetDemoState, _formData: FormData): Promise<ResetDemoState> {
+// I18N-BACKOFFICE-STRINGS (spec "Server Actions"): `locale` is bound
+// client-side by ResetForm (useLocale()) as the first argument, right
+// after requireAdmin() — never before it (require-admin-coverage.test.ts's
+// convention: the guard stays the action's first call).
+export async function resetDemoAction(
+  locale: Locale,
+  _prevState: ResetDemoState,
+  _formData: FormData,
+): Promise<ResetDemoState> {
   const session = await requireAdmin();
+  const t = await getTranslations({ locale, namespace: "backoffice-portfolio" });
   if (session.user.role !== "owner") {
-    return { error: "Réservé au propriétaire de la démo" };
+    return { error: t("ops.ownerOnlyError") };
   }
 
   try {
@@ -39,6 +51,6 @@ export async function resetDemoAction(_prevState: ResetDemoState, _formData: For
   } catch (err) {
     unstable_rethrow(err);
     console.error("[admin/ops] resetDemoAction failed", err);
-    return { error: "La réinitialisation a échoué" };
+    return { error: t("ops.failedError") };
   }
 }

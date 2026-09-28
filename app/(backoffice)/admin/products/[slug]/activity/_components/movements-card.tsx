@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ActivityMovement } from "@/lib/dal/activity";
@@ -8,8 +9,12 @@ import { PaginationNav } from "./pagination-nav";
 
 // BO-04's "Mouvements de crédits" card (mockup): every user's ledger rows
 // on this product, newest first — signup bonus, purchase, generation,
-// refund.
-export function MovementsCard({
+// refund. I18N-BACKOFFICE-STRINGS: async, its own translator, and —
+// since React Testing Library's client renderer can't render an async
+// component nested as plain JSX (product-tabs.tsx's comment) —
+// `PaginationNav` is called and awaited directly rather than mounted as
+// `<PaginationNav ... />`.
+export async function MovementsCard({
   slug,
   entries,
   total,
@@ -27,21 +32,23 @@ export function MovementsCard({
   currentPages: Partial<Record<ActivityListKey, number>>;
 }) {
   const listKey: ActivityListKey = "movements";
+  const t = await getTranslations("backoffice-product-sheet");
+  const paginationNav = await PaginationNav({ slug, listKey, page, hasMore, currentPages });
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Mouvements de crédits</CardTitle>
+        <CardTitle>{t("activity.movements.title")}</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3">
         {total === 0 ? (
-          <EmptyState title="Aucun mouvement pour l'instant" />
+          <EmptyState title={t("activity.movements.empty")} />
         ) : entries.length === 0 ? (
           <EmptyState
-            title="Page vide"
+            title={t("activity.emptyPage.title")}
             action={
               <Link href={activityHref(slug, currentPages, { key: listKey, page: 1 })} className="underline">
-                Revenir à la première page
+                {t("activity.emptyPage.backToFirstPage")}
               </Link>
             }
           />
@@ -52,13 +59,13 @@ export function MovementsCard({
                 <span className={`font-medium ${movement.delta >= 0 ? "text-emerald-700" : "text-destructive"}`}>
                   {formatDelta(movement.delta)}
                 </span>
-                <span className="flex-1">{movementLabel(movement)}</span>
-                <span className="text-muted-foreground">{formatRelative(movement.createdAt, now)}</span>
+                <span className="flex-1">{movementLabel(movement, t)}</span>
+                <span className="text-muted-foreground">{formatRelative(movement.createdAt, now, t)}</span>
               </li>
             ))}
           </ul>
         )}
-        <PaginationNav slug={slug} listKey={listKey} page={page} hasMore={hasMore} currentPages={currentPages} />
+        {paginationNav}
       </CardContent>
     </Card>
   );

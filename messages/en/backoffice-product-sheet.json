@@ -1,0 +1,86 @@
+{
+  "tabs": {
+    "overview": "Overview",
+    "activity": "Activity"
+  },
+  "viewLive": "View /{slug} ↗",
+  "header": {
+    "editConfig": "Edit configuration",
+    "killedBanner": "Closed product (Killed): /{slug} shows the not-found page to visitors (SA-08)."
+  },
+  "kpis": {
+    "revenue": "Revenue · 30d",
+    "arpu": "ARPU",
+    "aiCost": "AI cost · 30d",
+    "marginPerGeneration": "Margin / generation"
+  },
+  "emptyState": {
+    "title": "No data yet",
+    "description": "The funnel and the charts will appear as soon as there is a first visit."
+  },
+  "funnel": {
+    "title": "Funnel",
+    "steps": {
+      "visit": "Landing visits",
+      "first_generation": "1st generation",
+      "signup": "Signup",
+      "credits_exhausted": "Credits exhausted",
+      "purchase": "Purchase"
+    }
+  },
+  "trend": {
+    "visits": "Visits",
+    "purchases": "Purchases"
+  },
+  "activity": {
+    "emptyPage": {
+      "title": "Empty page",
+      "backToFirstPage": "Back to the first page"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "generations": {
+      "title": "Latest generations",
+      "empty": "No generation yet",
+      "columns": {
+        "date": "Date",
+        "input": "Input",
+        "output": "Output",
+        "model": "Model",
+        "cost": "AI cost",
+        "status": "Status"
+      },
+      "status": {
+        "ok": "OK",
+        "pending": "In progress",
+        "error": "Error",
+        "errorRefunded": "Error · refunded"
+      }
+    },
+    "movements": {
+      "title": "Credit movements",
+      "empty": "No movement yet",
+      "reason": {
+        "purchase": "Pack {credits} purchase",
+        "purchaseNoPack": "Purchase",
+        "generation": "Generation",
+        "refund": "Refund",
+        "signup_bonus": "Signup bonus"
+      }
+    },
+    "purchases": {
+      "title": "Purchases · 30d",
+      "empty": "No purchase yet",
+      "headline": "{count, plural, one {# purchase} other {# purchases}} · {amount}",
+      "packBreakdown": "Pack {credits}: {count}"
+    },
+    "relative": {
+      "now": "just now",
+      "minutes": "{count} min ago",
+      "hours": "{count}h ago",
+      "days": "{count, plural, one {# day ago} other {# days ago}}"
+    }
+  }
+}

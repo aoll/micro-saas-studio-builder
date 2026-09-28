@@ -6,7 +6,7 @@ La doc Next.js 16.3 le dit d'entrée : le framework est **« unopinionated »** 
 
 - **Stratégie « split by feature or route »** (l'une des trois proposées par la doc) : `app/` porte le routing et le code propre à une route, colocalisé dans des dossiers privés `_components/` ; le code partagé vit à la racine dans `lib/` et `components/`.
 - **Pas de dossier `src/`** : le repo compte beaucoup de fichiers de config (Drizzle, Playwright, Vitest, shadcn, Vercel), et `src/` les séparerait bien du code. Mais tous les chemins déjà écrits dans ce dossier (`lib/dal/…`, `proxy.ts`) sont sans `src/`, on garde donc la version la plus simple. Si on bascule plus tard : `proxy.ts` et `instrumentation*.ts` passent dans `src/`, alors que `public/`, `.env*` et les configs restent à la racine.
-- **Deux root layouts, zéro `app/layout.tsx`** : les route groups `(backoffice)` et `(products)` ont chacun leur `layout.tsx` avec `<html>` et `<body>`. C'est le cas « multiple root layouts » de la doc : le backoffice et les produits n'ont ni la même UI, ni le même thème, ni la même locale.
+- **Trois root layouts, zéro `app/layout.tsx`** : les route groups `(backoffice)`, `(marketing)` et `(products)` ont chacun leur `layout.tsx` avec `<html>` et `<body>`. C'est le cas « multiple root layouts » de la doc : aucun des trois n'a la même UI, le même thème, ni la même façon de porter sa locale (produit figé en base, marketing avec préfixe d'URL, backoffice avec un cookie de préférence).
 - **La colocation est sûre** : un dossier de `app/` ne devient public que s'il contient `page` ou `route`. Les dossiers `_prefixés` sortent du routing, eux et tous leurs sous-dossiers. On en profite pour trier les fichiers dans l'éditeur et pour éviter les conflits avec de futures conventions Next.js.
 - **Deux pièges relevés en lisant la doc** :
   - La page cachée `/admin/_ops` prévue plus haut **ne serait pas routable**, puisque `_ops` est un dossier privé. On la renomme `admin/ops/` : elle reste « cachée » parce qu'aucun lien n'y mène et qu'elle est réservée au rôle `owner`. `%5Fops` marcherait aussi, mais c'est moins lisible.
@@ -41,6 +41,16 @@ micro-saas-studio-builder/
 │   │       │   └── [id]/page.tsx      # BO-08
 │   │       ├── settings/              # BO-09 : page.tsx, _actions.ts, _components/
 │   │       └── ops/page.tsx           # reset démo, rôle owner (pas « _ops » : privé = non routable)
+│   ├── (marketing)/
+│   │   ├── layout.tsx                 # root layout marketing : <html lang>, sélecteur de langue
+│   │   ├── page.tsx                   # landing du studio (/)
+│   │   ├── _components/               # hero, key-numbers, products-showcase, backoffice-screens,
+│   │   │                              # how-its-built, why-this-demo, site-footer, locale-switcher
+│   │   └── making-of/
+│   │       ├── page.tsx
+│   │       ├── _data/run.ts           # timeline du run, lue par la page
+│   │       └── _components/           # control-room-header, agent-roles, cycle-cards,
+│   │                                  # process-steps, run-timeline
 │   ├── (products)/
 │   │   └── [app]/                     # root param → next/root-params
 │   │       ├── layout.tsx             # root layout produit : thème, locale, slot @modal
@@ -109,9 +119,11 @@ micro-saas-studio-builder/
 │   ├── fonts.ts                       # next/font
 │   └── utils.ts                       # cn() — créé par shadcn init
 ├── i18n/
-│   └── request.ts                     # getRequestConfig → locale depuis la config produit
+│   ├── request.ts                     # getRequestConfig → aiguille produit / marketing / backoffice
+│   ├── marketing-routing.ts           # defineRouting({ locales: [fr, en], defaultLocale: fr })
+│   └── marketing-navigation.ts        # createNavigation(routing) : Link, useRouter, redirect
 ├── messages/                          # un fichier par zone, fusionnés dans i18n/request.ts
-│   ├── fr/ (common.json, tool.json, pricing.json, checkout.json…)
+│   ├── fr/ (common.json, tool.json, pricing.json, checkout.json, marketing.json, making-of.json, backoffice.json…)
 │   └── en/ (mêmes fichiers, mêmes clés)
 ├── drizzle/                           # migrations SQL générées (commitées)
 ├── fixtures/                          # {slug}.json — réponses IA enregistrées, relues par le seed
@@ -176,7 +188,7 @@ micro-saas-studio-builder/
 
 **À retenir** :
 
-- **next-intl** : on suit le guide *sans routing i18n*, puisque la locale n'est pas dans l'URL mais dans la config produit. `i18n/request.ts` la lit via le root param `[app]`, et `NextIntlClientProvider` est posé dans le layout `(products)/[app]`.
+- **next-intl** : trois branches dans `i18n/request.ts`. Pour `(products)/[app]`, on suit le guide *sans routing i18n* — la locale n'est pas dans l'URL mais dans la config produit, lue via le root param `[app]`. Pour `(marketing)` (`/`, `/making-of`), on suit cette fois le guide *avec routing i18n* — préfixe `/en`, middleware next-intl chaîné dans `proxy.ts`. Pour `(backoffice)`, ni URL ni détection : un cookie `admin_locale` posé par le sélecteur manuel. `NextIntlClientProvider` est posé dans les trois layouts racine, chacun avec sa source de locale.
 - **Vitest** ne sait pas rendre les Server Components `async`. La doc Next recommande de les couvrir en E2E : Vitest teste donc `lib/` (ledger, schémas, rate limit) et les composants client, Playwright teste les pages.
 - **Dépendances manquantes** dans l'onglet Stack, requises par le guide Vitest : `@vitejs/plugin-react jsdom @testing-library/react @testing-library/dom vite-tsconfig-paths`.
 
@@ -203,5 +215,5 @@ Lu le 24 septembre 2026 :
 - [Next.js — Vitest](https://nextjs.org/docs/app/guides/testing/vitest) · [Playwright](https://nextjs.org/docs/app/guides/testing/playwright)
 - [Better Auth — Next.js integration](https://www.better-auth.com/docs/integrations/next) · [Drizzle adapter](https://www.better-auth.com/docs/adapters/drizzle)
 - [Drizzle — Get started with PostgreSQL](https://orm.drizzle.team/docs/get-started/postgresql-new)
-- [next-intl — App Router without i18n routing](https://next-intl.dev/docs/getting-started/app-router/without-i18n-routing)
+- [next-intl — App Router without i18n routing](https://next-intl.dev/docs/getting-started/app-router/without-i18n-routing) · [with i18n routing](https://next-intl.dev/docs/getting-started/app-router)
 - [shadcn/ui — Next.js installation](https://ui.shadcn.com/docs/installation/next)

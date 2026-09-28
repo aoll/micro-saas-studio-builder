@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { getSession, requireAdmin } from "@/lib/dal/session";
@@ -33,8 +35,13 @@ export default function OpsPage() {
   );
 }
 
+// I18N-BACKOFFICE-STRINGS: a plain Server Component (like
+// components/product/demo-banner.tsx), so `useTranslations` from
+// "next-intl" (not "next-intl/server") reads the ambient per-request
+// config synchronously — no need to make this fallback itself async.
 function OpsFallback() {
-  return <p className="text-sm text-muted-foreground">Chargement…</p>;
+  const t = useTranslations("backoffice-portfolio");
+  return <p className="text-sm text-muted-foreground">{t("ops.loading")}</p>;
 }
 
 // specs/DEMO-mode.md: not `ops/_ops` (a `_`-prefixed segment is never
@@ -56,14 +63,12 @@ async function OpsGate() {
   // app/(backoffice)/admin/require-admin-coverage.test.ts, which reads
   // this whole file's source, not just OpsPage's own body).
   await requireAdmin();
+  const t = await getTranslations("backoffice-portfolio");
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">Opérations</h1>
-      <p className="text-sm text-muted-foreground">
-        Supprime les produits créés par les visiteurs et toute l&apos;activité, puis rejoue le seed (thèmes, LettrePro,
-        DescriPro, NomDeMarque, comptes admin et owner, seuils par défaut).
-      </p>
+      <h1 className="text-2xl font-semibold">{t("ops.title")}</h1>
+      <p className="text-sm text-muted-foreground">{t("ops.description")}</p>
       <ResetForm />
     </>
   );

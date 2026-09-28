@@ -2,8 +2,11 @@ import { randomUUID } from "node:crypto";
 import { hashPassword } from "better-auth/crypto";
 import { inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
+import { createTranslator } from "next-intl";
 import postgres from "postgres";
 import { afterAll, describe, expect, it, vi } from "vitest";
+import en from "@/messages/en/backoffice-portfolio.json";
+import fr from "@/messages/fr/backoffice-portfolio.json";
 import { accounts, sessions, users } from "@/lib/db/auth-schema";
 import { requireDatabaseUrl } from "@/lib/require-database-url";
 import { SEED_ADMIN } from "@/scripts/seed";
@@ -22,6 +25,22 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("next/headers", () => ({
   headers: async () => new Headers(),
+}));
+
+// login() (I18N-BACKOFFICE-STRINGS spec "Server Actions") calls
+// getTranslations({ locale, namespace }) with the explicit locale it
+// receives — never app() nor cookies() (both throw in a Server Action).
+// next-intl/server picks its "react-server" export via a condition Vitest
+// doesn't set (see i18n/request.test.ts), so it's mocked with a real
+// translator here, like every other Server Component/Action test in this
+// codebase.
+vi.mock("next-intl/server", () => ({
+  getTranslations: async ({ locale, namespace }: { locale: "fr" | "en"; namespace: string }) =>
+    createTranslator({
+      locale,
+      messages: { "backoffice-portfolio": locale === "fr" ? fr : en },
+      namespace: namespace as never,
+    }),
 }));
 
 const sql = postgres(requireDatabaseUrl(), { max: 1, onnotice: () => {} });
@@ -64,7 +83,7 @@ describe("login action", () => {
     const spy = vi.spyOn(auth.api, "signInEmail");
     const { login } = await import("./_actions");
 
-    const result = await login({}, formData({ email: "not-an-email", password: "whatever" }));
+    const result = await login("fr", {}, formData({ email: "not-an-email", password: "whatever" }));
     expect(result.error).toBeTruthy();
     expect(spy).not.toHaveBeenCalled();
     spy.mockRestore();
@@ -75,7 +94,7 @@ describe("login action", () => {
     const spy = vi.spyOn(auth.api, "signInEmail");
     const { login } = await import("./_actions");
 
-    const result = await login({}, formData({ email: "someone@example.test", password: "" }));
+    const result = await login("fr", {}, formData({ email: "someone@example.test", password: "" }));
     expect(result.error).toBeTruthy();
     expect(spy).not.toHaveBeenCalled();
     spy.mockRestore();
@@ -83,7 +102,7 @@ describe("login action", () => {
 
   it("returns a generic error for bad credentials", async () => {
     const { login } = await import("./_actions");
-    const result = await login({}, formData({ email: SEED_ADMIN.email, password: "not-the-password" }));
+    const result = await login("fr", {}, formData({ email: SEED_ADMIN.email, password: "not-the-password" }));
     expect(result.error).toBe("Identifiants invalides");
   });
 
@@ -101,7 +120,7 @@ describe("login action", () => {
     });
 
     const { login } = await import("./_actions");
-    const result = await login({}, formData({ email, password }));
+    const result = await login("fr", {}, formData({ email, password }));
     expect(result.error).toBe("Identifiants invalides");
   });
 
@@ -118,7 +137,7 @@ describe("login action", () => {
     });
     const { login } = await import("./_actions");
 
-    await expect(login({}, formData({ email: SEED_ADMIN.email, password: SEED_ADMIN.password }))).rejects.toThrow(
+    await expect(login("fr", {}, formData({ email: SEED_ADMIN.email, password: SEED_ADMIN.password }))).rejects.toThrow(
       "redirect:/admin",
     );
 
@@ -132,7 +151,7 @@ describe("login action", () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { login } = await import("./_actions");
 
-    const result = await login({}, formData({ email: SEED_ADMIN.email, password: SEED_ADMIN.password }));
+    const result = await login("fr", {}, formData({ email: SEED_ADMIN.email, password: SEED_ADMIN.password }));
 
     expect(result.error).toBe("Identifiants invalides");
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("admin/login"), infraError);
@@ -143,16 +162,20 @@ describe("login action", () => {
 
   it("returns the same generic error for an unknown email", async () => {
     const { login } = await import("./_actions");
-    const result = await login({}, formData({ email: uniqueEmail("unknown"), password: "whatever-password" }));
+    const result = await login("fr", {}, formData({ email: uniqueEmail("unknown"), password: "whatever-password" }));
     expect(result.error).toBe("Identifiants invalides");
   });
 
   it("never names the faulty field: wrong password, unknown email and invalid input give the exact same error", async () => {
     const { login } = await import("./_actions");
 
-    const wrongPassword = await login({}, formData({ email: SEED_ADMIN.email, password: "not-the-password" }));
-    const unknownEmail = await login({}, formData({ email: uniqueEmail("unknown"), password: "whatever-password" }));
-    const invalidInput = await login({}, formData({ email: "not-an-email", password: "whatever" }));
+    const wrongPassword = await login("fr", {}, formData({ email: SEED_ADMIN.email, password: "not-the-password" }));
+    const unknownEmail = await login(
+      "fr",
+      {},
+      formData({ email: uniqueEmail("unknown"), password: "whatever-password" }),
+    );
+    const invalidInput = await login("fr", {}, formData({ email: "not-an-email", password: "whatever" }));
 
     expect(wrongPassword.error).toBe(unknownEmail.error);
     expect(unknownEmail.error).toBe(invalidInput.error);
@@ -160,5 +183,13 @@ describe("login action", () => {
       expect(result.error).toBeTruthy();
       expect(result.error).not.toMatch(/email|mot de passe|password/i);
     }
+  });
+
+  // I18N-BACKOFFICE-STRINGS: the error message respects the locale
+  // explicitly received, not a cookie re-read (a Server Action can't).
+  it("returns the English generic error when given the en locale", async () => {
+    const { login } = await import("./_actions");
+    const result = await login("en", {}, formData({ email: "not-an-email", password: "whatever" }));
+    expect(result.error).toBe("Invalid credentials");
   });
 });

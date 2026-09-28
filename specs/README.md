@@ -73,6 +73,8 @@ Spec : specs/<REF>-<nom>.md, dans ton worktree <chemin>.
 | `DEMO-mode` | V3 | F | V2 | Indispensable |
 | `SECURITY` | V3 | F | V2 | Indispensable |
 | `I18N-SEO` | V3 | G | V2 | Indispensable |
+| `I18N-MARKETING` | V3 | H | V2 | Indispensable |
+| `I18N-BACKOFFICE` | V3 | H | V2 | Indispensable |
 | `BO-04-activite` | V3 | E | V2 | Bonus |
 | `BO-06-statut` | V3 | E | BO-03 | Bonus |
 | `BO-09-seuils` | V3 | E | BO-02 | Indispensable |
@@ -81,3 +83,4 @@ Spec : specs/<REF>-<nom>.md, dans ton worktree <chemin>.
 | `SA-09-facture` | V5 | — | LEDGER | Bonus |
 | `CONTRACT-invoices-queue` | V5 | — | SA-09-facture | Bonus |
 | `AI-GUARD-role-produit` | V6 | — | SA-02, BO-05b, SECURITY | Indispensable |
+| `I18N-BACKOFFICE-STRINGS` | V6 | — | I18N-BACKOFFICE | Indispensable |

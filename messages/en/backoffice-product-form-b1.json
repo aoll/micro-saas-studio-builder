@@ -1,0 +1,54 @@
+{
+  "stepNav": {
+    "ariaLabel": "Form steps",
+    "steps": {
+      "identity": "Identity",
+      "theme": "Theme",
+      "landing": "Landing & SEO",
+      "fields": "Tool fields",
+      "generation": "Generation",
+      "pricing": "Pricing",
+      "summary": "Summary"
+    }
+  },
+  "generationStep": {
+    "systemPromptLabel": "System prompt",
+    "modelLabel": "Model",
+    "promptTemplateLabel": "Prompt template",
+    "outputTypeLabel": "Output type",
+    "markdown": "Markdown",
+    "imageComingSoon": "Image (soon)",
+    "comingSoonTooltip": "Coming soon",
+    "unmatchedVariable": "Variable '{{'{variable}'}}' has no matching field"
+  },
+  "pricingStep": {
+    "freeCreditsLabel": "Credits granted on signup",
+    "anonymousGenerationsLabel": "Free anonymous generations",
+    "costPerGenerationLabel": "Cost per generation (credits)",
+    "packsTitle": "Credit packs",
+    "addPack": "Add a pack",
+    "marginHint": "Margin per generation estimated from a {source}.",
+    "costSourceMeasured": "measured cost",
+    "costSourceEstimated": "estimated cost",
+    "packCreditsLabel": "Credits",
+    "packPriceLabel": "Price (€)",
+    "packRecommendedLabel": "Recommended",
+    "packMargin": "{price} · {margin} margin per generation",
+    "removePack": "Remove this pack"
+  },
+  "productForm": {
+    "previous": "Previous",
+    "save": "Save",
+    "next": "Next",
+    "checkingSlug": "Checking…",
+    "versionStatus": "draft v{draft} · live v{published}",
+    "stepUnavailableBanner": "This configuration has errors in a step that isn't available yet.",
+    "draftSaved": "Draft saved · version {version}",
+    "productPublished": "Product published · version {version}",
+    "configImported": "Configuration imported",
+    "configImportedWithErrors": "Configuration imported with errors to fix",
+    "slugUnavailable": "Slug unavailable",
+    "slugCheckFailed": "Couldn't check the slug's availability, try again.",
+    "previewSlugPlaceholder": "your-product"
+  }
+}

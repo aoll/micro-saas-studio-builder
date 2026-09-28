@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { MAX_INPUTS } from "@/lib/schemas/product-config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,6 @@ import { moveItem, type FieldDraft } from "./form-values";
 
 const MIN_INPUTS = 1;
 const FIELD_TYPES: FieldDraft["type"][] = ["text", "textarea", "select"];
-const TYPE_LABELS: Record<FieldDraft["type"], string> = { text: "Texte", textarea: "Zone de texte", select: "Liste" };
 
 // BO-05 step 4 (docs/02-ecrans.md): the outil's own mini form-builder, one
 // row per field, reordered by up/down buttons.
@@ -22,6 +22,16 @@ export function FieldsStep({
   errors: Record<string, string>;
   onChange: (fields: FieldDraft[]) => void;
 }) {
+  const t = useTranslations("backoffice-product-form-a");
+  // Type labels are chrome (docs/02-ecrans.md's field types), unlike the
+  // "Champ N" default label below (product content, out of this lot's
+  // scope per specs/I18N-BACKOFFICE-STRINGS.md's Décisions de portée).
+  const typeLabels: Record<FieldDraft["type"], string> = {
+    text: t("fieldsStep.types.text"),
+    textarea: t("fieldsStep.types.textarea"),
+    select: t("fieldsStep.types.select"),
+  };
+
   function updateField(index: number, patch: Partial<FieldDraft>) {
     onChange(fields.map((field, i) => (i === index ? { ...field, ...patch } : field)));
   }
@@ -44,7 +54,7 @@ export function FieldsStep({
         <div key={field.id} className="grid gap-2 rounded-md border p-3">
           <div className="grid grid-cols-2 gap-2">
             <div className="grid gap-1.5">
-              <Label htmlFor={`field-key-${field.id}`}>Clé</Label>
+              <Label htmlFor={`field-key-${field.id}`}>{t("fieldsStep.keyLabel")}</Label>
               <Input
                 id={`field-key-${field.id}`}
                 value={field.key}
@@ -56,7 +66,7 @@ export function FieldsStep({
               ) : null}
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor={`field-label-${field.id}`}>Libellé</Label>
+              <Label htmlFor={`field-label-${field.id}`}>{t("fieldsStep.labelLabel")}</Label>
               <Input
                 id={`field-label-${field.id}`}
                 value={field.label}
@@ -67,7 +77,7 @@ export function FieldsStep({
 
           <div className="grid grid-cols-2 gap-2">
             <div className="grid gap-1.5">
-              <Label htmlFor={`field-type-${field.id}`}>Type</Label>
+              <Label htmlFor={`field-type-${field.id}`}>{t("fieldsStep.typeLabel")}</Label>
               <select
                 id={`field-type-${field.id}`}
                 className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
@@ -76,7 +86,7 @@ export function FieldsStep({
               >
                 {FIELD_TYPES.map((type) => (
                   <option key={type} value={type}>
-                    {TYPE_LABELS[type]}
+                    {typeLabels[type]}
                   </option>
                 ))}
               </select>
@@ -87,13 +97,13 @@ export function FieldsStep({
                 checked={field.required}
                 onChange={(event) => updateField(index, { required: event.target.checked })}
               />
-              Requis
+              {t("fieldsStep.requiredLabel")}
             </label>
           </div>
 
           {field.type === "select" ? (
             <div className="grid gap-1.5">
-              <Label htmlFor={`field-options-${field.id}`}>Options (une par ligne)</Label>
+              <Label htmlFor={`field-options-${field.id}`}>{t("fieldsStep.optionsLabel")}</Label>
               <Textarea
                 id={`field-options-${field.id}`}
                 value={(field.options ?? []).join("\n")}
@@ -114,7 +124,7 @@ export function FieldsStep({
               disabled={index === 0}
               onClick={() => onChange(moveItem(fields, index, "up"))}
             >
-              Monter
+              {t("common.moveUp")}
             </Button>
             <Button
               type="button"
@@ -123,7 +133,7 @@ export function FieldsStep({
               disabled={index === fields.length - 1}
               onClick={() => onChange(moveItem(fields, index, "down"))}
             >
-              Descendre
+              {t("common.moveDown")}
             </Button>
             <Button
               type="button"
@@ -132,14 +142,14 @@ export function FieldsStep({
               disabled={fields.length <= MIN_INPUTS}
               onClick={() => removeField(index)}
             >
-              Supprimer ce champ
+              {t("fieldsStep.removeField")}
             </Button>
           </div>
         </div>
       ))}
 
       <Button type="button" variant="outline" disabled={fields.length >= MAX_INPUTS} onClick={addField}>
-        Ajouter un champ
+        {t("fieldsStep.addField")}
       </Button>
     </div>
   );

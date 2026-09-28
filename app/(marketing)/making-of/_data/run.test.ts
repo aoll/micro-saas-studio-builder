@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
+import fr from "@/messages/fr/making-of.json";
+import en from "@/messages/en/making-of.json";
 import {
   AGENTS_PER_HOUR,
   AGENT_ROLES,
+  KEY_FIGURES,
   LANES,
+  PROCESS_STEPS,
   QA_PASSES,
   TIMELINE_END,
   TIMELINE_START,
@@ -60,5 +64,42 @@ describe("run data", () => {
   it("ends the QA on a pass with no finding", () => {
     expect(QA_PASSES).toHaveLength(7);
     expect(QA_PASSES.at(-1)?.findings).toBe(0);
+  });
+});
+
+// I18N-MARKETING (plan step 8): the repo-wide fr/en parity test
+// (i18n/messages.test.ts) only checks the two message files agree with
+// each other — it can't catch this data drifting away from *either* of
+// them (a role, step id, figure id or QA lane renamed here but not in
+// messages/{fr,en}/making-of.json, or vice versa).
+describe("run data drives messages/{fr,en}/making-of.json (not just each other)", () => {
+  it("has a job message for every agent role, in both locales", () => {
+    for (const { role } of AGENT_ROLES) {
+      expect(fr.agentRoles.jobs, `fr agentRoles.jobs.${role}`).toHaveProperty(role);
+      expect(en.agentRoles.jobs, `en agentRoles.jobs.${role}`).toHaveProperty(role);
+    }
+  });
+
+  it("has a title and who message for every process step, in both locales", () => {
+    for (const { id } of PROCESS_STEPS) {
+      expect(fr.processSteps, `fr processSteps.${id}`).toHaveProperty(id);
+      expect(en.processSteps, `en processSteps.${id}`).toHaveProperty(id);
+    }
+  });
+
+  it("has a label message for every key figure, in both locales", () => {
+    for (const { id } of KEY_FIGURES) {
+      expect(fr.keyFigures, `fr keyFigures.${id}`).toHaveProperty(id);
+      expect(en.keyFigures, `en keyFigures.${id}`).toHaveProperty(id);
+    }
+  });
+
+  it("has a label message for every QA lane's labelId, in both locales", () => {
+    const labelIds = LANES.map((lane) => lane.labelId).filter((id) => id !== undefined);
+    expect(labelIds.length).toBeGreaterThan(0);
+    for (const id of labelIds) {
+      expect(fr.qaLanes, `fr qaLanes.${id}`).toHaveProperty(id);
+      expect(en.qaLanes, `en qaLanes.${id}`).toHaveProperty(id);
+    }
   });
 });

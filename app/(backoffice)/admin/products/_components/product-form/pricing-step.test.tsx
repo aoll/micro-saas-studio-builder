@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
+import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import en from "@/messages/en/backoffice-product-form-b1.json";
+import fr from "@/messages/fr/backoffice-product-form-b1.json";
 import type { ProductConfig } from "@/lib/schemas/product-config";
 import { estimateMargins } from "./margin";
 import { PricingStep } from "./pricing-step";
@@ -18,7 +21,15 @@ const pricing: ProductConfig["pricing"] = {
   ],
 };
 
-function setup(overrides: Partial<React.ComponentProps<typeof PricingStep>> = {}) {
+// I18N-BACKOFFICE-STRINGS (lot 5): PricingStep reads its own zone's
+// messages and the current locale (for formatEur), so every test needs the
+// NextIntlClientProvider the real backoffice layout provides at runtime
+// (app/(backoffice)/layout.tsx).
+function setup(
+  overrides: Partial<React.ComponentProps<typeof PricingStep>> = {},
+  locale: "fr" | "en" = "fr",
+  messages: Record<string, unknown> = fr,
+) {
   const onChange = vi.fn();
   const props: React.ComponentProps<typeof PricingStep> = {
     pricing,
@@ -28,7 +39,11 @@ function setup(overrides: Partial<React.ComponentProps<typeof PricingStep>> = {}
     onChange,
     ...overrides,
   };
-  const view = render(<PricingStep {...props} />);
+  const view = render(
+    <NextIntlClientProvider locale={locale} messages={{ "backoffice-product-form-b1": messages }}>
+      <PricingStep {...props} />
+    </NextIntlClientProvider>,
+  );
   return { onChange, ...view };
 }
 
@@ -155,5 +170,25 @@ describe("PricingStep", () => {
     expect(marginText.textContent).not.toContain("Infinity");
     expect(marginText.textContent).not.toContain("NaN");
     expect(marginText.textContent).toContain("—");
+  });
+
+  // I18N-BACKOFFICE-STRINGS (lot 5): labels, buttons, the margin hint and
+  // the pack price (formatEur) all follow the backoffice locale.
+  it("renders every label, button and the margin hint in English", () => {
+    setup({}, "en", en);
+    expect(screen.getByLabelText(en.pricingStep.freeCreditsLabel)).toBeTruthy();
+    expect(screen.getByLabelText(en.pricingStep.anonymousGenerationsLabel)).toBeTruthy();
+    expect(screen.getByLabelText(en.pricingStep.costPerGenerationLabel)).toBeTruthy();
+    expect(screen.getByText(en.pricingStep.packsTitle)).toBeTruthy();
+    expect(screen.getByRole("button", { name: en.pricingStep.addPack })).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: en.pricingStep.removePack }).length).toBeGreaterThan(0);
+    expect(screen.getByText(new RegExp(en.pricingStep.costSourceEstimated))).toBeTruthy();
+    // The pack price itself follows the en locale too (margin.ts's formatEur).
+    expect(screen.getAllByText(/€4\.90/)[0]).toBeTruthy();
+  });
+
+  it("labels the margin as measured in English when costSource is measured", () => {
+    setup({ costSource: "measured" }, "en", en);
+    expect(screen.getByText(new RegExp(en.pricingStep.costSourceMeasured))).toBeTruthy();
   });
 });

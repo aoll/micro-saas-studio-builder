@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import type { Pack } from "@/lib/schemas/pack";
 import type { ProductConfig } from "@/lib/schemas/product-config";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,9 @@ export function PricingStep({
   errors: Record<string, string>;
   onChange: (patch: Partial<Pricing>) => void;
 }) {
+  const t = useTranslations("backoffice-product-form-b1.pricingStep");
+  const locale = useLocale();
+
   function updatePack(index: number, patch: Partial<Pack>) {
     onChange({ packs: pricing.packs.map((pack, i) => (i === index ? { ...pack, ...patch } : pack)) });
   }
@@ -50,13 +54,13 @@ export function PricingStep({
   }
 
   const marginByPackId = new Map(margins.map((margin) => [margin.packId, margin]));
-  const sourceLabel = costSource === "measured" ? "coût mesuré" : "coût estimé";
+  const sourceLabel = costSource === "measured" ? t("costSourceMeasured") : t("costSourceEstimated");
 
   return (
     <div className="grid gap-4">
       <div className="grid grid-cols-3 gap-3">
         <div className="grid gap-1.5">
-          <Label htmlFor="pricing-free-credits">Crédits offerts à l&apos;inscription</Label>
+          <Label htmlFor="pricing-free-credits">{t("freeCreditsLabel")}</Label>
           <Input
             id="pricing-free-credits"
             type="number"
@@ -70,7 +74,7 @@ export function PricingStep({
           ) : null}
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor="pricing-anonymous-generations">Générations anonymes gratuites</Label>
+          <Label htmlFor="pricing-anonymous-generations">{t("anonymousGenerationsLabel")}</Label>
           <Input
             id="pricing-anonymous-generations"
             type="number"
@@ -84,7 +88,7 @@ export function PricingStep({
           ) : null}
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor="pricing-cost-per-generation">Coût par génération (crédits)</Label>
+          <Label htmlFor="pricing-cost-per-generation">{t("costPerGenerationLabel")}</Label>
           <Input
             id="pricing-cost-per-generation"
             type="number"
@@ -101,13 +105,13 @@ export function PricingStep({
 
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Packs de crédits</span>
+          <span className="text-sm font-medium">{t("packsTitle")}</span>
           <Button type="button" variant="outline" size="sm" onClick={addPack}>
-            Ajouter un pack
+            {t("addPack")}
           </Button>
         </div>
         {errors["pricing.packs"] ? <p className="text-sm text-destructive">{errors["pricing.packs"]}</p> : null}
-        <p className="text-xs text-muted-foreground">Marge par génération estimée à partir d&apos;un {sourceLabel}.</p>
+        <p className="text-xs text-muted-foreground">{t("marginHint", { source: sourceLabel })}</p>
 
         {pricing.packs.map((pack, index) => {
           const margin = marginByPackId.get(pack.id);
@@ -120,7 +124,7 @@ export function PricingStep({
             <div key={index} className="grid gap-2 rounded-md border p-3">
               <div className="grid grid-cols-3 gap-2">
                 <div className="grid gap-1.5">
-                  <Label htmlFor={`pricing-pack-credits-${index}`}>Crédits</Label>
+                  <Label htmlFor={`pricing-pack-credits-${index}`}>{t("packCreditsLabel")}</Label>
                   <Input
                     id={`pricing-pack-credits-${index}`}
                     type="number"
@@ -134,7 +138,7 @@ export function PricingStep({
                   ) : null}
                 </div>
                 <div className="grid gap-1.5">
-                  <Label htmlFor={`pricing-pack-price-${index}`}>Prix (€)</Label>
+                  <Label htmlFor={`pricing-pack-price-${index}`}>{t("packPriceLabel")}</Label>
                   <Input
                     id={`pricing-pack-price-${index}`}
                     type="number"
@@ -155,7 +159,7 @@ export function PricingStep({
                     checked={pack.recommended ?? false}
                     onChange={(event) => updatePack(index, { recommended: event.target.checked })}
                   />
-                  <Label htmlFor={`pricing-pack-recommended-${index}`}>Recommandé</Label>
+                  <Label htmlFor={`pricing-pack-recommended-${index}`}>{t("packRecommendedLabel")}</Label>
                 </div>
               </div>
               {errors[`pricing.packs.${index}.id`] ? (
@@ -164,13 +168,15 @@ export function PricingStep({
 
               {margin ? (
                 <p data-testid="pack-margin" className={cn("text-sm", negative && "text-destructive")}>
-                  {formatEur(pack.priceCents)} · marge {marginValid ? formatUsd(margin.marginMicros) : "—"} par
-                  génération
+                  {t("packMargin", {
+                    price: formatEur(pack.priceCents, locale),
+                    margin: marginValid ? formatUsd(margin.marginMicros) : "—",
+                  })}
                 </p>
               ) : null}
 
               <Button type="button" variant="ghost" size="sm" onClick={() => removePack(index)}>
-                Supprimer ce pack
+                {t("removePack")}
               </Button>
             </div>
           );

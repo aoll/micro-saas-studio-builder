@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { thresholdsInputSchema } from "@/lib/schemas/inputs";
@@ -30,29 +31,31 @@ function ProductOverrideForm({
   defaults: SettingsView["defaults"]["values"];
   allProducts: SettingsView["products"];
 }) {
+  const t = useTranslations("backoffice-settings");
+  const locale = useLocale();
   const merged = mergeThresholds(defaults, product.override);
   const [minVisits, setMinVisits] = useState(String(merged.minVisits));
   const [killPercent, setKillPercent] = useState(String(rateToPercent(merged.killMaxConversion)));
   const [scalePercent, setScalePercent] = useState(String(rateToPercent(merged.scaleMinConversion)));
   const [requiresMargin, setRequiresMargin] = useState(merged.scaleRequiresPositiveMargin);
   const [saveState, saveAction, savePending] = useActionState(
-    saveThresholdSettings.bind(null, product.productId),
+    saveThresholdSettings.bind(null, product.productId, locale),
     initialSaveState,
   );
   const [resetState, resetAction, resetPending] = useActionState(
-    resetProductThresholds.bind(null, product.productId),
+    resetProductThresholds.bind(null, product.productId, locale),
     initialResetState,
   );
 
   useEffect(() => {
-    if (saveState.ok) toast.success("Surcharge enregistrée");
+    if (saveState.ok) toast.success(t("overrideForm.saved"));
     if (saveState.formError) toast.error(saveState.formError);
-  }, [saveState]);
+  }, [saveState, t]);
 
   useEffect(() => {
-    if (resetState.ok) toast.success("Surcharge réinitialisée");
+    if (resetState.ok) toast.success(t("overrideForm.resetDone"));
     if (resetState.formError) toast.error(resetState.formError);
-  }, [resetState]);
+  }, [resetState, t]);
 
   const errors = saveState.errors ?? {};
 
@@ -77,12 +80,11 @@ function ProductOverrideForm({
   return (
     <form action={saveAction} className="grid gap-4 rounded-md border p-4">
       <h3 className="font-medium">
-        {product.name}
-        {product.override ? " (surchargé)" : ""}
+        {t("overrideForm.productTitle", { name: product.name, overridden: product.override ? "yes" : "no" })}
       </h3>
 
       <div className="grid gap-1.5">
-        <Label htmlFor="product-min-visits">Visites minimales (produit)</Label>
+        <Label htmlFor="product-min-visits">{t("overrideForm.minVisits")}</Label>
         <Input
           id="product-min-visits"
           name="minVisits"
@@ -95,7 +97,7 @@ function ProductOverrideForm({
       </div>
 
       <div className="grid gap-1.5">
-        <Label htmlFor="product-kill">Conversion « à couper » (%) (produit)</Label>
+        <Label htmlFor="product-kill">{t("overrideForm.killConversion")}</Label>
         <Input
           id="product-kill"
           name="killMaxConversion"
@@ -109,7 +111,7 @@ function ProductOverrideForm({
       </div>
 
       <div className="grid gap-1.5">
-        <Label htmlFor="product-scale">Conversion « à scaler » (%) (produit)</Label>
+        <Label htmlFor="product-scale">{t("overrideForm.scaleConversion")}</Label>
         <Input
           id="product-scale"
           name="scaleMinConversion"
@@ -130,12 +132,12 @@ function ProductOverrideForm({
           checked={requiresMargin}
           onChange={(event) => setRequiresMargin(event.target.checked)}
         />
-        <Label htmlFor="product-margin">Marge positive exigée pour scaler (produit)</Label>
+        <Label htmlFor="product-margin">{t("overrideForm.positiveMargin")}</Label>
       </div>
 
       {changes.length > 0 ? (
         <div className="rounded-md border border-dashed p-3 text-sm">
-          <p className="font-medium">Badges qui changeraient :</p>
+          <p className="font-medium">{t("preview.heading")}</p>
           <ul className="list-disc pl-4">
             {changes.map((change) => (
               <li key={change.productId} data-testid="preview-change">
@@ -148,10 +150,10 @@ function ProductOverrideForm({
 
       <div className="flex gap-2">
         <Button type="submit" disabled={savePending}>
-          Enregistrer la surcharge
+          {t("overrideForm.submit")}
         </Button>
         <Button type="button" variant="outline" disabled={resetPending} onClick={() => resetAction(new FormData())}>
-          Réinitialiser
+          {t("overrideForm.reset")}
         </Button>
       </div>
     </form>
@@ -163,6 +165,7 @@ function ProductOverrideForm({
 // product with no products at all (no product created yet) shows the
 // defaults form alone.
 export function ThresholdsSettings({ view }: { view: SettingsView }) {
+  const t = useTranslations("backoffice-settings");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(view.products[0]?.productId ?? null);
   const selected = view.products.find((product) => product.productId === selectedProductId) ?? null;
 
@@ -171,13 +174,13 @@ export function ThresholdsSettings({ view }: { view: SettingsView }) {
       <ThresholdsForm defaults={view.defaults.values} products={view.products} />
 
       <div className="grid gap-4 rounded-md border p-4">
-        <h2 className="text-lg font-semibold">Surcharge par produit</h2>
+        <h2 className="text-lg font-semibold">{t("overrideForm.heading")}</h2>
         {view.products.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Aucun produit à surcharger.</p>
+          <p className="text-sm text-muted-foreground">{t("overrideForm.empty")}</p>
         ) : (
           <>
             <div className="grid gap-1.5">
-              <Label htmlFor="product-picker">Produit à surcharger</Label>
+              <Label htmlFor="product-picker">{t("overrideForm.pickerLabel")}</Label>
               <select
                 id="product-picker"
                 className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
@@ -186,8 +189,10 @@ export function ThresholdsSettings({ view }: { view: SettingsView }) {
               >
                 {view.products.map((product) => (
                   <option key={product.productId} value={product.productId}>
-                    {product.name}
-                    {product.override ? " (surchargé)" : ""}
+                    {t("overrideForm.productTitle", {
+                      name: product.name,
+                      overridden: product.override ? "yes" : "no",
+                    })}
                   </option>
                 ))}
               </select>

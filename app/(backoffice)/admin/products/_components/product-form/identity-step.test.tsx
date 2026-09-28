@@ -1,12 +1,18 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
+import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import en from "@/messages/en/backoffice-product-form-a.json";
+import fr from "@/messages/fr/backoffice-product-form-a.json";
 import { IdentityStep } from "./identity-step";
 
 afterEach(cleanup);
 
-function setup(overrides: Partial<React.ComponentProps<typeof IdentityStep>> = {}) {
+// I18N-BACKOFFICE-STRINGS lot 4: IdentityStep now reads its labels through
+// useTranslations("backoffice-product-form-a"), so every render needs the
+// zone's messages in context — same pattern as locale-switcher.test.tsx.
+function setup(overrides: Partial<React.ComponentProps<typeof IdentityStep>> = {}, uiLocale: "fr" | "en" = "fr") {
   const onChange = vi.fn();
   const props: React.ComponentProps<typeof IdentityStep> = {
     mode: "create",
@@ -19,7 +25,12 @@ function setup(overrides: Partial<React.ComponentProps<typeof IdentityStep>> = {
     onChange,
     ...overrides,
   };
-  const view = render(<IdentityStep {...props} />);
+  const messages = uiLocale === "fr" ? fr : en;
+  const view = render(
+    <NextIntlClientProvider locale={uiLocale} messages={{ "backoffice-product-form-a": messages }}>
+      <IdentityStep {...props} />
+    </NextIntlClientProvider>,
+  );
   return { onChange, ...view };
 }
 
@@ -61,5 +72,15 @@ describe("IdentityStep", () => {
     const slugInput = screen.getByLabelText("Slug");
     expect(slugInput.getAttribute("aria-invalid")).toBe("true");
     expect(screen.getByText("Ce slug est réservé")).toBeTruthy();
+  });
+
+  // I18N-BACKOFFICE-STRINGS: catches a label left hardcoded in French once
+  // the admin_locale cookie is "en" (spec acceptance: no French text leaks).
+  it("renders every label in English when the locale is en", () => {
+    setup({}, "en");
+    expect(screen.getByLabelText("Name")).toBeTruthy();
+    expect(screen.getByLabelText("Slug")).toBeTruthy();
+    expect(screen.getByLabelText("Status")).toBeTruthy();
+    expect(screen.getByLabelText("Language")).toBeTruthy();
   });
 });

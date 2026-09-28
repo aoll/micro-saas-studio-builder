@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
+import { getPathname } from "@/i18n/marketing-navigation";
 import { AgentRoles } from "./_components/agent-roles";
 import { ControlRoomHeader } from "./_components/control-room-header";
 import { CycleCards } from "./_components/cycle-cards";
@@ -11,14 +13,26 @@ import { RunTimeline } from "./_components/run-timeline";
 // every figure comes from the run's own logs (./_data/run.ts), so it needs no
 // database and no client JavaScript. Same light "bleu diffus" look as the
 // landing, from the marketing root layout.
-export const metadata: Metadata = {
-  title: "Making-of — Micro-SaaS Studio Builder",
-  description:
-    "258 agents IA, 30 heures : comment la démo a été construite par un orchestrateur, spec par spec, puis passée en QA jusqu'à zéro constat.",
-  alternates: { canonical: "/making-of" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("making-of.metadata");
+  return {
+    title: t("title"),
+    description: t("description"),
+    alternates: {
+      // See app/(marketing)/page.tsx's generateMetadata for why `fr` has no
+      // `forcePrefix` (nextjs-reviewer finding): it must mirror `canonical`.
+      canonical: getPathname({ href: "/making-of", locale: "fr" }),
+      languages: {
+        fr: getPathname({ href: "/making-of", locale: "fr" }),
+        en: getPathname({ href: "/making-of", locale: "en", forcePrefix: true }),
+        "x-default": "/making-of",
+      },
+    },
+  };
+}
 
-export default function MakingOfPage() {
+export default async function MakingOfPage() {
+  const t = await getTranslations("making-of.footer");
   return (
     <main className="mx-auto flex max-w-[1240px] flex-col gap-16 px-4 py-12 sm:px-8 lg:px-12">
       <ControlRoomHeader />
@@ -27,15 +41,15 @@ export default function MakingOfPage() {
       <CycleCards />
       <AgentRoles />
       <footer className="flex flex-col justify-between gap-3 border-t border-mk-line pt-6 text-[13px] text-mk-muted sm:flex-row">
-        <span>Next.js 16 · Cache Components · Drizzle + Postgres · Better Auth · AI SDK · Vercel</span>
-        <span>180 agents Sonnet · 78 agents Opus · 74 M tokens</span>
+        <span>{t("stack")}</span>
+        <span>{t("usage")}</span>
         <a
           href="https://github.com/aoll/micro-saas-studio-builder"
           target="_blank"
           rel="noreferrer"
           className="hover:text-mk-link hover:underline"
         >
-          Le code sur GitHub
+          {t("github")}
         </a>
       </footer>
     </main>

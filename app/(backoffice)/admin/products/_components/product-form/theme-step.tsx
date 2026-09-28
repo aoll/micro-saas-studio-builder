@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { Theme } from "@/lib/dal/themes";
 import type { ProductConfig } from "@/lib/schemas/product-config";
@@ -32,6 +33,7 @@ export function ThemeStep({
 }) {
   const [logoError, setLogoError] = useState<string | undefined>(undefined);
   const [uploading, setUploading] = useState(false);
+  const t = useTranslations("backoffice-product-form-a");
 
   async function handleFile(file: File | undefined) {
     if (!file) return;
@@ -53,7 +55,7 @@ export function ThemeStep({
 
   return (
     <div className="grid gap-4">
-      <div role="radiogroup" aria-label="Thème" className="grid grid-cols-2 gap-3">
+      <div role="radiogroup" aria-label={t("themeStep.themeGroupLabel")} className="grid grid-cols-2 gap-3">
         {themes.map((theme) => {
           const checked = theme.id === themeId;
           return (
@@ -73,7 +75,7 @@ export function ThemeStep({
       {errors.themeId ? <p className="text-sm text-destructive">{errors.themeId}</p> : null}
 
       <div className="grid gap-1.5">
-        <Label htmlFor="product-logo">Logo</Label>
+        <Label htmlFor="product-logo">{t("themeStep.logoLabel")}</Label>
         <input
           id="product-logo"
           type="file"
@@ -82,13 +84,13 @@ export function ThemeStep({
           onChange={(event) => handleFile(event.target.files?.[0])}
         />
         {branding.logoUrl ? (
-          <Image src={branding.logoUrl} alt="Logo du produit" width={64} height={64} unoptimized />
+          <Image src={branding.logoUrl} alt={t("themeStep.logoAlt")} width={64} height={64} unoptimized />
         ) : null}
         {logoError ? <p className="text-sm text-destructive">{logoError}</p> : null}
       </div>
 
       <div className="grid gap-1.5">
-        <Label htmlFor="product-primary-color">Couleur du thème</Label>
+        <Label htmlFor="product-primary-color">{t("themeStep.colorLabel")}</Label>
         <div className="flex items-center gap-2">
           <Input
             id="product-primary-color"
@@ -98,7 +100,7 @@ export function ThemeStep({
             aria-invalid={errors["branding.primaryColor"] ? "true" : undefined}
           />
           <Button type="button" variant="ghost" size="sm" onClick={clearColor}>
-            Effacer la couleur
+            {t("themeStep.clearColor")}
           </Button>
         </div>
         {errors["branding.primaryColor"] ? (

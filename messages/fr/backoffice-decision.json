@@ -1,0 +1,63 @@
+{
+  "panel": {
+    "title": "Statut et seuils de décision",
+    "thresholds": {
+      "minVisits": "Visites minimales",
+      "killMaxConversion": "Conversion « à couper » sous",
+      "scaleMinConversion": "Conversion « à scaler » à partir de",
+      "positiveMarginRequired": "Marge positive exigée"
+    },
+    "yes": "Oui",
+    "no": "Non",
+    "current": {
+      "visits": "Visites",
+      "conversion": "Conversion",
+      "margin": "Marge / génération"
+    },
+    "suggestion": {
+      "notEnoughVisits": {
+        "headline": "Pas assez de visites pour décider",
+        "detail": "{visits} / {minVisits}"
+      },
+      "thresholdReached": {
+        "headline": "Seuil de décision atteint",
+        "detailKill": "Statut suggéré : Killed (à couper)",
+        "detailScale": "Statut suggéré : Scale (à scaler)"
+      },
+      "none": {
+        "headline": "Pas de suggestion",
+        "detail": "on continue d'observer"
+      }
+    }
+  },
+  "gauge": {
+    "ariaLabel": "Position par rapport aux seuils de décision",
+    "zone": {
+      "cut": "à couper",
+      "neutralZone": "zone neutre",
+      "scale": "à scaler"
+    },
+    "gateNotMet": "Seuil de visites non atteint ({visits} / {minVisits}) — tendance indicative seulement, pas encore de verdict."
+  },
+  "statusChange": {
+    "trigger": "Changer de statut",
+    "dialogTitle": "Changer le statut de {name}",
+    "newStatus": "Nouveau statut",
+    "numbersTitle": "Ce que disent les chiffres",
+    "visits": "Visites",
+    "conversion": "Conversion",
+    "margin": "Marge / génération",
+    "noteLabel": "Note de décision",
+    "killedWarning": "Passer {name} en Killed ferme le produit : /{slug} affichera « produit introuvable » aux visiteurs.",
+    "cancel": "Annuler",
+    "confirm": "Passer en {status}",
+    "confirmPending": "Passer en …",
+    "successToast": "Statut mis à jour"
+  },
+  "errors": {
+    "productNotFound": "Produit introuvable",
+    "noteTooLong": "Note trop longue (500 caractères max)",
+    "invalidStatus": "Statut invalide",
+    "updateFailed": "Le statut n'a pas pu être changé"
+  }
+}

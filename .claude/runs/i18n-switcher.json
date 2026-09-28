@@ -1,0 +1,24 @@
+{
+  "integration": "integration/i18n-switcher",
+  "specs": {
+    "I18N-MARKETING": {
+      "dependsOn": [],
+      "status": "merged",
+      "worktree": null,
+      "pr": "https://github.com/aoll/micro-saas-studio-builder/pull/108"
+    },
+    "I18N-BACKOFFICE": {
+      "dependsOn": [],
+      "status": "merged",
+      "worktree": null,
+      "pr": "https://github.com/aoll/micro-saas-studio-builder/pull/106"
+    },
+    "I18N-BACKOFFICE-STRINGS": {
+      "dependsOn": ["I18N-BACKOFFICE"],
+      "status": "merged",
+      "worktree": null,
+      "pr": "https://github.com/aoll/micro-saas-studio-builder/pull/109"
+    }
+  },
+  "pendingIntegrations": []
+}

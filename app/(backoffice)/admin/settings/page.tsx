@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { getPortfolioMetrics } from "@/lib/dal/metrics";
 import { requireAdmin } from "@/lib/dal/session";
@@ -18,10 +19,16 @@ async function GuardedSettings() {
   return <ThresholdsSettings view={view} />;
 }
 
-export default function SettingsPage() {
+// I18N-BACKOFFICE-STRINGS lot 8: made async only for the title's
+// getTranslations() call (mirrors [app]/history/page.tsx's own async
+// shell) — GuardedSettings below still does all the session-gated data
+// fetching under its own <Suspense>, so this doesn't change what's
+// blocking vs. streamed.
+export default async function SettingsPage() {
+  const t = await getTranslations("backoffice-settings");
   return (
     <main className="grid gap-6 p-6">
-      <h1 className="text-2xl font-semibold">Réglages des seuils</h1>
+      <h1 className="text-2xl font-semibold">{t("title")}</h1>
       <Suspense fallback={<SettingsSkeleton />}>
         <GuardedSettings />
       </Suspense>

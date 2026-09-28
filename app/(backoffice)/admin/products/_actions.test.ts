@@ -1,7 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { MockLanguageModelV4, simulateReadableStream } from "ai/test";
 import { eq } from "drizzle-orm";
+import { createTranslator } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import fr from "@/messages/fr/backoffice-product-form-b2.json";
+import en from "@/messages/en/backoffice-product-form-b2.json";
 import { REFUSAL_MESSAGES } from "@/lib/ai/generate";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/auth-schema";
@@ -15,8 +18,36 @@ class RedirectMarker extends Error {
   }
 }
 
+// I18N-BACKOFFICE-STRINGS follow-up (security-reviewer, non-blocking): records which mock ran
+// first, so a dedicated test can assert getTranslations() never runs ahead of requireAdmin() —
+// the products/[slug] _actions.test.ts pattern, extended here.
+const callOrder: string[] = [];
+
 const requireAdmin = vi.fn();
-vi.mock("@/lib/dal/session", () => ({ requireAdmin: () => requireAdmin() }));
+vi.mock("@/lib/dal/session", () => ({
+  requireAdmin: () => {
+    callOrder.push("requireAdmin");
+    return requireAdmin();
+  },
+}));
+
+// I18N-BACKOFFICE-STRINGS (lot 6): next-intl/server picks its "react-server"
+// export via a condition Vitest's node environment doesn't set (same issue
+// as history-list.test.tsx and movement-list.test.tsx), so it's mocked here
+// with a real translator built from the committed fr/en messages — it
+// branches on the `locale` _actions.ts actually requests, so every existing
+// call (which never passes a locale, defaulting to "fr") keeps resolving
+// the exact same French strings as before this spec.
+vi.mock("next-intl/server", () => ({
+  getTranslations: async ({ locale, namespace }: { locale: "fr" | "en"; namespace: string }) => {
+    callOrder.push("getTranslations");
+    return createTranslator({
+      locale,
+      messages: { "backoffice-product-form-b2": locale === "en" ? en : fr },
+      namespace: namespace as never,
+    });
+  },
+}));
 
 const updateTag = vi.fn();
 vi.mock("next/cache", () => ({ updateTag: (tag: string) => updateTag(tag) }));
@@ -39,6 +70,7 @@ afterEach(() => {
   updateTag.mockReset();
   put.mockReset();
   guardRequest.mockReset();
+  callOrder.length = 0;
 });
 
 async function buildConfig(overrides: Partial<ProductConfig> = {}): Promise<ProductConfig> {
@@ -92,6 +124,18 @@ describe("saveProduct · create path", () => {
     await expect(saveProduct(null, {}, configForm(config))).rejects.toThrow("redirect:/admin/login");
     const row = await db.query.products.findFirst({ where: eq(products.slug, config.slug) });
     expect(row).toBeUndefined();
+    expect(callOrder).toEqual(["requireAdmin"]);
+  });
+
+  it("calls getTranslations right after requireAdmin(), on the happy path", async () => {
+    await currentAdmin();
+    const { saveProduct } = await import("./_actions");
+    const config = await buildConfig();
+    const result = await saveProduct(null, {}, configForm(config));
+    if (result.slug)
+      await cleanupProduct((await db.query.products.findFirst({ where: eq(products.slug, result.slug) }))!.id);
+    expect(callOrder[0]).toBe("requireAdmin");
+    expect(callOrder[1]).toBe("getTranslations");
   });
 
   it("returns a form error for unreadable JSON", async () => {
@@ -270,12 +314,15 @@ describe("checkSlug", () => {
     requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
     const { checkSlug } = await import("./_actions");
     await expect(checkSlug("lettre-pro")).rejects.toThrow("redirect:/admin/login");
+    expect(callOrder).toEqual(["requireAdmin"]);
   });
 
   it("reports a format error for a name that is not a slug", async () => {
     await currentAdmin();
     const { checkSlug } = await import("./_actions");
     expect(await checkSlug("Lettre Pro")).toMatchObject({ available: false });
+    expect(callOrder[0]).toBe("requireAdmin");
+    expect(callOrder[1]).toBe("getTranslations");
   });
 
   it("reports a reserved slug", async () => {
@@ -307,6 +354,7 @@ describe("uploadLogo", () => {
     const { uploadLogo } = await import("./_actions");
     const data = new FormData();
     await expect(uploadLogo({}, data)).rejects.toThrow("redirect:/admin/login");
+    expect(callOrder).toEqual(["requireAdmin"]);
   });
 
   it("errors without calling put when no file is given", async () => {
@@ -315,6 +363,8 @@ describe("uploadLogo", () => {
     const result = await uploadLogo({}, new FormData());
     expect(result.error).toBeTruthy();
     expect(put).not.toHaveBeenCalled();
+    expect(callOrder[0]).toBe("requireAdmin");
+    expect(callOrder[1]).toBe("getTranslations");
   });
 
   it("errors without calling put for a file over 512 KB", async () => {
@@ -426,6 +476,7 @@ describe("testPrompt", () => {
     requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
     const { testPrompt } = await import("./_actions");
     await expect(testPrompt(null, {}, testPromptForm())).rejects.toThrow("redirect:/admin/login");
+    expect(callOrder).toEqual(["requireAdmin"]);
   });
 
   it("returns an error without calling the AI when the guard refuses", async () => {
@@ -435,6 +486,8 @@ describe("testPrompt", () => {
     const result = await testPrompt(null, {}, testPromptForm());
     expect(result).toEqual({ error: expect.any(String) });
     expect(guardRequest).toHaveBeenCalledWith("test-prompt");
+    expect(callOrder[0]).toBe("requireAdmin");
+    expect(callOrder[1]).toBe("getTranslations");
   });
 
   it("returns an error for a {{variable}} without a matching field", async () => {
@@ -604,6 +657,7 @@ describe("estimateGenerationCost", () => {
     requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
     const { estimateGenerationCost } = await import("./_actions");
     await expect(estimateGenerationCost("anthropic/claude-haiku-4.5")).rejects.toThrow("redirect:/admin/login");
+    expect(callOrder).toEqual(["requireAdmin"]);
   });
 
   it("returns a plausible cost for an empty model, without throwing", async () => {
@@ -632,6 +686,7 @@ describe("publish · create path", () => {
     await expect(publish(null, {}, configForm(config))).rejects.toThrow("redirect:/admin/login");
     const row = await db.query.products.findFirst({ where: eq(products.slug, config.slug) });
     expect(row).toBeUndefined();
+    expect(callOrder).toEqual(["requireAdmin"]);
   });
 
   it("returns step errors for an invalid config without creating a product", async () => {
@@ -643,6 +698,8 @@ describe("publish · create path", () => {
     expect(result.errors?.slug).toBeTruthy();
     const row = await db.query.products.findFirst({ where: eq(products.slug, "admin") });
     expect(row).toBeUndefined();
+    expect(callOrder[0]).toBe("requireAdmin");
+    expect(callOrder[1]).toBe("getTranslations");
   });
 
   it("returns a step 2 error for an unknown theme", async () => {
@@ -834,5 +891,53 @@ describe("publish · edit path", () => {
     expect(result.errors?.["generation.model"]).toBeTruthy();
 
     await cleanupProduct(created.id);
+  });
+});
+
+// I18N-BACKOFFICE-STRINGS (lot 6): the admin's locale is the last argument
+// of every exported action — one message per action, proving the `t`
+// plumbing actually reaches the returned value (a wrong namespace or a
+// dropped `t` would silently fall back to French here).
+describe("locale: en", () => {
+  it("saveProduct reports an unknown theme in English", async () => {
+    await currentAdmin();
+    const { saveProduct } = await import("./_actions");
+    const config = await buildConfig({ themeId: randomUUID() });
+    const result = await saveProduct(null, {}, configForm(config), "en");
+    expect(result.errors?.themeId).toBe("Theme not found");
+  });
+
+  it("checkSlug reports a reserved slug in English", async () => {
+    await currentAdmin();
+    const { checkSlug } = await import("./_actions");
+    const result = await checkSlug("api", "en");
+    expect(result).toEqual({ available: false, error: "This slug is reserved" });
+  });
+
+  it("uploadLogo reports a missing file in English", async () => {
+    await currentAdmin();
+    const { uploadLogo } = await import("./_actions");
+    const result = await uploadLogo({}, new FormData(), "en");
+    expect(result.error).toBe("No file received");
+  });
+
+  it("testPrompt reports an unmatched {{variable}} in English", async () => {
+    await currentAdmin();
+    const { testPrompt } = await import("./_actions");
+    const result = await testPrompt(
+      null,
+      {},
+      testPromptForm({ generation: { ...testGenerationFixture, promptTemplate: "Pour {{inconnu}}" } }),
+      "en",
+    );
+    expect(result.error).toBe("Variable {{inconnu}} has no matching field");
+  });
+
+  it("publish reports an already-used slug in English", async () => {
+    await currentAdmin();
+    const { publish } = await import("./_actions");
+    const config = await buildConfig({ slug: "lettre-pro" });
+    const result = await publish(null, {}, configForm(config), "en");
+    expect(result.errors?.slug).toBe("This slug is already in use");
   });
 });

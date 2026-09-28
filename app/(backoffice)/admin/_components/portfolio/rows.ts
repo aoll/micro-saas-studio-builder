@@ -1,7 +1,10 @@
 import { evaluate, type Decision } from "@/lib/decision";
 import type { PortfolioMetrics, ProductMetrics } from "@/lib/dal/metrics";
 import type { Thresholds } from "@/lib/dal/thresholds";
+import type { ProductConfig } from "@/lib/schemas/product-config";
 import { formatEuroCents, formatEuroMicros, formatNumber, formatPercent } from "./format";
+
+type Locale = ProductConfig["locale"];
 
 // One row per product (BO-02): the raw sort keys `sort.ts` needs, the
 // `evaluate()` badge for this product's own thresholds, and display
@@ -37,7 +40,7 @@ function marginRate(product: ProductMetrics): number | null {
   return revenueMicros > 0 ? (revenueMicros - product.aiCostMicros) / revenueMicros : null;
 }
 
-function toRow(product: ProductMetrics, thresholds: Thresholds | undefined): PortfolioRow {
+function toRow(product: ProductMetrics, thresholds: Thresholds | undefined, locale: Locale): PortfolioRow {
   const decision = thresholds
     ? evaluate(
         {
@@ -61,11 +64,11 @@ function toRow(product: ProductMetrics, thresholds: Thresholds | undefined): Por
     aiCostMicros: product.aiCostMicros,
     marginRate: rate,
     display: {
-      visits: formatNumber(product.visits),
-      conversion: formatPercent(product.signupToPurchaseRate),
-      revenue: formatEuroCents(product.revenueCents),
-      aiCost: formatEuroMicros(product.aiCostMicros),
-      margin: formatPercent(rate),
+      visits: formatNumber(product.visits, locale),
+      conversion: formatPercent(product.signupToPurchaseRate, locale),
+      revenue: formatEuroCents(product.revenueCents, locale),
+      aiCost: formatEuroMicros(product.aiCostMicros, 2, locale),
+      margin: formatPercent(rate, locale),
     },
   };
 }
@@ -74,7 +77,12 @@ function toRow(product: ProductMetrics, thresholds: Thresholds | undefined): Por
 // keys `decision_thresholds` the same way, docs/07): a product missing
 // from the map (should not happen with `getThresholds`'s studio default
 // fallback, but keeps this function total) shows no badge rather than
-// throwing.
-export function toPortfolioRows(metrics: PortfolioMetrics, thresholdsById: Record<string, Thresholds>): PortfolioRow[] {
-  return metrics.products.map((product) => toRow(product, thresholdsById[product.productId]));
+// throwing. `locale` (I18N-BACKOFFICE-STRINGS) drives every display string's
+// number/currency formatting, resolved once by the caller (`getLocale()`).
+export function toPortfolioRows(
+  metrics: PortfolioMetrics,
+  thresholdsById: Record<string, Thresholds>,
+  locale: Locale,
+): PortfolioRow[] {
+  return metrics.products.map((product) => toRow(product, thresholdsById[product.productId], locale));
 }

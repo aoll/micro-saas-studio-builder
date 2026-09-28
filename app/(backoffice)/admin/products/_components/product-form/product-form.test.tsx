@@ -1,14 +1,54 @@
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { act, cleanup, fireEvent, render } from "@testing-library/react";
+import { act, cleanup, fireEvent, render as rtlRender } from "@testing-library/react";
 import { screen, waitFor } from "@testing-library/dom";
+import { NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import enA from "@/messages/en/backoffice-product-form-a.json";
+import en from "@/messages/en/backoffice-product-form-b1.json";
+import enB2 from "@/messages/en/backoffice-product-form-b2.json";
+import frA from "@/messages/fr/backoffice-product-form-a.json";
+import fr from "@/messages/fr/backoffice-product-form-b1.json";
+import frB2 from "@/messages/fr/backoffice-product-form-b2.json";
 import type { Theme } from "@/lib/dal/themes";
 import type { ThemeTokens } from "@/lib/schemas/theme-tokens";
 import { newProductDraft } from "./form-values";
 
 const bioInstagramFixture = readFileSync(join(process.cwd(), "fixtures/bio-instagram.config.json"), "utf-8");
+
+// I18N-BACKOFFICE-STRINGS: `fr`/`en` above stay the plain b1-zone
+// dictionaries every assertion in this file already reads strings from
+// (e.g. `en.productForm.save`); these two bags are only what the provider
+// needs to render ProductForm and every step it renders
+// (IdentityStep/ThemeStep/LandingStep/FieldsStep/ImportConfigPanel from lot
+// 4's `backoffice-product-form-a`; StepNav/GenerationStep/PricingStep from
+// this zone; SummaryStep/PromptTester/LandingPreview from lot 6's
+// `backoffice-product-form-b2`) — the real backoffice layout provides them
+// the same way (app/(backoffice)/layout.tsx forwards every `backoffice-*`
+// zone).
+const providerMessagesFr = {
+  "backoffice-product-form-a": frA,
+  "backoffice-product-form-b1": fr,
+  "backoffice-product-form-b2": frB2,
+};
+const providerMessagesEn = {
+  "backoffice-product-form-a": enA,
+  "backoffice-product-form-b1": en,
+  "backoffice-product-form-b2": enB2,
+};
+
+// Shadows @testing-library/react's `render` so every existing call site
+// below keeps working unchanged, in French by default; the new
+// English-locale tests pass locale="en" (the messages param no longer
+// needs to be passed explicitly — it's derived from the locale).
+function render(ui: React.ReactElement, locale: "fr" | "en" = "fr") {
+  return rtlRender(
+    <NextIntlClientProvider locale={locale} messages={locale === "en" ? providerMessagesEn : providerMessagesFr}>
+      {ui}
+    </NextIntlClientProvider>,
+  );
+}
 
 vi.mock("next/font/google", () => {
   const loader = () => ({ variable: "--font-theme", className: "font-mock" });
@@ -158,7 +198,7 @@ describe("ProductForm", () => {
     );
     fireEvent.change(screen.getByLabelText("Slug"), { target: { value: "lettre-pro" } });
     await act(() => Promise.resolve());
-    expect(checkSlug).toHaveBeenCalledWith("lettre-pro");
+    expect(checkSlug).toHaveBeenCalledWith("lettre-pro", "fr");
     await screen.findByText("Ce slug est déjà utilisé");
   });
 
@@ -490,7 +530,7 @@ describe("ProductForm · import a pasted config", () => {
     );
     expect(checkedTheme?.textContent).toContain("Editorial");
 
-    expect(checkSlug).toHaveBeenCalledWith("bio-instagram");
+    expect(checkSlug).toHaveBeenCalledWith("bio-instagram", "fr");
 
     for (const step of [1, 2, 3, 4, 5, 6, 7]) {
       goToStep(step);
@@ -548,5 +588,117 @@ describe("ProductForm · import a pasted config", () => {
     goToStep(3);
     expect(screen.getByText("Ce champ est requis")).toBeTruthy();
     expect(screen.getByRole("button", { name: /3\. Landing/ }).getAttribute("data-has-error")).toBe("true");
+  });
+});
+
+// I18N-BACKOFFICE-STRINGS (lot 5): buttons, toasts (including their
+// interpolated {version}), the version-status line, the step-unavailable
+// banner and the landing preview's slug placeholder all follow the
+// backoffice locale.
+describe("ProductForm · English locale", () => {
+  it("renders Previous/Save/Next in English", () => {
+    render(
+      <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
+      "en",
+    );
+    expect(screen.getByRole("button", { name: en.productForm.previous })).toBeTruthy();
+    expect(screen.getByRole("button", { name: en.productForm.save })).toBeTruthy();
+    expect(screen.getByRole("button", { name: en.productForm.next })).toBeTruthy();
+  });
+
+  it("shows the draft-saved toast with the interpolated version, in English", async () => {
+    saveProduct.mockResolvedValue({ ok: true, slug: "generateur-de-bio", version: 1 });
+    render(
+      <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
+      "en",
+    );
+    fireEvent.click(screen.getByRole("button", { name: en.productForm.save }));
+    await vi.waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Draft saved · version 1"));
+  });
+
+  it("shows the published toast with the interpolated version, in English", async () => {
+    publish.mockResolvedValue({ ok: true, slug: "lettre-pro", version: 3, url: "/lettre-pro" });
+    render(
+      <ProductForm
+        mode="edit"
+        slug="lettre-pro"
+        initialDraft={{ ...newProductDraft("theme-editorial"), slug: "lettre-pro" }}
+        themes={themeOptions}
+      />,
+      "en",
+    );
+    fireEvent.click(screen.getByRole("button", { name: /7\./ }));
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+    await vi.waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Product published · version 3"));
+  });
+
+  it("shows the imported-config toast in English", () => {
+    // A real (uuid) theme id, like the "import a pasted config" describe
+    // block below: the fixture's own themeId falls back to this one
+    // (import-config.ts's resolveImportedThemeId), and productConfigSchema
+    // requires a real uuid there — "theme-editorial" (this file's usual
+    // fixture id, never itself schema-checked outside a save/publish
+    // action's mocked response) would fail validation and route to
+    // onErrors/toastError instead.
+    const importThemeId = "3f6a6a1e-6b0b-4e9a-8b1a-2f6a1a2b3c4d";
+    render(
+      <ProductForm
+        mode="create"
+        slug={null}
+        initialDraft={newProductDraft(importThemeId)}
+        themes={[{ ...themeOptions[0]!, id: importThemeId }]}
+      />,
+      "en",
+    );
+    fireEvent.change(screen.getByLabelText("Paste a JSON configuration"), {
+      target: { value: bioInstagramFixture },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Import" }));
+    expect(toastSuccess).toHaveBeenCalledWith(en.productForm.configImported);
+  });
+
+  it("shows the version-status line with both interpolated versions, in English", () => {
+    render(
+      <ProductForm
+        mode="edit"
+        slug="lettre-pro"
+        initialDraft={{ ...newProductDraft("theme-editorial"), slug: "lettre-pro" }}
+        themes={themeOptions}
+        draftVersion={2}
+        publishedVersion={1}
+      />,
+      "en",
+    );
+    expect(screen.getByText("draft v2 · live v1")).toBeTruthy();
+  });
+
+  it("shows the slug-check-failed error in English when checkSlug rejects", async () => {
+    checkSlug.mockRejectedValue(new Error("network error"));
+    render(
+      <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
+      "en",
+    );
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "LettrePro bis" } });
+    fireEvent.change(screen.getByLabelText("Slug"), { target: { value: "lettre-pro" } });
+    fireEvent.click(screen.getByRole("button", { name: en.productForm.next }));
+    await screen.findByText(en.productForm.slugCheckFailed);
+  });
+
+  it("shows the landing preview's placeholder slug in English", () => {
+    render(
+      <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
+      "en",
+    );
+    expect(screen.getByText(/\/your-product/)).toBeTruthy();
+  });
+
+  it("shows the step-unavailable banner in English when the server reports a step beyond the last one", async () => {
+    saveProduct.mockResolvedValue({ errors: { slug: "x" }, step: 99 });
+    render(
+      <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
+      "en",
+    );
+    fireEvent.click(screen.getByRole("button", { name: en.productForm.save }));
+    await screen.findByText(en.productForm.stepUnavailableBanner);
   });
 });

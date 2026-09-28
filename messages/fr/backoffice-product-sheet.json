@@ -1,0 +1,86 @@
+{
+  "tabs": {
+    "overview": "Vue d'ensemble",
+    "activity": "Activité"
+  },
+  "viewLive": "Voir /{slug} ↗",
+  "header": {
+    "editConfig": "Modifier la config",
+    "killedBanner": "Produit fermé (Killed) : /{slug} affiche la page introuvable aux visiteurs (SA-08)."
+  },
+  "kpis": {
+    "revenue": "Revenu · 30 j",
+    "arpu": "ARPU",
+    "aiCost": "Coût IA · 30 j",
+    "marginPerGeneration": "Marge / génération"
+  },
+  "emptyState": {
+    "title": "Aucune donnée pour l'instant",
+    "description": "Le funnel et les courbes apparaîtront dès la première visite."
+  },
+  "funnel": {
+    "title": "Funnel",
+    "steps": {
+      "visit": "Visites landing",
+      "first_generation": "1re génération",
+      "signup": "Inscription",
+      "credits_exhausted": "Crédits épuisés",
+      "purchase": "Achat"
+    }
+  },
+  "trend": {
+    "visits": "Visites",
+    "purchases": "Achats"
+  },
+  "activity": {
+    "emptyPage": {
+      "title": "Page vide",
+      "backToFirstPage": "Revenir à la première page"
+    },
+    "pagination": {
+      "previous": "Précédent",
+      "next": "Suivant"
+    },
+    "generations": {
+      "title": "Dernières générations",
+      "empty": "Aucune génération pour l'instant",
+      "columns": {
+        "date": "Date",
+        "input": "Entrée",
+        "output": "Sortie",
+        "model": "Modèle",
+        "cost": "Coût IA",
+        "status": "Statut"
+      },
+      "status": {
+        "ok": "OK",
+        "pending": "En cours",
+        "error": "Erreur",
+        "errorRefunded": "Erreur · remboursé"
+      }
+    },
+    "movements": {
+      "title": "Mouvements de crédits",
+      "empty": "Aucun mouvement pour l'instant",
+      "reason": {
+        "purchase": "Achat pack {credits}",
+        "purchaseNoPack": "Achat",
+        "generation": "Génération",
+        "refund": "Remboursement",
+        "signup_bonus": "Bonus inscription"
+      }
+    },
+    "purchases": {
+      "title": "Achats · 30 j",
+      "empty": "Aucun achat pour l'instant",
+      "headline": "{count, plural, one {# achat} other {# achats}} · {amount}",
+      "packBreakdown": "Pack {credits} : {count}"
+    },
+    "relative": {
+      "now": "à l'instant",
+      "minutes": "il y a {count} min",
+      "hours": "il y a {count} h",
+      "days": "il y a {count} j"
+    }
+  }
+}

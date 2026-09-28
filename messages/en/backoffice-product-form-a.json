@@ -1,0 +1,59 @@
+{
+  "pages": {
+    "newTitle": "New product",
+    "editTitle": "Edit product"
+  },
+  "common": {
+    "moveUp": "Move up",
+    "moveDown": "Move down"
+  },
+  "identityStep": {
+    "nameLabel": "Name",
+    "slugLabel": "Slug",
+    "statusLabel": "Status",
+    "localeLabel": "Language"
+  },
+  "themeStep": {
+    "themeGroupLabel": "Theme",
+    "logoLabel": "Logo",
+    "logoAlt": "Product logo",
+    "colorLabel": "Theme colour",
+    "clearColor": "Clear colour"
+  },
+  "landingStep": {
+    "headlineLabel": "Title",
+    "subheadlineLabel": "Subtitle",
+    "exampleOutputLabel": "Example result",
+    "howItWorksTitle": "How it works",
+    "addStep": "Add a step",
+    "stepTitleLabel": "Step {number} title",
+    "stepDescriptionLabel": "Step {number} description",
+    "removeStep": "Remove this step",
+    "faqTitle": "FAQ",
+    "addFaqQuestion": "Add a question",
+    "faqQuestionLabel": "Question",
+    "faqAnswerLabel": "Answer",
+    "removeFaqQuestion": "Remove this question",
+    "seoTitleLabel": "SEO title",
+    "seoDescriptionLabel": "SEO description"
+  },
+  "fieldsStep": {
+    "keyLabel": "Key",
+    "labelLabel": "Label",
+    "typeLabel": "Type",
+    "types": {
+      "text": "Text",
+      "textarea": "Text area",
+      "select": "List"
+    },
+    "requiredLabel": "Required",
+    "optionsLabel": "Options (one per line)",
+    "removeField": "Remove this field",
+    "addField": "Add a field"
+  },
+  "importPanel": {
+    "pasteLabel": "Paste a JSON configuration",
+    "importButton": "Import",
+    "malformedJson": "Unreadable JSON configuration"
+  }
+}

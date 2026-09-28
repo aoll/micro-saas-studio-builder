@@ -1,0 +1,83 @@
+{
+  "library": {
+    "title": "Theme library",
+    "empty": "No themes yet"
+  },
+  "usage": {
+    "none": "No product",
+    "summary": "Used by {count, plural, one {# product} other {# products}} · {names}"
+  },
+  "usageWarning": {
+    "appliesImmediately": "{usage}. Changes apply immediately."
+  },
+  "landingVariant": {
+    "centered": "centered hero",
+    "split": "hero + example",
+    "minimal": "minimal"
+  },
+  "card": {
+    "variantLabel": "Variant \"{variant}\""
+  },
+  "editor": {
+    "title": "Theme · {name}",
+    "savedToast": "Theme saved",
+    "hasErrors": "This theme has errors.",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "mode": {
+    "groupLabel": "Mode",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "sections": {
+    "colors": "Colors",
+    "typography": "Typography",
+    "shape": "Shape",
+    "landing": "Landing"
+  },
+  "fields": {
+    "font": "Font",
+    "radius": "Radius",
+    "landingVariant": "Landing variant"
+  },
+  "colorLabels": {
+    "background": "Background",
+    "foreground": "Foreground",
+    "card": "Card",
+    "cardForeground": "Card foreground",
+    "primary": "Primary",
+    "primaryForeground": "Primary foreground",
+    "secondary": "Secondary",
+    "secondaryForeground": "Secondary foreground",
+    "muted": "Muted",
+    "mutedForeground": "Muted foreground",
+    "accent": "Accent",
+    "accentForeground": "Accent foreground",
+    "destructive": "Destructive",
+    "border": "Border",
+    "input": "Input",
+    "ring": "Ring"
+  },
+  "fontLabels": {
+    "serif": "Serif (editorial)",
+    "grotesk": "Grotesque (neon)",
+    "sans": "Sans-serif (corporate)",
+    "rounded": "Rounded (playful)"
+  },
+  "preview": {
+    "samplePlaceholder": "Sample product",
+    "subheadline": "A sample subheadline for the preview.",
+    "tryButton": "Try it",
+    "example": "Sample result",
+    "primary": "Primary",
+    "secondary": "Secondary",
+    "accent": "Accent",
+    "destructive": "Error"
+  },
+  "errors": {
+    "notFound": "Theme not found",
+    "unreadable": "Unreadable data",
+    "fontOutOfCatalogue": "Font outside the catalogue"
+  }
+}

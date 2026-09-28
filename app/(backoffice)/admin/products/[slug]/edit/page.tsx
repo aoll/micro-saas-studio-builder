@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getProductDraft, listThemeOptions } from "@/lib/dal/product-editor";
@@ -31,10 +32,14 @@ async function EditProductForm({ params }: { params: Promise<{ slug: string }> }
   );
 }
 
-export default function EditProductPage({ params }: PageProps<"/admin/products/[slug]/edit">) {
+// I18N-BACKOFFICE-STRINGS lot 4: same reasoning as new/page.tsx — the
+// backoffice is already fully dynamic, so translating the h1 outside the
+// Suspense boundary costs nothing and keeps it visible immediately.
+export default async function EditProductPage({ params }: PageProps<"/admin/products/[slug]/edit">) {
+  const t = await getTranslations("backoffice-product-form-a");
   return (
     <main className="p-6">
-      <h1 className="mb-6 text-xl font-semibold">Modifier le produit</h1>
+      <h1 className="mb-6 text-xl font-semibold">{t("pages.editTitle")}</h1>
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>
         <EditProductForm params={params} />
       </Suspense>

@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
+import { createTranslator } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Product } from "@/lib/dal/products";
 import type { Theme } from "@/lib/dal/themes";
 import type { ThemeTokens } from "@/lib/schemas/theme-tokens";
+import en from "@/messages/en/backoffice-themes.json";
+import fr from "@/messages/fr/backoffice-themes.json";
 
 vi.mock("next/font/google", () => {
   const loader = () => ({ variable: "--font-theme", className: "font-mock" });
@@ -22,6 +25,18 @@ const notFound = vi.fn(() => {
 });
 vi.mock("next/navigation", () => ({ notFound: () => notFound() }));
 
+// I18N-BACKOFFICE-STRINGS (lot 7): ThemeEditorLoader is a Server Component
+// with ambient locale, like theme-library.test.tsx.
+let currentLocale: "fr" | "en" = "fr";
+vi.mock("next-intl/server", () => ({
+  getTranslations: async (namespace: "backoffice-themes") =>
+    createTranslator({
+      locale: currentLocale,
+      messages: { "backoffice-themes": currentLocale === "en" ? en : fr },
+      namespace,
+    }),
+}));
+
 // The editor itself has its own full test suite (theme-editor.test.tsx):
 // stubbed here so this loader's tests only assert what *it* is
 // responsible for (finding the row, notFound, the h1, the sample name),
@@ -37,6 +52,7 @@ vi.mock("./theme-editor", () => ({
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  currentLocale = "fr";
 });
 
 const COLOR_SET = {
@@ -142,5 +158,17 @@ describe("ThemeEditorLoader", () => {
 
     const { ThemeEditorLoader } = await import("./theme-editor-loader");
     await expect(ThemeEditorLoader({ id: EDITORIAL })).rejects.toThrow("db down");
+  });
+
+  it("shows the h1 and usage warning translated for the en locale", async () => {
+    currentLocale = "en";
+    listThemeOptions.mockResolvedValue([theme({ id: EDITORIAL, name: "Editorial" })]);
+    listProducts.mockResolvedValue([product({ id: "1", name: "LettrePro", themeId: EDITORIAL })]);
+
+    const { ThemeEditorLoader } = await import("./theme-editor-loader");
+    render(await ThemeEditorLoader({ id: EDITORIAL }));
+
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Theme · Editorial");
+    expect(screen.getByRole("status").textContent).toBe("Used by 1 product · LettrePro. Changes apply immediately.");
   });
 });

@@ -1,7 +1,12 @@
 {
   "integration": "claude/llm-calls-role-protection-zuoqcx",
   "specs": {
-    "AI-GUARD-role-produit": { "dependsOn": [], "status": "ready", "worktree": null, "pr": null }
+    "AI-GUARD-role-produit": {
+      "dependsOn": [],
+      "status": "merged",
+      "worktree": null,
+      "pr": 105
+    }
   },
   "pendingIntegrations": []
 }

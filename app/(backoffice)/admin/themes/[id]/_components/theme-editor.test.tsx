@@ -1,9 +1,12 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
+import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Theme } from "@/lib/dal/themes";
 import type { ThemeTokens } from "@/lib/schemas/theme-tokens";
+import en from "@/messages/en/backoffice-themes.json";
+import fr from "@/messages/fr/backoffice-themes.json";
 
 vi.mock("next/font/google", () => {
   const loader = () => ({ variable: "--font-theme", className: "font-mock" });
@@ -27,6 +30,18 @@ afterEach(() => {
   toastSuccess.mockClear();
   toastError.mockClear();
 });
+
+// I18N-BACKOFFICE-STRINGS (lot 7): ThemeEditor is 'use client' and reads
+// its own locale/translations (useLocale/useTranslations from "next-intl"),
+// like locale-switcher.tsx — wrapped with the provider, like
+// signup-prompt.test.tsx.
+function renderUi(ui: React.ReactElement, locale: "fr" | "en" = "fr") {
+  return render(
+    <NextIntlClientProvider locale={locale} messages={{ "backoffice-themes": locale === "en" ? en : fr }}>
+      {ui}
+    </NextIntlClientProvider>,
+  );
+}
 
 const LIGHT = {
   background: "#faf7f2",
@@ -81,72 +96,90 @@ function payloadOf(formData: FormData): { tokens: ThemeTokens; landingVariant: s
   return JSON.parse(formData.get("payload") as string);
 }
 
+// saveTheme is bound with `.bind(null, theme.id, locale)`: useActionState
+// then calls it with (prevState, formData), so every invocation the mock
+// records is [id, locale, prevState, formData].
+function lastCall() {
+  return saveTheme.mock.calls[0]! as [string, string, unknown, FormData];
+}
+
 describe("ThemeEditor", () => {
   it("renders the 16 light color fields with their current values", () => {
-    render(<ThemeEditor theme={theme} />);
-    expect((screen.getByLabelText("Background") as HTMLInputElement).value).toBe(LIGHT.background);
-    expect((screen.getByLabelText("Card foreground") as HTMLInputElement).value).toBe(LIGHT.cardForeground);
-    expect((screen.getByLabelText("Ring") as HTMLInputElement).value).toBe(LIGHT.ring);
+    renderUi(<ThemeEditor theme={theme} />);
+    expect((screen.getByLabelText("Arrière-plan") as HTMLInputElement).value).toBe(LIGHT.background);
+    expect((screen.getByLabelText("Texte de la carte") as HTMLInputElement).value).toBe(LIGHT.cardForeground);
+    expect((screen.getByLabelText("Anneau de focus") as HTMLInputElement).value).toBe(LIGHT.ring);
   });
 
   it("switches to the dark tokens when the mode switch is used", () => {
-    render(<ThemeEditor theme={theme} />);
+    renderUi(<ThemeEditor theme={theme} />);
     fireEvent.click(screen.getByRole("button", { name: "Sombre" }));
-    expect((screen.getByLabelText("Background") as HTMLInputElement).value).toBe(DARK.background);
+    expect((screen.getByLabelText("Arrière-plan") as HTMLInputElement).value).toBe(DARK.background);
   });
 
   it("updates a color field and reflects it in the submitted payload", async () => {
     saveTheme.mockResolvedValue({ ok: true });
-    render(<ThemeEditor theme={theme} />);
-    fireEvent.change(screen.getByLabelText("Primary"), { target: { value: "#123456" } });
+    renderUi(<ThemeEditor theme={theme} />);
+    fireEvent.change(screen.getByLabelText("Primaire"), { target: { value: "#123456" } });
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
 
     await vi.waitFor(() => expect(saveTheme).toHaveBeenCalled());
-    const [, , formData] = saveTheme.mock.calls[0]!;
-    expect(payloadOf(formData as FormData).tokens.light.primary).toBe("#123456");
+    const [, , , formData] = lastCall();
+    expect(payloadOf(formData).tokens.light.primary).toBe("#123456");
+  });
+
+  it("binds the theme id and the current locale ahead of the action's own (prevState, formData) pair", async () => {
+    saveTheme.mockResolvedValue({ ok: true });
+    renderUi(<ThemeEditor theme={theme} />, "en");
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await vi.waitFor(() => expect(saveTheme).toHaveBeenCalled());
+    const [id, locale] = lastCall();
+    expect(id).toBe(theme.id);
+    expect(locale).toBe("en");
   });
 
   it("changes the font key through the typography select", async () => {
     saveTheme.mockResolvedValue({ ok: true });
-    render(<ThemeEditor theme={theme} />);
+    renderUi(<ThemeEditor theme={theme} />);
     fireEvent.change(screen.getByLabelText("Police"), { target: { value: "rounded" } });
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
 
     await vi.waitFor(() => expect(saveTheme).toHaveBeenCalled());
-    const [, , formData] = saveTheme.mock.calls[0]!;
-    expect(payloadOf(formData as FormData).tokens.fontKey).toBe("rounded");
+    const [, , , formData] = lastCall();
+    expect(payloadOf(formData).tokens.fontKey).toBe("rounded");
   });
 
   it("changes the radius through the slider and shows its readout", async () => {
     saveTheme.mockResolvedValue({ ok: true });
-    render(<ThemeEditor theme={theme} />);
+    renderUi(<ThemeEditor theme={theme} />);
     fireEvent.change(screen.getByLabelText("Radius"), { target: { value: "1" } });
     expect(screen.getByText("1rem")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
 
     await vi.waitFor(() => expect(saveTheme).toHaveBeenCalled());
-    const [, , formData] = saveTheme.mock.calls[0]!;
-    expect(payloadOf(formData as FormData).tokens.radius).toBe("1rem");
+    const [, , , formData] = lastCall();
+    expect(payloadOf(formData).tokens.radius).toBe("1rem");
   });
 
   it("changes the landing variant through its select", async () => {
     saveTheme.mockResolvedValue({ ok: true });
-    render(<ThemeEditor theme={theme} />);
+    renderUi(<ThemeEditor theme={theme} />);
     fireEvent.change(screen.getByLabelText("Variante de landing"), { target: { value: "split" } });
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
 
     await vi.waitFor(() => expect(saveTheme).toHaveBeenCalled());
-    const [, , formData] = saveTheme.mock.calls[0]!;
-    expect(payloadOf(formData as FormData).landingVariant).toBe("split");
+    const [, , , formData] = lastCall();
+    expect(payloadOf(formData).landingVariant).toBe("split");
   });
 
   it("shows field errors returned by the action, with aria-invalid, and a banner", async () => {
     saveTheme.mockResolvedValue({ errors: { "tokens.light.background": "Doit être une couleur CSS valide" } });
-    render(<ThemeEditor theme={theme} />);
+    renderUi(<ThemeEditor theme={theme} />);
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
 
     await screen.findByText("Doit être une couleur CSS valide");
-    expect(screen.getByLabelText("Background").getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByLabelText("Arrière-plan").getAttribute("aria-invalid")).toBe("true");
     expect(screen.getByRole("alert")).toBeTruthy();
   });
 
@@ -161,11 +194,11 @@ describe("ThemeEditor", () => {
 
   it("wires a color field's error as its accessible description via aria-describedby", async () => {
     saveTheme.mockResolvedValue({ errors: { "tokens.light.primary": "Doit être une couleur CSS valide" } });
-    render(<ThemeEditor theme={theme} />);
+    renderUi(<ThemeEditor theme={theme} />);
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
 
     await screen.findByText("Doit être une couleur CSS valide");
-    expect(describedTextOf(screen.getByLabelText("Primary"))).toBe("Doit être une couleur CSS valide");
+    expect(describedTextOf(screen.getByLabelText("Primaire"))).toBe("Doit être une couleur CSS valide");
   });
 
   it("wires the font, radius and landing variant errors the same way", async () => {
@@ -176,7 +209,7 @@ describe("ThemeEditor", () => {
         landingVariant: "Variante invalide",
       },
     });
-    render(<ThemeEditor theme={theme} />);
+    renderUi(<ThemeEditor theme={theme} />);
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
 
     await screen.findByText("Police hors catalogue");
@@ -186,8 +219,8 @@ describe("ThemeEditor", () => {
   });
 
   it("has no accessible description on a field with no error", () => {
-    render(<ThemeEditor theme={theme} />);
-    expect(screen.getByLabelText("Background").getAttribute("aria-describedby")).toBeNull();
+    renderUi(<ThemeEditor theme={theme} />);
+    expect(screen.getByLabelText("Arrière-plan").getAttribute("aria-describedby")).toBeNull();
     expect(screen.getByLabelText("Police").getAttribute("aria-describedby")).toBeNull();
     expect(screen.getByLabelText("Radius").getAttribute("aria-describedby")).toBeNull();
     expect(screen.getByLabelText("Variante de landing").getAttribute("aria-describedby")).toBeNull();
@@ -195,44 +228,69 @@ describe("ThemeEditor", () => {
 
   it("shows a success toast when the save succeeds", async () => {
     saveTheme.mockResolvedValue({ ok: true });
-    render(<ThemeEditor theme={theme} />);
+    renderUi(<ThemeEditor theme={theme} />);
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
     await vi.waitFor(() => expect(toastSuccess).toHaveBeenCalled());
   });
 
   it("shows an error toast on a form-level error", async () => {
     saveTheme.mockResolvedValue({ formError: "Thème introuvable" });
-    render(<ThemeEditor theme={theme} />);
+    renderUi(<ThemeEditor theme={theme} />);
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
     await vi.waitFor(() => expect(toastError).toHaveBeenCalledWith("Thème introuvable"));
   });
 
   it("links back to the theme library through 'Annuler'", () => {
-    render(<ThemeEditor theme={theme} />);
+    renderUi(<ThemeEditor theme={theme} />);
     expect(screen.getByRole("link", { name: "Annuler" }).getAttribute("href")).toBe("/admin/themes");
   });
 
   it("does nothing destructive when submitted with no changes (payload matches the original theme)", async () => {
     saveTheme.mockResolvedValue({ ok: true });
-    render(<ThemeEditor theme={theme} />);
+    renderUi(<ThemeEditor theme={theme} />);
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
     await vi.waitFor(() => expect(saveTheme).toHaveBeenCalled());
-    const [, , formData] = saveTheme.mock.calls[0]!;
-    expect(payloadOf(formData as FormData)).toEqual({ tokens, landingVariant: "centered" });
+    const [, , , formData] = lastCall();
+    expect(payloadOf(formData)).toEqual({ tokens, landingVariant: "centered" });
     await act(() => Promise.resolve());
   });
 
   it("shows a live preview whose colors follow the draft as it is edited", () => {
-    render(<ThemeEditor theme={theme} />);
+    renderUi(<ThemeEditor theme={theme} />);
     const preview = screen.getByTestId("theme-preview");
     expect(preview.style.getPropertyValue("--primary")).toBe(LIGHT.primary);
 
-    fireEvent.change(screen.getByLabelText("Primary"), { target: { value: "#123456" } });
+    fireEvent.change(screen.getByLabelText("Primaire"), { target: { value: "#123456" } });
     expect(preview.style.getPropertyValue("--primary")).toBe("#123456");
   });
 
   it("passes the sample product name through to the preview headline", () => {
-    render(<ThemeEditor theme={theme} sampleProductName="LettrePro" />);
+    renderUi(<ThemeEditor theme={theme} sampleProductName="LettrePro" />);
     expect(screen.getByText("LettrePro")).toBeTruthy();
+  });
+
+  it("renders every section, mode, field and action label translated for the en locale", () => {
+    renderUi(<ThemeEditor theme={theme} />, "en");
+    expect(screen.getByLabelText("Background")).toBeTruthy();
+    expect(screen.getByLabelText("Primary")).toBeTruthy();
+    expect(screen.getByLabelText("Card foreground")).toBeTruthy();
+    expect(screen.getByText("Colors")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Light" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Dark" })).toBeTruthy();
+    expect(screen.getByText("Typography")).toBeTruthy();
+    expect(screen.getByLabelText("Font")).toBeTruthy();
+    expect(screen.getByText("Shape")).toBeTruthy();
+    expect(screen.getByLabelText("Radius")).toBeTruthy();
+    expect(screen.getByLabelText("Landing variant")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Cancel" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Save" })).toBeTruthy();
+  });
+
+  it("shows the en error banner text", async () => {
+    saveTheme.mockResolvedValue({ errors: { "tokens.light.background": "Must be a valid CSS color" } });
+    renderUi(<ThemeEditor theme={theme} />, "en");
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await screen.findByText("This theme has errors.");
   });
 });

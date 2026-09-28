@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { Route } from "next";
+import { useLocale, useTranslations } from "next-intl";
 import { useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { FONT_KEYS } from "@/lib/fonts";
@@ -10,9 +11,9 @@ import type { LandingVariant, ThemeTokens } from "@/lib/schemas/theme-tokens";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LANDING_VARIANT_LABELS } from "../../_components/landing-variant-labels";
+import { LANDING_VARIANTS, landingVariantLabel } from "../../_components/landing-variant-labels";
 import { saveTheme, type SaveThemeState } from "../_actions";
-import { FONT_LABELS } from "./font-labels";
+import { fontLabel } from "./font-labels";
 import { radiusToRem, remToRadius } from "./radius";
 import { ThemePreview } from "./theme-preview";
 
@@ -39,12 +40,6 @@ const COLOR_KEYS = [
   "ring",
 ] as const satisfies readonly (keyof ThemeTokens["light"])[];
 
-function colorLabel(key: string): string {
-  const kebab = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-  const words = kebab.split("-");
-  return `${words[0]![0]!.toUpperCase()}${words[0]!.slice(1)}${words.length > 1 ? ` ${words.slice(1).join(" ")}` : ""}`;
-}
-
 const initialState: SaveThemeState = {};
 
 // BO-08's editor (specs/BO-08-editeur-theme.md, docs/03-maquettes.md ›
@@ -52,16 +47,28 @@ const initialState: SaveThemeState = {};
 // instead of the mockup's tabs. `theme.id` is bound to `saveTheme` once
 // (next/root-params is not available in Server Actions, same reasoning as
 // admin/products' `.bind(null, slug)`).
+//
+// I18N-BACKOFFICE-STRINGS (lot 7): a 'use client' component resolves its
+// own translations (useTranslations, like locale-switcher.tsx) rather than
+// receiving `t` as a prop from its Server Component parent — a function
+// prop cannot cross that boundary. The current locale (useLocale()) is
+// bound alongside the theme id, right before useActionState's own
+// (prevState, formData) pair, so saveTheme can call
+// getTranslations({ locale, namespace: "backoffice-themes" }) for its own
+// error messages without ever calling app() or cookies() (both throw in a
+// Server Action).
 export function ThemeEditor({ theme, sampleProductName }: { theme: Theme; sampleProductName?: string }) {
+  const t = useTranslations("backoffice-themes");
+  const locale = useLocale();
   const [tokens, setTokens] = useState<ThemeTokens>(theme.tokens);
   const [landingVariant, setLandingVariant] = useState<LandingVariant>(theme.landingVariant);
   const [mode, setMode] = useState<"light" | "dark">("light");
-  const [state, formAction, pending] = useActionState(saveTheme.bind(null, theme.id), initialState);
+  const [state, formAction, pending] = useActionState(saveTheme.bind(null, theme.id, locale), initialState);
 
   useEffect(() => {
-    if (state.ok) toast.success("Thème enregistré");
+    if (state.ok) toast.success(t("editor.savedToast"));
     if (state.formError) toast.error(state.formError);
-  }, [state]);
+  }, [state, t]);
 
   const errors = state.errors ?? {};
   const hasErrors = Object.keys(errors).length > 0;
@@ -79,21 +86,21 @@ export function ThemeEditor({ theme, sampleProductName }: { theme: Theme; sample
 
         {hasErrors ? (
           <p role="alert" className="text-sm text-destructive">
-            Ce thème contient des erreurs.
+            {t("editor.hasErrors")}
           </p>
         ) : null}
 
         <fieldset className="grid gap-6">
           <fieldset className="grid gap-3">
-            <legend className="text-sm font-semibold">Couleurs</legend>
-            <div role="group" aria-label="Mode" className="flex w-fit gap-1 rounded-md border p-1">
+            <legend className="text-sm font-semibold">{t("sections.colors")}</legend>
+            <div role="group" aria-label={t("mode.groupLabel")} className="flex w-fit gap-1 rounded-md border p-1">
               <button
                 type="button"
                 aria-pressed={mode === "light"}
                 className="rounded px-2 py-1 text-sm aria-pressed:bg-secondary"
                 onClick={() => setMode("light")}
               >
-                Clair
+                {t("mode.light")}
               </button>
               <button
                 type="button"
@@ -101,7 +108,7 @@ export function ThemeEditor({ theme, sampleProductName }: { theme: Theme; sample
                 className="rounded px-2 py-1 text-sm aria-pressed:bg-secondary"
                 onClick={() => setMode("dark")}
               >
-                Sombre
+                {t("mode.dark")}
               </button>
             </div>
 
@@ -112,7 +119,7 @@ export function ThemeEditor({ theme, sampleProductName }: { theme: Theme; sample
                 const fieldId = `theme-color-${mode}-${key}`;
                 return (
                   <div key={key} className="grid gap-1.5">
-                    <Label htmlFor={fieldId}>{colorLabel(key)}</Label>
+                    <Label htmlFor={fieldId}>{t(`colorLabels.${key}`)}</Label>
                     <div className="flex items-center gap-2">
                       <span
                         aria-hidden="true"
@@ -139,8 +146,8 @@ export function ThemeEditor({ theme, sampleProductName }: { theme: Theme; sample
           </fieldset>
 
           <fieldset className="grid gap-1.5">
-            <legend className="text-sm font-semibold">Typographie</legend>
-            <Label htmlFor="theme-font-key">Police</Label>
+            <legend className="text-sm font-semibold">{t("sections.typography")}</legend>
+            <Label htmlFor="theme-font-key">{t("fields.font")}</Label>
             <select
               id="theme-font-key"
               className="w-fit rounded-md border bg-background px-3 py-2 text-sm"
@@ -151,7 +158,7 @@ export function ThemeEditor({ theme, sampleProductName }: { theme: Theme; sample
             >
               {FONT_KEYS.map((key) => (
                 <option key={key} value={key}>
-                  {FONT_LABELS[key]}
+                  {fontLabel(key, t)}
                 </option>
               ))}
             </select>
@@ -163,8 +170,8 @@ export function ThemeEditor({ theme, sampleProductName }: { theme: Theme; sample
           </fieldset>
 
           <fieldset className="grid gap-1.5">
-            <legend className="text-sm font-semibold">Forme</legend>
-            <Label htmlFor="theme-radius">Radius</Label>
+            <legend className="text-sm font-semibold">{t("sections.shape")}</legend>
+            <Label htmlFor="theme-radius">{t("fields.radius")}</Label>
             <div className="flex items-center gap-3">
               <input
                 id="theme-radius"
@@ -189,8 +196,8 @@ export function ThemeEditor({ theme, sampleProductName }: { theme: Theme; sample
           </fieldset>
 
           <fieldset className="grid gap-1.5">
-            <legend className="text-sm font-semibold">Landing</legend>
-            <Label htmlFor="theme-landing-variant">Variante de landing</Label>
+            <legend className="text-sm font-semibold">{t("sections.landing")}</legend>
+            <Label htmlFor="theme-landing-variant">{t("fields.landingVariant")}</Label>
             <select
               id="theme-landing-variant"
               className="w-fit rounded-md border bg-background px-3 py-2 text-sm"
@@ -199,9 +206,9 @@ export function ThemeEditor({ theme, sampleProductName }: { theme: Theme; sample
               aria-describedby={errors.landingVariant ? "theme-landing-variant-error" : undefined}
               onChange={(event) => setLandingVariant(event.target.value as LandingVariant)}
             >
-              {Object.entries(LANDING_VARIANT_LABELS).map(([value, label]) => (
+              {LANDING_VARIANTS.map((value) => (
                 <option key={value} value={value}>
-                  {label}
+                  {landingVariantLabel(value, t)}
                 </option>
               ))}
             </select>
@@ -215,10 +222,10 @@ export function ThemeEditor({ theme, sampleProductName }: { theme: Theme; sample
 
         <div className="flex justify-between">
           <Button variant="outline" asChild>
-            <Link href={"/admin/themes" as Route}>Annuler</Link>
+            <Link href={"/admin/themes" as Route}>{t("editor.cancel")}</Link>
           </Button>
           <Button type="submit" disabled={pending}>
-            Enregistrer
+            {t("editor.save")}
           </Button>
         </div>
       </form>

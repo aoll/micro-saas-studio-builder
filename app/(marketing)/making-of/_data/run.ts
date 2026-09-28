@@ -174,3 +174,22 @@ export const KEY_FIGURES: KeyFigure[] = [
   { id: "qa-passes", value: 7 },
   { id: "findings-remaining", value: 0 },
 ];
+
+// `title`/`body` live in messages/{fr,en}/making-of.json's
+// `sinceLaunch.items.<id>`. What shipped after this run reached `main`
+// (PR #76): not one more giant run, several separate workstreams, some
+// through the same spec → orchestrator → PR flow (SA-09-facture #81/#86,
+// this run's own I18N-* specs), others built directly with the human in a
+// single session (the landing #82, the architecture explorer #91, this
+// page itself #87) — both are legitimate per CLAUDE.md's workflow, which
+// only mandates the full spec flow for the backoffice and the product
+// sub-apps, not this marketing/making-of page category.
+export type SinceLaunchItem = { id: string };
+
+export const SINCE_LAUNCH_ITEMS: SinceLaunchItem[] = [
+  { id: "invoices" },
+  { id: "architecture" },
+  { id: "landing" },
+  { id: "making-of" },
+  { id: "translation" },
+];

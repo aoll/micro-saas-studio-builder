@@ -83,6 +83,32 @@
       "Explore": "Searches the code"
     }
   },
+  "sinceLaunch": {
+    "heading": "04 · After going live",
+    "intro": "The run above stops at going to production. Since then, several workstreams have moved forward in parallel: some through the same spec → orchestrator → PR flow, others built directly with the human, in one session.",
+    "items": {
+      "invoices": {
+        "title": "Invoicing",
+        "body": "A bounded-concurrency job pool renders each billed month's PDF invoice, since migrated to Vercel Queues."
+      },
+      "architecture": {
+        "title": "Code exploration",
+        "body": "A knowledge graph of the repo, 703 nodes and 1765 edges, explorable live at /architecture."
+      },
+      "landing": {
+        "title": "Landing",
+        "body": "The recruiter-facing landing page (/): the studio's pitch, its key numbers, a link to every published product."
+      },
+      "making-of": {
+        "title": "Making-of",
+        "body": "This page: how the demo was built, added afterward to tell the story."
+      },
+      "translation": {
+        "title": "Translation",
+        "body": "An fr/en switcher: i18n routing on the landing and making-of, a manual switcher in the backoffice, all of its content translated."
+      }
+    }
+  },
   "qaLanes": {
     "light-lot": "Light-weight lot",
     "payment": "Payment",

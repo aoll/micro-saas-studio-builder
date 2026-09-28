@@ -8,6 +8,7 @@ import {
   LANES,
   PROCESS_STEPS,
   QA_PASSES,
+  SINCE_LAUNCH_ITEMS,
   TIMELINE_END,
   TIMELINE_START,
   clockLabel,
@@ -100,6 +101,13 @@ describe("run data drives messages/{fr,en}/making-of.json (not just each other)"
     for (const id of labelIds) {
       expect(fr.qaLanes, `fr qaLanes.${id}`).toHaveProperty(id);
       expect(en.qaLanes, `en qaLanes.${id}`).toHaveProperty(id);
+    }
+  });
+
+  it("has a title and body message for every since-launch item, in both locales", () => {
+    for (const { id } of SINCE_LAUNCH_ITEMS) {
+      expect(fr.sinceLaunch.items, `fr sinceLaunch.items.${id}`).toHaveProperty(id);
+      expect(en.sinceLaunch.items, `en sinceLaunch.items.${id}`).toHaveProperty(id);
     }
   });
 });

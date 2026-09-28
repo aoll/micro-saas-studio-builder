@@ -83,6 +83,32 @@
       "Explore": "Recherche dans le code"
     }
   },
+  "sinceLaunch": {
+    "heading": "04 · Après la mise en production",
+    "intro": "Le run ci-dessus s'arrête à la mise en production. Depuis, plusieurs chantiers ont avancé en parallèle : certains par le même flow spec → orchestrateur → PR, d'autres construits directement avec l'humain, en une session.",
+    "items": {
+      "invoices": {
+        "title": "Facture",
+        "body": "Un pool de jobs à concurrence bornée génère la facture PDF de chaque mois facturé, depuis migré vers Vercel Queues."
+      },
+      "architecture": {
+        "title": "Exploration du code",
+        "body": "Un graphe de connaissance du dépôt, 703 nœuds et 1765 arêtes, explorable en direct sur /architecture."
+      },
+      "landing": {
+        "title": "Landing",
+        "body": "La page d'accueil recruteur (/) : présentation du studio, ses chiffres clés, un lien vers chaque produit publié."
+      },
+      "making-of": {
+        "title": "Making-of",
+        "body": "Cette page : comment la démo a été construite, ajoutée après coup pour le raconter."
+      },
+      "translation": {
+        "title": "Traduction",
+        "body": "Un sélecteur fr/en : routage i18n sur la landing et le making-of, sélecteur manuel côté backoffice, tout son contenu traduit."
+      }
+    }
+  },
   "qaLanes": {
     "light-lot": "Lot léger",
     "payment": "Paiement",

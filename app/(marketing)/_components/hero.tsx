@@ -22,7 +22,7 @@ export function Hero() {
           Petite démo — candidature chez Dotworld
         </p>
         <h1 className="font-[family-name:var(--font-mk-display)] text-4xl leading-[1.04] font-extrabold tracking-[-0.035em] text-balance sm:text-6xl">
-          Un backoffice qui génère et pilote des micro-SaaS IA en quelques minutes
+          Un backoffice pour générer et piloter des micro-SaaS IA en quelques minutes
         </h1>
         <p className="max-w-xl text-lg leading-relaxed text-mk-muted">
           Depuis le backoffice, on crée un nouveau produit en remplissant un formulaire, et on pilote chacun par la

@@ -1,11 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { eq, isNull } from "drizzle-orm";
+import { createTranslator } from "next-intl";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/auth-schema";
 import { decisionThresholds, productVersions, products, themes } from "@/lib/db/schema";
 import { productConfigSchema, type ProductConfig } from "@/lib/schemas/product-config";
 import { SEED_OWNER } from "@/scripts/seed";
+import fr from "@/messages/fr/backoffice-settings.json";
+import en from "@/messages/en/backoffice-settings.json";
 
 class RedirectMarker extends Error {
   constructor(public url: string) {
@@ -18,6 +21,18 @@ vi.mock("@/lib/dal/session", () => ({ requireAdmin: () => requireAdmin() }));
 
 const updateTag = vi.fn();
 vi.mock("next/cache", () => ({ updateTag: (tag: string) => updateTag(tag) }));
+
+// I18N-BACKOFFICE-STRINGS lot 8: `getTranslations` reads from
+// `getRequestConfig` under the hood (i18n/request.ts), which needs
+// `next/root-params` / `next/headers` — unavailable in a plain Vitest run
+// (i18n/request.test.ts's own comment on the "react-server" export
+// condition). Mocked with a real `createTranslator` keyed off the explicit
+// `locale` argument each action passes, so this test exercises the actual
+// message files instead of a stub translator.
+vi.mock("next-intl/server", () => ({
+  getTranslations: async ({ locale, namespace }: { locale: "fr" | "en"; namespace: string }) =>
+    createTranslator({ locale, messages: { [namespace]: locale === "fr" ? fr : en }, namespace }),
+}));
 
 let ownerId: string;
 
@@ -104,13 +119,13 @@ describe("saveThresholdSettings", () => {
   it("redirects a non-admin caller", async () => {
     requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
     const { saveThresholdSettings } = await import("./_actions");
-    await expect(saveThresholdSettings(null, {}, defaultForm())).rejects.toThrow("redirect:/admin/login");
+    await expect(saveThresholdSettings(null, "fr", {}, defaultForm())).rejects.toThrow("redirect:/admin/login");
   });
 
   it("saves the studio defaults and calls updateTag('thresholds')", async () => {
     await currentAdmin();
     const { saveThresholdSettings } = await import("./_actions");
-    const state = await saveThresholdSettings(null, {}, defaultForm());
+    const state = await saveThresholdSettings(null, "fr", {}, defaultForm());
     expect(state).toEqual({ ok: true });
     expect(updateTag).toHaveBeenCalledWith("thresholds");
   });
@@ -120,6 +135,7 @@ describe("saveThresholdSettings", () => {
     const { saveThresholdSettings } = await import("./_actions");
     const state = await saveThresholdSettings(
       null,
+      "fr",
       {},
       defaultForm({ killMaxConversion: "6", scaleMinConversion: "5" }),
     );
@@ -129,18 +145,40 @@ describe("saveThresholdSettings", () => {
     expect(updateTag).not.toHaveBeenCalled();
   });
 
+  it("returns English field errors for kill >= scale when the caller's locale is en", async () => {
+    await currentAdmin();
+    const { saveThresholdSettings } = await import("./_actions");
+    const state = await saveThresholdSettings(
+      null,
+      "en",
+      {},
+      defaultForm({ killMaxConversion: "6", scaleMinConversion: "5" }),
+    );
+    expect(state.errors).toEqual({
+      scaleMinConversion: 'The "scale" threshold must be greater than the "cut" threshold',
+    });
+    expect(updateTag).not.toHaveBeenCalled();
+  });
+
   it("returns a French error for a cleared percent field", async () => {
     await currentAdmin();
     const { saveThresholdSettings } = await import("./_actions");
-    const state = await saveThresholdSettings(null, {}, defaultForm({ killMaxConversion: "" }));
+    const state = await saveThresholdSettings(null, "fr", {}, defaultForm({ killMaxConversion: "" }));
     expect(state.errors).toEqual({ killMaxConversion: "Valeur invalide" });
+  });
+
+  it("returns an English error for a cleared percent field when the caller's locale is en", async () => {
+    await currentAdmin();
+    const { saveThresholdSettings } = await import("./_actions");
+    const state = await saveThresholdSettings(null, "en", {}, defaultForm({ killMaxConversion: "" }));
+    expect(state.errors).toEqual({ killMaxConversion: "Invalid value" });
   });
 
   it("saves a per-product override and calls updateTag('thresholds')", async () => {
     await currentAdmin();
     const productId = await createTestProduct();
     const { saveThresholdSettings } = await import("./_actions");
-    const state = await saveThresholdSettings(productId, {}, defaultForm({ minVisits: "500" }));
+    const state = await saveThresholdSettings(productId, "fr", {}, defaultForm({ minVisits: "500" }));
     expect(state).toEqual({ ok: true });
     expect(updateTag).toHaveBeenCalledWith("thresholds");
   });
@@ -148,14 +186,21 @@ describe("saveThresholdSettings", () => {
   it("returns 'Produit introuvable' for an unknown product id", async () => {
     await currentAdmin();
     const { saveThresholdSettings } = await import("./_actions");
-    const state = await saveThresholdSettings(randomUUID(), {}, defaultForm());
+    const state = await saveThresholdSettings(randomUUID(), "fr", {}, defaultForm());
     expect(state).toEqual({ formError: "Produit introuvable" });
+  });
+
+  it("returns 'Product not found' for an unknown product id when the caller's locale is en", async () => {
+    await currentAdmin();
+    const { saveThresholdSettings } = await import("./_actions");
+    const state = await saveThresholdSettings(randomUUID(), "en", {}, defaultForm());
+    expect(state).toEqual({ formError: "Product not found" });
   });
 
   it("returns 'Produit invalide' for a malformed product id", async () => {
     await currentAdmin();
     const { saveThresholdSettings } = await import("./_actions");
-    const state = await saveThresholdSettings("not-a-uuid", {}, defaultForm());
+    const state = await saveThresholdSettings("not-a-uuid", "fr", {}, defaultForm());
     expect(state).toEqual({ formError: "Produit invalide" });
   });
 });
@@ -185,7 +230,7 @@ describe("saveThresholdSettings · CHECK violation", () => {
       };
     });
     const { saveThresholdSettings } = await import("./_actions");
-    const state = await saveThresholdSettings(null, {}, defaultForm());
+    const state = await saveThresholdSettings(null, "fr", {}, defaultForm());
     expect(state).toEqual({
       errors: { scaleMinConversion: "Le seuil « à scaler » doit être supérieur au seuil « à couper »" },
     });
@@ -205,7 +250,7 @@ describe("saveThresholdSettings · CHECK violation", () => {
       };
     });
     const { saveThresholdSettings } = await import("./_actions");
-    const state = await saveThresholdSettings(null, {}, defaultForm());
+    const state = await saveThresholdSettings(null, "fr", {}, defaultForm());
     expect(state).toEqual({
       errors: { scaleMinConversion: "Le seuil « à scaler » doit être supérieur au seuil « à couper »" },
     });
@@ -217,7 +262,9 @@ describe("resetProductThresholds", () => {
   it("redirects a non-admin caller", async () => {
     requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
     const { resetProductThresholds } = await import("./_actions");
-    await expect(resetProductThresholds(randomUUID(), {}, new FormData())).rejects.toThrow("redirect:/admin/login");
+    await expect(resetProductThresholds(randomUUID(), "fr", {}, new FormData())).rejects.toThrow(
+      "redirect:/admin/login",
+    );
   });
 
   it("deletes the override and calls updateTag('thresholds')", async () => {
@@ -225,7 +272,7 @@ describe("resetProductThresholds", () => {
     const productId = await createTestProduct();
     await db.insert(decisionThresholds).values({ productId, minVisits: 500 });
     const { resetProductThresholds } = await import("./_actions");
-    const state = await resetProductThresholds(productId, {}, new FormData());
+    const state = await resetProductThresholds(productId, "fr", {}, new FormData());
     expect(state).toEqual({ ok: true });
     expect(updateTag).toHaveBeenCalledWith("thresholds");
     const row = await db.query.decisionThresholds.findFirst({ where: eq(decisionThresholds.productId, productId) });
@@ -235,7 +282,14 @@ describe("resetProductThresholds", () => {
   it("returns 'Produit introuvable' for an unknown product id", async () => {
     await currentAdmin();
     const { resetProductThresholds } = await import("./_actions");
-    const state = await resetProductThresholds(randomUUID(), {}, new FormData());
+    const state = await resetProductThresholds(randomUUID(), "fr", {}, new FormData());
     expect(state).toEqual({ formError: "Produit introuvable" });
+  });
+
+  it("returns 'Product not found' for an unknown product id when the caller's locale is en", async () => {
+    await currentAdmin();
+    const { resetProductThresholds } = await import("./_actions");
+    const state = await resetProductThresholds(randomUUID(), "en", {}, new FormData());
+    expect(state).toEqual({ formError: "Product not found" });
   });
 });

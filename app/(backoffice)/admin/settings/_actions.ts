@@ -1,11 +1,13 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
 import { updateTag } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/dal/session";
 import { resetThresholds, saveThresholds } from "@/lib/dal/thresholds";
 import { thresholdsInputSchema } from "@/lib/schemas/inputs";
+import type { ProductConfig } from "@/lib/schemas/product-config";
 import { parsePercentInput, percentToRate } from "./_components/percent";
 import { issuesToErrors } from "./_components/validation";
 
@@ -14,6 +16,13 @@ import { issuesToErrors } from "./_components/validation";
 // `(backoffice)/layout.tsx` also gates the whole admin (mirrors every
 // other admin action in this repo).
 export type ThresholdsActionState = { ok?: boolean; errors?: Record<string, string>; formError?: string };
+
+// I18N-BACKOFFICE-STRINGS lot 8: `next/root-params` isn't available in a
+// Server Action (docs/08-stack.md › i18n), so the client component binds
+// its own `useLocale()` to `.bind(null, productId, locale)` before handing
+// the action to `useActionState` — the last explicit argument before the
+// two `useActionState` appends (`prevState`, `formData`).
+type Locale = ProductConfig["locale"];
 
 const productIdSchema = z.uuid().nullable();
 
@@ -36,33 +45,33 @@ function isCheckViolation(err: unknown): boolean {
   return code === "23514";
 }
 
-const KILL_LT_SCALE_ERROR = { scaleMinConversion: "Le seuil « à scaler » doit être supérieur au seuil « à couper »" };
-
 // BO-09 spec bullets 1, 2, 3, 5: saves the studio defaults (`productId ===
 // null`) or a single product's override, from a form posting the % fields
 // directly (no client-side JSON blob, unlike BO-05's product form: this
 // form has 4 fields only).
 export async function saveThresholdSettings(
   productId: string | null,
+  locale: Locale,
   _prevState: ThresholdsActionState,
   formData: FormData,
 ): Promise<ThresholdsActionState> {
   await requireAdmin();
+  const t = await getTranslations({ locale, namespace: "backoffice-settings" });
 
   const parsedId = productIdSchema.safeParse(productId);
-  if (!parsedId.success) return { formError: "Produit invalide" };
+  if (!parsedId.success) return { formError: t("errors.invalidProduct") };
 
   const parsed = thresholdsInputSchema.safeParse(candidateFromForm(formData));
-  if (!parsed.success) return { errors: issuesToErrors(parsed.error.issues) };
+  if (!parsed.success) return { errors: issuesToErrors(parsed.error.issues, t) };
 
   try {
     const result = await saveThresholds(parsedId.data, parsed.data);
-    if (!result.ok) return { formError: "Produit introuvable" };
+    if (!result.ok) return { formError: t("errors.productNotFound") };
     updateTag("thresholds");
     return { ok: true };
   } catch (err) {
     unstable_rethrow(err);
-    if (isCheckViolation(err)) return { errors: KILL_LT_SCALE_ERROR };
+    if (isCheckViolation(err)) return { errors: { scaleMinConversion: t("errors.scaleGreaterThanKill") } };
     console.error("[admin/settings] saveThresholdSettings failed", err);
     throw err;
   }
@@ -71,17 +80,19 @@ export async function saveThresholdSettings(
 // BO-09 spec bullet 2's « Réinitialiser »: deletes the product's override.
 export async function resetProductThresholds(
   productId: string,
+  locale: Locale,
   _prevState: ThresholdsActionState,
   _formData: FormData,
 ): Promise<ThresholdsActionState> {
   await requireAdmin();
+  const t = await getTranslations({ locale, namespace: "backoffice-settings" });
 
   const parsedId = z.uuid().safeParse(productId);
-  if (!parsedId.success) return { formError: "Produit invalide" };
+  if (!parsedId.success) return { formError: t("errors.invalidProduct") };
 
   try {
     const result = await resetThresholds(parsedId.data);
-    if (!result.ok) return { formError: "Produit introuvable" };
+    if (!result.ok) return { formError: t("errors.productNotFound") };
     updateTag("thresholds");
     return { ok: true };
   } catch (err) {

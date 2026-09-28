@@ -1,5 +1,8 @@
+import { createTranslator } from "next-intl";
 import { describe, expect, it } from "vitest";
 import type { Product } from "@/lib/dal/products";
+import en from "@/messages/en/backoffice-themes.json";
+import fr from "@/messages/fr/backoffice-themes.json";
 import { formatUsage, productsByTheme } from "./theme-usage";
 
 const THEME_A = "11111111-1111-1111-1111-111111111111";
@@ -67,18 +70,32 @@ describe("productsByTheme", () => {
   });
 });
 
+// I18N-BACKOFFICE-STRINGS (lot 7): formatUsage no longer hardcodes French –
+// it takes a translator (the shape `getTranslations`/`useTranslations`
+// return) and renders the `usage.none` / `usage.summary` keys of the
+// backoffice-themes zone, `summary` using ICU plural (`count`) rather than
+// a hand-picked singular/plural noun.
+const t = createTranslator({ locale: "fr", messages: { "backoffice-themes": fr }, namespace: "backoffice-themes" });
+const tEn = createTranslator({ locale: "en", messages: { "backoffice-themes": en }, namespace: "backoffice-themes" });
+
 describe("formatUsage", () => {
-  it("returns 'Aucun produit' for zero products", () => {
-    expect(formatUsage([])).toBe("Aucun produit");
+  it("returns the 'no product' message for zero products", () => {
+    expect(formatUsage([], t)).toBe("Aucun produit");
   });
 
   it("returns a singular sentence for one product", () => {
-    expect(formatUsage(["LettrePro"])).toBe("Utilisé par 1 produit · LettrePro");
+    expect(formatUsage(["LettrePro"], t)).toBe("Utilisé par 1 produit · LettrePro");
   });
 
   it("returns a plural sentence for several products", () => {
-    expect(formatUsage(["DescriPro", "LettrePro", "NomDeMarque"])).toBe(
+    expect(formatUsage(["DescriPro", "LettrePro", "NomDeMarque"], t)).toBe(
       "Utilisé par 3 produits · DescriPro, LettrePro, NomDeMarque",
     );
+  });
+
+  it("uses the English plural rules and wording for the en locale", () => {
+    expect(formatUsage([], tEn)).toBe("No product");
+    expect(formatUsage(["LettrePro"], tEn)).toBe("Used by 1 product · LettrePro");
+    expect(formatUsage(["DescriPro", "LettrePro"], tEn)).toBe("Used by 2 products · DescriPro, LettrePro");
   });
 });

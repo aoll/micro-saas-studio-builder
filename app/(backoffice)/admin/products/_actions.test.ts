@@ -855,3 +855,51 @@ describe("publish · edit path", () => {
     await cleanupProduct(created.id);
   });
 });
+
+// I18N-BACKOFFICE-STRINGS (lot 6): the admin's locale is the last argument
+// of every exported action — one message per action, proving the `t`
+// plumbing actually reaches the returned value (a wrong namespace or a
+// dropped `t` would silently fall back to French here).
+describe("locale: en", () => {
+  it("saveProduct reports an unknown theme in English", async () => {
+    await currentAdmin();
+    const { saveProduct } = await import("./_actions");
+    const config = await buildConfig({ themeId: randomUUID() });
+    const result = await saveProduct(null, {}, configForm(config), "en");
+    expect(result.errors?.themeId).toBe("Theme not found");
+  });
+
+  it("checkSlug reports a reserved slug in English", async () => {
+    await currentAdmin();
+    const { checkSlug } = await import("./_actions");
+    const result = await checkSlug("api", "en");
+    expect(result).toEqual({ available: false, error: "This slug is reserved" });
+  });
+
+  it("uploadLogo reports a missing file in English", async () => {
+    await currentAdmin();
+    const { uploadLogo } = await import("./_actions");
+    const result = await uploadLogo({}, new FormData(), "en");
+    expect(result.error).toBe("No file received");
+  });
+
+  it("testPrompt reports an unmatched {{variable}} in English", async () => {
+    await currentAdmin();
+    const { testPrompt } = await import("./_actions");
+    const result = await testPrompt(
+      null,
+      {},
+      testPromptForm({ generation: { ...testGenerationFixture, promptTemplate: "Pour {{inconnu}}" } }),
+      "en",
+    );
+    expect(result.error).toBe("Variable {{inconnu}} has no matching field");
+  });
+
+  it("publish reports an already-used slug in English", async () => {
+    await currentAdmin();
+    const { publish } = await import("./_actions");
+    const config = await buildConfig({ slug: "lettre-pro" });
+    const result = await publish(null, {}, configForm(config), "en");
+    expect(result.errors?.slug).toBe("This slug is already in use");
+  });
+});

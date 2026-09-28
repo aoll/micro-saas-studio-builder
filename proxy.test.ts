@@ -168,6 +168,10 @@ describe("proxy (QA1-P1-B4): sets the anonymous_id cookie before the first beaco
     // adminSessionGuard, so it must match the backoffice too. `proxy()`
     // itself still never touches the anonymous_id cookie on these paths
     // (see the "adminSessionGuard" describe block).
+    //
+    // I18N-MARKETING (R5, own commit, see its message): "/" moved here too
+    // — `/` is now a real route (app/(marketing)/page.tsx), no longer the
+    // no-route path the old "does not match" comment described.
     it.each([
       "http://demo.example/lettre-pro",
       "http://demo.example/lettre-pro/tool",
@@ -175,6 +179,7 @@ describe("proxy (QA1-P1-B4): sets the anonymous_id cookie before the first beaco
       "http://demo.example/admin/products",
       "http://demo.example/admin/login",
       "http://demo.example/admin/ops",
+      "http://demo.example/",
     ])("matches %s", (url) => {
       expect(unstable_doesMiddlewareMatch({ config, url })).toBe(true);
     });
@@ -186,7 +191,6 @@ describe("proxy (QA1-P1-B4): sets the anonymous_id cookie before the first beaco
       "http://demo.example/lettre-pro/api/generate",
       "http://demo.example/robots.txt",
       "http://demo.example/favicon.ico",
-      "http://demo.example/",
     ])("does not match %s", (url) => {
       expect(unstable_doesMiddlewareMatch({ config, url })).toBe(false);
     });

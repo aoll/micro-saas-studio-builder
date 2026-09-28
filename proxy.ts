@@ -159,9 +159,14 @@ export function proxy(request: NextRequest): NextResponse {
 // Runs on product pages (`[app]` and its sub-pages, never `/api/*`, static
 // assets, or a product's own `[app]/api/*` routes — a Set-Cookie on the
 // beacon's own response would reopen the race the anonymous-id logic above
-// exists to close) and, since QA1-P1-B12, on `/admin` and its sub-routes
-// for adminSessionGuard. `/` alone (no slug) never matches either: there is
-// no route there.
+// exists to close), on `/admin` and its sub-routes for adminSessionGuard
+// (QA1-P1-B12), and, since I18N-MARKETING (R5), on `/` and `/making-of` for
+// the marketing i18n branch: unlike the other two, `/` and `/making-of` are
+// now real routes (`app/(marketing)/page.tsx` and `making-of/page.tsx`), so
+// `/` needs its own literal matcher entry — the first pattern's `.+` never
+// matches an empty capture. `/en`, `/fr` and their `/making-of` variants
+// already match that first pattern (no exclusion applies to them), same as
+// any other unprefixed marketing or product path.
 export const config = {
-  matcher: ["/((?!_next/|api/|admin(?:/|$)|[^/]+/api/|.*\\.[^/]+$).+)", "/admin", "/admin/:path*"],
+  matcher: ["/", "/((?!_next/|api/|admin(?:/|$)|[^/]+/api/|.*\\.[^/]+$).+)", "/admin", "/admin/:path*"],
 };

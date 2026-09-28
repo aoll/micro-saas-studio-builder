@@ -171,7 +171,10 @@ export function ProductForm({
   // derivations.
   useEffect(() => {
     if (state.ok && state.slug) {
-      toast.success(t("draftSaved", { version: state.version }));
+      // `SaveProductState.version` is typed optional even though it's always
+      // set alongside `ok`/`slug` at runtime; `?? 0` only satisfies
+      // TranslationValues (string | number | Date, no undefined).
+      toast.success(t("draftSaved", { version: state.version ?? 0 }));
       if (mode === "create") router.replace(`/admin/products/${state.slug}/edit` as Route);
     }
     if (state.formError) toast.error(state.formError);
@@ -179,7 +182,7 @@ export function ProductForm({
 
   useEffect(() => {
     if (publishState.ok && publishState.slug) {
-      toast.success(t("productPublished", { version: publishState.version }));
+      toast.success(t("productPublished", { version: publishState.version ?? 0 }));
       if (mode === "edit") router.refresh();
     }
     if (publishState.formError) toast.error(publishState.formError);

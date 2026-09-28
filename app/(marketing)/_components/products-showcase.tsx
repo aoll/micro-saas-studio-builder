@@ -18,22 +18,32 @@ export async function ProductsShowcase() {
   if (products.length === 0) return null;
 
   return (
-    <section id="produits" className="mx-auto max-w-5xl px-4 py-16">
-      <h2 className="text-center text-2xl font-bold tracking-tight">Les produits du studio</h2>
-      <p className="mx-auto mt-2 max-w-xl text-center text-muted-foreground">
-        Chacun est une configuration du même socle, servie sur sa propre URL : cliquez une carte pour l&apos;essayer en
-        direct.
-      </p>
-      <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <section id="produits" className="mx-auto flex max-w-6xl flex-col gap-8 px-4 pt-24 sm:px-8">
+      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+        <div className="flex flex-col gap-2">
+          <p className="text-[13px] font-semibold text-mk-link">En ligne</p>
+          <h2 className="font-[family-name:var(--font-mk-display)] text-3xl font-extrabold tracking-[-0.03em] sm:text-4xl">
+            Les produits du studio
+          </h2>
+        </div>
+        <p className="max-w-md leading-relaxed text-mk-muted">
+          Chacun est une configuration du même socle, servie sur sa propre URL : cliquez une carte pour l&apos;essayer
+          en direct.
+        </p>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {products.map((product) => (
           <Link
             key={product.slug}
             href={`/${product.slug}`}
-            className="group block rounded-xl border bg-card p-6 shadow-sm transition-colors hover:bg-accent"
+            className="group flex flex-col items-start gap-3 mk-card bg-mk-surface p-6 transition-colors hover:border-mk-dash"
           >
-            <h3 className="font-semibold">{product.name}</h3>
-            <p className="mt-2 text-sm text-muted-foreground">{product.landing.headline}</p>
-            <p className="mt-4 flex items-center gap-1 text-sm font-medium">
+            <span className="rounded-full bg-mk-chip px-2.5 py-0.5 font-[family-name:var(--font-mk-mono)] text-xs text-mk-chip-ink">
+              /{product.slug}
+            </span>
+            <h3 className="font-[family-name:var(--font-mk-display)] text-xl font-bold">{product.name}</h3>
+            <p className="flex-1 text-[15px] leading-relaxed text-mk-muted">{product.landing.headline}</p>
+            <p className="flex items-center gap-1 text-sm font-bold text-mk-link">
               Essayer en direct
               <ArrowRightIcon aria-hidden="true" className="size-4 transition-transform group-hover:translate-x-0.5" />
             </p>
@@ -41,13 +51,16 @@ export async function ProductsShowcase() {
         ))}
         <Link
           href="/admin/login"
-          className="group block rounded-xl border border-dashed p-6 text-center transition-colors hover:bg-accent"
+          className="group flex flex-col items-start gap-3 rounded-xl border border-dashed border-mk-dash bg-mk-surface/40 p-6 transition-colors hover:bg-mk-surface/80"
         >
-          <PlusIcon aria-hidden="true" className="mx-auto size-5 text-muted-foreground" />
-          <h3 className="mt-2 font-semibold">Créer un nouveau produit</h3>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <span className="mk-cta size-8">
+            <PlusIcon aria-hidden="true" className="size-4" />
+          </span>
+          <h3 className="font-[family-name:var(--font-mk-display)] text-xl font-bold">Créer un nouveau produit</h3>
+          <p className="flex-1 text-[15px] leading-relaxed text-mk-muted">
             Un formulaire dans le backoffice suffit pour en lancer un nouveau, en quelques minutes.
           </p>
+          <p className="text-sm font-bold text-mk-chip-ink">Ouvrir le backoffice →</p>
         </Link>
       </div>
     </section>

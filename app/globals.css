@@ -80,6 +80,106 @@
   --font-sans: var(--font-theme, ui-sans-serif), system-ui, sans-serif;
 }
 
+/*
+ * `(marketing)` pages only (the landing and the making-of): one fixed light
+ * look, "bleu diffus" with a white-to-pink accent, independent from the
+ * product themes above. Fonts come from app/(marketing)/_components/fonts.ts.
+ */
+@theme {
+  --color-mk-ground: oklch(0.985 0.008 240);
+  --color-mk-ink: oklch(0.2 0.02 250);
+  --color-mk-muted: oklch(0.47 0.02 250);
+  --color-mk-surface: oklch(0.997 0.003 240);
+  --color-mk-subtle: oklch(0.96 0.012 240);
+  --color-mk-line: oklch(0.88 0.025 240);
+  --color-mk-chip: oklch(0.92 0.035 235);
+  --color-mk-chip-ink: oklch(0.3 0.06 245);
+  --color-mk-link: oklch(0.48 0.13 250);
+  --color-mk-dash: oklch(0.62 0.09 245);
+  --color-mk-blue: oklch(0.55 0.14 250);
+  --color-mk-rose: oklch(0.7 0.13 355);
+  --color-mk-rose-line: oklch(0.84 0.07 355);
+  --color-mk-rose-ink: oklch(0.3 0.07 355);
+  --color-mk-ok: oklch(0.6 0.13 155);
+}
+
+/* Wide, overlapping ellipses that fade out: the ground shifts between blue
+   and pink down the page without any visible round blob. */
+@utility mk-backdrop {
+  background-color: var(--color-mk-ground);
+  background-image:
+    radial-gradient(
+      140% 38% at 105% -4%,
+      oklch(0.9 0.05 235 / 0.6) 0%,
+      oklch(0.94 0.03 235 / 0.25) 45%,
+      oklch(0.985 0.008 240 / 0) 80%
+    ),
+    radial-gradient(
+      110% 30% at -10% 14%,
+      oklch(0.955 0.04 355 / 0.55) 0%,
+      oklch(0.98 0.018 355 / 0.2) 50%,
+      oklch(0.985 0.008 240 / 0) 85%
+    ),
+    radial-gradient(
+      150% 34% at 110% 52%,
+      oklch(0.915 0.04 230 / 0.45) 0%,
+      oklch(0.95 0.02 235 / 0.15) 55%,
+      oklch(0.985 0.008 240 / 0) 85%
+    ),
+    radial-gradient(
+      120% 30% at -15% 78%,
+      oklch(0.955 0.035 355 / 0.45) 0%,
+      oklch(0.98 0.015 355 / 0.15) 55%,
+      oklch(0.985 0.008 240 / 0) 85%
+    ),
+    radial-gradient(160% 28% at 60% 106%, oklch(0.92 0.04 238 / 0.45) 0%, oklch(0.985 0.008 240 / 0) 80%),
+    linear-gradient(170deg, oklch(0.975 0.014 238) 0%, oklch(0.988 0.006 240) 45%, oklch(0.978 0.012 235) 100%);
+  color-scheme: light;
+}
+
+/* Primary call to action: white-to-pink gradient under a diagonal sheen. */
+@utility mk-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-mk-rose-line);
+  background-image:
+    linear-gradient(135deg, oklch(1 0 0 / 0.5) 0%, transparent 45%),
+    linear-gradient(135deg, oklch(0.995 0.006 350) 0%, oklch(0.93 0.055 350) 50%, oklch(0.86 0.1 355) 100%);
+  color: var(--color-mk-rose-ink);
+  font-weight: 700;
+  box-shadow:
+    0 1px 2px 0 oklch(0.2 0.02 250 / 0.06),
+    0 8px 20px -8px oklch(0.6 0.12 355 / 0.3);
+  &:hover {
+    filter: brightness(1.03);
+  }
+}
+
+@utility mk-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-mk-line);
+  background: oklch(0.997 0.003 240 / 0.8);
+  color: var(--color-mk-ink);
+  font-weight: 600;
+  &:hover {
+    border-color: var(--color-mk-dash);
+  }
+}
+
+@utility mk-card {
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-mk-line);
+  background: oklch(0.997 0.003 240 / 0.8);
+  box-shadow:
+    0 1px 2px 0 oklch(0.2 0.02 250 / 0.05),
+    0 8px 20px -8px oklch(0.2 0.02 250 / 0.12);
+}
+
 /* BalanceBadge replays this on every optimistic delta (components/product/balance.tsx). */
 @keyframes badge-pop {
   0% {

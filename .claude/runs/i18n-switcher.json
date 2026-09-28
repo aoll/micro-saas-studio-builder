@@ -1,8 +1,18 @@
 {
   "integration": "integration/i18n-switcher",
   "specs": {
-    "I18N-MARKETING": { "dependsOn": [], "status": "ready", "worktree": null, "pr": null },
-    "I18N-BACKOFFICE": { "dependsOn": [], "status": "ready", "worktree": null, "pr": null }
+    "I18N-MARKETING": {
+      "dependsOn": [],
+      "status": "dispatched",
+      "worktree": "/home/user/micro-saas-studio-builder-i18n-marketing",
+      "pr": null
+    },
+    "I18N-BACKOFFICE": {
+      "dependsOn": [],
+      "status": "dispatched",
+      "worktree": "/home/user/micro-saas-studio-builder-i18n-backoffice",
+      "pr": null
+    }
   },
   "pendingIntegrations": []
 }

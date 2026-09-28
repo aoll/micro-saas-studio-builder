@@ -1,0 +1,14 @@
+{
+  "stepNav": {
+    "ariaLabel": "Form steps",
+    "steps": {
+      "identity": "Identity",
+      "theme": "Theme",
+      "landing": "Landing & SEO",
+      "fields": "Tool fields",
+      "generation": "Generation",
+      "pricing": "Pricing",
+      "summary": "Summary"
+    }
+  }
+}

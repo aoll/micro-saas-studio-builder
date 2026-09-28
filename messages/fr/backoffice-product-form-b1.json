@@ -1,0 +1,14 @@
+{
+  "stepNav": {
+    "ariaLabel": "Étapes du formulaire",
+    "steps": {
+      "identity": "Identité",
+      "theme": "Thème",
+      "landing": "Landing & SEO",
+      "fields": "Champs de l'outil",
+      "generation": "Génération",
+      "pricing": "Pricing",
+      "summary": "Récapitulatif"
+    }
+  }
+}

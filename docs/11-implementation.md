@@ -13,7 +13,7 @@ Trois règles structurent tout l'onglet :
 | # | Étape | Qui | Sortie |
 | --- | --- | --- | --- |
 | 1 | Écrire la spec minimale de la feature | Moi, avec Claude | `specs/<REF>-<nom>.md`, une dizaine de lignes |
-| 2 | **Porte 1 : valider les specs** | Moi | Specs mergées sur `main`, avant le run |
+| 2 | **Porte 1 : valider les specs** | Moi | Implémentation demandée ; specs commitées sur la branche d'intégration du run, sans merge préalable sur `main` |
 | 3 | Plan : tâches, fichiers, risques (`/plan`) | Agent `planner` | `.claude/plans/<REF>.plan.md` commité |
 | 4 | Boucle TDD : un comportement à la fois, test rouge puis code vert, commit et push à chaque étape verte, sans pause jusqu'à la fin de la spec (`/tdd`) | Agent `tdd-guide` | Trace rouge → vert dans les commits, 80 % de couverture sur `lib/**` |
 | 5 | Revue de code (`/review`), corrections jusqu'à zéro CRITICAL ou HIGH | `code-reviewer` + spécialistes | Corrections commitées et poussées |

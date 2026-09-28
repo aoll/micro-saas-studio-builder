@@ -2,6 +2,12 @@ import type { ProductConfig } from "@/lib/schemas/product-config";
 
 type Field = ProductConfig["inputs"][number];
 
+// docs/05-ia.md › Sûreté des entrées et des sorties: a product's config has
+// no way to set a maxLength from BO-05, so a field without one would only
+// be bound by the 5 000-char global limit, wide open to a long injection
+// payload. `select` has no default: it is already bound to its `options`.
+const DEFAULT_MAX_LENGTH: Partial<Record<Field["type"], number>> = { text: 150, textarea: 1500 };
+
 export type ToolInputIssueCode = "required" | "too_long" | "invalid_option" | "unknown_field";
 export type ToolInputFieldErrors = Record<string, ToolInputIssueCode>;
 export type ToolInputResult =
@@ -28,7 +34,8 @@ export function toolInputSchema(fields: Field[], input: Record<string, string>):
       fieldErrors[field.key] = "required";
       continue;
     }
-    if (field.maxLength !== undefined && raw.length > field.maxLength) {
+    const maxLength = field.maxLength ?? DEFAULT_MAX_LENGTH[field.type];
+    if (maxLength !== undefined && raw.length > maxLength) {
       fieldErrors[field.key] = "too_long";
       continue;
     }

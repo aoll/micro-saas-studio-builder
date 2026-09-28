@@ -5,7 +5,7 @@ import { put } from "@vercel/blob";
 import { updateTag } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { toolInputSchema } from "@/app/(products)/[app]/tool/_lib/tool-input-schema";
-import { costMicros, streamGeneration, type GenerationUsage } from "@/lib/ai/generate";
+import { costMicros, GenerationRefusedError, streamGeneration, type GenerationUsage } from "@/lib/ai/generate";
 import {
   createProduct,
   getProductDraft,
@@ -284,7 +284,15 @@ export async function testPrompt(
     },
     onError: (error) => {
       console.error("[admin/products] testPrompt failed", error);
-      settle({ error: "La génération de test a échoué" });
+      // AI-GUARD (docs/05-ia.md): a refusal is not a failure of the AI
+      // provider — it means the sample was judged off the product's task —
+      // so it gets its own message instead of the generic failure one.
+      settle({
+        error:
+          error instanceof GenerationRefusedError
+            ? "Le modèle a refusé l'échantillon : demande jugée hors sujet."
+            : "La génération de test a échoué",
+      });
     },
   });
 

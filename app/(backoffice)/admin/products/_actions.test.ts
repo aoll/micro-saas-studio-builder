@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
+import { MockLanguageModelV4, simulateReadableStream } from "ai/test";
 import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { REFUSAL_MESSAGES } from "@/lib/ai/generate";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/auth-schema";
 import { productVersions, products, themes } from "@/lib/db/schema";
@@ -555,6 +557,44 @@ describe("testPrompt", () => {
     expect(consoleSpy).toHaveBeenCalled();
     consoleSpy.mockRestore();
     vi.doUnmock("@/lib/ai/generate");
+    vi.resetModules();
+  });
+
+  // AI-GUARD (docs/05-ia.md › Demande hors du rôle du produit): a real
+  // GenerationRefusedError, produced by the real streamGeneration/onFinish
+  // pipeline (only the model is mocked, never @/lib/ai/generate, so
+  // `instanceof GenerationRefusedError` in _actions.ts is exercised for
+  // real), maps to its own French message instead of the generic one.
+  it("on a model refusal, returns the refusal-specific French error", async () => {
+    await currentAdmin();
+    vi.resetModules();
+    vi.doMock("@/lib/ai/model", () => ({
+      resolveModel: () =>
+        new MockLanguageModelV4({
+          doStream: async () => ({
+            stream: simulateReadableStream({
+              chunkDelayInMs: 0,
+              chunks: [
+                { type: "text-start", id: "1" },
+                { type: "text-delta", id: "1", delta: REFUSAL_MESSAGES.fr },
+                { type: "text-end", id: "1" },
+                {
+                  type: "finish",
+                  finishReason: { unified: "stop", raw: undefined },
+                  usage: {
+                    inputTokens: { total: 50, noCache: 50, cacheRead: 0, cacheWrite: undefined },
+                    outputTokens: { total: 20, text: 20, reasoning: undefined },
+                  },
+                },
+              ],
+            }),
+          }),
+        }),
+    }));
+    const { testPrompt } = await import("./_actions");
+    const result = await testPrompt(null, {}, testPromptForm());
+    expect(result).toEqual({ error: "Le modèle a refusé l'échantillon : demande jugée hors sujet." });
+    vi.doUnmock("@/lib/ai/model");
     vi.resetModules();
   });
 });

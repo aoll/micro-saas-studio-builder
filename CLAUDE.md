@@ -40,7 +40,9 @@ soon as its own dependencies are merged and a worktree is free (the waves of
 through the classic ECC flow below.
 
 1. **Spec.** One feature = one spec `specs/<REF>-<name>.md`, written from the
-   dossier. A human approves the specs by merging them into `main` (gate 1).
+   dossier. A human approves a spec by asking for its implementation (gate 1);
+   it does not need to be merged into `main` first: it is committed on the
+   run's integration branch, and reaches `main` with the rest of the run.
 2. **Plan.** `/plan <spec>`: the `planner` agent turns the spec into tasks,
    files and risks, committed as `.claude/plans/<REF>.plan.md`.
 3. **Test-first loop.** `/tdd <spec>` inside the spec's worktree: the

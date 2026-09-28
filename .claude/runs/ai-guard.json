@@ -1,0 +1,7 @@
+{
+  "integration": "claude/llm-calls-role-protection-zuoqcx",
+  "specs": {
+    "AI-GUARD-role-produit": { "dependsOn": [], "status": "ready", "worktree": null, "pr": null }
+  },
+  "pendingIntegrations": []
+}

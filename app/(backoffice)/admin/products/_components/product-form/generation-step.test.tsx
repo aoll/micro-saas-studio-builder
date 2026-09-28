@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
+import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import en from "@/messages/en/backoffice-product-form-b1.json";
+import fr from "@/messages/fr/backoffice-product-form-b1.json";
 import type { ProductConfig } from "@/lib/schemas/product-config";
 import { GenerationStep } from "./generation-step";
 
@@ -18,7 +21,14 @@ const generation: ProductConfig["generation"] = {
   outputType: "markdown",
 };
 
-function setup(overrides: Partial<React.ComponentProps<typeof GenerationStep>> = {}) {
+// I18N-BACKOFFICE-STRINGS (lot 5): GenerationStep reads its own zone's
+// messages, so every test needs the NextIntlClientProvider the real
+// backoffice layout provides at runtime (app/(backoffice)/layout.tsx).
+function setup(
+  overrides: Partial<React.ComponentProps<typeof GenerationStep>> = {},
+  locale: "fr" | "en" = "fr",
+  messages: Record<string, unknown> = fr,
+) {
   const onChange = vi.fn();
   const props: React.ComponentProps<typeof GenerationStep> = {
     generation,
@@ -27,7 +37,11 @@ function setup(overrides: Partial<React.ComponentProps<typeof GenerationStep>> =
     onChange,
     ...overrides,
   };
-  const view = render(<GenerationStep {...props} />);
+  const view = render(
+    <NextIntlClientProvider locale={locale} messages={{ "backoffice-product-form-b1": messages }}>
+      <GenerationStep {...props} />
+    </NextIntlClientProvider>,
+  );
   return { onChange, ...view };
 }
 
@@ -120,5 +134,18 @@ describe("GenerationStep", () => {
     const duplicateKeyWarning = consoleError.mock.calls.some((call) => String(call[0]).includes("same key"));
     consoleError.mockRestore();
     expect(duplicateKeyWarning).toBe(false);
+  });
+
+  // I18N-BACKOFFICE-STRINGS (lot 5): labels, the output-type radiogroup and
+  // the unmatched-variable live error all follow the backoffice locale.
+  it("renders every label, the output-type group and the unmatched-variable error in English", () => {
+    setup({ generation: { ...generation, promptTemplate: "Write for {{inconnu}}" } }, "en", en);
+    expect(screen.getByLabelText(en.generationStep.systemPromptLabel)).toBeTruthy();
+    expect(screen.getByLabelText(en.generationStep.modelLabel)).toBeTruthy();
+    expect(screen.getByLabelText(en.generationStep.promptTemplateLabel)).toBeTruthy();
+    expect(screen.getByRole("radiogroup", { name: en.generationStep.outputTypeLabel })).toBeTruthy();
+    expect(screen.getByText(en.generationStep.imageComingSoon)).toBeTruthy();
+    expect(screen.getByTitle(en.generationStep.comingSoonTooltip)).toBeTruthy();
+    expect(screen.getByText("Variable {{inconnu}} has no matching field")).toBeTruthy();
   });
 });

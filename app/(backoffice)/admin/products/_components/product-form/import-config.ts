@@ -2,9 +2,12 @@ import type { Theme } from "@/lib/dal/themes";
 import { productConfigSchema, type ProductConfig } from "@/lib/schemas/product-config";
 import { issuesToErrors } from "./validation";
 
+// `formError` is a stable code, not a message: this is a plain function
+// (no `t()`, no locale) called synchronously from ImportConfigPanel, which
+// maps it to a translated string (I18N-BACKOFFICE-STRINGS lot 4).
 export type ImportResult =
   | { ok: true; config: ProductConfig }
-  | { ok: false; formError: string }
+  | { ok: false; formError: "malformed_json" }
   | { ok: false; errors: Record<string, string> };
 
 // QA1-P1-M1: "le thème se choisit par son nom si l'id ne correspond pas".
@@ -31,11 +34,11 @@ export function parseImportedConfig(raw: string, themes: Theme[], fallbackThemeI
   try {
     parsed = JSON.parse(raw);
   } catch {
-    return { ok: false, formError: "Configuration JSON illisible" };
+    return { ok: false, formError: "malformed_json" };
   }
 
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    return { ok: false, formError: "Configuration JSON illisible" };
+    return { ok: false, formError: "malformed_json" };
   }
 
   const candidate = parsed as Record<string, unknown>;

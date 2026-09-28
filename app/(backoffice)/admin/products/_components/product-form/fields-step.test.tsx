@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
+import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import en from "@/messages/en/backoffice-product-form-a.json";
+import fr from "@/messages/fr/backoffice-product-form-a.json";
 import { FieldsStep } from "./fields-step";
 import type { FieldDraft } from "./form-values";
 
@@ -11,10 +14,27 @@ function field(overrides: Partial<FieldDraft> = {}): FieldDraft {
   return { id: crypto.randomUUID(), key: "champ_1", label: "Champ 1", type: "text", required: true, ...overrides };
 }
 
-function setup(fields: FieldDraft[], errors: Record<string, string> = {}) {
+// I18N-BACKOFFICE-STRINGS lot 4: FieldsStep now reads its labels through
+// useTranslations("backoffice-product-form-a"), so every render needs the
+// zone's messages in context.
+function setup(fields: FieldDraft[], errors: Record<string, string> = {}, uiLocale: "fr" | "en" = "fr") {
   const onChange = vi.fn();
-  const view = render(<FieldsStep fields={fields} errors={errors} onChange={onChange} />);
+  const messages = uiLocale === "fr" ? fr : en;
+  const view = render(
+    <NextIntlClientProvider locale={uiLocale} messages={{ "backoffice-product-form-a": messages }}>
+      <FieldsStep fields={fields} errors={errors} onChange={onChange} />
+    </NextIntlClientProvider>,
+  );
   return { onChange, ...view };
+}
+
+function renderRaw(ui: React.ReactElement, uiLocale: "fr" | "en" = "fr") {
+  const messages = uiLocale === "fr" ? fr : en;
+  return render(
+    <NextIntlClientProvider locale={uiLocale} messages={{ "backoffice-product-form-a": messages }}>
+      {ui}
+    </NextIntlClientProvider>,
+  );
 }
 
 describe("FieldsStep", () => {
@@ -52,9 +72,13 @@ describe("FieldsStep", () => {
   });
 
   it("shows options only for a select field", () => {
-    const { rerender } = render(<FieldsStep fields={[field({ type: "text" })]} errors={{}} onChange={vi.fn()} />);
+    const { rerender } = renderRaw(<FieldsStep fields={[field({ type: "text" })]} errors={{}} onChange={vi.fn()} />);
     expect(screen.queryByLabelText("Options (une par ligne)")).toBeNull();
-    rerender(<FieldsStep fields={[field({ type: "select", options: ["a", "b"] })]} errors={{}} onChange={vi.fn()} />);
+    rerender(
+      <NextIntlClientProvider locale="fr" messages={{ "backoffice-product-form-a": fr }}>
+        <FieldsStep fields={[field({ type: "select", options: ["a", "b"] })]} errors={{}} onChange={vi.fn()} />
+      </NextIntlClientProvider>,
+    );
     expect(screen.getByLabelText("Options (une par ligne)")).toBeTruthy();
   });
 
@@ -63,5 +87,23 @@ describe("FieldsStep", () => {
       "inputs.1.key": "Clé déjà utilisée",
     });
     expect(screen.getByText("Clé déjà utilisée")).toBeTruthy();
+  });
+
+  // I18N-BACKOFFICE-STRINGS: catches a label left hardcoded in French once
+  // the admin_locale cookie is "en" (spec acceptance: no French text leaks).
+  it("renders every label, field type and button in English when the locale is en", () => {
+    setup([field({ type: "select", options: ["a", "b"] })], {}, "en");
+    expect(screen.getByLabelText("Key")).toBeTruthy();
+    expect(screen.getByLabelText("Label")).toBeTruthy();
+    expect(screen.getByLabelText("Type")).toBeTruthy();
+    expect(screen.getByText("Required")).toBeTruthy();
+    expect(screen.getByLabelText("Options (one per line)")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Add a field" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Remove this field" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Move up" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Move down" })).toBeTruthy();
+
+    const select = screen.getByLabelText("Type") as HTMLSelectElement;
+    expect(Array.from(select.options).map((option) => option.textContent)).toEqual(["Text", "Text area", "List"]);
   });
 });

@@ -54,14 +54,20 @@ describe("resolveImportedThemeId", () => {
 });
 
 describe("parseImportedConfig", () => {
-  it("reports malformed JSON as a form error", () => {
+  // I18N-BACKOFFICE-STRINGS: `formError` used to carry the literal French
+  // message. `parseImportedConfig` is a plain function, not a component or
+  // a Server Action — it has no `t()` and no locale to bind — so the
+  // message now travels as a stable code, translated by ImportConfigPanel
+  // (the client component that actually renders it) via
+  // useTranslations("backoffice-product-form-a")("importPanel.malformedJson").
+  it("reports malformed JSON as a form error code", () => {
     const result = parseImportedConfig("not json", themes, fallbackThemeId);
-    expect(result).toEqual({ ok: false, formError: "Configuration JSON illisible" });
+    expect(result).toEqual({ ok: false, formError: "malformed_json" });
   });
 
-  it("reports a non-object JSON value as a form error", () => {
+  it("reports a non-object JSON value as a form error code", () => {
     const result = parseImportedConfig("42", themes, fallbackThemeId);
-    expect(result).toEqual({ ok: false, formError: "Configuration JSON illisible" });
+    expect(result).toEqual({ ok: false, formError: "malformed_json" });
   });
 
   it("imports the bio-instagram fixture (no themeId) with the fallback theme, every field intact", () => {

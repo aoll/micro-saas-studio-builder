@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { listThemeOptions } from "@/lib/dal/product-editor";
 import { requireAdmin } from "@/lib/dal/session";
@@ -15,10 +16,16 @@ async function NewProductForm() {
   return <ProductForm mode="create" slug={null} initialDraft={newProductDraft(themes[0]?.id ?? "")} themes={themes} />;
 }
 
-export default function NewProductPage() {
+// I18N-BACKOFFICE-STRINGS lot 4: the whole backoffice already renders
+// dynamically (`instant = false` in the root layout), so translating the
+// h1 here — outside the Suspense boundary, like before — doesn't cost any
+// prerendering this route never had; it also keeps the title visible
+// immediately, before `NewProductForm`'s data fetch resolves.
+export default async function NewProductPage() {
+  const t = await getTranslations("backoffice-product-form-a");
   return (
     <main className="p-6">
-      <h1 className="mb-6 text-xl font-semibold">Nouveau produit</h1>
+      <h1 className="mb-6 text-xl font-semibold">{t("pages.newTitle")}</h1>
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>
         <NewProductForm />
       </Suspense>

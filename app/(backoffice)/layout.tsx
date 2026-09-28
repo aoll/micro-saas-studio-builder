@@ -28,12 +28,18 @@ export default async function BackofficeLayout({ children }: { children: React.R
   const locale = await getLocale();
   const messages = await getMessages();
 
+  // I18N-BACKOFFICE-STRINGS: every backoffice-* zone (one per lot, split so
+  // parallel agents never touch the same messages file) goes to the client
+  // alongside the original `backoffice` zone; product and marketing zones
+  // still never reach this provider.
+  const clientMessages = Object.fromEntries(
+    Object.entries(messages).filter(([namespace]) => namespace.startsWith("backoffice")),
+  );
+
   return (
     <html lang={locale} className={`mk-theme ${display.variable} ${sans.variable} ${mono.variable}`}>
       <body className="flex min-h-dvh mk-backdrop text-foreground">
-        {/* Only the backoffice namespace goes to the client: product and
-            marketing zones never reach this provider. */}
-        <NextIntlClientProvider locale={locale} messages={{ backoffice: messages.backoffice }}>
+        <NextIntlClientProvider locale={locale} messages={clientMessages}>
           <Suspense fallback={null}>
             <AdminSidebar />
           </Suspense>

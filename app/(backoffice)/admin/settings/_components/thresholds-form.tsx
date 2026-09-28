@@ -22,7 +22,7 @@ const initialState: ThresholdsActionState = {};
 // Server Action can't read next/root-params itself).
 export function ThresholdsForm({ defaults, products }: { defaults: Thresholds; products: PreviewProduct[] }) {
   const t = useTranslations("backoffice-settings");
-  const locale = useLocale() as "fr" | "en";
+  const locale = useLocale();
   const [minVisits, setMinVisits] = useState(String(defaults.minVisits));
   const [killPercent, setKillPercent] = useState(String(rateToPercent(defaults.killMaxConversion)));
   const [scalePercent, setScalePercent] = useState(String(rateToPercent(defaults.scaleMinConversion)));

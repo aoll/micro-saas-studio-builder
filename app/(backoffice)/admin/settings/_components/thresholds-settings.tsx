@@ -32,7 +32,7 @@ function ProductOverrideForm({
   allProducts: SettingsView["products"];
 }) {
   const t = useTranslations("backoffice-settings");
-  const locale = useLocale() as "fr" | "en";
+  const locale = useLocale();
   const merged = mergeThresholds(defaults, product.override);
   const [minVisits, setMinVisits] = useState(String(merged.minVisits));
   const [killPercent, setKillPercent] = useState(String(rateToPercent(merged.killMaxConversion)));

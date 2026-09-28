@@ -1,4 +1,7 @@
+import { createTranslator } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import en from "@/messages/en/backoffice-portfolio.json";
+import fr from "@/messages/fr/backoffice-portfolio.json";
 
 class RedirectMarker extends Error {
   constructor(public url: string) {
@@ -20,6 +23,19 @@ vi.mock("@/scripts/reset-demo", () => ({ resetDemo: (...args: unknown[]) => rese
 
 const updateTag = vi.fn();
 vi.mock("next/cache", () => ({ updateTag: (tag: string) => updateTag(tag) }));
+
+// resetDemoAction() (I18N-BACKOFFICE-STRINGS spec "Server Actions") calls
+// getTranslations({ locale, namespace }) with the explicit locale it
+// receives, after requireAdmin() (the guard stays the action's first call).
+// next-intl/server is mocked with a real translator, like the login action.
+vi.mock("next-intl/server", () => ({
+  getTranslations: async ({ locale, namespace }: { locale: "fr" | "en"; namespace: string }) =>
+    createTranslator({
+      locale,
+      messages: { "backoffice-portfolio": locale === "fr" ? fr : en },
+      namespace: namespace as never,
+    }),
+}));
 
 afterEach(() => {
   requireAdmin.mockReset();
@@ -50,15 +66,15 @@ describe("resetDemoAction", () => {
   it("redirects a non-admin caller (requireAdmin's own redirect)", async () => {
     requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
     const { resetDemoAction } = await import("./_actions");
-    await expect(resetDemoAction({}, new FormData())).rejects.toThrow("redirect:/admin/login");
+    await expect(resetDemoAction("fr", {}, new FormData())).rejects.toThrow("redirect:/admin/login");
     expect(resetDemo).not.toHaveBeenCalled();
   });
 
   it("rejects an admin who is not the owner, without calling resetDemo", async () => {
     requireAdmin.mockResolvedValue({ user: { id: "admin-id", role: "admin" } });
     const { resetDemoAction } = await import("./_actions");
-    const result = await resetDemoAction({}, new FormData());
-    expect(result.error).toBeTruthy();
+    const result = await resetDemoAction("fr", {}, new FormData());
+    expect(result.error).toBe("Réservé au propriétaire de la démo");
     expect(resetDemo).not.toHaveBeenCalled();
     expect(updateTag).not.toHaveBeenCalled();
   });
@@ -66,7 +82,7 @@ describe("resetDemoAction", () => {
   it("resets and tags products, thresholds, every product seen before the reset, and every seeded theme", async () => {
     stubHappyPath();
     const { resetDemoAction } = await import("./_actions");
-    const result = await resetDemoAction({}, new FormData());
+    const result = await resetDemoAction("fr", {}, new FormData());
 
     expect(result.ok).toBe(true);
     expect(resetDemo).toHaveBeenCalledTimes(1);
@@ -88,12 +104,20 @@ describe("resetDemoAction", () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
     const { resetDemoAction } = await import("./_actions");
-    const result = await resetDemoAction({}, new FormData());
+    const result = await resetDemoAction("fr", {}, new FormData());
 
-    expect(result.error).toBeTruthy();
+    expect(result.error).toBe("La réinitialisation a échoué");
     expect(result.ok).toBeUndefined();
     expect(updateTag).not.toHaveBeenCalled();
     expect(consoleError).toHaveBeenCalled();
     consoleError.mockRestore();
+  });
+
+  // I18N-BACKOFFICE-STRINGS: error messages respect the explicit locale.
+  it("returns English error messages when given the en locale", async () => {
+    requireAdmin.mockResolvedValue({ user: { id: "admin-id", role: "admin" } });
+    const { resetDemoAction } = await import("./_actions");
+    const result = await resetDemoAction("en", {}, new FormData());
+    expect(result.error).toBe("Reserved to the demo's owner");
   });
 });

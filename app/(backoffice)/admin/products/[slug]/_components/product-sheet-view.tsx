@@ -18,6 +18,15 @@ import { TrendChart } from "./trend-chart";
 export async function ProductSheetView({ sheet }: { sheet: ProductSheetViewModel }) {
   const t = await getTranslations("backoffice-product-sheet");
   const header = await SheetHeader({ sheet });
+  // I18N-BACKOFFICE-STRINGS: DecisionPanel became async too (its own
+  // translator) — same reason as `header` above, awaited directly rather
+  // than mounted as `<DecisionPanel ... />`.
+  const decisionPanel = await DecisionPanel({
+    decision: sheet.decision,
+    product: { productId: sheet.productId, slug: sheet.slug, name: sheet.name, status: sheet.status },
+    metrics: sheet.decisionMetrics,
+    thresholds: sheet.thresholds,
+  });
   return (
     <div className="grid gap-6">
       {header}
@@ -40,12 +49,7 @@ export async function ProductSheetView({ sheet }: { sheet: ProductSheetViewModel
           }
         />
       )}
-      <DecisionPanel
-        decision={sheet.decision}
-        product={{ productId: sheet.productId, slug: sheet.slug, name: sheet.name, status: sheet.status }}
-        metrics={sheet.decisionMetrics}
-        thresholds={sheet.thresholds}
-      />
+      {decisionPanel}
     </div>
   );
 }

@@ -5,7 +5,15 @@ import { createTranslator, NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import frSheet from "@/messages/fr/backoffice-product-sheet.json";
 import enSheet from "@/messages/en/backoffice-product-sheet.json";
+import frDecision from "@/messages/fr/backoffice-decision.json";
+import enDecision from "@/messages/en/backoffice-decision.json";
 import type { ProductSheetViewModel } from "./sheet";
+
+// I18N-BACKOFFICE-STRINGS: ProductSheetView also mounts DecisionPanel
+// (lot 3), async too, its own `getTranslations("backoffice-decision")` —
+// both zones' messages below, fr by default.
+const messagesFr = { "backoffice-product-sheet": frSheet, "backoffice-decision": frDecision };
+const messagesEn = { "backoffice-product-sheet": enSheet, "backoffice-decision": enDecision };
 
 // `ProductSheetView` renders `SheetHeader` and `DecisionPanel`, both of
 // which statically import `StatusChange`, which statically imports
@@ -26,8 +34,11 @@ vi.mock("@/lib/dal/product-status", () => ({ updateStatus: vi.fn() }));
 // side by side here, mirroring production (app/(backoffice)/layout.tsx
 // forwards every backoffice* zone to the client provider).
 vi.mock("next-intl/server", () => ({
-  getTranslations: async (namespace: "backoffice-product-sheet") =>
-    createTranslator({ locale: "fr", messages: { "backoffice-product-sheet": frSheet }, namespace }),
+  getTranslations: async (namespace: "backoffice-product-sheet" | "backoffice-decision") =>
+    createTranslator({ locale: "fr", messages: messagesFr, namespace }),
+  // DecisionGauge (lot 3) also calls getFormatter() for its locale-aware
+  // number formatting (decision-gauge.test.tsx's own mock, reproduced here).
+  getFormatter: async () => ({ number: (value: number) => new Intl.NumberFormat("fr").format(value) }),
 }));
 
 beforeAll(() => {
@@ -73,7 +84,7 @@ async function renderUi(model: ProductSheetViewModel) {
   const { ProductSheetView } = await import("./product-sheet-view");
   const ui = await ProductSheetView({ sheet: model });
   return render(
-    <NextIntlClientProvider locale="fr" messages={{ "backoffice-product-sheet": frSheet }}>
+    <NextIntlClientProvider locale="fr" messages={messagesFr}>
       {ui}
     </NextIntlClientProvider>,
   );
@@ -105,14 +116,15 @@ describe("ProductSheetView", () => {
 
   it("renders the empty state and the funnel title in English", async () => {
     vi.doMock("next-intl/server", () => ({
-      getTranslations: async (namespace: "backoffice-product-sheet") =>
-        createTranslator({ locale: "en", messages: { "backoffice-product-sheet": enSheet }, namespace }),
+      getTranslations: async (namespace: "backoffice-product-sheet" | "backoffice-decision") =>
+        createTranslator({ locale: "en", messages: messagesEn, namespace }),
+      getFormatter: async () => ({ number: (value: number) => new Intl.NumberFormat("en").format(value) }),
     }));
     vi.resetModules();
     const { ProductSheetView } = await import("./product-sheet-view");
     const ui = await ProductSheetView({ sheet: sheet({ hasData: false }) });
     render(
-      <NextIntlClientProvider locale="en" messages={{ "backoffice-product-sheet": enSheet }}>
+      <NextIntlClientProvider locale="en" messages={messagesEn}>
         {ui}
       </NextIntlClientProvider>,
     );

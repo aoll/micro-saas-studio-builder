@@ -1,11 +1,20 @@
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/react";
 import { screen, within } from "@testing-library/dom";
-import { createTranslator } from "next-intl";
+import { createTranslator, NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import frSheet from "@/messages/fr/backoffice-product-sheet.json";
 import enSheet from "@/messages/en/backoffice-product-sheet.json";
+import frDecision from "@/messages/fr/backoffice-decision.json";
+import enDecision from "@/messages/en/backoffice-decision.json";
 import type { ProductSheetViewModel } from "./sheet";
+
+// I18N-BACKOFFICE-STRINGS: SheetHeader mounts StatusChange (lot 3, the
+// "Changer de statut" trigger) unconditionally — a client component that
+// reads `useTranslations("backoffice-decision")`, so every render here
+// needs a NextIntlClientProvider carrying that zone too.
+const messagesFr = { "backoffice-product-sheet": frSheet, "backoffice-decision": frDecision };
+const messagesEn = { "backoffice-product-sheet": enSheet, "backoffice-decision": enDecision };
 
 // `SheetHeader` statically imports `StatusChange`, which statically imports
 // `setProductStatus` from `../../_actions` (CLAUDE.md: every other
@@ -22,11 +31,19 @@ vi.mock("@/lib/dal/product-status", () => ({ updateStatus: vi.fn() }));
 // with a real translator (product-tabs.test.tsx's comment) so this stays a
 // render-only test without a real next-intl request context.
 vi.mock("next-intl/server", () => ({
-  getTranslations: async (namespace: "backoffice-product-sheet") =>
-    createTranslator({ locale: "fr", messages: { "backoffice-product-sheet": frSheet }, namespace }),
+  getTranslations: async (namespace: "backoffice-product-sheet" | "backoffice-decision") =>
+    createTranslator({ locale: "fr", messages: messagesFr, namespace }),
 }));
 
 afterEach(cleanup);
+
+function renderUi(ui: React.ReactElement, locale: "fr" | "en" = "fr") {
+  return render(
+    <NextIntlClientProvider locale={locale} messages={locale === "en" ? messagesEn : messagesFr}>
+      {ui}
+    </NextIntlClientProvider>,
+  );
+}
 
 function sheet(overrides: Partial<ProductSheetViewModel> = {}): ProductSheetViewModel {
   return {
@@ -58,7 +75,7 @@ function sheet(overrides: Partial<ProductSheetViewModel> = {}): ProductSheetView
 describe("SheetHeader", () => {
   it("shows the product name, its status badge and links to the sub-app and the editor", async () => {
     const { SheetHeader } = await import("./sheet-header");
-    render(await SheetHeader({ sheet: sheet() }));
+    renderUi(await SheetHeader({ sheet: sheet() }));
     expect(screen.getByText("My Product")).toBeTruthy();
     expect(screen.getByTestId("status-badge")).toBeTruthy();
     const subAppLink = screen.getByRole("link", { name: /my-product/i });
@@ -70,7 +87,7 @@ describe("SheetHeader", () => {
 
   it("shows the DecisionBadge when there is a suggested decision", async () => {
     const { SheetHeader } = await import("./sheet-header");
-    render(
+    renderUi(
       await SheetHeader({
         sheet: sheet({
           decision: {
@@ -87,7 +104,7 @@ describe("SheetHeader", () => {
 
   it("shows a closed banner instead of the DecisionBadge for a killed product", async () => {
     const { SheetHeader } = await import("./sheet-header");
-    render(
+    renderUi(
       await SheetHeader({
         sheet: sheet({
           status: "killed",
@@ -106,7 +123,7 @@ describe("SheetHeader", () => {
 
   it("still shows the sub-app link for a killed product", async () => {
     const { SheetHeader } = await import("./sheet-header");
-    render(await SheetHeader({ sheet: sheet({ status: "killed", slug: "gone" }) }));
+    renderUi(await SheetHeader({ sheet: sheet({ status: "killed", slug: "gone" }) }));
     const subAppLink = screen.getByRole("link", { name: /gone/i });
     expect(subAppLink.getAttribute("href")).toBe("/gone");
   });
@@ -115,7 +132,7 @@ describe("SheetHeader", () => {
   // "Voir /{slug}" and "Modifier la config", not below the header row.
   it("puts the status-change trigger in the top-right action group, next to the sub-app link and Modifier la config", async () => {
     const { SheetHeader } = await import("./sheet-header");
-    render(await SheetHeader({ sheet: sheet() }));
+    renderUi(await SheetHeader({ sheet: sheet() }));
     const actions = screen.getByTestId("sheet-actions");
     expect(within(actions).getByRole("link", { name: /my-product/i })).toBeTruthy();
     expect(within(actions).getByRole("link", { name: /modifier/i })).toBeTruthy();
@@ -127,7 +144,7 @@ describe("SheetHeader", () => {
   // activity screen and back.
   it("mounts the Vue d'ensemble / Activité tabs, with Vue d'ensemble current", async () => {
     const { SheetHeader } = await import("./sheet-header");
-    render(await SheetHeader({ sheet: sheet({ slug: "my-product" }) }));
+    renderUi(await SheetHeader({ sheet: sheet({ slug: "my-product" }) }));
     const overview = screen.getByRole("link", { name: "Vue d'ensemble" });
     const activity = screen.getByRole("link", { name: "Activité" });
     expect(overview.getAttribute("href")).toBe("/admin/products/my-product");
@@ -141,12 +158,12 @@ describe("SheetHeader", () => {
 
   it("renders the edit link and the killed banner in English", async () => {
     vi.doMock("next-intl/server", () => ({
-      getTranslations: async (namespace: "backoffice-product-sheet") =>
-        createTranslator({ locale: "en", messages: { "backoffice-product-sheet": enSheet }, namespace }),
+      getTranslations: async (namespace: "backoffice-product-sheet" | "backoffice-decision") =>
+        createTranslator({ locale: "en", messages: messagesEn, namespace }),
     }));
     vi.resetModules();
     const { SheetHeader } = await import("./sheet-header");
-    render(
+    renderUi(
       await SheetHeader({
         sheet: sheet({
           status: "killed",
@@ -159,6 +176,7 @@ describe("SheetHeader", () => {
           },
         }),
       }),
+      "en",
     );
     const editLink = screen.getByRole("link", { name: /edit configuration/i });
     expect(editLink.getAttribute("href")).toBe("/admin/products/gone/edit");

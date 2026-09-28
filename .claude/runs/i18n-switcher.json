@@ -9,9 +9,9 @@
     },
     "I18N-BACKOFFICE": {
       "dependsOn": [],
-      "status": "dispatched",
-      "worktree": "/home/user/micro-saas-studio-builder-i18n-backoffice",
-      "pr": null
+      "status": "merged",
+      "worktree": null,
+      "pr": "https://github.com/aoll/micro-saas-studio-builder/pull/106"
     }
   },
   "pendingIntegrations": []

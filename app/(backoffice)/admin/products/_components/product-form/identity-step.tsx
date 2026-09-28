@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { ProductConfig, ProductStatus } from "@/lib/schemas/product-config";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,11 +44,12 @@ export function IdentityStep({
   onChange: (patch: IdentityPatch) => void;
 }) {
   const readOnly = mode === "edit";
+  const t = useTranslations("backoffice-product-form-a");
 
   return (
     <div className="grid gap-4">
       <div className="grid gap-1.5">
-        <Label htmlFor="product-name">Nom</Label>
+        <Label htmlFor="product-name">{t("identityStep.nameLabel")}</Label>
         <Input
           id="product-name"
           value={name}
@@ -61,7 +63,7 @@ export function IdentityStep({
       </div>
 
       <div className="grid gap-1.5">
-        <Label htmlFor="product-slug">Slug</Label>
+        <Label htmlFor="product-slug">{t("identityStep.slugLabel")}</Label>
         <Input
           id="product-slug"
           value={slug}
@@ -73,7 +75,10 @@ export function IdentityStep({
       </div>
 
       <div className="grid gap-1.5">
-        <Label htmlFor="product-status">Statut</Label>
+        <Label htmlFor="product-status">{t("identityStep.statusLabel")}</Label>
+        {/* Décisions de portée (specs/I18N-BACKOFFICE-STRINGS.md): Test/Learn/
+            Scale are English loanwords already, identical in fr and en —
+            hardcoded, not routed through a message key. */}
         <select
           id="product-status"
           className="h-9 rounded-md border border-input bg-transparent px-3 text-sm disabled:opacity-50"
@@ -88,7 +93,9 @@ export function IdentityStep({
       </div>
 
       <div className="grid gap-1.5">
-        <Label htmlFor="product-locale">Langue</Label>
+        <Label htmlFor="product-locale">{t("identityStep.localeLabel")}</Label>
+        {/* Décisions de portée: Français/English are the product's own
+            language endonyms (like locale-switcher.tsx), never translated. */}
         <select
           id="product-locale"
           className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"

@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/react";
 import { fireEvent, screen } from "@testing-library/dom";
+import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import en from "@/messages/en/backoffice-portfolio.json";
+import fr from "@/messages/fr/backoffice-portfolio.json";
 import { LoginForm } from "./login-form";
 
 const { login } = vi.hoisted(() => ({ login: vi.fn() }));
@@ -13,10 +16,19 @@ afterEach(() => {
   login.mockClear();
 });
 
+function renderUi(locale: "fr" | "en" = "fr") {
+  const messages = locale === "fr" ? fr : en;
+  return render(
+    <NextIntlClientProvider locale={locale} messages={{ "backoffice-portfolio": messages }}>
+      <LoginForm />
+    </NextIntlClientProvider>,
+  );
+}
+
 describe("LoginForm", () => {
   it("renders an empty, required email field with no placeholder", () => {
     login.mockResolvedValue({});
-    render(<LoginForm />);
+    renderUi();
 
     const email = screen.getByLabelText("Email") as HTMLInputElement;
     expect(email.type).toBe("email");
@@ -29,7 +41,7 @@ describe("LoginForm", () => {
 
   it("renders an empty, required password field with no placeholder", () => {
     login.mockResolvedValue({});
-    render(<LoginForm />);
+    renderUi();
 
     const password = screen.getByLabelText("Mot de passe") as HTMLInputElement;
     expect(password.type).toBe("password");
@@ -41,7 +53,7 @@ describe("LoginForm", () => {
 
   it("renders exactly one 'Se connecter' button and no demo-prefill button", () => {
     login.mockResolvedValue({});
-    render(<LoginForm />);
+    renderUi();
 
     expect(screen.getAllByRole("button")).toHaveLength(1);
     expect(screen.getByRole("button", { name: "Se connecter" })).toBeTruthy();
@@ -50,14 +62,17 @@ describe("LoginForm", () => {
 
   it("shows the returned error as an alert and passes the typed values to the action", async () => {
     login.mockResolvedValue({ error: "Identifiants invalides" });
-    render(<LoginForm />);
+    renderUi();
 
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "someone@example.test" } });
     fireEvent.change(screen.getByLabelText("Mot de passe"), { target: { value: "wrong-password" } });
     fireEvent.submit(screen.getByLabelText("Email").closest("form")!);
 
     await vi.waitFor(() => expect(screen.getByRole("alert").textContent).toBe("Identifiants invalides"));
-    const [, formData] = login.mock.calls[0] as [unknown, FormData];
+    // login.bind(null, locale) prepends locale (I18N-BACKOFFICE-STRINGS spec
+    // "Server Actions"): useActionState then supplies (prevState, formData).
+    const [locale, , formData] = login.mock.calls[0] as [string, unknown, FormData];
+    expect(locale).toBe("fr");
     expect(formData.get("email")).toBe("someone@example.test");
     expect(formData.get("password")).toBe("wrong-password");
   });
@@ -69,7 +84,7 @@ describe("LoginForm", () => {
         resolveLogin = resolve;
       }),
     );
-    render(<LoginForm />);
+    renderUi();
 
     fireEvent.submit(screen.getByLabelText("Email").closest("form")!);
 
@@ -77,5 +92,19 @@ describe("LoginForm", () => {
       expect((screen.getByRole("button", { name: "Se connecter" }) as HTMLButtonElement).disabled).toBe(true),
     );
     resolveLogin({});
+  });
+
+  it("renders English labels and binds the 'en' locale to the action", async () => {
+    login.mockResolvedValue({});
+    renderUi("en");
+
+    expect(screen.getByLabelText("Email")).toBeTruthy();
+    expect(screen.getByLabelText("Password")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeTruthy();
+
+    fireEvent.submit(screen.getByLabelText("Email").closest("form")!);
+    await vi.waitFor(() => expect(login).toHaveBeenCalled());
+    const [locale] = login.mock.calls[0] as [string];
+    expect(locale).toBe("en");
   });
 });

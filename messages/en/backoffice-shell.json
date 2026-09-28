@@ -1,0 +1,11 @@
+{
+  "nav": {
+    "portfolio": "Portfolio",
+    "themes": "Themes",
+    "settings": "Settings"
+  },
+  "signOut": {
+    "button": "Sign out",
+    "error": "Unable to sign out"
+  }
+}

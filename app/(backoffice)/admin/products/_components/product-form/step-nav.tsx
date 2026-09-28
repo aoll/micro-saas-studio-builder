@@ -1,16 +1,20 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { cn } from "@/components/utils";
 
-// BO-05's 7 steps (docs/02-ecrans.md › BO-05 en détail).
-export const STEPS: { step: number; title: string }[] = [
-  { step: 1, title: "Identité" },
-  { step: 2, title: "Thème" },
-  { step: 3, title: "Landing & SEO" },
-  { step: 4, title: "Champs de l'outil" },
-  { step: 5, title: "Génération" },
-  { step: 6, title: "Pricing" },
-  { step: 7, title: "Récapitulatif" },
+// BO-05's 7 steps (docs/02-ecrans.md › BO-05 en détail). `titleKey` indexes
+// `backoffice-product-form-b1.stepNav.steps` (messages/{fr,en}/…): the
+// displayed title is resolved inside StepNav itself, not stored here, so it
+// follows the admin's chosen backoffice locale (I18N-BACKOFFICE-STRINGS).
+export const STEPS: { step: number; titleKey: string }[] = [
+  { step: 1, titleKey: "identity" },
+  { step: 2, titleKey: "theme" },
+  { step: 3, titleKey: "landing" },
+  { step: 4, titleKey: "fields" },
+  { step: 5, titleKey: "generation" },
+  { step: 6, titleKey: "pricing" },
+  { step: 7, titleKey: "summary" },
 ];
 
 export function StepNav({
@@ -22,10 +26,12 @@ export function StepNav({
   onSelect: (step: number) => void;
   stepErrors: Record<number, boolean>;
 }) {
+  const t = useTranslations("backoffice-product-form-b1.stepNav");
+
   return (
-    <nav aria-label="Étapes du formulaire">
+    <nav aria-label={t("ariaLabel")}>
       <ol className="grid gap-1">
-        {STEPS.map(({ step, title }) => (
+        {STEPS.map(({ step, titleKey }) => (
           <li key={step}>
             <button
               type="button"
@@ -38,7 +44,7 @@ export function StepNav({
                 stepErrors[step] && "text-destructive",
               )}
             >
-              {`${step}. ${title}`}
+              {`${step}. ${t(`steps.${titleKey}`)}`}
             </button>
           </li>
         ))}

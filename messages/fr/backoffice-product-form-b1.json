@@ -1,0 +1,54 @@
+{
+  "stepNav": {
+    "ariaLabel": "Étapes du formulaire",
+    "steps": {
+      "identity": "Identité",
+      "theme": "Thème",
+      "landing": "Landing & SEO",
+      "fields": "Champs de l'outil",
+      "generation": "Génération",
+      "pricing": "Pricing",
+      "summary": "Récapitulatif"
+    }
+  },
+  "generationStep": {
+    "systemPromptLabel": "Prompt système",
+    "modelLabel": "Modèle",
+    "promptTemplateLabel": "Template de prompt",
+    "outputTypeLabel": "Type de sortie",
+    "markdown": "Markdown",
+    "imageComingSoon": "Image (bientôt)",
+    "comingSoonTooltip": "Bientôt disponible",
+    "unmatchedVariable": "Variable '{{'{variable}'}}' sans champ correspondant"
+  },
+  "pricingStep": {
+    "freeCreditsLabel": "Crédits offerts à l'inscription",
+    "anonymousGenerationsLabel": "Générations anonymes gratuites",
+    "costPerGenerationLabel": "Coût par génération (crédits)",
+    "packsTitle": "Packs de crédits",
+    "addPack": "Ajouter un pack",
+    "marginHint": "Marge par génération estimée à partir d'un {source}.",
+    "costSourceMeasured": "coût mesuré",
+    "costSourceEstimated": "coût estimé",
+    "packCreditsLabel": "Crédits",
+    "packPriceLabel": "Prix (€)",
+    "packRecommendedLabel": "Recommandé",
+    "packMargin": "{price} · marge {margin} par génération",
+    "removePack": "Supprimer ce pack"
+  },
+  "productForm": {
+    "previous": "Précédent",
+    "save": "Enregistrer",
+    "next": "Suivant",
+    "checkingSlug": "Vérification…",
+    "versionStatus": "brouillon v{draft} · en ligne v{published}",
+    "stepUnavailableBanner": "Cette configuration a des erreurs dans une étape pas encore disponible.",
+    "draftSaved": "Brouillon enregistré · version {version}",
+    "productPublished": "Produit publié · version {version}",
+    "configImported": "Configuration importée",
+    "configImportedWithErrors": "Configuration importée avec des erreurs à corriger",
+    "slugUnavailable": "Slug indisponible",
+    "slugCheckFailed": "Impossible de vérifier la disponibilité du slug, réessayez.",
+    "previewSlugPlaceholder": "votre-produit"
+  }
+}

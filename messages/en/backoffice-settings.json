@@ -1,0 +1,37 @@
+{
+  "title": "Decision threshold settings",
+  "defaultsForm": {
+    "heading": "Studio default thresholds",
+    "minVisits": "Minimum visits",
+    "killConversion": "\"Cut\" conversion (%)",
+    "scaleConversion": "\"Scale\" conversion (%)",
+    "positiveMargin": "Require positive margin to scale",
+    "submit": "Save",
+    "saved": "Default thresholds saved"
+  },
+  "overrideForm": {
+    "heading": "Per-product override",
+    "empty": "No product to override.",
+    "pickerLabel": "Product to override",
+    "productTitle": "{name}{overridden, select, yes { (overridden)} other {}}",
+    "minVisits": "Minimum visits (product)",
+    "killConversion": "\"Cut\" conversion (%) (product)",
+    "scaleConversion": "\"Scale\" conversion (%) (product)",
+    "positiveMargin": "Require positive margin to scale (product)",
+    "submit": "Save override",
+    "reset": "Reset",
+    "saved": "Override saved",
+    "resetDone": "Override reset"
+  },
+  "preview": {
+    "heading": "Badges that would change:"
+  },
+  "errors": {
+    "minVisitsTooSmall": "Must be at least {minimum}",
+    "tooBig": "Must not exceed {maximum}",
+    "invalidValue": "Invalid value",
+    "scaleGreaterThanKill": "The \"scale\" threshold must be greater than the \"cut\" threshold",
+    "invalidProduct": "Invalid product",
+    "productNotFound": "Product not found"
+  }
+}

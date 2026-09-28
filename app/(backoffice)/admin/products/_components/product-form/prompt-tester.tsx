@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +33,7 @@ export function PromptTester({
   onTest: (sample: Record<string, string>) => Promise<PromptTestResult>;
   onTested?: (result: PromptTestResult) => void;
 }) {
+  const t = useTranslations("backoffice-product-form-b2.promptTester");
   const [sample, setSample] = useState<Record<string, string>>({});
   const [pending, setPending] = useState(false);
   const [result, setResult] = useState<PromptTestResult>({});
@@ -59,7 +61,7 @@ export function PromptTester({
       ))}
 
       <Button type="button" onClick={handleTest} disabled={pending}>
-        {pending ? "Test en cours…" : "Tester le prompt"}
+        {pending ? t("testing") : t("test")}
       </Button>
 
       {result.error ? (
@@ -72,7 +74,11 @@ export function PromptTester({
         <div className="grid gap-1 text-sm">
           <p className="whitespace-pre-wrap">{result.output}</p>
           <p className="text-muted-foreground">
-            {result.inputTokens} entrée / {result.outputTokens} sortie · {formatUsd(result.costMicros ?? 0)}
+            {t("result", {
+              inputTokens: result.inputTokens ?? 0,
+              outputTokens: result.outputTokens ?? 0,
+              cost: formatUsd(result.costMicros ?? 0),
+            })}
           </p>
         </div>
       ) : null}

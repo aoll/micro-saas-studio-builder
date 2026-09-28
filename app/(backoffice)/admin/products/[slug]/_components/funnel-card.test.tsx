@@ -12,15 +12,17 @@ function row(overrides: Partial<FunnelRow> = {}): FunnelRow {
 }
 
 describe("FunnelCard", () => {
-  it("shows each row's label, count and pass rate", () => {
+  it("shows the given title (not a hardcoded one) and each row's label, count and pass rate", () => {
     render(
       <FunnelCard
+        title="Funnel (translated)"
         rows={[
           row(),
           row({ type: "first_generation", label: "1re génération", count: "400", rate: "33,3 %", widthPercent: 33 }),
         ]}
       />,
     );
+    expect(screen.getByText("Funnel (translated)")).toBeTruthy();
     expect(screen.getByText("Visites landing")).toBeTruthy();
     expect(screen.getByText("1 200")).toBeTruthy();
     expect(screen.getByText("1re génération")).toBeTruthy();
@@ -29,7 +31,7 @@ describe("FunnelCard", () => {
   });
 
   it("sets each bar's width from widthPercent", () => {
-    render(<FunnelCard rows={[row({ widthPercent: 42 })]} />);
+    render(<FunnelCard title="Funnel" rows={[row({ widthPercent: 42 })]} />);
     const bar = screen.getByTestId("funnel-bar-visit");
     expect(bar.style.width).toBe("42%");
   });

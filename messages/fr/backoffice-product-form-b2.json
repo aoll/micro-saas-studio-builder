@@ -1,0 +1,67 @@
+{
+  "actions": {
+    "configUnreadable": "Configuration illisible",
+    "themeNotFound": "Thème introuvable",
+    "slugAlreadyUsed": "Ce slug est déjà utilisé",
+    "slugInvalid": "Slug invalide",
+    "productNotFound": "Produit introuvable",
+    "slugReserved": "Ce slug est réservé",
+    "slugFormatInvalid": "Format de slug invalide",
+    "noFileReceived": "Aucun fichier reçu",
+    "logoTooLarge": "Le logo dépasse 512 Ko",
+    "logoFormatsAccepted": "Formats acceptés : PNG, JPEG, WebP",
+    "logoUploadFailed": "Échec de l'envoi du logo",
+    "tooManyTests": "Trop de tests pour le moment, réessayez dans un instant.",
+    "toolFieldsInvalid": "Les champs de l'outil sont invalides",
+    "generationConfigInvalid": "La configuration de génération est invalide",
+    "modelNotAllowed": "Modèle non autorisé",
+    "variableWithoutField": "Variable {variable} sans champ correspondant",
+    "imageOutputNotAvailable": "La sortie image n'est pas encore disponible",
+    "sampleUnreadable": "Échantillon illisible",
+    "sampleInvalid": "Échantillon invalide",
+    "fillRequiredSampleFields": "Complétez les champs obligatoires de l'échantillon",
+    "testGenerationRefused": "Le modèle a refusé l'échantillon : demande jugée hors sujet.",
+    "testGenerationFailed": "La génération de test a échoué"
+  },
+  "validation": {
+    "fieldRequired": "Ce champ est requis",
+    "minChars": "{min} caractères minimum",
+    "maxChars": "{max} caractères maximum",
+    "minNumberInclusive": "Minimum : {min}",
+    "minNumberExclusive": "Doit être supérieur à {min}",
+    "maxNumberInclusive": "Maximum : {max}",
+    "maxNumberExclusive": "Doit être inférieur à {max}",
+    "mustBeInteger": "Doit être un nombre entier",
+    "slugReserved": "Ce slug est réservé",
+    "slugFormat": "Le slug doit être en minuscules, séparé par des tirets",
+    "keyAlreadyUsed": "Clé déjà utilisée",
+    "packIdAlreadyUsed": "Identifiant de pack déjà utilisé",
+    "selectNeedsOption": "Un champ liste déroulante doit avoir au moins une option",
+    "keyMustStartLowercase": "La clé doit commencer par une lettre minuscule",
+    "modelFormat": "Doit être au format « fournisseur/modèle »",
+    "colorFormat": "Doit être une couleur au format #rrggbb",
+    "idFormat": "Doit être un identifiant en minuscules, séparé par des tirets"
+  },
+  "summary": {
+    "name": "Nom",
+    "slug": "Slug",
+    "theme": "Thème",
+    "inputsCount": "Champs de l'outil",
+    "packsCount": "Packs de crédits",
+    "publish": "Publier",
+    "published": "Produit publié",
+    "viewProduct": "Voir {url}"
+  },
+  "promptTester": {
+    "test": "Tester le prompt",
+    "testing": "Test en cours…",
+    "result": "{inputTokens} entrée / {outputTokens} sortie · {cost}"
+  },
+  "landingPreview": {
+    "ariaLabel": "Aperçu de la landing",
+    "previewTitle": "Aperçu · /{slug}",
+    "headlinePlaceholder": "Votre titre apparaîtra ici",
+    "cta": "Essayer gratuitement",
+    "pack": "{credits} crédits · {price}"
+  }
+}

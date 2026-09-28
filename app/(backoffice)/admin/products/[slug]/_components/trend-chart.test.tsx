@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
+import { NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import fr from "@/messages/fr/backoffice-product-sheet.json";
+import en from "@/messages/en/backoffice-product-sheet.json";
 import type { TrendPoint } from "./sheet";
 import { TrendChart } from "./trend-chart";
 
@@ -24,19 +27,37 @@ const points: TrendPoint[] = [
   { date: "02/09", visits: 20, purchases: 2 },
 ];
 
+// TrendChart is a 'use client' leaf (Recharts): translated with useTranslations, so it needs a
+// real NextIntlClientProvider (mirrors components/product/pack-card.test.tsx) instead of the
+// next-intl/server mock used by the sheet's Server Components.
+function renderWithLocale(locale: "fr" | "en", ui: React.ReactElement) {
+  const messages = { "backoffice-product-sheet": locale === "fr" ? fr : en };
+  return render(
+    <NextIntlClientProvider locale={locale} messages={messages}>
+      {ui}
+    </NextIntlClientProvider>,
+  );
+}
+
 describe("TrendChart", () => {
   it("shows an HTML legend naming the two series", () => {
-    render(<TrendChart points={points} />);
+    renderWithLocale("fr", <TrendChart points={points} />);
     expect(screen.getByText("Visites")).toBeTruthy();
     expect(screen.getByText("Achats")).toBeTruthy();
   });
 
   it("draws the two series in distinct colours, purchases dashed, like the BO-03 mockup", () => {
-    render(<TrendChart points={points} />);
+    renderWithLocale("fr", <TrendChart points={points} />);
     const visits = screen.getByTestId("legend-visits");
     const purchases = screen.getByTestId("legend-purchases");
     expect(visits.style.borderColor).not.toBe(purchases.style.borderColor);
     expect(visits.style.borderStyle).toBe("solid");
     expect(purchases.style.borderStyle).toBe("dashed");
+  });
+
+  it("shows the English legend when the locale is en", () => {
+    renderWithLocale("en", <TrendChart points={points} />);
+    expect(screen.getByText("Visits")).toBeTruthy();
+    expect(screen.getByText("Purchases")).toBeTruthy();
   });
 });

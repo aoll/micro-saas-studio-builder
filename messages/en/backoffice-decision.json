@@ -1,0 +1,63 @@
+{
+  "panel": {
+    "title": "Status and decision thresholds",
+    "thresholds": {
+      "minVisits": "Minimum visits",
+      "killMaxConversion": "Conversion below which to cut",
+      "scaleMinConversion": "Conversion from which to scale",
+      "positiveMarginRequired": "Positive margin required"
+    },
+    "yes": "Yes",
+    "no": "No",
+    "current": {
+      "visits": "Visits",
+      "conversion": "Conversion",
+      "margin": "Margin / generation"
+    },
+    "suggestion": {
+      "notEnoughVisits": {
+        "headline": "Not enough visits to decide",
+        "detail": "{visits} / {minVisits}"
+      },
+      "thresholdReached": {
+        "headline": "Decision threshold reached",
+        "detailKill": "Suggested status: Killed (cut)",
+        "detailScale": "Suggested status: Scale (scale)"
+      },
+      "none": {
+        "headline": "No suggestion",
+        "detail": "keep observing"
+      }
+    }
+  },
+  "gauge": {
+    "ariaLabel": "Position relative to the decision thresholds",
+    "zone": {
+      "cut": "cut",
+      "neutralZone": "neutral zone",
+      "scale": "scale"
+    },
+    "gateNotMet": "Visit threshold not reached ({visits} / {minVisits}) — indicative trend only, no verdict yet."
+  },
+  "statusChange": {
+    "trigger": "Change status",
+    "dialogTitle": "Change the status of {name}",
+    "newStatus": "New status",
+    "numbersTitle": "What the numbers say",
+    "visits": "Visits",
+    "conversion": "Conversion",
+    "margin": "Margin / generation",
+    "noteLabel": "Decision note",
+    "killedWarning": "Switching {name} to Killed closes the product: /{slug} will show \"product not found\" to visitors.",
+    "cancel": "Cancel",
+    "confirm": "Switch to {status}",
+    "confirmPending": "Switch to …",
+    "successToast": "Status updated"
+  },
+  "errors": {
+    "productNotFound": "Product not found",
+    "noteTooLong": "Note too long (500 characters max)",
+    "invalidStatus": "Invalid status",
+    "updateFailed": "Status could not be changed"
+  }
+}

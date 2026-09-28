@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRef } from "react";
 import type { ProductConfig } from "@/lib/schemas/product-config";
 import { templateVariables } from "@/lib/schemas/product-config";
@@ -43,11 +44,12 @@ export function GenerationStep({
   errors: Record<string, string>;
   onChange: (patch: GenerationPatch) => void;
 }) {
+  const t = useTranslations("backoffice-product-form-b1.generationStep");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const fieldKeys = new Set(inputs.map((input) => input.key));
   const unknownVariables = templateVariables(generation.promptTemplate).filter((variable) => !fieldKeys.has(variable));
-  const liveError = unknownVariables[0] ? `Variable {{${unknownVariables[0]}}} sans champ correspondant` : undefined;
+  const liveError = unknownVariables[0] ? t("unmatchedVariable", { variable: unknownVariables[0] }) : undefined;
   const templateError = errors["generation.promptTemplate"] ?? liveError;
 
   function insertChip(key: string) {
@@ -61,7 +63,7 @@ export function GenerationStep({
   return (
     <div className="grid gap-4">
       <div className="grid gap-1.5">
-        <Label htmlFor="generation-system-prompt">Prompt système</Label>
+        <Label htmlFor="generation-system-prompt">{t("systemPromptLabel")}</Label>
         <Textarea
           id="generation-system-prompt"
           rows={3}
@@ -71,7 +73,7 @@ export function GenerationStep({
       </div>
 
       <div className="grid gap-1.5">
-        <Label htmlFor="generation-model">Modèle</Label>
+        <Label htmlFor="generation-model">{t("modelLabel")}</Label>
         <select
           id="generation-model"
           className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
@@ -87,7 +89,7 @@ export function GenerationStep({
       </div>
 
       <div className="grid gap-1.5">
-        <Label htmlFor="generation-prompt-template">Template de prompt</Label>
+        <Label htmlFor="generation-prompt-template">{t("promptTemplateLabel")}</Label>
         {inputs.length > 0 ? (
           <div className="flex flex-wrap gap-1.5">
             {inputs.map((input) => (
@@ -114,8 +116,8 @@ export function GenerationStep({
       </div>
 
       <div className="grid gap-1.5">
-        <span className="text-sm font-medium">Type de sortie</span>
-        <div role="radiogroup" aria-label="Type de sortie" className="flex gap-3">
+        <span className="text-sm font-medium">{t("outputTypeLabel")}</span>
+        <div role="radiogroup" aria-label={t("outputTypeLabel")} className="flex gap-3">
           <button
             type="button"
             role="radio"
@@ -126,17 +128,17 @@ export function GenerationStep({
               generation.outputType === "markdown" ? "border-primary bg-accent" : "hover:bg-muted",
             )}
           >
-            Markdown
+            {t("markdown")}
           </button>
           <button
             type="button"
             role="radio"
             aria-checked={false}
             disabled
-            title="Bientôt disponible"
+            title={t("comingSoonTooltip")}
             className="cursor-not-allowed rounded-md border px-3 py-1.5 text-sm opacity-50"
           >
-            Image (bientôt)
+            {t("imageComingSoon")}
           </button>
         </div>
       </div>

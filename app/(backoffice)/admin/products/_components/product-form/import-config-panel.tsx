@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { Theme } from "@/lib/dal/themes";
 import type { ProductConfig } from "@/lib/schemas/product-config";
@@ -26,16 +27,21 @@ export function ImportConfigPanel({
 }) {
   const [raw, setRaw] = useState("");
   const [formError, setFormError] = useState<string | undefined>(undefined);
+  const t = useTranslations("backoffice-product-form-a");
+  const tValidation = useTranslations("backoffice-product-form-b2");
 
   function handleImport() {
-    const result = parseImportedConfig(raw, themes, currentThemeId);
+    const result = parseImportedConfig(raw, themes, currentThemeId, tValidation);
     if (result.ok) {
       setFormError(undefined);
       onImport(result.config);
       return;
     }
     if ("formError" in result) {
-      setFormError(result.formError);
+      // `result.formError` is a stable code ("malformed_json"), not a
+      // message (import-config.ts): translated here, the one place this
+      // panel actually renders it.
+      setFormError(t("importPanel.malformedJson"));
       return;
     }
     setFormError(undefined);
@@ -44,7 +50,7 @@ export function ImportConfigPanel({
 
   return (
     <div className="grid gap-2 rounded-md border p-3">
-      <Label htmlFor="import-config-textarea">Coller une configuration JSON</Label>
+      <Label htmlFor="import-config-textarea">{t("importPanel.pasteLabel")}</Label>
       <Textarea
         id="import-config-textarea"
         rows={4}
@@ -54,7 +60,7 @@ export function ImportConfigPanel({
       />
       <div className="flex items-center gap-2">
         <Button type="button" variant="outline" size="sm" onClick={handleImport}>
-          Importer
+          {t("importPanel.importButton")}
         </Button>
         {formError ? (
           <p role="alert" className="text-sm text-destructive">

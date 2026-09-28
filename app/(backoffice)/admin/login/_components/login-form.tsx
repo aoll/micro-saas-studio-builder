@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,16 +10,22 @@ import { login, type LoginState } from "../_actions";
 const initialState: LoginState = {};
 
 export function LoginForm({ prefill }: { prefill?: { email: string; password: string } }) {
-  const [state, formAction, pending] = useActionState(login, initialState);
+  const t = useTranslations("backoffice-portfolio");
+  // I18N-BACKOFFICE-STRINGS (spec "Server Actions"): the client-side locale
+  // is bound as the action's first argument, before the (prevState,
+  // formData) pair useActionState supplies — login() calls getTranslations
+  // with it, never app() nor cookies() (both throw in a Server Action).
+  const locale = useLocale() as "fr" | "en";
+  const [state, formAction, pending] = useActionState(login.bind(null, locale), initialState);
 
   return (
     <form action={formAction} className="grid gap-4">
       <div className="grid gap-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{t("login.emailLabel")}</Label>
         <Input id="email" name="email" type="email" autoComplete="email" defaultValue={prefill?.email ?? ""} required />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="password">Mot de passe</Label>
+        <Label htmlFor="password">{t("login.passwordLabel")}</Label>
         <Input
           id="password"
           name="password"
@@ -34,7 +41,7 @@ export function LoginForm({ prefill }: { prefill?: { email: string; password: st
         </p>
       ) : null}
       <Button type="submit" disabled={pending} className="w-full">
-        Se connecter
+        {t("login.submit")}
       </Button>
     </form>
   );

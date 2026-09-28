@@ -1,11 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
+import { createTranslator } from "next-intl";
 import { redirect } from "next/navigation";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/auth-schema";
 import { products, themes } from "@/lib/db/schema";
 import { SEED_OWNER } from "@/scripts/seed";
+import frDecision from "@/messages/fr/backoffice-decision.json";
+import enDecision from "@/messages/en/backoffice-decision.json";
 
 class RedirectMarker extends Error {
   constructor(public url: string) {
@@ -13,8 +16,29 @@ class RedirectMarker extends Error {
   }
 }
 
+// I18N-BACKOFFICE-STRINGS (lot 3, Contract): every call order below records
+// which mock ran first, so "checks admin before anything else" can assert
+// getTranslations() never runs ahead of requireAdmin() — the spec's
+// explicit ordering rule (require-admin-coverage.test.ts only scans
+// page.tsx files, not _actions.ts, so this file is where that order is
+// actually verified for setProductStatus).
+const callOrder: string[] = [];
+
 const requireAdmin = vi.fn();
-vi.mock("@/lib/dal/session", () => ({ requireAdmin: () => requireAdmin() }));
+vi.mock("@/lib/dal/session", () => ({
+  requireAdmin: () => {
+    callOrder.push("requireAdmin");
+    return requireAdmin();
+  },
+}));
+
+const messagesByLocale = { fr: frDecision, en: enDecision };
+vi.mock("next-intl/server", () => ({
+  getTranslations: async ({ locale, namespace }: { locale: "fr" | "en"; namespace: "backoffice-decision" }) => {
+    callOrder.push("getTranslations");
+    return createTranslator({ locale, messages: { "backoffice-decision": messagesByLocale[locale] }, namespace });
+  },
+}));
 
 const getProduct = vi.fn();
 vi.mock("@/lib/dal/products", () => ({ getProduct: (slug: string) => getProduct(slug) }));
@@ -37,6 +61,7 @@ afterEach(() => {
   getProduct.mockReset();
   updateStatus.mockReset();
   updateTag.mockReset();
+  callOrder.length = 0;
 });
 
 function currentAdmin() {
@@ -51,40 +76,83 @@ function formDataFor({ status, note }: { status?: string; note?: string }): Form
 }
 
 describe("setProductStatus", () => {
-  it("checks admin before anything else", async () => {
+  it("checks admin before anything else, including before getTranslations", async () => {
     requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
     const { setProductStatus } = await import("./_actions");
-    await expect(setProductStatus("my-product", {}, formDataFor({ status: "scale" }))).rejects.toThrow(
+    await expect(setProductStatus("my-product", "fr", {}, formDataFor({ status: "scale" }))).rejects.toThrow(
       "redirect:/admin/login",
     );
     expect(getProduct).not.toHaveBeenCalled();
     expect(updateStatus).not.toHaveBeenCalled();
+    expect(callOrder).toEqual(["requireAdmin"]);
+  });
+
+  it("calls getTranslations right after requireAdmin(), on the happy path", async () => {
+    currentAdmin();
+    const productId = randomUUID();
+    getProduct.mockResolvedValue({ id: productId });
+    updateStatus.mockResolvedValue(undefined);
+    const { setProductStatus } = await import("./_actions");
+
+    await setProductStatus("my-product", "fr", {}, formDataFor({ status: "scale" }));
+    expect(callOrder[0]).toBe("requireAdmin");
+    expect(callOrder[1]).toBe("getTranslations");
+  });
+
+  // A Server Action is a public POST endpoint (CLAUDE.md): a tampered or
+  // missing locale must never throw or crash the request, it degrades to
+  // French — the same default i18n/request.ts's own backoffice branch uses
+  // when the admin_locale cookie is missing or invalid.
+  it("falls back to French error messages for a tampered/invalid locale, instead of throwing", async () => {
+    currentAdmin();
+    const { setProductStatus } = await import("./_actions");
+    const result = await setProductStatus("Not A Slug", "de" as never, {}, formDataFor({ status: "scale" }));
+    expect(result.formError).toBe("Produit introuvable");
   });
 
   it("returns a form error for an invalid slug, without calling the DAL", async () => {
     currentAdmin();
     const { setProductStatus } = await import("./_actions");
-    const result = await setProductStatus("Not A Slug", {}, formDataFor({ status: "scale" }));
+    const result = await setProductStatus("Not A Slug", "fr", {}, formDataFor({ status: "scale" }));
     expect(result.formError).toBe("Produit introuvable");
     expect(getProduct).not.toHaveBeenCalled();
     expect(updateStatus).not.toHaveBeenCalled();
     expect(updateTag).not.toHaveBeenCalled();
   });
 
+  it("returns the invalid-slug error in English when the locale is en", async () => {
+    currentAdmin();
+    const { setProductStatus } = await import("./_actions");
+    const result = await setProductStatus("Not A Slug", "en", {}, formDataFor({ status: "scale" }));
+    expect(result.formError).toBe("Product not found");
+  });
+
   it("returns a form error for an invalid status, without calling the DAL", async () => {
     currentAdmin();
     const { setProductStatus } = await import("./_actions");
-    const result = await setProductStatus("my-product", {}, formDataFor({ status: "not-a-status" }));
+    const result = await setProductStatus("my-product", "fr", {}, formDataFor({ status: "not-a-status" }));
     expect(result.formError).toBe("Statut invalide");
     expect(getProduct).not.toHaveBeenCalled();
     expect(updateStatus).not.toHaveBeenCalled();
     expect(updateTag).not.toHaveBeenCalled();
   });
 
+  it("returns the invalid-status error in English when the locale is en", async () => {
+    currentAdmin();
+    const { setProductStatus } = await import("./_actions");
+    const result = await setProductStatus("my-product", "en", {}, formDataFor({ status: "not-a-status" }));
+    expect(result.formError).toBe("Invalid status");
+  });
+
   it("returns a form error for a note over 500 characters, without calling the DAL", async () => {
     currentAdmin();
     const { setProductStatus } = await import("./_actions");
-    const result = await setProductStatus("my-product", {}, formDataFor({ status: "scale", note: "a".repeat(501) }));
+    const result = await setProductStatus(
+      "my-product",
+      "fr",
+      {},
+      formDataFor({ status: "scale", note: "a".repeat(501) }),
+    );
     expect(result.formError).toBe("Note trop longue (500 caractères max)");
     expect(updateStatus).not.toHaveBeenCalled();
     expect(updateTag).not.toHaveBeenCalled();
@@ -97,11 +165,11 @@ describe("setProductStatus", () => {
     updateStatus.mockResolvedValue(undefined);
     const { setProductStatus } = await import("./_actions");
 
-    await setProductStatus("my-product", {}, formDataFor({ status: "learn", note: "  a note  " }));
+    await setProductStatus("my-product", "fr", {}, formDataFor({ status: "learn", note: "  a note  " }));
     expect(updateStatus).toHaveBeenCalledWith(productId, "learn", "a note");
 
     updateStatus.mockClear();
-    await setProductStatus("my-product", {}, formDataFor({ status: "learn", note: "   " }));
+    await setProductStatus("my-product", "fr", {}, formDataFor({ status: "learn", note: "   " }));
     expect(updateStatus).toHaveBeenCalledWith(productId, "learn", null);
   });
 
@@ -109,7 +177,7 @@ describe("setProductStatus", () => {
     currentAdmin();
     getProduct.mockResolvedValue(null);
     const { setProductStatus } = await import("./_actions");
-    const result = await setProductStatus("missing-product", {}, formDataFor({ status: "scale" }));
+    const result = await setProductStatus("missing-product", "fr", {}, formDataFor({ status: "scale" }));
     expect(result.formError).toBe("Produit introuvable");
     expect(updateStatus).not.toHaveBeenCalled();
     expect(updateTag).not.toHaveBeenCalled();
@@ -122,7 +190,7 @@ describe("setProductStatus", () => {
     updateStatus.mockResolvedValue(undefined);
     const { setProductStatus } = await import("./_actions");
 
-    const result = await setProductStatus("my-product", {}, formDataFor({ status: "killed", note: "decision" }));
+    const result = await setProductStatus("my-product", "fr", {}, formDataFor({ status: "killed", note: "decision" }));
     expect(result).toEqual({ ok: true });
     expect(updateStatus).toHaveBeenCalledWith(productId, "killed", "decision");
     expect(updateTag).toHaveBeenCalledWith("product:my-product");
@@ -138,10 +206,23 @@ describe("setProductStatus", () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const { setProductStatus } = await import("./_actions");
 
-    const result = await setProductStatus("my-product", {}, formDataFor({ status: "killed" }));
+    const result = await setProductStatus("my-product", "fr", {}, formDataFor({ status: "killed" }));
     expect(result.formError).toBe("Le statut n'a pas pu être changé");
     expect(updateTag).not.toHaveBeenCalled();
     expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it("returns the update-failed error in English when the locale is en", async () => {
+    currentAdmin();
+    const productId = randomUUID();
+    getProduct.mockResolvedValue({ id: productId });
+    updateStatus.mockRejectedValue(new Error("locked"));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { setProductStatus } = await import("./_actions");
+
+    const result = await setProductStatus("my-product", "en", {}, formDataFor({ status: "killed" }));
+    expect(result.formError).toBe("Status could not be changed");
     consoleError.mockRestore();
   });
 
@@ -163,7 +244,9 @@ describe("setProductStatus", () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const { setProductStatus } = await import("./_actions");
 
-    await expect(setProductStatus("my-product", {}, formDataFor({ status: "killed" }))).rejects.toBe(redirectError);
+    await expect(setProductStatus("my-product", "fr", {}, formDataFor({ status: "killed" }))).rejects.toBe(
+      redirectError,
+    );
     expect(consoleError).not.toHaveBeenCalled();
     expect(updateTag).not.toHaveBeenCalled();
     consoleError.mockRestore();
@@ -191,7 +274,7 @@ describe("setProductStatus", () => {
       .returning({ id: products.id });
 
     const { setProductStatus } = await import("./_actions");
-    const result = await setProductStatus(slug, {}, formDataFor({ status: "scale" }));
+    const result = await setProductStatus(slug, "fr", {}, formDataFor({ status: "scale" }));
     expect(result.formError).toBe("Produit introuvable");
     expect(updateStatus).not.toHaveBeenCalled();
     expect(updateTag).not.toHaveBeenCalled();

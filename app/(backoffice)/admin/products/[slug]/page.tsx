@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { getFunnel } from "@/lib/dal/metrics";
 import { getProduct } from "@/lib/dal/products";
@@ -24,11 +25,14 @@ export async function ProductSheet({ params }: { params: Promise<{ slug: string 
   const product = await getProduct(slug);
   if (!product) notFound();
 
-  const [funnel, thresholds] = await Promise.all([
+  const [funnel, thresholds, t, localeRaw] = await Promise.all([
     getFunnel(product.id, { days: RANGE_DAYS }),
     getThresholds(product.id),
+    getTranslations("backoffice-product-sheet"),
+    getLocale(),
   ]);
-  const sheet = toProductSheet(funnel, thresholds);
+  const locale = localeRaw as "fr" | "en";
+  const sheet = toProductSheet(funnel, thresholds, t, locale);
 
   return <ProductSheetView sheet={sheet} />;
 }

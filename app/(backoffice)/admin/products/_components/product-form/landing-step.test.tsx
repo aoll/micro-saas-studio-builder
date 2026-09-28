@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
+import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import en from "@/messages/en/backoffice-product-form-a.json";
+import fr from "@/messages/fr/backoffice-product-form-a.json";
 import type { LandingDraft } from "./form-values";
 import { LandingStep } from "./landing-step";
 
@@ -15,9 +18,17 @@ const baseLanding: LandingDraft = {
   seoDescription: "",
 };
 
-function setup(landing: LandingDraft = baseLanding, errors: Record<string, string> = {}) {
+// I18N-BACKOFFICE-STRINGS lot 4: LandingStep now reads its labels through
+// useTranslations("backoffice-product-form-a"), so every render needs the
+// zone's messages in context.
+function setup(landing: LandingDraft = baseLanding, errors: Record<string, string> = {}, uiLocale: "fr" | "en" = "fr") {
   const onChange = vi.fn();
-  const view = render(<LandingStep landing={landing} errors={errors} onChange={onChange} />);
+  const messages = uiLocale === "fr" ? fr : en;
+  const view = render(
+    <NextIntlClientProvider locale={uiLocale} messages={{ "backoffice-product-form-a": messages }}>
+      <LandingStep landing={landing} errors={errors} onChange={onChange} />
+    </NextIntlClientProvider>,
+  );
   return { onChange, ...view };
 }
 
@@ -149,5 +160,34 @@ describe("LandingStep", () => {
     expect(errorId).toBeTruthy();
     const error = screen.getByText("Ce champ est requis");
     expect(error.id).toBe(errorId);
+  });
+
+  // I18N-BACKOFFICE-STRINGS: catches a label left hardcoded in French once
+  // the admin_locale cookie is "en" (spec acceptance: no French text leaks).
+  it("renders every title, step, FAQ and SEO label/button in English when the locale is en", () => {
+    const withStepsAndFaq = {
+      ...baseLanding,
+      steps: [{ id: "step-1", title: "Step", description: "Desc" }],
+      faq: [{ question: "Q", answer: "A" }],
+    };
+    setup(withStepsAndFaq, {}, "en");
+
+    expect(screen.getByLabelText("Title")).toBeTruthy();
+    expect(screen.getByLabelText("Subtitle")).toBeTruthy();
+    expect(screen.getByLabelText("Example result")).toBeTruthy();
+    expect(screen.getByText("How it works")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Add a step" })).toBeTruthy();
+    expect(screen.getByLabelText("Step 1 title")).toBeTruthy();
+    expect(screen.getByLabelText("Step 1 description")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Move up" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Move down" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Remove this step" })).toBeTruthy();
+    expect(screen.getByText("FAQ")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Add a question" })).toBeTruthy();
+    expect(screen.getByLabelText("Question")).toBeTruthy();
+    expect(screen.getByLabelText("Answer")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Remove this question" })).toBeTruthy();
+    expect(screen.getByLabelText("SEO title")).toBeTruthy();
+    expect(screen.getByLabelText("SEO description")).toBeTruthy();
   });
 });

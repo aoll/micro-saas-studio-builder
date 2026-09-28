@@ -1,7 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { MockLanguageModelV4, simulateReadableStream } from "ai/test";
 import { eq } from "drizzle-orm";
+import { createTranslator } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import fr from "@/messages/fr/backoffice-product-form-b2.json";
+import en from "@/messages/en/backoffice-product-form-b2.json";
 import { REFUSAL_MESSAGES } from "@/lib/ai/generate";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/auth-schema";
@@ -17,6 +20,22 @@ class RedirectMarker extends Error {
 
 const requireAdmin = vi.fn();
 vi.mock("@/lib/dal/session", () => ({ requireAdmin: () => requireAdmin() }));
+
+// I18N-BACKOFFICE-STRINGS (lot 6): next-intl/server picks its "react-server"
+// export via a condition Vitest's node environment doesn't set (same issue
+// as history-list.test.tsx and movement-list.test.tsx), so it's mocked here
+// with a real translator built from the committed fr/en messages — it
+// branches on the `locale` _actions.ts actually requests, so every existing
+// call (which never passes a locale, defaulting to "fr") keeps resolving
+// the exact same French strings as before this spec.
+vi.mock("next-intl/server", () => ({
+  getTranslations: async ({ locale, namespace }: { locale: "fr" | "en"; namespace: string }) =>
+    createTranslator({
+      locale,
+      messages: { "backoffice-product-form-b2": locale === "en" ? en : fr },
+      namespace: namespace as never,
+    }),
+}));
 
 const updateTag = vi.fn();
 vi.mock("next/cache", () => ({ updateTag: (tag: string) => updateTag(tag) }));
@@ -834,5 +853,53 @@ describe("publish · edit path", () => {
     expect(result.errors?.["generation.model"]).toBeTruthy();
 
     await cleanupProduct(created.id);
+  });
+});
+
+// I18N-BACKOFFICE-STRINGS (lot 6): the admin's locale is the last argument
+// of every exported action — one message per action, proving the `t`
+// plumbing actually reaches the returned value (a wrong namespace or a
+// dropped `t` would silently fall back to French here).
+describe("locale: en", () => {
+  it("saveProduct reports an unknown theme in English", async () => {
+    await currentAdmin();
+    const { saveProduct } = await import("./_actions");
+    const config = await buildConfig({ themeId: randomUUID() });
+    const result = await saveProduct(null, {}, configForm(config), "en");
+    expect(result.errors?.themeId).toBe("Theme not found");
+  });
+
+  it("checkSlug reports a reserved slug in English", async () => {
+    await currentAdmin();
+    const { checkSlug } = await import("./_actions");
+    const result = await checkSlug("api", "en");
+    expect(result).toEqual({ available: false, error: "This slug is reserved" });
+  });
+
+  it("uploadLogo reports a missing file in English", async () => {
+    await currentAdmin();
+    const { uploadLogo } = await import("./_actions");
+    const result = await uploadLogo({}, new FormData(), "en");
+    expect(result.error).toBe("No file received");
+  });
+
+  it("testPrompt reports an unmatched {{variable}} in English", async () => {
+    await currentAdmin();
+    const { testPrompt } = await import("./_actions");
+    const result = await testPrompt(
+      null,
+      {},
+      testPromptForm({ generation: { ...testGenerationFixture, promptTemplate: "Pour {{inconnu}}" } }),
+      "en",
+    );
+    expect(result.error).toBe("Variable {{inconnu}} has no matching field");
+  });
+
+  it("publish reports an already-used slug in English", async () => {
+    await currentAdmin();
+    const { publish } = await import("./_actions");
+    const config = await buildConfig({ slug: "lettre-pro" });
+    const result = await publish(null, {}, configForm(config), "en");
+    expect(result.errors?.slug).toBe("This slug is already in use");
   });
 });

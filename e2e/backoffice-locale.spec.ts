@@ -47,7 +47,7 @@ test.describe("I18N-BACKOFFICE · sélecteur de langue", () => {
       await expect(page).toHaveURL(/\/admin$/);
       expect(await page.evaluate(() => (window as unknown as { __noReload?: number }).__noReload)).toBe(1);
       // The session is intact: the sidebar (session-gated) is still there.
-      await expect(page.getByRole("link", { name: "Portefeuille" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Portfolio" })).toBeVisible();
 
       const cookies = await context.cookies();
       const adminLocale = cookies.find((cookie) => cookie.name === "admin_locale");
@@ -62,6 +62,52 @@ test.describe("I18N-BACKOFFICE · sélecteur de langue", () => {
 
       await page.getByRole("button", { name: "Français" }).click();
       await expect(page.locator("html")).toHaveAttribute("lang", "fr");
+    } finally {
+      await context.close();
+    }
+  });
+
+  // I18N-BACKOFFICE-STRINGS: non-regression check, one page per lot rendered
+  // in English (spec's own Périmètre) — the switcher itself (I18N-BACKOFFICE)
+  // is already covered above; this only guards against a lot's zone missing
+  // from the client provider or a hardcoded French string surviving.
+  test("I18N-BACKOFFICE-STRINGS: every lot's page renders in English", async ({ browser }) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    try {
+      await signInAsAdmin(page);
+      await page.getByRole("button", { name: "English" }).click();
+      await expect(page.locator("html")).toHaveAttribute("lang", "en");
+
+      // Lot 1 (portfolio)
+      await page.goto("/admin");
+      await expect(page.getByRole("heading", { name: "Portfolio" })).toBeVisible();
+      await expect(page.getByText("Product", { exact: true })).toBeVisible();
+      await expect(page.getByText("Status", { exact: true })).toBeVisible();
+
+      // Lot 2 (product sheet) + lot 3 (decision panel)
+      await page.goto("/admin/products/lettre-pro");
+      await expect(page.getByRole("link", { name: "Overview" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Activity" })).toBeVisible();
+      await expect(page.getByText("Status and decision thresholds")).toBeVisible();
+
+      // Lot 4 (identity step), lot 5 (step nav / save), lot 6 (summary / publish)
+      await page.goto("/admin/products/lettre-pro/edit");
+      await expect(page.getByLabel("Name")).toBeVisible();
+      await expect(page.getByRole("button", { name: "Save" })).toBeVisible();
+      await page.getByRole("button", { name: "7. Summary" }).click();
+      await expect(page.getByRole("button", { name: "Publish" })).toBeVisible();
+
+      // Lot 7 (theme library + editor)
+      await page.goto("/admin/themes");
+      await expect(page.getByRole("heading", { name: "Theme library" })).toBeVisible();
+      await page.getByRole("link", { name: "Editorial" }).click();
+      await expect(page.getByText("Colors")).toBeVisible();
+      await expect(page.getByRole("button", { name: "Save" })).toBeVisible();
+
+      // Lot 8 (settings)
+      await page.goto("/admin/settings");
+      await expect(page.getByRole("heading", { name: "Decision threshold settings" })).toBeVisible();
     } finally {
       await context.close();
     }

@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
+import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import fr from "@/messages/fr/backoffice-product-form-b2.json";
+import en from "@/messages/en/backoffice-product-form-b2.json";
 import type { Theme } from "@/lib/dal/themes";
 import type { ProductConfig } from "@/lib/schemas/product-config";
 import type { ThemeTokens } from "@/lib/schemas/theme-tokens";
@@ -81,71 +84,94 @@ const pricing: ProductConfig["pricing"] = {
   packs: [{ id: "pack-10", credits: 10, priceCents: 490 }],
 };
 
+// I18N-BACKOFFICE-STRINGS (lot 6): LandingPreview now reads its own zone via
+// `useTranslations`/`useLocale`, so it needs a real NextIntlClientProvider
+// ancestor (app/(backoffice)/layout.tsx's, in the real app).
+function renderPreview(
+  overrides: Partial<React.ComponentProps<typeof LandingPreview>> = {},
+  locale: "fr" | "en" = "fr",
+) {
+  const props: React.ComponentProps<typeof LandingPreview> = {
+    slug: "bio-instagram",
+    landing,
+    pricing,
+    theme,
+    branding: {},
+    ...overrides,
+  };
+  return render(
+    <NextIntlClientProvider locale={locale} messages={{ "backoffice-product-form-b2": locale === "en" ? en : fr }}>
+      <LandingPreview {...props} />
+    </NextIntlClientProvider>,
+  );
+}
+
 describe("LandingPreview", () => {
   it("is labelled as the landing preview", () => {
-    render(<LandingPreview slug="bio-instagram" landing={landing} pricing={pricing} theme={theme} branding={{}} />);
+    renderPreview();
     expect(screen.getByLabelText("Aperçu de la landing")).toBeTruthy();
   });
 
   it("shows the preview's title with the product's slug", () => {
-    render(<LandingPreview slug="bio-instagram" landing={landing} pricing={pricing} theme={theme} branding={{}} />);
+    renderPreview();
     expect(screen.getByText("Aperçu · /bio-instagram")).toBeTruthy();
   });
 
   it("shows the headline and subheadline live", () => {
-    render(<LandingPreview slug="bio-instagram" landing={landing} pricing={pricing} theme={theme} branding={{}} />);
+    renderPreview();
     expect(screen.getByText("Générez votre bio Instagram")).toBeTruthy();
     expect(screen.getByText("En 10 secondes, sans compte")).toBeTruthy();
   });
 
   it("applies the theme's background colour inline", () => {
-    render(<LandingPreview slug="bio-instagram" landing={landing} pricing={pricing} theme={theme} branding={{}} />);
+    renderPreview();
     const root = screen.getByLabelText("Aperçu de la landing");
     expect(root.style.backgroundColor).toBe("rgb(250, 247, 242)");
   });
 
   it("overrides the CTA's colour with the branding's primaryColor", () => {
-    render(
-      <LandingPreview
-        slug="bio-instagram"
-        landing={landing}
-        pricing={pricing}
-        theme={theme}
-        branding={{ primaryColor: "#d946ef" }}
-      />,
-    );
+    renderPreview({ branding: { primaryColor: "#d946ef" } });
     const cta = screen.getByTestId("landing-preview-cta");
     expect(cta.style.backgroundColor).toBe("rgb(217, 70, 239)");
   });
 
   it("shows the example output when present", () => {
-    render(<LandingPreview slug="bio-instagram" landing={landing} pricing={pricing} theme={theme} branding={{}} />);
+    renderPreview();
     expect(screen.getByText(/Passionné/)).toBeTruthy();
   });
 
   it("shows the 'how it works' steps when present", () => {
-    render(
-      <LandingPreview
-        slug="bio-instagram"
-        landing={{ ...landing, steps: [{ title: "Étape 1", description: "Description 1" }] }}
-        pricing={pricing}
-        theme={theme}
-        branding={{}}
-      />,
-    );
+    renderPreview({ landing: { ...landing, steps: [{ title: "Étape 1", description: "Description 1" }] } });
     expect(screen.getByText("Étape 1")).toBeTruthy();
     expect(screen.getByText("Description 1")).toBeTruthy();
   });
 
   it("shows the FAQ entries", () => {
-    render(<LandingPreview slug="bio-instagram" landing={landing} pricing={pricing} theme={theme} branding={{}} />);
+    renderPreview();
     expect(screen.getByText("Combien ça coûte ?")).toBeTruthy();
     expect(screen.getByText("1 crédit par génération.")).toBeTruthy();
   });
 
   it("shows each pack's credits and formatted price", () => {
-    render(<LandingPreview slug="bio-instagram" landing={landing} pricing={pricing} theme={theme} branding={{}} />);
+    renderPreview();
     expect(screen.getByText(/10 crédits/)).toBeTruthy();
     expect(screen.getByText(/4,90/)).toBeTruthy();
+  });
+
+  // I18N-BACKOFFICE-STRINGS (lot 6): an admin with admin_locale=en never
+  // sees the French aria-label, placeholder, CTA or pack summary — and the
+  // pack price follows the English number format (still in EUR).
+  it("renders in English for the en locale, with an English-formatted price", () => {
+    renderPreview({}, "en");
+    expect(screen.getByLabelText("Landing preview")).toBeTruthy();
+    expect(screen.getByText("Preview · /bio-instagram")).toBeTruthy();
+    expect(screen.getByText("Try it for free")).toBeTruthy();
+    expect(screen.getByText(/10 credits/)).toBeTruthy();
+    expect(screen.getByText(/€4.90/)).toBeTruthy();
+  });
+
+  it("shows the English placeholder when the headline is empty", () => {
+    renderPreview({ landing: { ...landing, headline: "" } }, "en");
+    expect(screen.getByText("Your headline will appear here")).toBeTruthy();
   });
 });

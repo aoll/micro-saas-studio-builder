@@ -1,0 +1,11 @@
+{
+  "nav": {
+    "portfolio": "Portefeuille",
+    "themes": "Thèmes",
+    "settings": "Réglages"
+  },
+  "signOut": {
+    "button": "Se déconnecter",
+    "error": "Impossible de se déconnecter"
+  }
+}

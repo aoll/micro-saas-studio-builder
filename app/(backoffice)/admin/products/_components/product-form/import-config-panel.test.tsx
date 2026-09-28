@@ -3,7 +3,12 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
+import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import en from "@/messages/en/backoffice-product-form-a.json";
+import fr from "@/messages/fr/backoffice-product-form-a.json";
+import enValidation from "@/messages/en/backoffice-product-form-b2.json";
+import frValidation from "@/messages/fr/backoffice-product-form-b2.json";
 import type { Theme } from "@/lib/dal/themes";
 import { ImportConfigPanel } from "./import-config-panel";
 
@@ -24,18 +29,30 @@ const themes: Theme[] = [
 
 const bioInstagramFixture = readFileSync(join(process.cwd(), "fixtures/bio-instagram.config.json"), "utf-8");
 
-function setup() {
+// I18N-BACKOFFICE-STRINGS lot 4: ImportConfigPanel now reads its labels
+// through useTranslations("backoffice-product-form-a"), so every render
+// needs the zone's messages in context.
+function setup(uiLocale: "fr" | "en" = "fr") {
   const onImport = vi.fn();
   const onErrors = vi.fn();
+  const messages = uiLocale === "fr" ? fr : en;
+  const validationMessages = uiLocale === "fr" ? frValidation : enValidation;
   const view = render(
-    <ImportConfigPanel themes={themes} currentThemeId={currentThemeId} onImport={onImport} onErrors={onErrors} />,
+    <NextIntlClientProvider
+      locale={uiLocale}
+      messages={{ "backoffice-product-form-a": messages, "backoffice-product-form-b2": validationMessages }}
+    >
+      <ImportConfigPanel themes={themes} currentThemeId={currentThemeId} onImport={onImport} onErrors={onErrors} />
+    </NextIntlClientProvider>,
   );
   return { onImport, onErrors, ...view };
 }
 
-function paste(text: string) {
-  fireEvent.change(screen.getByLabelText("Coller une configuration JSON"), { target: { value: text } });
-  fireEvent.click(screen.getByRole("button", { name: "Importer" }));
+function paste(text: string, uiLocale: "fr" | "en" = "fr") {
+  const pasteLabel = uiLocale === "fr" ? "Coller une configuration JSON" : "Paste a JSON configuration";
+  const importLabel = uiLocale === "fr" ? "Importer" : "Import";
+  fireEvent.change(screen.getByLabelText(pasteLabel), { target: { value: text } });
+  fireEvent.click(screen.getByRole("button", { name: importLabel }));
 }
 
 describe("ImportConfigPanel", () => {
@@ -65,5 +82,17 @@ describe("ImportConfigPanel", () => {
     paste(JSON.stringify(invalid));
     expect(onErrors).toHaveBeenCalledWith(expect.objectContaining({ "landing.headline": "Ce champ est requis" }));
     expect(onImport).not.toHaveBeenCalled();
+  });
+
+  // I18N-BACKOFFICE-STRINGS: catches a label left hardcoded in French once
+  // the admin_locale cookie is "en" (spec acceptance: no French text leaks).
+  it("renders the paste label, the button and the malformed-JSON error in English when the locale is en", () => {
+    const { onImport, onErrors } = setup("en");
+    expect(screen.getByLabelText("Paste a JSON configuration")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Import" })).toBeTruthy();
+    paste("not json", "en");
+    expect(screen.getByRole("alert").textContent).toBe("Unreadable JSON configuration");
+    expect(onImport).not.toHaveBeenCalled();
+    expect(onErrors).not.toHaveBeenCalled();
   });
 });

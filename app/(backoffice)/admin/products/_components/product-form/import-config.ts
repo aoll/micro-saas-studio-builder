@@ -1,10 +1,13 @@
 import type { Theme } from "@/lib/dal/themes";
 import { productConfigSchema, type ProductConfig } from "@/lib/schemas/product-config";
-import { issuesToErrors } from "./validation";
+import { issuesToErrors, type MessageTranslator } from "./validation";
 
+// `formError` is a stable code, not a message: this is a plain function
+// (no `t()`, no locale) called synchronously from ImportConfigPanel, which
+// maps it to a translated string (I18N-BACKOFFICE-STRINGS lot 4).
 export type ImportResult =
   | { ok: true; config: ProductConfig }
-  | { ok: false; formError: string }
+  | { ok: false; formError: "malformed_json" }
   | { ok: false; errors: Record<string, string> };
 
 // QA1-P1-M1: "le thème se choisit par son nom si l'id ne correspond pas".
@@ -26,16 +29,21 @@ export function resolveImportedThemeId(candidate: unknown, themes: Theme[], fall
 // Pipeline: JSON.parse -> reject non-object candidates -> resolve themeId
 // -> validate with the same shared schema the backoffice form and the
 // `saveProduct` Server Action already use. Never throws.
-export function parseImportedConfig(raw: string, themes: Theme[], fallbackThemeId: string): ImportResult {
+export function parseImportedConfig(
+  raw: string,
+  themes: Theme[],
+  fallbackThemeId: string,
+  t?: MessageTranslator,
+): ImportResult {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    return { ok: false, formError: "Configuration JSON illisible" };
+    return { ok: false, formError: "malformed_json" };
   }
 
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    return { ok: false, formError: "Configuration JSON illisible" };
+    return { ok: false, formError: "malformed_json" };
   }
 
   const candidate = parsed as Record<string, unknown>;
@@ -43,6 +51,6 @@ export function parseImportedConfig(raw: string, themes: Theme[], fallbackThemeI
   const withThemeId = { ...candidate, themeId: resolvedThemeId };
 
   const result = productConfigSchema.safeParse(withThemeId);
-  if (!result.success) return { ok: false, errors: issuesToErrors(result.error.issues) };
+  if (!result.success) return { ok: false, errors: issuesToErrors(result.error.issues, t) };
   return { ok: true, config: result.data };
 }

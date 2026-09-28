@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { fontFor } from "@/lib/fonts";
 import type { LandingVariant, ThemeTokens } from "@/lib/schemas/theme-tokens";
 import { cn } from "@/components/utils";
@@ -9,6 +10,11 @@ import { previewCssVars } from "./preview-vars";
 // React avec les tokens du thème"), scoped through `previewCssVars` on its
 // own root rather than `<html>`: `var(--token)` in every child's inline
 // style resolves through this root, live as the draft tokens change.
+//
+// I18N-BACKOFFICE-STRINGS (lot 7): only ever imported by theme-editor.tsx
+// ('use client'), so it is bundled for the client and can call
+// useTranslations("backoffice-themes") itself, resolved through the
+// NextIntlClientProvider of app/(backoffice)/layout.tsx.
 export function ThemePreview({
   tokens,
   landingVariant,
@@ -20,8 +26,9 @@ export function ThemePreview({
   mode: "light" | "dark";
   sampleProductName?: string;
 }) {
+  const t = useTranslations("backoffice-themes");
   const font = fontFor(tokens.fontKey);
-  const headline = sampleProductName ?? "Produit exemple";
+  const headline = sampleProductName ?? t("preview.samplePlaceholder");
 
   return (
     <div
@@ -41,7 +48,7 @@ export function ThemePreview({
         <div className="flex flex-col gap-2">
           <h2 className="text-lg font-semibold">{headline}</h2>
           {landingVariant !== "minimal" ? (
-            <p style={{ color: "var(--muted-foreground)" }}>Un sous-titre de démonstration pour l’aperçu.</p>
+            <p style={{ color: "var(--muted-foreground)" }}>{t("preview.subheadline")}</p>
           ) : null}
           <button
             type="button"
@@ -52,7 +59,7 @@ export function ThemePreview({
               borderRadius: "var(--radius)",
             }}
           >
-            Essayer
+            {t("preview.tryButton")}
           </button>
         </div>
         {landingVariant === "split" ? (
@@ -65,7 +72,7 @@ export function ThemePreview({
               borderRadius: "var(--radius)",
             }}
           >
-            Exemple de résultat
+            {t("preview.example")}
           </div>
         ) : null}
       </div>
@@ -81,7 +88,7 @@ export function ThemePreview({
             borderRadius: "var(--radius)",
           }}
         >
-          Primaire
+          {t("preview.primary")}
         </button>
         <button
           data-testid="theme-preview-button-secondary"
@@ -93,21 +100,21 @@ export function ThemePreview({
             borderRadius: "var(--radius)",
           }}
         >
-          Secondaire
+          {t("preview.secondary")}
         </button>
         <span
           data-testid="theme-preview-badge-accent"
           className="rounded-full px-2 py-0.5 text-xs"
           style={{ backgroundColor: "var(--accent)", color: "var(--accent-foreground)" }}
         >
-          Accent
+          {t("preview.accent")}
         </span>
         <span
           data-testid="theme-preview-badge-destructive"
           className="rounded-full px-2 py-0.5 text-xs"
           style={{ backgroundColor: "var(--destructive)", color: "var(--primary-foreground)" }}
         >
-          Erreur
+          {t("preview.destructive")}
         </span>
       </div>
     </div>

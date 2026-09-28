@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
+import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import en from "@/messages/en/backoffice-product-form-a.json";
+import fr from "@/messages/fr/backoffice-product-form-a.json";
 import type { Theme } from "@/lib/dal/themes";
 import type { ThemeTokens } from "@/lib/schemas/theme-tokens";
 
@@ -60,7 +63,10 @@ const themeOptions: Theme[] = [
   { id: "theme-neon", slug: "neon", name: "Neon", tokens, landingVariant: "split", isSeed: true },
 ];
 
-function setup(overrides: Partial<React.ComponentProps<typeof ThemeStep>> = {}) {
+// I18N-BACKOFFICE-STRINGS lot 4: ThemeStep now reads its labels through
+// useTranslations("backoffice-product-form-a"), so every render needs the
+// zone's messages in context.
+function setup(overrides: Partial<React.ComponentProps<typeof ThemeStep>> = {}, uiLocale: "fr" | "en" = "fr") {
   const onChange = vi.fn();
   const onUploadLogo = vi.fn();
   const props: React.ComponentProps<typeof ThemeStep> = {
@@ -72,7 +78,12 @@ function setup(overrides: Partial<React.ComponentProps<typeof ThemeStep>> = {}) 
     onUploadLogo,
     ...overrides,
   };
-  const view = render(<ThemeStep {...props} />);
+  const messages = uiLocale === "fr" ? fr : en;
+  const view = render(
+    <NextIntlClientProvider locale={uiLocale} messages={{ "backoffice-product-form-a": messages }}>
+      <ThemeStep {...props} />
+    </NextIntlClientProvider>,
+  );
   return { onChange, onUploadLogo, ...view };
 }
 
@@ -123,5 +134,15 @@ describe("ThemeStep", () => {
     const { onChange } = setup({ branding: { primaryColor: "#d946ef" } });
     fireEvent.click(screen.getByRole("button", { name: "Effacer la couleur" }));
     expect(onChange).toHaveBeenCalledWith({ branding: {} });
+  });
+
+  // I18N-BACKOFFICE-STRINGS: catches a label left hardcoded in French once
+  // the admin_locale cookie is "en" (spec acceptance: no French text leaks).
+  it("renders every label in English when the locale is en", () => {
+    setup({}, "en");
+    expect(screen.getByRole("radiogroup", { name: "Theme" })).toBeTruthy();
+    expect(screen.getByLabelText("Logo")).toBeTruthy();
+    expect(screen.getByLabelText("Theme colour")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Clear colour" })).toBeTruthy();
   });
 });

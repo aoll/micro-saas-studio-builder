@@ -1,0 +1,59 @@
+{
+  "pages": {
+    "newTitle": "Nouveau produit",
+    "editTitle": "Modifier le produit"
+  },
+  "common": {
+    "moveUp": "Monter",
+    "moveDown": "Descendre"
+  },
+  "identityStep": {
+    "nameLabel": "Nom",
+    "slugLabel": "Slug",
+    "statusLabel": "Statut",
+    "localeLabel": "Langue"
+  },
+  "themeStep": {
+    "themeGroupLabel": "Thème",
+    "logoLabel": "Logo",
+    "logoAlt": "Logo du produit",
+    "colorLabel": "Couleur du thème",
+    "clearColor": "Effacer la couleur"
+  },
+  "landingStep": {
+    "headlineLabel": "Titre",
+    "subheadlineLabel": "Sous-titre",
+    "exampleOutputLabel": "Exemple de résultat",
+    "howItWorksTitle": "Comment ça marche",
+    "addStep": "Ajouter une étape",
+    "stepTitleLabel": "Titre de l'étape {number}",
+    "stepDescriptionLabel": "Description de l'étape {number}",
+    "removeStep": "Supprimer cette étape",
+    "faqTitle": "FAQ",
+    "addFaqQuestion": "Ajouter une question",
+    "faqQuestionLabel": "Question",
+    "faqAnswerLabel": "Réponse",
+    "removeFaqQuestion": "Supprimer cette question",
+    "seoTitleLabel": "Titre SEO",
+    "seoDescriptionLabel": "Description SEO"
+  },
+  "fieldsStep": {
+    "keyLabel": "Clé",
+    "labelLabel": "Libellé",
+    "typeLabel": "Type",
+    "types": {
+      "text": "Texte",
+      "textarea": "Zone de texte",
+      "select": "Liste"
+    },
+    "requiredLabel": "Requis",
+    "optionsLabel": "Options (une par ligne)",
+    "removeField": "Supprimer ce champ",
+    "addField": "Ajouter un champ"
+  },
+  "importPanel": {
+    "pasteLabel": "Coller une configuration JSON",
+    "importButton": "Importer",
+    "malformedJson": "Configuration JSON illisible"
+  }
+}

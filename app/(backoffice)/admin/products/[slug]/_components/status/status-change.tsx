@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -19,6 +20,10 @@ export type StatusChangeProps = {
   justification: { visits: string; conversion: string; margin: string };
 };
 
+// I18N-BACKOFFICE-STRINGS (lot 3): the 4 statuses stay identical in French
+// and English on purpose (spec's "Décisions de portée" — already English
+// loanwords in the French UI), coded as a literal record rather than a
+// message key.
 const STATUS_LABELS: Record<ProductStatus, string> = {
   test: "Test",
   learn: "Learn",
@@ -51,15 +56,22 @@ function StatusChangeForm({
   justification,
   onDone,
 }: Omit<StatusChangeProps, "productId"> & { onDone: () => void }) {
-  const [state, formAction, pending] = useActionState(setProductStatus.bind(null, slug), initialState);
+  const t = useTranslations("backoffice-decision");
+  const locale = useLocale() as "fr" | "en";
+  // I18N-BACKOFFICE-STRINGS (lot 3): locale is bound after slug (the spec's
+  // "en dernier paramètre" among the client-supplied arguments — the two
+  // that follow, prevState and formData, come from useActionState itself),
+  // never in the FormData: setProductStatus uses it to translate its own
+  // error messages.
+  const [state, formAction, pending] = useActionState(setProductStatus.bind(null, slug, locale), initialState);
   const [selected, setSelected] = useState<ProductStatus | null>(() => suggestedStatus(decision, status));
 
   useEffect(() => {
     if (state.ok) {
-      toast.success("Statut mis à jour");
+      toast.success(t("statusChange.successToast"));
       onDone();
     }
-  }, [state, onDone]);
+  }, [state, onDone, t]);
 
   const isKilled = selected === "killed";
 
@@ -80,7 +92,7 @@ function StatusChangeForm({
       </div>
 
       <fieldset className="grid gap-2">
-        <legend className="text-sm font-medium">Nouveau statut</legend>
+        <legend className="text-sm font-medium">{t("statusChange.newStatus")}</legend>
         {STATUSES.map((candidate) => (
           <label key={candidate} className="flex items-center gap-2 text-sm">
             <input
@@ -97,25 +109,25 @@ function StatusChangeForm({
       </fieldset>
 
       <div className="rounded-md border bg-muted/50 p-3 text-sm">
-        <p className="font-medium">Ce que disent les chiffres</p>
+        <p className="font-medium">{t("statusChange.numbersTitle")}</p>
         <dl className="mt-2 grid grid-cols-3 gap-2">
           <div>
-            <dt className="text-muted-foreground">Visites</dt>
+            <dt className="text-muted-foreground">{t("statusChange.visits")}</dt>
             <dd>{justification.visits}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Conversion</dt>
+            <dt className="text-muted-foreground">{t("statusChange.conversion")}</dt>
             <dd>{justification.conversion}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Marge / génération</dt>
+            <dt className="text-muted-foreground">{t("statusChange.margin")}</dt>
             <dd>{justification.margin}</dd>
           </div>
         </dl>
       </div>
 
       <div className="grid gap-1.5">
-        <Label htmlFor="status-change-note">Note de décision</Label>
+        <Label htmlFor="status-change-note">{t("statusChange.noteLabel")}</Label>
         <Textarea id="status-change-note" name="note" maxLength={500} rows={3} />
       </div>
 
@@ -124,16 +136,16 @@ function StatusChangeForm({
           role="alert"
           className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
-          Passer {name} en Killed ferme le produit : /{slug} affichera « produit introuvable » aux visiteurs.
+          {t("statusChange.killedWarning", { name, slug })}
         </p>
       ) : null}
 
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onDone}>
-          Annuler
+          {t("statusChange.cancel")}
         </Button>
         <Button type="submit" variant={isKilled ? "destructive" : "default"} disabled={pending || selected === null}>
-          {selected ? `Passer en ${STATUS_LABELS[selected]}` : "Passer en …"}
+          {selected ? t("statusChange.confirm", { status: STATUS_LABELS[selected] }) : t("statusChange.confirmPending")}
         </Button>
       </DialogFooter>
     </form>
@@ -145,16 +157,17 @@ function StatusChangeForm({
 // decision, and a decision note. Killed needs an explicit destructive confirmation
 // (docs/01-produit.md).
 export function StatusChange(props: StatusChangeProps) {
+  const t = useTranslations("backoffice-decision");
   const [open, setOpen] = useState(false);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">Changer de statut</Button>
+        <Button variant="outline">{t("statusChange.trigger")}</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Changer le statut de {props.name}</DialogTitle>
+          <DialogTitle>{t("statusChange.dialogTitle", { name: props.name })}</DialogTitle>
         </DialogHeader>
         {open ? <StatusChangeForm {...props} onDone={() => setOpen(false)} /> : null}
       </DialogContent>

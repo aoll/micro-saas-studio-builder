@@ -31,12 +31,14 @@ export function estimateMargins(packs: Pack[], costPerGeneration: number, aiCost
   });
 }
 
-const EUR_FORMATTER = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
-
+// I18N-BACKOFFICE-STRINGS (lot 5, "décisions de portée" › formatting): the
+// admin's chosen backoffice locale, not a hardcoded "fr-FR" — defaulted so
+// every other call site (still French-only until its own lot passes a real
+// locale) keeps its current behaviour.
 // A pack's price, or a margin converted back to euros for display
 // (cents → euros).
-export function formatEur(cents: number): string {
-  return EUR_FORMATTER.format(cents / 100);
+export function formatEur(cents: number, locale = "fr-FR"): string {
+  return new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" }).format(cents / 100);
 }
 
 // The AI cost (or a margin) in micro-dollars, formatted with 6 decimals: a

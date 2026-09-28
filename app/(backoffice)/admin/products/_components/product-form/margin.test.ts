@@ -53,12 +53,20 @@ describe("estimateMargins", () => {
 });
 
 describe("formatEur", () => {
-  it("formats cents as euros with 2 decimals", () => {
+  it("formats cents as euros with 2 decimals, in French by default", () => {
     expect(formatEur(490)).toBe("4,90 €");
   });
 
   it("formats 0 cents", () => {
     expect(formatEur(0)).toBe("0,00 €");
+  });
+
+  // I18N-BACKOFFICE-STRINGS (lot 5, "decisions de portee" on formatting):
+  // an explicit locale, when given, overrides the fr-FR default instead of
+  // formatting every currency amount as French regardless of the admin's
+  // chosen backoffice locale.
+  it("formats with the given locale when one is passed", () => {
+    expect(formatEur(490, "en")).toBe("€4.90");
   });
 });
 

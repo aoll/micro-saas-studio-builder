@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
+import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import fr from "@/messages/fr/backoffice-product-form-b2.json";
+import en from "@/messages/en/backoffice-product-form-b2.json";
 import { PromptTester } from "./prompt-tester";
 
 afterEach(cleanup);
@@ -11,11 +14,18 @@ const fields = [
   { id: "input-ton", key: "ton", label: "Ton", required: false },
 ];
 
-function setup(overrides: Partial<React.ComponentProps<typeof PromptTester>> = {}) {
+// I18N-BACKOFFICE-STRINGS (lot 6): PromptTester now reads its own zone via
+// `useTranslations`, so it needs a real NextIntlClientProvider ancestor
+// (app/(backoffice)/layout.tsx's, in the real app).
+function setup(overrides: Partial<React.ComponentProps<typeof PromptTester>> = {}, locale: "fr" | "en" = "fr") {
   const onTest = vi.fn();
   const onTested = vi.fn();
   const props: React.ComponentProps<typeof PromptTester> = { fields, onTest, onTested, ...overrides };
-  const view = render(<PromptTester {...props} />);
+  const view = render(
+    <NextIntlClientProvider locale={locale} messages={{ "backoffice-product-form-b2": locale === "en" ? en : fr }}>
+      <PromptTester {...props} />
+    </NextIntlClientProvider>,
+  );
   return { onTest, onTested, ...view };
 }
 
@@ -88,5 +98,22 @@ describe("PromptTester", () => {
     const duplicateKeyWarning = consoleError.mock.calls.some((call) => String(call[0]).includes("same key"));
     consoleError.mockRestore();
     expect(duplicateKeyWarning).toBe(false);
+  });
+
+  // I18N-BACKOFFICE-STRINGS (lot 6): an admin with admin_locale=en never
+  // sees the French button label or result summary.
+  it("renders the button and result summary in English for the en locale", async () => {
+    setup(
+      {
+        onTest: vi
+          .fn()
+          .mockResolvedValue({ ok: true, output: "Hi", inputTokens: 210, outputTokens: 140, costMicros: 910 }),
+      },
+      "en",
+    );
+    expect(screen.getByRole("button", { name: "Test the prompt" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Test the prompt" }));
+    await screen.findByText("Hi");
+    expect(screen.getByText(/210 in \/ 140 out/)).toBeTruthy();
   });
 });

@@ -1,0 +1,67 @@
+{
+  "actions": {
+    "configUnreadable": "Unreadable configuration",
+    "themeNotFound": "Theme not found",
+    "slugAlreadyUsed": "This slug is already in use",
+    "slugInvalid": "Invalid slug",
+    "productNotFound": "Product not found",
+    "slugReserved": "This slug is reserved",
+    "slugFormatInvalid": "Invalid slug format",
+    "noFileReceived": "No file received",
+    "logoTooLarge": "The logo exceeds 512 KB",
+    "logoFormatsAccepted": "Accepted formats: PNG, JPEG, WebP",
+    "logoUploadFailed": "Logo upload failed",
+    "tooManyTests": "Too many tests right now, please try again in a moment.",
+    "toolFieldsInvalid": "The tool's fields are invalid",
+    "generationConfigInvalid": "The generation configuration is invalid",
+    "modelNotAllowed": "Model not allowed",
+    "variableWithoutField": "Variable {variable} has no matching field",
+    "imageOutputNotAvailable": "Image output is not available yet",
+    "sampleUnreadable": "Unreadable sample",
+    "sampleInvalid": "Invalid sample",
+    "fillRequiredSampleFields": "Fill in the sample's required fields",
+    "testGenerationRefused": "The model refused the sample: the request was judged off-topic.",
+    "testGenerationFailed": "The test generation failed"
+  },
+  "validation": {
+    "fieldRequired": "This field is required",
+    "minChars": "{min} characters minimum",
+    "maxChars": "{max} characters maximum",
+    "minNumberInclusive": "Minimum: {min}",
+    "minNumberExclusive": "Must be greater than {min}",
+    "maxNumberInclusive": "Maximum: {max}",
+    "maxNumberExclusive": "Must be less than {max}",
+    "mustBeInteger": "Must be a whole number",
+    "slugReserved": "This slug is reserved",
+    "slugFormat": "The slug must be lowercase, hyphen-separated",
+    "keyAlreadyUsed": "Key already in use",
+    "packIdAlreadyUsed": "Pack id already in use",
+    "selectNeedsOption": "A dropdown field needs at least one option",
+    "keyMustStartLowercase": "The key must start with a lowercase letter",
+    "modelFormat": "Must be in the `provider/model` format",
+    "colorFormat": "Must be a #rrggbb color",
+    "idFormat": "Must be a lowercase, hyphen-separated id"
+  },
+  "summary": {
+    "name": "Name",
+    "slug": "Slug",
+    "theme": "Theme",
+    "inputsCount": "Tool fields",
+    "packsCount": "Credit packs",
+    "publish": "Publish",
+    "published": "Product published",
+    "viewProduct": "View {url}"
+  },
+  "promptTester": {
+    "test": "Test the prompt",
+    "testing": "Testing…",
+    "result": "{inputTokens} in / {outputTokens} out · {cost}"
+  },
+  "landingPreview": {
+    "ariaLabel": "Landing preview",
+    "previewTitle": "Preview · /{slug}",
+    "headlinePlaceholder": "Your headline will appear here",
+    "cta": "Try it for free",
+    "pack": "{credits} credits · {price}"
+  }
+}

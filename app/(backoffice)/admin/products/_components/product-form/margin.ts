@@ -31,14 +31,23 @@ export function estimateMargins(packs: Pack[], costPerGeneration: number, aiCost
   });
 }
 
-// I18N-BACKOFFICE-STRINGS (lot 5, "décisions de portée" › formatting): the
-// admin's chosen backoffice locale, not a hardcoded "fr-FR" — defaulted so
-// every other call site (still French-only until its own lot passes a real
-// locale) keeps its current behaviour.
+// I18N-BACKOFFICE-STRINGS (lot 6): the currency stays EUR (the product's own
+// pricing, not the admin's), only the digit grouping/symbol placement
+// follows the admin's locale — `locale` is a plain string (not this zone's
+// `Locale` union) so callers can hand it `useLocale()`'s return value
+// (`next-intl`'s `Locale` type isn't narrowed to `"fr" | "en"` in this repo)
+// without a cast; anything other than `"en"` falls back to French, matching
+// every caller from before this locale parameter existed.
+const EUR_FORMATTERS = {
+  fr: new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }),
+  en: new Intl.NumberFormat("en-US", { style: "currency", currency: "EUR" }),
+};
+
 // A pack's price, or a margin converted back to euros for display
 // (cents → euros).
-export function formatEur(cents: number, locale = "fr-FR"): string {
-  return new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" }).format(cents / 100);
+export function formatEur(cents: number, locale: string = "fr"): string {
+  const formatter = locale === "en" ? EUR_FORMATTERS.en : EUR_FORMATTERS.fr;
+  return formatter.format(cents / 100);
 }
 
 // The AI cost (or a margin) in micro-dollars, formatted with 6 decimals: a

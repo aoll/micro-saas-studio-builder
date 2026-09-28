@@ -2,6 +2,7 @@
 
 import type { Route } from "next";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import type { PublishState } from "../../_actions";
 
@@ -25,33 +26,34 @@ export function SummaryStep({
   state: PublishState;
   formAction: (formData: FormData) => void;
 }) {
+  const t = useTranslations("backoffice-product-form-b2.summary");
   return (
     <div className="grid gap-4">
       <dl className="grid gap-2 text-sm">
         <div className="flex justify-between border-b pb-1">
-          <dt className="text-muted-foreground">Nom</dt>
+          <dt className="text-muted-foreground">{t("name")}</dt>
           <dd>{draft.name}</dd>
         </div>
         <div className="flex justify-between border-b pb-1">
-          <dt className="text-muted-foreground">Slug</dt>
+          <dt className="text-muted-foreground">{t("slug")}</dt>
           <dd>{draft.slug}</dd>
         </div>
         <div className="flex justify-between border-b pb-1">
-          <dt className="text-muted-foreground">Thème</dt>
+          <dt className="text-muted-foreground">{t("theme")}</dt>
           <dd>{themeName}</dd>
         </div>
         <div className="flex justify-between border-b pb-1">
-          <dt className="text-muted-foreground">Champs de l&apos;outil</dt>
+          <dt className="text-muted-foreground">{t("inputsCount")}</dt>
           <dd>{draft.inputsCount}</dd>
         </div>
         <div className="flex justify-between">
-          <dt className="text-muted-foreground">Packs de crédits</dt>
+          <dt className="text-muted-foreground">{t("packsCount")}</dt>
           <dd>{draft.packsCount}</dd>
         </div>
       </dl>
 
       <Button type="submit" formAction={formAction} disabled={pending}>
-        Publier
+        {t("publish")}
       </Button>
 
       {state.formError ? (
@@ -62,9 +64,9 @@ export function SummaryStep({
 
       {state.ok && state.url ? (
         <p className="text-sm">
-          Produit publié ·{" "}
+          {t("published")} ·{" "}
           <Link href={state.url as Route} className="underline">
-            Voir {state.url}
+            {t("viewProduct", { url: state.url })}
           </Link>
         </p>
       ) : null}

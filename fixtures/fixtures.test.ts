@@ -1,5 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { toolInputSchema } from "../app/(products)/[app]/tool/_lib/tool-input-schema";
+import type { ProductConfig } from "../lib/schemas/product-config";
 import { productConfigSchema } from "../lib/schemas/product-config";
 
 // specs/DEMO-mode.md: the seeded story needs one config per seeded
@@ -86,6 +88,19 @@ describe("generation fixtures", () => {
       for (const key of requiredKeys) {
         expect(generation.input[key]).toBeTruthy();
       }
+    }
+  });
+
+  // AI-GUARD (docs/05-ia.md): the platform's default maxLength (150 text,
+  // 1500 textarea) must not silently break a seeded fixture recorded before
+  // that default existed — a longer sample here would mean a real product
+  // sample now fails validation in the tool and in api/generate.
+  it.each(GENERATION_SLUGS)("%s.json's inputs pass toolInputSchema against the product's own fields", (slug) => {
+    const config = readConfig(slug) as { inputs: ProductConfig["inputs"] };
+    const generations = readGenerations(slug) as { input: Record<string, string> }[];
+    for (const generation of generations) {
+      const result = toolInputSchema(config.inputs, generation.input);
+      expect(result.success).toBe(true);
     }
   });
 });

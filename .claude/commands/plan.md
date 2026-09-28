@@ -15,7 +15,7 @@ Spec: $ARGUMENTS
 2. **Identify Risks** - Surface potential issues and blockers
 3. **Create Step Plan** - Break down implementation into phases (delegate to the `planner` agent)
 4. **Wait for Confirmation** - MUST receive user approval before proceeding, except in an orchestrated
-   run (`orchestrator` skill): there the approved and merged spec is the confirmation
+   run (`orchestrator` skill): there the approved spec is the confirmation
 
 ## Pattern Grounding
 

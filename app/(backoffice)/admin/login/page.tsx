@@ -6,7 +6,7 @@ import { LoginForm } from "./_components/login-form";
 // must stay reachable without a session).
 export default function LoginPage() {
   return (
-    <main className="grid min-h-dvh place-items-center bg-muted p-4">
+    <main className="grid min-h-dvh place-items-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <h1 className="flex items-center gap-2 text-xl font-bold">

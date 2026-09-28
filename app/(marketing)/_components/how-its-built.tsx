@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 
 // docs/01-produit.md's "Méthode de delivery agentique" and
 // docs/13-candidature.md's README outline, condensed to what a recruiter
@@ -23,34 +22,50 @@ const POINTS = [
 
 export function HowItsBuilt() {
   return (
-    <section className="border-t bg-muted/30 py-16">
-      <div className="mx-auto max-w-4xl px-4">
-        <h2 className="text-center text-2xl font-bold tracking-tight">Comment c&apos;est construit</h2>
-        <p className="mx-auto mt-2 max-w-xl text-center text-muted-foreground">
-          « We develop with AI, not alongside it » : ce repo montre la méthode autant que le produit.
-        </p>
-        <ul className="mt-10 space-y-6">
-          {POINTS.map((point) => (
-            <li key={point.title} className="border-l-2 pl-4">
-              <p className="font-semibold">{point.title}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{point.description}</p>
+    <section className="mx-auto max-w-6xl px-4 pt-24 sm:px-8">
+      <div className="flex flex-col gap-8 rounded-[20px] border border-mk-line bg-mk-surface/60 p-6 sm:p-12">
+        <div className="grid gap-4 lg:grid-cols-12 lg:items-end lg:gap-x-6">
+          <div className="flex flex-col gap-2 lg:col-span-5">
+            <p className="text-[13px] font-semibold text-mk-link">La méthode</p>
+            <h2 className="font-[family-name:var(--font-mk-display)] text-3xl font-extrabold tracking-[-0.03em] sm:text-4xl">
+              Comment c&apos;est construit
+            </h2>
+          </div>
+          <p className="text-lg leading-relaxed text-mk-muted lg:col-span-6 lg:col-start-7">
+            « We develop with AI, not alongside it » : ce repo montre la méthode autant que le produit.
+          </p>
+        </div>
+        <ol className="grid gap-4 lg:grid-cols-3">
+          {POINTS.map((point, index) => (
+            <li key={point.title} className="flex flex-col gap-3 rounded-xl border border-mk-line bg-mk-surface p-6">
+              <span className="flex size-9 items-center justify-center rounded-[10px] bg-mk-chip font-[family-name:var(--font-mk-display)] font-extrabold text-mk-chip-ink">
+                {index + 1}
+              </span>
+              <p className="font-[family-name:var(--font-mk-display)] text-lg font-bold">{point.title}</p>
+              <p className="text-[15px] leading-relaxed text-mk-muted">{point.description}</p>
             </li>
           ))}
-        </ul>
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-          <Button asChild>
-            <Link href="/making-of">Voir le making-of</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <a href="https://github.com/aoll/micro-saas-studio-builder" target="_blank" rel="noreferrer">
-              Voir le code sur GitHub
-            </a>
-          </Button>
-          <Button asChild variant="outline">
-            <a href="/architecture/index.html" target="_blank" rel="noreferrer">
-              Explorer l&apos;architecture technique
-            </a>
-          </Button>
+        </ol>
+        <div className="flex flex-wrap gap-3">
+          <Link href="/making-of" className="mk-cta min-h-11 px-5 text-sm">
+            Voir le making-of
+          </Link>
+          <a
+            href="https://github.com/aoll/micro-saas-studio-builder"
+            target="_blank"
+            rel="noreferrer"
+            className="mk-button min-h-11 px-5 text-sm"
+          >
+            Voir le code sur GitHub
+          </a>
+          <a
+            href="/architecture/index.html"
+            target="_blank"
+            rel="noreferrer"
+            className="mk-button min-h-11 px-5 text-sm"
+          >
+            Explorer l&apos;architecture technique
+          </a>
         </div>
       </div>
     </section>

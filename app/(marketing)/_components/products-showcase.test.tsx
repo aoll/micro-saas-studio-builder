@@ -37,7 +37,11 @@ describe("ProductsShowcase", () => {
     render(await ProductsShowcase());
     const links = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
     expect(links).toEqual(["/descri-pro", "/lettre-pro", "/nom-de-marque", "/admin/login"]);
-    expect(screen.getByText("Générez votre lettre de motivation en 30 secondes")).toBeTruthy();
+    // Name and headline are drawn in the Open Graph preview, so they reach
+    // assistive tech through its alt text, built from the product's own data.
+    expect(
+      screen.getByRole("img", { name: "LettrePro — Générez votre lettre de motivation en 30 secondes" }),
+    ).toBeTruthy();
   });
 
   it("excludes killed products, never linking or naming them", async () => {
@@ -52,6 +56,7 @@ describe("ProductsShowcase", () => {
       "/admin/login",
     ]);
     expect(screen.queryByText("NomDeMarque")).toBeNull();
+    expect(screen.queryByAltText(/NomDeMarque/)).toBeNull();
   });
 
   it("renders nothing when every product is killed", async () => {

@@ -21,4 +21,31 @@ test.describe("Home (/)", () => {
     await productLink.click();
     await expect(page).toHaveURL(/\/lettre-pro$/);
   });
+
+  // Screenshots from scripts/backoffice-screenshots.ts, in public/landing/.
+  test("shows three backoffice screens, every image loaded", async ({ page }) => {
+    await page.goto("/");
+    const screens = page.getByRole("region", { name: "Le backoffice en images" }).getByRole("img");
+    await expect(screens).toHaveCount(3);
+    for (const screen of await screens.all()) {
+      await screen.scrollIntoViewIfNeeded();
+      await expect(screen).toHaveJSProperty("complete", true);
+      expect(await screen.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+    }
+  });
+
+  // Each product card previews the product with its own Open Graph image
+  // (app/(products)/[app]/opengraph-image.tsx): a wrong path or a failing
+  // image route only shows up as a broken image in a real browser.
+  test("previews each product with its Open Graph image", async ({ page }) => {
+    await page.goto("/");
+    const productCards = page.locator('#produits a:not([href="/admin/login"])');
+    expect(await productCards.count()).toBeGreaterThan(0);
+    for (const card of await productCards.all()) {
+      const preview = card.locator("img");
+      await preview.scrollIntoViewIfNeeded();
+      await expect(preview).toHaveJSProperty("complete", true);
+      expect(await preview.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+    }
+  });
 });

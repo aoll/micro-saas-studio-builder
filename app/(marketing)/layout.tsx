@@ -1,6 +1,7 @@
 import "@/app/globals.css";
 import type { Metadata } from "next";
 import { env } from "@/lib/env";
+import { display, mono, sans } from "@/components/brand/fonts";
 
 // Root layout for `/`: a third root layout alongside `(backoffice)` and
 // `(products)/[app]` (docs/09-arborescence.md's "multiple root layouts"
@@ -14,8 +15,8 @@ export const metadata: Metadata = {
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr">
-      <body className="min-h-dvh bg-background text-foreground">{children}</body>
+    <html lang="fr" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
+      <body className="min-h-dvh mk-backdrop font-[family-name:var(--font-mk-sans)] text-mk-ink">{children}</body>
     </html>
   );
 }

@@ -1,6 +1,7 @@
 import { formatEuroCents, formatEuroMicros } from "@/app/(backoffice)/admin/_components/portfolio/format";
 import { excerpt, summarizeInput } from "@/app/(products)/[app]/history/_lib/summarize";
 import type { ActivityGeneration, ActivityMovement, PurchaseSummary } from "@/lib/dal/activity";
+import type { ProductConfig } from "@/lib/schemas/product-config";
 
 // I18N-BACKOFFICE-STRINGS: a minimal structural type (sheet.ts's `Translate`, defined again here
 // rather than imported: the two files are unrelated feature areas that happen to share a message
@@ -18,8 +19,8 @@ const EM_DASH = "—";
 // AI cost with at least 3 decimals ("0,004 €", plan design decision 4),
 // more when needed so a sub-millieuro generation never reads 0,000 €
 // (QA1 B8): the portfolio's adaptive `formatEuroMicros`.
-export function formatCostMicros(costMicros: number | null): string {
-  return formatEuroMicros(costMicros ?? 0, 3);
+export function formatCostMicros(costMicros: number | null, locale: ProductConfig["locale"] = "fr"): string {
+  return formatEuroMicros(costMicros ?? 0, 3, locale);
 }
 
 const MS_PER_MINUTE = 60_000;
@@ -102,10 +103,14 @@ export { excerpt, summarizeInput };
 // (not a single string) so the component decides how to lay them out, mirroring the mockup's
 // two-line card. The amount itself stays formatEuroCents (fr-FR, portfolio/format.ts): outside
 // this lot's Périmètre, not yet locale-aware (see this spec's report).
-export function purchaseSummaryLines(summary: PurchaseSummary, t: Translate): string[] {
+export function purchaseSummaryLines(
+  summary: PurchaseSummary,
+  t: Translate,
+  locale: ProductConfig["locale"] = "fr",
+): string[] {
   const headline = t("activity.purchases.headline", {
     count: summary.count,
-    amount: formatEuroCents(summary.revenueCents),
+    amount: formatEuroCents(summary.revenueCents, locale),
   });
   if (summary.byPack.length === 0) return [headline];
   const breakdown = summary.byPack

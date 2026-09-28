@@ -12,6 +12,7 @@ import type { ActivityPurchase, PurchaseSummary } from "@/lib/dal/activity";
 vi.mock("next-intl/server", () => ({
   getTranslations: async (namespace: "backoffice-product-sheet") =>
     createTranslator({ locale: "fr", messages: { "backoffice-product-sheet": frSheet }, namespace }),
+  getLocale: async () => "fr",
 }));
 
 afterEach(cleanup);
@@ -115,6 +116,7 @@ describe("PurchasesCard", () => {
     vi.doMock("next-intl/server", () => ({
       getTranslations: async (namespace: "backoffice-product-sheet") =>
         createTranslator({ locale: "en", messages: { "backoffice-product-sheet": enSheet }, namespace }),
+      getLocale: async () => "en",
     }));
     vi.resetModules();
     const summary: PurchaseSummary = { count: 1, revenueCents: 490, byPack: [] };
@@ -132,7 +134,7 @@ describe("PurchasesCard", () => {
       }),
     );
     expect(screen.getByText("Purchases · 30d")).toBeTruthy();
-    expect(screen.getByText(/^1 purchase.+4,90.€$/)).toBeTruthy();
+    expect(screen.getByText(/^1 purchase.+€4\.90$/)).toBeTruthy();
     expect(screen.getByText("1h ago")).toBeTruthy();
   });
 });

@@ -12,6 +12,7 @@ import type { ActivityPage, ActivityGeneration, ActivityMovement, ActivityPurcha
 vi.mock("next-intl/server", () => ({
   getTranslations: async (namespace: "backoffice-product-sheet") =>
     createTranslator({ locale: "fr", messages: { "backoffice-product-sheet": frSheet }, namespace }),
+  getLocale: async () => "fr",
 }));
 
 afterEach(cleanup);
@@ -59,6 +60,7 @@ describe("ActivityView", () => {
     vi.doMock("next-intl/server", () => ({
       getTranslations: async (namespace: "backoffice-product-sheet") =>
         createTranslator({ locale: "en", messages: { "backoffice-product-sheet": enSheet }, namespace }),
+      getLocale: async () => "en",
     }));
     vi.resetModules();
     await renderView();

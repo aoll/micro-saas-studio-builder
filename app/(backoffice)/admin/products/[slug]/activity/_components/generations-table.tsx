@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,7 +46,7 @@ export async function GenerationsTable({
   currentPages: Partial<Record<ActivityListKey, number>>;
 }) {
   const listKey: ActivityListKey = "generations";
-  const t = await getTranslations("backoffice-product-sheet");
+  const [t, locale] = await Promise.all([getTranslations("backoffice-product-sheet"), getLocale()]);
   const paginationNav = await PaginationNav({ slug, listKey, page, hasMore, currentPages });
 
   return (
@@ -99,7 +99,7 @@ export async function GenerationsTable({
                     <td className="py-2 pr-4">{summarizeInput(entry.input, fields)}</td>
                     <td className="py-2 pr-4 text-muted-foreground">{summarizeOutput(entry.output)}</td>
                     <td className="py-2 pr-4 whitespace-nowrap">{entry.model ?? "—"}</td>
-                    <td className="py-2 pr-4 whitespace-nowrap">{formatCostMicros(entry.costMicros)}</td>
+                    <td className="py-2 pr-4 whitespace-nowrap">{formatCostMicros(entry.costMicros, locale)}</td>
                     <td className="py-2 pr-4">
                       <Badge className={STATUS_BADGE_CLASS[status.variant]}>{status.label}</Badge>
                     </td>

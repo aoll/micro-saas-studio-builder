@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ActivityPurchase, PurchaseSummary } from "@/lib/dal/activity";
@@ -35,8 +35,8 @@ export async function PurchasesCard({
   currentPages: Partial<Record<ActivityListKey, number>>;
 }) {
   const listKey: ActivityListKey = "purchases";
-  const t = await getTranslations("backoffice-product-sheet");
-  const [headline, breakdown] = purchaseSummaryLines(summary, t);
+  const [t, locale] = await Promise.all([getTranslations("backoffice-product-sheet"), getLocale()]);
+  const [headline, breakdown] = purchaseSummaryLines(summary, t, locale);
   const paginationNav = await PaginationNav({ slug, listKey, page, hasMore, currentPages });
 
   return (
@@ -66,7 +66,7 @@ export async function PurchasesCard({
             {entries.map((purchase) => (
               <li key={purchase.id} className="flex items-center justify-between gap-3 text-sm">
                 <span className="font-medium">+{purchase.credits}</span>
-                <span className="flex-1">{formatEuroCents(purchase.amountCents)}</span>
+                <span className="flex-1">{formatEuroCents(purchase.amountCents, locale)}</span>
                 <span className="text-muted-foreground">{formatRelative(purchase.createdAt, now, t)}</span>
               </li>
             ))}

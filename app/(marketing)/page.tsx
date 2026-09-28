@@ -21,9 +21,15 @@ export async function generateMetadata(): Promise<Metadata> {
     title: t("title"),
     description: t("description"),
     alternates: {
+      // `fr` mirrors `canonical` exactly (no `forcePrefix`): `fr` is the
+      // default locale, so `/` is the real, never-redirected URL — a
+      // `forcePrefix`'d `/fr` would 307 to `/` (proxy.test.ts's "/fr…"
+      // cases), leaving hreflang="fr" pointing at a URL search engines
+      // never see served directly (nextjs-reviewer finding). `en` keeps
+      // `forcePrefix`: `/en` is itself the real, never-redirected URL.
       canonical: getPathname({ href: "/", locale: "fr" }),
       languages: {
-        fr: getPathname({ href: "/", locale: "fr", forcePrefix: true }),
+        fr: getPathname({ href: "/", locale: "fr" }),
         en: getPathname({ href: "/", locale: "en", forcePrefix: true }),
         "x-default": "/",
       },

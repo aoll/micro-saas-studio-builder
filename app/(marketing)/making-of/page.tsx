@@ -19,9 +19,11 @@ export async function generateMetadata(): Promise<Metadata> {
     title: t("title"),
     description: t("description"),
     alternates: {
+      // See app/(marketing)/page.tsx's generateMetadata for why `fr` has no
+      // `forcePrefix` (nextjs-reviewer finding): it must mirror `canonical`.
       canonical: getPathname({ href: "/making-of", locale: "fr" }),
       languages: {
-        fr: getPathname({ href: "/making-of", locale: "fr", forcePrefix: true }),
+        fr: getPathname({ href: "/making-of", locale: "fr" }),
         en: getPathname({ href: "/making-of", locale: "en", forcePrefix: true }),
         "x-default": "/making-of",
       },

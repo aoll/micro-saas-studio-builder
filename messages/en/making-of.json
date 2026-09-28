@@ -40,6 +40,7 @@
     "qaPassTooltip": "QA pass {pass} · {clock} · {count, plural, one {# finding} other {# findings}}",
     "laneListAriaLabel": "Worktrees of the run",
     "laneTooltip": "{name} · {start} → {end} · {agents, plural, one {# agent} other {# agents}}",
+    "hourTooltip": "From {clock} · {agents, plural, one {# agent} other {# agents}}",
     "tableSummary": "See the {count} worktrees as a table",
     "tableWorktree": "Worktree",
     "tableCycle": "Cycle",

@@ -28,10 +28,16 @@ export function clockLabel(hour: number): string {
 
 export type Cycle = "implementation" | "qa";
 
-export type Lane = { name: string; start: number; end: number; cycle: Cycle; agents: number };
+// `labelId` keys messages/{fr,en}/making-of.json's `qaLanes`: the "QA ·
+// P1-B3" prefix is the spec's own code, a technical identifier that stays
+// as-is in both locales (implementation lane names, e.g. "SETUP-SKELETON",
+// are the same kind of identifier and never had a labelId to begin with);
+// only the descriptive suffix that used to follow it (e.g. "PAIEMENT") is
+// translated, run-timeline.tsx composes the two back together.
+export type Lane = { name: string; labelId?: string; start: number; end: number; cycle: Cycle; agents: number };
 
 // One lane per worktree: from its first agent's start to its last agent's end.
-const LANE_ROWS: [string, number, number, Cycle, number][] = [
+const LANE_ROWS: [string, number, number, Cycle, number, string?][] = [
   ["SETUP-SKELETON", 9.57, 10.72, "implementation", 10],
   ["CONTRACT-TYPES", 10.74, 11.33, "implementation", 7],
   ["CONTRACT-DATA", 11.35, 12.29, "implementation", 7],
@@ -75,26 +81,27 @@ const LANE_ROWS: [string, number, number, Cycle, number][] = [
   ["TEST-HYGIENE", 20.21, 20.31, "implementation", 1],
   ["TOOLING-TEST-TX", 20.22, 20.95, "implementation", 4],
   ["TOOLING-QA-SKILL", 20.45, 20.68, "implementation", 1],
-  ["QA · P1-L1 LOT LÉGER", 22.11, 22.43, "qa", 3],
-  ["QA · P1-B3 PAIEMENT", 22.11, 24.31, "qa", 4],
-  ["QA · P1-B4 VISITE DOUBLE", 22.12, 23.57, "qa", 4],
-  ["QA · P1-B5 1RE GÉNÉRATION", 22.12, 22.45, "qa", 4],
-  ["QA · P1-B12 STATUT HTTP", 22.12, 24.72, "qa", 4],
-  ["QA · P1-Q5 FUNNEL", 22.19, 22.79, "qa", 4],
-  ["QA · P1-M1 CONFIG", 22.19, 24.24, "qa", 4],
-  ["QA · P1-Q2 INSCRIPTION", 22.2, 24.39, "qa", 5],
-  ["QA · P1-B7 REFUS 402", 22.2, 22.79, "qa", 4],
-  ["QA · P1-B14 CACHE", 22.24, 24.7, "qa", 4],
-  ["QA · P2-N1 OPS", 25.98, 26.18, "qa", 2],
-  ["QA · P2-S1 SLUG PRIS", 25.98, 26.38, "qa", 3],
-  ["QA · P3-F1 FORMULAIRE", 26.79, 26.95, "qa", 2],
-  ["QA · P4-E1 ERREURS", 27.38, 27.53, "qa", 2],
-  ["QA · P5-E2 MESSAGES", 28.68, 28.75, "qa", 1],
-  ["QA · P6-E3 PRICING", 29.02, 29.13, "qa", 1],
+  ["QA · P1-L1", 22.11, 22.43, "qa", 3, "light-lot"],
+  ["QA · P1-B3", 22.11, 24.31, "qa", 4, "payment"],
+  ["QA · P1-B4", 22.12, 23.57, "qa", 4, "double-visit"],
+  ["QA · P1-B5", 22.12, 22.45, "qa", 4, "first-generation"],
+  ["QA · P1-B12", 22.12, 24.72, "qa", 4, "http-status"],
+  ["QA · P1-Q5", 22.19, 22.79, "qa", 4, "funnel"],
+  ["QA · P1-M1", 22.19, 24.24, "qa", 4, "config"],
+  ["QA · P1-Q2", 22.2, 24.39, "qa", 5, "signup"],
+  ["QA · P1-B7", 22.2, 22.79, "qa", 4, "refusal-402"],
+  ["QA · P1-B14", 22.24, 24.7, "qa", 4, "cache"],
+  ["QA · P2-N1", 25.98, 26.18, "qa", 2, "ops"],
+  ["QA · P2-S1", 25.98, 26.38, "qa", 3, "slug-taken"],
+  ["QA · P3-F1", 26.79, 26.95, "qa", 2, "form"],
+  ["QA · P4-E1", 27.38, 27.53, "qa", 2, "errors"],
+  ["QA · P5-E2", 28.68, 28.75, "qa", 1, "messages"],
+  ["QA · P6-E3", 29.02, 29.13, "qa", 1, "pricing"],
 ];
 
-export const LANES: Lane[] = LANE_ROWS.map(([name, start, end, cycle, agents]) => ({
+export const LANES: Lane[] = LANE_ROWS.map(([name, start, end, cycle, agents, labelId]) => ({
   name,
+  ...(labelId ? { labelId } : {}),
   start,
   end,
   cycle,
@@ -123,40 +130,47 @@ export const QA_PASSES: QaPass[] = [
   { pass: 7, start: 29.15, findings: 0 },
 ];
 
-export type AgentRole = { role: string; count: number; job: string };
+// `role` stays untranslated (a technical agent name, like a lane's spec
+// code): only its `job` description lives in messages, under
+// `agentRoles.jobs.<role>`.
+export type AgentRole = { role: string; count: number };
 
 export const AGENT_ROLES: AgentRole[] = [
-  { role: "tdd-guide", count: 61, job: "Implémente une spec, test d'abord" },
-  { role: "general-purpose", count: 48, job: "Passes QA, vérifications" },
-  { role: "planner", count: 39, job: "Transforme une spec en plan" },
-  { role: "code-reviewer", count: 39, job: "Relit le diff contre la spec" },
-  { role: "security-reviewer", count: 26, job: "Auth, crédits, entrées" },
-  { role: "nextjs-reviewer", count: 19, job: "Rendu, cache, routes" },
-  { role: "database-reviewer", count: 15, job: "Schéma, requêtes, ledger" },
-  { role: "silent-failure-hunter", count: 8, job: "Erreurs avalées" },
-  { role: "Explore", count: 3, job: "Recherche dans le code" },
+  { role: "tdd-guide", count: 61 },
+  { role: "general-purpose", count: 48 },
+  { role: "planner", count: 39 },
+  { role: "code-reviewer", count: 39 },
+  { role: "security-reviewer", count: 26 },
+  { role: "nextjs-reviewer", count: 19 },
+  { role: "database-reviewer", count: 15 },
+  { role: "silent-failure-hunter", count: 8 },
+  { role: "Explore", count: 3 },
 ];
 
-export type ProcessStep = { title: string; who: string; humanGate: boolean };
+// `title`/`who` live in messages/{fr,en}/making-of.json's `processSteps.<id>`.
+export type ProcessStep = { id: string; humanGate: boolean };
 
 export const PROCESS_STEPS: ProcessStep[] = [
-  { title: "Dossier", who: "docs/ : 15 documents, source de vérité", humanGate: false },
-  { title: "Specs", who: "28 specs, validées par l'humain", humanGate: true },
-  { title: "Plan", who: "planner", humanGate: false },
-  { title: "TDD", who: "tdd-guide, rouge puis vert", humanGate: false },
-  { title: "Revue", who: "5 relecteurs spécialisés", humanGate: false },
-  { title: "Verify", who: "pnpm check et conformité à la spec", humanGate: false },
-  { title: "PR et merge", who: "branche d'intégration", humanGate: false },
-  { title: "QA puis main", who: "constats validés, merge humain", humanGate: true },
+  { id: "dossier", humanGate: false },
+  { id: "specs", humanGate: true },
+  { id: "plan", humanGate: false },
+  { id: "tdd", humanGate: false },
+  { id: "review", humanGate: false },
+  { id: "verify", humanGate: false },
+  { id: "pr-merge", humanGate: false },
+  { id: "qa-main", humanGate: true },
 ];
 
-export type KeyFigure = { value: string; label: string };
+// `label` lives in messages/{fr,en}/making-of.json's `keyFigures.<id>`;
+// `value` is now a number so ControlRoomHeader can format it per locale
+// (useFormatter, fr "1 718" vs en "1,718").
+export type KeyFigure = { id: string; value: number };
 
 export const KEY_FIGURES: KeyFigure[] = [
-  { value: "258", label: "agents lancés" },
-  { value: "28", label: "specs mergées" },
-  { value: "76", label: "pull requests" },
-  { value: "1 718", label: "tests verts" },
-  { value: "7", label: "passes QA" },
-  { value: "0", label: "constat restant" },
+  { id: "total-agents", value: 258 },
+  { id: "specs", value: 28 },
+  { id: "pull-requests", value: 76 },
+  { id: "tests", value: 1718 },
+  { id: "qa-passes", value: 7 },
+  { id: "findings-remaining", value: 0 },
 ];

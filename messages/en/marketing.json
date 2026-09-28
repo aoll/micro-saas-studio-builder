@@ -1,0 +1,100 @@
+{
+  "metadata": {
+    "title": "Micro-SaaS Studio Builder — a demo for Dotworld",
+    "description": "A Next.js back-office that launches an AI micro-SaaS in minutes and runs it on data: Test → Learn → Scale."
+  },
+  "localeSwitcher": {
+    "label": "Language",
+    "fr": "Français",
+    "en": "English"
+  },
+  "hero": {
+    "eyebrow": "A small demo — application to Dotworld",
+    "title": "A back-office to generate and run AI micro-SaaS products in minutes",
+    "description": "From the back-office, a new product is created by filling in a form, and each one is run on data — funnel, AI cost, margin — up to the decision: scale it, or cut it.",
+    "ctaProduct": "See a live product",
+    "ctaAdmin": "Open the admin back-office",
+    "demoNote": "Public demo: payment and email are simulated here.",
+    "buildNote": "Built with Claude Code, specs and tests included:",
+    "makingOfLink": "Discover the making-of",
+    "lifecycleLabel": "A product's lifecycle",
+    "stages": {
+      "test": { "status": "Test", "meaning": "Launched from a form" },
+      "learn": { "status": "Learn", "meaning": "Funnel, AI cost, margin" },
+      "scale": { "status": "Scale", "meaning": "We invest" },
+      "killed": { "status": "Killed", "meaning": "We cut it" }
+    }
+  },
+  "keyNumbers": {
+    "app": "Next.js app",
+    "subApps": "dynamic sub-apps",
+    "agents": "specialized agents",
+    "pullRequests": "merged pull requests",
+    "tests": "passing tests"
+  },
+  "backofficeScreens": {
+    "eyebrow": "The back-office",
+    "title": "The back-office, in pictures",
+    "portfolio": {
+      "title": "The portfolio",
+      "description": "Every product at a glance: visits, conversion, revenue, AI cost, margin, and the \"scale it\" or \"cut it\" suggestion.",
+      "alt": "Back-office portfolio: four studio-wide KPIs over 30 days and the product table with its status."
+    },
+    "product": {
+      "title": "The product sheet",
+      "description": "Each product's funnel, from visit to purchase, and its visits and purchases curve.",
+      "alt": "LettrePro product sheet: revenue, ARPU, AI cost, margin per generation and conversion funnel."
+    },
+    "productForm": {
+      "title": "Creating a product",
+      "description": "A 7-step form, with a live preview of the landing page as you type.",
+      "alt": "Product creation form, Landing & SEO step, with the landing preview on the right."
+    }
+  },
+  "whyThisDemo": {
+    "eyebrow": "Context",
+    "title": "Why this project",
+    "description": "Several SaaS products running in parallel, a modern stack, agentic development at the core of the process, self-funded and profitable from year one, grown from 1 to over 50 people in four years: a model that has proven itself. This demo is my way of concretely showing the wish to learn this model and contribute to it, by exploring its core business at my own scale."
+  },
+  "productsShowcase": {
+    "eyebrow": "Live",
+    "title": "The studio's products",
+    "description": "Each one is a configuration of the same foundation, served on its own URL: click a card to try it live.",
+    "tryLive": "Try it live",
+    "createTitle": "Create a new product",
+    "createDescription": "A form in the back-office is enough to launch a new one, in a few minutes.",
+    "createCta": "Open the back-office →",
+    "imageAlt": "{name} — {headline}"
+  },
+  "howItsBuilt": {
+    "eyebrow": "The method",
+    "title": "How it's built",
+    "tagline": "\"We develop with AI, not alongside it\": this repo shows the method as much as the product.",
+    "points": {
+      "specs": {
+        "title": "Specs before code",
+        "description": "One spec per feature, written before the implementation: behaviour, edge cases, acceptance criteria."
+      },
+      "tdd": {
+        "title": "TDD across the whole implementation",
+        "description": "Every acceptance behaviour is tested before it's coded, red then green."
+      },
+      "review": {
+        "title": "One spec, one multi-angle agentic review, one PR",
+        "description": "Every feature goes through several specialized review agents — correctness, Next.js, database, security — before being merged."
+      }
+    },
+    "ctaMakingOf": "See the making-of",
+    "ctaGithub": "See the code on GitHub",
+    "ctaArchitecture": "Explore the technical architecture"
+  },
+  "footer": {
+    "name": "Alexandre Ollivier — senior fullstack developer",
+    "note": "Application demo: payment and email are simulated here.",
+    "github": "GitHub",
+    "linkedin": "LinkedIn",
+    "makingOf": "Making-of",
+    "architecture": "Architecture",
+    "admin": "Admin back-office"
+  }
+}

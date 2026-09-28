@@ -1,0 +1,108 @@
+{
+  "metadata": {
+    "title": "Making-of — Micro-SaaS Studio Builder",
+    "description": "258 agents IA, 30 heures : comment la démo a été construite par un orchestrateur, spec par spec, puis passée en QA jusqu'à zéro constat."
+  },
+  "header": {
+    "back": "Retour à la démo",
+    "status": "Run terminé · 0 constat restant",
+    "eyebrow": "Making-of · micro-saas-studio-builder",
+    "title": "258 agents IA, 30 heures, une plateforme en production.",
+    "description": "Un orchestrateur a découpé le dossier de conception en 28 specs, les a fait implémenter en parallèle dans des worktrees isolés, puis a lancé la QA jusqu'à ce qu'il ne reste plus rien à corriger. Un humain valide aux portes clés."
+  },
+  "keyFigures": {
+    "total-agents": "agents lancés",
+    "specs": "specs mergées",
+    "pull-requests": "pull requests",
+    "tests": "tests verts",
+    "qa-passes": "passes QA",
+    "findings-remaining": "constat restant"
+  },
+  "processSteps": {
+    "heading": "00 · Le process",
+    "humanGateLabel": "Porte humaine",
+    "parallelNote": "Les étapes 3 à 7 tournent en parallèle, une spec par worktree, jusqu'à 12 agents simultanés.",
+    "dossier": { "title": "Dossier", "who": "docs/ : 15 documents, source de vérité" },
+    "specs": { "title": "Specs", "who": "28 specs, validées par l'humain" },
+    "plan": { "title": "Plan", "who": "planner" },
+    "tdd": { "title": "TDD", "who": "tdd-guide, rouge puis vert" },
+    "review": { "title": "Revue", "who": "5 relecteurs spécialisés" },
+    "verify": { "title": "Verify", "who": "pnpm check et conformité à la spec" },
+    "pr-merge": { "title": "PR et merge", "who": "branche d'intégration" },
+    "qa-main": { "title": "QA puis main", "who": "constats validés, merge humain" }
+  },
+  "timeline": {
+    "heading": "01 · 02 · Les deux cycles, heure par heure",
+    "tagline": "Chaque ligne est un worktree. Chaque barre, la vie d'une spec, du plan au merge.",
+    "legendImplementation": "Cycle 1 · implémentation",
+    "legendQa": "Cycle 2 · QA et corrections",
+    "qaPassesLabel": "Passes QA",
+    "qaPassTooltip": "Passe QA {pass} · {clock} · {count, plural, one {# constat} other {# constats}}",
+    "laneListAriaLabel": "Worktrees du run",
+    "laneTooltip": "{name} · {start} → {end} · {agents, plural, one {# agent} other {# agents}}",
+    "tableSummary": "Voir les {count} worktrees sous forme de tableau",
+    "tableWorktree": "Worktree",
+    "tableCycle": "Cycle",
+    "tableStart": "Début",
+    "tableEnd": "Fin",
+    "tableAgents": "Agents",
+    "cycleImplementation": "Implémentation",
+    "cycleQa": "QA",
+    "agentsPerHourLabel": "Agents actifs par heure"
+  },
+  "cycles": {
+    "sectionAriaLabel": "Les deux cycles",
+    "implementation": {
+      "heading": "Cycle 1 · Implémentation",
+      "summary": "28 specs en 11 heures, de nuit. Une spec démarre dès que ses dépendances sont mergées.",
+      "point1": "Contrats gelés d'abord : types, schéma de données, UI de base.",
+      "point2": "Puis 10 specs lancées dans la même minute, chacune dans son worktree et sa base Postgres.",
+      "point3": "Plan, TDD, 5 relecteurs spécialisés, /verify, PR, merge : 199 agents au total."
+    },
+    "qa": {
+      "heading": "Cycle 2 · QA et corrections",
+      "summary": "7 passes QA dans un vrai navigateur, jusqu'à zéro constat.",
+      "passesAriaLabel": "Constats par passe QA",
+      "passLabel": "Passe {pass}",
+      "findingsLabel": "{count, plural, =0 {0 constat · 46/46 PASS} one {# constat} other {# constats}}",
+      "footnote": "Constats relevés par passe. 26 corrigés via 16 specs de correction, 3 écartés par l'humain."
+    }
+  },
+  "agentRoles": {
+    "heading": "03 · L'équipe d'agents",
+    "jobs": {
+      "tdd-guide": "Implémente une spec, test d'abord",
+      "general-purpose": "Passes QA, vérifications",
+      "planner": "Transforme une spec en plan",
+      "code-reviewer": "Relit le diff contre la spec",
+      "security-reviewer": "Auth, crédits, entrées",
+      "nextjs-reviewer": "Rendu, cache, routes",
+      "database-reviewer": "Schéma, requêtes, ledger",
+      "silent-failure-hunter": "Erreurs avalées",
+      "Explore": "Recherche dans le code"
+    }
+  },
+  "qaLanes": {
+    "light-lot": "Lot léger",
+    "payment": "Paiement",
+    "double-visit": "Visite double",
+    "first-generation": "1re génération",
+    "http-status": "Statut HTTP",
+    "funnel": "Funnel",
+    "config": "Config",
+    "signup": "Inscription",
+    "refusal-402": "Refus 402",
+    "cache": "Cache",
+    "ops": "Ops",
+    "slug-taken": "Slug pris",
+    "form": "Formulaire",
+    "errors": "Erreurs",
+    "messages": "Messages",
+    "pricing": "Pricing"
+  },
+  "footer": {
+    "stack": "Next.js 16 · Cache Components · Drizzle + Postgres · Better Auth · AI SDK · Vercel",
+    "usage": "180 agents Sonnet · 78 agents Opus · 74 M tokens",
+    "github": "Le code sur GitHub"
+  }
+}

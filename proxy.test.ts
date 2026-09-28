@@ -113,6 +113,16 @@ function forwardedHeader(response: Response, name: string): string | null {
   return response.headers.get(`x-middleware-request-${name}`);
 }
 
+// R5 (spec bullet 5): a single `proxy` export, plus `config` — no `default`
+// or `middleware` export that Next could pick as the actual entry point
+// instead of the named `proxy` export this file relies on throughout.
+describe("proxy.ts module shape (R5)", () => {
+  it("exports exactly config and proxy", async () => {
+    const proxyModule: Record<string, unknown> = await import("./proxy");
+    expect(Object.keys(proxyModule).sort()).toEqual(["config", "proxy"]);
+  });
+});
+
 describe("proxy (QA1-P1-B4): sets the anonymous_id cookie before the first beacon", () => {
   it("GET /lettre-pro without a cookie: sets a valid, HttpOnly, Path=/, SameSite=Lax, one-year cookie", () => {
     const response = proxy(get("http://demo.example/lettre-pro"));

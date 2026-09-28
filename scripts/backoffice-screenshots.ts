@@ -21,13 +21,23 @@ const VIEWPORT = { width: 1280, height: 800 };
 // Hides the Next.js dev-tools badge, which only exists on `next dev`.
 const HIDE_DEV_OVERLAY = "nextjs-portal { display: none !important; }";
 
-async function capture(page: Page, name: string) {
+// `withoutSidebar` crops the admin navigation out of the image (the
+// portfolio shot keeps it, the others focus on the page itself); the page
+// keeps its real layout, only the capture starts where the sidebar ends.
+async function capture(page: Page, name: string, { withoutSidebar = false } = {}) {
   await page.addStyleTag({ content: HIDE_DEV_OVERLAY });
   // Lets fonts, charts and the diffuse ground settle.
   await page.waitForTimeout(1000);
+  let clip: { x: number; y: number; width: number; height: number } | undefined;
+  if (withoutSidebar) {
+    const sidebar = await page.locator("nav", { has: page.getByRole("link", { name: "Portefeuille" }) }).boundingBox();
+    if (!sidebar) throw new Error(`${name}: admin sidebar not found, cannot crop it out`);
+    const left = Math.ceil(sidebar.x + sidebar.width);
+    clip = { x: left, y: 0, width: VIEWPORT.width - left, height: VIEWPORT.height };
+  }
   // JPEG: the diffuse gradient ground compresses badly as PNG.
   const path = join(OUT_DIR, `${name}.jpg`);
-  await page.screenshot({ path, type: "jpeg", quality: 85 });
+  await page.screenshot({ path, type: "jpeg", quality: 85, clip });
   console.log(`✓ ${path}`);
 }
 
@@ -45,7 +55,7 @@ async function main() {
     await capture(page, "backoffice-portfolio");
 
     await page.goto("/admin/products/lettre-pro", { waitUntil: "networkidle" });
-    await capture(page, "backoffice-product");
+    await capture(page, "backoffice-product", { withoutSidebar: true });
 
     // The product form, filled from the same fixture as the two-minute demo
     // (e2e/product-form.spec.ts), on the step whose preview shows a landing.
@@ -58,7 +68,7 @@ async function main() {
     await page.locator('[role="radio"]', { hasText: "Neon" }).click();
     await page.getByRole("button", { name: /^3\./ }).click();
     await page.getByText("Configuration importée").waitFor({ state: "hidden" });
-    await capture(page, "backoffice-product-form");
+    await capture(page, "backoffice-product-form", { withoutSidebar: true });
   } finally {
     await browser.close();
   }

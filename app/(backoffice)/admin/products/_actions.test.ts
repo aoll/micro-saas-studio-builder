@@ -1,7 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { MockLanguageModelV4, simulateReadableStream } from "ai/test";
 import { eq } from "drizzle-orm";
+import { createTranslator } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import fr from "@/messages/fr/backoffice-product-form-b2.json";
+import en from "@/messages/en/backoffice-product-form-b2.json";
 import { REFUSAL_MESSAGES } from "@/lib/ai/generate";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/auth-schema";
@@ -17,6 +20,22 @@ class RedirectMarker extends Error {
 
 const requireAdmin = vi.fn();
 vi.mock("@/lib/dal/session", () => ({ requireAdmin: () => requireAdmin() }));
+
+// I18N-BACKOFFICE-STRINGS (lot 6): next-intl/server picks its "react-server"
+// export via a condition Vitest's node environment doesn't set (same issue
+// as history-list.test.tsx and movement-list.test.tsx), so it's mocked here
+// with a real translator built from the committed fr/en messages — it
+// branches on the `locale` _actions.ts actually requests, so every existing
+// call (which never passes a locale, defaulting to "fr") keeps resolving
+// the exact same French strings as before this spec.
+vi.mock("next-intl/server", () => ({
+  getTranslations: async ({ locale, namespace }: { locale: "fr" | "en"; namespace: string }) =>
+    createTranslator({
+      locale,
+      messages: { "backoffice-product-form-b2": locale === "en" ? en : fr },
+      namespace: namespace as never,
+    }),
+}));
 
 const updateTag = vi.fn();
 vi.mock("next/cache", () => ({ updateTag: (tag: string) => updateTag(tag) }));

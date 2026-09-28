@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { put } from "@vercel/blob";
 import { updateTag } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { toolInputSchema } from "@/app/(products)/[app]/tool/_lib/tool-input-schema";
 import { costMicros, GenerationRefusedError, streamGeneration, type GenerationUsage } from "@/lib/ai/generate";
 import {
@@ -21,7 +22,7 @@ import { generateInputSchema } from "@/lib/schemas/inputs";
 import { productConfigSchema, slugSchema, templateVariables } from "@/lib/schemas/product-config";
 import { detectImageType, IMAGE_EXTENSIONS, type DetectedImageType } from "./_components/product-form/image-signature";
 import { MODEL_CATALOGUE_VALUES } from "./_components/product-form/model-catalogue";
-import { issuesToErrors, stepOfPath } from "./_components/product-form/validation";
+import { issuesToErrors, stepOfPath, type Locale, type MessageTranslator } from "./_components/product-form/validation";
 
 // BO-05a (specs/BO-05a-formulaire.md): one Server Action per domain
 // (CLAUDE.md), used by both `/admin/products/new` (slug === null) and
@@ -41,6 +42,20 @@ export type SaveProductState = {
 const MAX_LOGO_BYTES = 512 * 1024;
 const ALLOWED_LOGO_TYPES = new Set<DetectedImageType>(["image/png", "image/jpeg", "image/webp"]);
 
+// I18N-BACKOFFICE-STRINGS (lot 6): every exported action below takes the
+// admin's locale as its last parameter, bound client-side from the calling
+// component's own `useLocale()` (never `app()` nor `cookies()` here — both
+// throw in a Server Action, docs/08-stack.md › i18n). Defaulted to "fr"
+// (never guessed: this is a literal default, not a header/cookie read) so
+// every call site that predates this spec — including this file's own
+// large committed test suite — keeps compiling and behaving exactly as
+// before; a caller that wants the admin's real locale passes it explicitly.
+const DEFAULT_LOCALE: Locale = "fr";
+
+async function translator(locale: Locale): Promise<MessageTranslator> {
+  return getTranslations({ locale, namespace: "backoffice-product-form-b2" });
+}
+
 // Drizzle wraps the driver's own error instead of exposing `.code` on it
 // directly: the real Postgres error (and its `code`) lives on `.cause`
 // (lib/db/schema.test.ts's `expectViolation`). A plain `{ code: "23505" }`
@@ -59,11 +74,14 @@ function isUniqueSlugViolation(err: unknown): boolean {
 // Shared by every action below that reads the form's "config" hidden field
 // (product-form.tsx): unreadable JSON is a form-level error, not a
 // validation issue on a specific field.
-function parseConfigForm(formData: FormData): { ok: true; candidate: unknown } | { ok: false; formError: string } {
+function parseConfigForm(
+  formData: FormData,
+  t: MessageTranslator,
+): { ok: true; candidate: unknown } | { ok: false; formError: string } {
   try {
     return { ok: true, candidate: JSON.parse(String(formData.get("config") ?? "")) };
   } catch {
-    return { ok: false, formError: "Configuration illisible" };
+    return { ok: false, formError: t("actions.configUnreadable") };
   }
 }
 
@@ -85,29 +103,31 @@ export async function saveProduct(
   slug: string | null,
   _prevState: SaveProductState,
   formData: FormData,
+  locale: Locale = DEFAULT_LOCALE,
 ): Promise<SaveProductState> {
   await requireAdmin();
+  const t = await translator(locale);
 
-  const parsedForm = parseConfigForm(formData);
+  const parsedForm = parseConfigForm(formData, t);
   if (!parsedForm.ok) return { formError: parsedForm.formError };
   const candidate = parsedForm.candidate;
 
   const parsed = productConfigSchema.safeParse(candidate);
   if (!parsed.success) {
     const step = Math.min(...parsed.error.issues.map((issue) => stepOfPath(issue.path)));
-    return { errors: issuesToErrors(parsed.error.issues), step };
+    return { errors: issuesToErrors(parsed.error.issues, t), step };
   }
   const config = parsed.data;
 
   const themeOptions = await listThemeOptions();
   if (!themeOptions.some((theme) => theme.id === config.themeId)) {
-    return { errors: { themeId: "Thème introuvable" }, step: 2 };
+    return { errors: { themeId: t("actions.themeNotFound") }, step: 2 };
   }
 
   try {
     if (slug === null) {
       if (!(await isSlugAvailable(config.slug))) {
-        return { errors: { slug: "Ce slug est déjà utilisé" }, step: 1 };
+        return { errors: { slug: t("actions.slugAlreadyUsed") }, step: 1 };
       }
       const result = await createProduct(config);
       updateTag("products");
@@ -116,15 +136,15 @@ export async function saveProduct(
     }
 
     if (!slugSchema.safeParse(slug).success) {
-      return { formError: "Slug invalide" };
+      return { formError: t("actions.slugInvalid") };
     }
     const result = await saveVersion(slug, config);
-    if (!result) return { formError: "Produit introuvable" };
+    if (!result) return { formError: t("actions.productNotFound") };
     return { ok: true, slug: result.slug, version: result.version };
   } catch (err) {
     unstable_rethrow(err);
     if (isUniqueSlugViolation(err)) {
-      return { errors: { slug: "Ce slug est déjà utilisé" }, step: 1 };
+      return { errors: { slug: t("actions.slugAlreadyUsed") }, step: 1 };
     }
     console.error("[admin/products] saveProduct failed", err);
     throw err;
@@ -133,30 +153,36 @@ export async function saveProduct(
 
 // BO-05 step 1's live slug check, called on blur/typing from the client
 // (docs/02-ecrans.md).
-export async function checkSlug(candidate: string): Promise<{ available: boolean; error?: string }> {
+export async function checkSlug(
+  candidate: string,
+  locale: Locale = DEFAULT_LOCALE,
+): Promise<{ available: boolean; error?: string }> {
   await requireAdmin();
+  const t = await translator(locale);
   const parsed = slugSchema.safeParse(candidate);
   if (!parsed.success) {
     const reserved = parsed.error.issues.some((issue) => issue.message === "slug is reserved");
-    return { available: false, error: reserved ? "Ce slug est réservé" : "Format de slug invalide" };
+    return { available: false, error: reserved ? t("actions.slugReserved") : t("actions.slugFormatInvalid") };
   }
   const available = await isSlugAvailable(parsed.data);
-  return { available, error: available ? undefined : "Ce slug est déjà utilisé" };
+  return { available, error: available ? undefined : t("actions.slugAlreadyUsed") };
 }
 
 // BO-05 step 2's logo upload (docs/06-vercel.md › Blob).
 export async function uploadLogo(
   _prevState: { url?: string; error?: string },
   formData: FormData,
+  locale: Locale = DEFAULT_LOCALE,
 ): Promise<{ url?: string; error?: string }> {
   await requireAdmin();
+  const t = await translator(locale);
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
-    return { error: "Aucun fichier reçu" };
+    return { error: t("actions.noFileReceived") };
   }
   if (file.size > MAX_LOGO_BYTES) {
-    return { error: "Le logo dépasse 512 Ko" };
+    return { error: t("actions.logoTooLarge") };
   }
 
   // Never trust the client-declared `file.type` (any file can be labelled
@@ -164,7 +190,7 @@ export async function uploadLogo(
   const bytes = new Uint8Array(await file.arrayBuffer());
   const detectedType = detectImageType(bytes);
   if (!detectedType || !ALLOWED_LOGO_TYPES.has(detectedType)) {
-    return { error: "Formats acceptés : PNG, JPEG, WebP" };
+    return { error: t("actions.logoFormatsAccepted") };
   }
 
   try {
@@ -180,7 +206,7 @@ export async function uploadLogo(
     return { url: blob.url };
   } catch (err) {
     console.error("[admin/products] uploadLogo failed", err);
-    return { error: "Échec de l'envoi du logo" };
+    return { error: t("actions.logoUploadFailed") };
   }
 }
 
@@ -208,33 +234,35 @@ export async function testPrompt(
   slug: string | null,
   _prevState: TestPromptState,
   formData: FormData,
+  locale: Locale = DEFAULT_LOCALE,
 ): Promise<TestPromptState> {
   await requireAdmin();
+  const t = await translator(locale);
 
   const guard = await guardRequest("test-prompt");
   if (!guard.ok) {
-    return { error: "Trop de tests pour le moment, réessayez dans un instant." };
+    return { error: t("actions.tooManyTests") };
   }
 
-  const parsedForm = parseConfigForm(formData);
+  const parsedForm = parseConfigForm(formData, t);
   if (!parsedForm.ok) return { error: parsedForm.formError };
   const candidate = parsedForm.candidate as { inputs?: unknown; generation?: unknown };
 
   const inputsResult = productConfigSchema.shape.inputs.safeParse(candidate.inputs);
-  if (!inputsResult.success) return { error: "Les champs de l'outil sont invalides" };
+  if (!inputsResult.success) return { error: t("actions.toolFieldsInvalid") };
   const generationResult = productConfigSchema.shape.generation.safeParse(candidate.generation);
-  if (!generationResult.success) return { error: "La configuration de génération est invalide" };
+  if (!generationResult.success) return { error: t("actions.generationConfigInvalid") };
   const inputs = inputsResult.data;
   const generation = generationResult.data;
 
   if (!(await isAllowedModel(generation.model, slug))) {
-    return { error: "Modèle non autorisé" };
+    return { error: t("actions.modelNotAllowed") };
   }
 
   const fieldKeys = new Set(inputs.map((field) => field.key));
   for (const variable of templateVariables(generation.promptTemplate)) {
     if (!fieldKeys.has(variable)) {
-      return { error: `Variable {{${variable}}} sans champ correspondant` };
+      return { error: t("actions.variableWithoutField", { variable: `{{${variable}}}` }) };
     }
   }
 
@@ -242,20 +270,20 @@ export async function testPrompt(
   // orchestrator decision 5): shown disabled in the picker, refused here
   // too rather than silently mis-handled as markdown.
   if (generation.outputType === "image") {
-    return { error: "La sortie image n'est pas encore disponible" };
+    return { error: t("actions.imageOutputNotAvailable") };
   }
 
   let sampleCandidate: unknown;
   try {
     sampleCandidate = JSON.parse(String(formData.get("sample") ?? "{}"));
   } catch {
-    return { error: "Échantillon illisible" };
+    return { error: t("actions.sampleUnreadable") };
   }
   const sampleResult = generateInputSchema.shape.input.safeParse(sampleCandidate);
-  if (!sampleResult.success) return { error: "Échantillon invalide" };
+  if (!sampleResult.success) return { error: t("actions.sampleInvalid") };
 
   const fields = toolInputSchema(inputs, sampleResult.data);
-  if (!fields.success) return { error: "Complétez les champs obligatoires de l'échantillon" };
+  if (!fields.success) return { error: t("actions.fillRequiredSampleFields") };
 
   // `resolveModel` (lib/ai/model.ts) picks a mock fixture by slug in
   // AI_MODE=mock; a brand-new product (create mode, no slug yet) falls
@@ -290,8 +318,8 @@ export async function testPrompt(
       settle({
         error:
           error instanceof GenerationRefusedError
-            ? "Le modèle a refusé l'échantillon : demande jugée hors sujet."
-            : "La génération de test a échoué",
+            ? t("actions.testGenerationRefused")
+            : t("actions.testGenerationFailed"),
       });
     },
   });
@@ -302,7 +330,7 @@ export async function testPrompt(
   await result.consumeStream();
 
   const timeout = new Promise<TestPromptState>((resolveTimeout) => {
-    setTimeout(() => resolveTimeout({ error: "La génération de test a échoué" }), TEST_PROMPT_TIMEOUT_MS);
+    setTimeout(() => resolveTimeout({ error: t("actions.testGenerationFailed") }), TEST_PROMPT_TIMEOUT_MS);
   });
 
   return Promise.race([settled, timeout]);
@@ -317,8 +345,15 @@ const REFERENCE_USAGE: GenerationUsage = { inputTokens: 1000, outputTokens: 500,
 // BO-05 step 6's margin panel, before "Tester le prompt" has run: no AI
 // call, just the reference usage priced at the chosen model's rate
 // (lib/ai/generate.ts's `costMicros`, which already prices an unrecognized
-// model at the highest known rate rather than under-billing it).
-export async function estimateGenerationCost(model: string): Promise<{ costMicros: number }> {
+// model at the highest known rate rather than under-billing it). `locale`
+// is accepted (and otherwise unused) only for signature consistency with
+// the five other actions of this file (I18N-BACKOFFICE-STRINGS): this one
+// never produces a user-facing message.
+export async function estimateGenerationCost(
+  model: string,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for cross-action signature consistency, see comment above
+  locale: Locale = DEFAULT_LOCALE,
+): Promise<{ costMicros: number }> {
   await requireAdmin();
   return { costMicros: costMicros(model, REFERENCE_USAGE) };
 }
@@ -344,26 +379,28 @@ export async function publish(
   slug: string | null,
   _prevState: PublishState,
   formData: FormData,
+  locale: Locale = DEFAULT_LOCALE,
 ): Promise<PublishState> {
   await requireAdmin();
+  const t = await translator(locale);
 
-  const parsedForm = parseConfigForm(formData);
+  const parsedForm = parseConfigForm(formData, t);
   if (!parsedForm.ok) return { formError: parsedForm.formError };
 
   const parsed = productConfigSchema.safeParse(parsedForm.candidate);
   if (!parsed.success) {
     const step = Math.min(...parsed.error.issues.map((issue) => stepOfPath(issue.path)));
-    return { errors: issuesToErrors(parsed.error.issues), step };
+    return { errors: issuesToErrors(parsed.error.issues, t), step };
   }
   const config = parsed.data;
 
   const themeOptions = await listThemeOptions();
   if (!themeOptions.some((theme) => theme.id === config.themeId)) {
-    return { errors: { themeId: "Thème introuvable" }, step: 2 };
+    return { errors: { themeId: t("actions.themeNotFound") }, step: 2 };
   }
 
   if (!(await isAllowedModel(config.generation.model, slug))) {
-    return { errors: { "generation.model": "Modèle non autorisé" }, step: 5 };
+    return { errors: { "generation.model": t("actions.modelNotAllowed") }, step: 5 };
   }
 
   try {
@@ -372,7 +409,7 @@ export async function publish(
 
     if (slug === null) {
       if (!(await isSlugAvailable(config.slug))) {
-        return { errors: { slug: "Ce slug est déjà utilisé" }, step: 1 };
+        return { errors: { slug: t("actions.slugAlreadyUsed") }, step: 1 };
       }
       const created = await createProduct(config);
       const published = await publishProduct(created.slug, created.version);
@@ -388,10 +425,10 @@ export async function publish(
       publishedVersion = published.version;
     } else {
       if (!slugSchema.safeParse(slug).success) {
-        return { formError: "Slug invalide" };
+        return { formError: t("actions.slugInvalid") };
       }
       const saved = await saveVersion(slug, config);
-      if (!saved) return { formError: "Produit introuvable" };
+      if (!saved) return { formError: t("actions.productNotFound") };
       const published = await publishProduct(slug, saved.version);
       if (!published) {
         throw new Error(`publish: publishProduct(${slug}, ${saved.version}) returned null right after saveVersion`);
@@ -406,7 +443,7 @@ export async function publish(
   } catch (err) {
     unstable_rethrow(err);
     if (isUniqueSlugViolation(err)) {
-      return { errors: { slug: "Ce slug est déjà utilisé" }, step: 1 };
+      return { errors: { slug: t("actions.slugAlreadyUsed") }, step: 1 };
     }
     console.error("[admin/products] publish failed", err);
     throw err;

@@ -114,9 +114,9 @@ Upstash resterait gratuit ici (500 000 commandes par mois sur le palier gratuit)
 
 **Suivis relevés pendant le run v1** (PR de contrat à décider) : un limiteur Postgres partagé (table `rate_limit_hits` ou stockage `database` du rate limit de Better Auth) pour « Tester le prompt », l'inscription, la connexion et le beacon d'events ; l'endpoint brut `/api/auth/sign-in/magic-link` de Better Auth, hors `guardRequest` ; un faux `verifyPassword` sur le chemin de refus de la connexion admin (`lib/auth.ts`), contre la mesure du temps de réponse.
 
-### i18n : next-intl, langue portée par le produit
+### i18n : next-intl, trois sources de locale
 
-**Coût : une demi-journée**, parce que le périmètre est petit. Le contenu de chaque produit (landing, FAQ, prompt) est déjà rédigé dans sa langue dans la config ; il ne reste à traduire que les textes communs de la sub-app, environ 60 clés (`messages/fr.json`, `messages/en.json`). Le backoffice reste en français.
+**Coût : une demi-journée** pour le socle produit, **une demi-journée de plus** pour le sélecteur landing/making-of et le sélecteur backoffice. Le contenu de chaque produit (landing, FAQ, prompt) est déjà rédigé dans sa langue dans la config ; il ne reste à traduire que les textes communs de la sub-app, environ 60 clés (`messages/fr.json`, `messages/en.json`).
 
 | Critère | next-intl | Paraglide JS |
 | --- | --- | --- |
@@ -126,9 +126,15 @@ Upstash resterait gratuit ici (500 000 commandes par mois sur le palier gratuit)
 
 **Choix : next-intl.** Son intégration aux root params permet de lire la langue depuis la config du produit sans segment `/fr` ou `/en` dans l'URL, et de garder les landings pré-rendues. Paraglide reste une bonne option si l'on voulait optimiser le poids du JavaScript client, mais nos textes traduits sont peu nombreux et surtout rendus côté serveur.
 
-À savoir : comme pour le reste, `next/root-params` n'est pas disponible dans les Server Actions ; les messages d'erreur renvoyés par une action reçoivent la langue en argument.
+À savoir : comme pour le reste, `next/root-params` n'est pas disponible dans les Server Actions ; les messages d'erreur renvoyés par une action reçoivent la langue en argument. La même limite s'applique au cookie du backoffice décrit ci-dessous : une Server Action ne relit pas `i18n/request.ts`, elle reçoit la langue en argument comme pour les erreurs de produit.
 
-Sources : [next-intl et next/root-params](https://next-intl.dev/blog/nextjs-root-params) · [Paraglide JS pour Next.js](https://paraglidejs.com/next-js)
+**Landing et making-of (`app/(marketing)`)** : ce groupe est la seule zone qui utilise le *routing i18n* de next-intl — `fr` sans préfixe, `en` sous `/en` (`/`, `/en`, `/making-of`, `/en/making-of`). `localeDetection` lit l'en-tête `Accept-Language` à la première visite, puis la langue choisie est persistée dans le cookie `NEXT_LOCALE`. `proxy.ts` (déjà partagé entre la garde de session admin et le cookie `anonymous_id`) chaîne le middleware `createMiddleware(routing)` de next-intl, restreint à `/` et `/making-of` par son propre matcher, avant les deux autres règles. Un sélecteur visible dans le header de la landing et du making-of bascule entre les deux préfixes.
+
+**Backoffice** : pas de détection et pas de préfixe d'URL — un admin choisit sa langue, elle n'est jamais devinée. Le sélecteur (menu du shell BO) pose un cookie `admin_locale` (`fr` par défaut) ; pas de colonne de préférence sur `users`, pour ne pas toucher au schéma gelé (`lib/db/schema.ts`).
+
+**Un seul point d'entrée** : `i18n/request.ts` reste l'unique `getRequestConfig` du plugin, mais devient un aiguillage à trois branches, dans cet ordre : root param `[app]` présent → locale du produit (inchangé) ; sinon la locale posée par le middleware next-intl du groupe marketing (`requestLocale`), si elle existe ; sinon le cookie `admin_locale` du backoffice, `fr` par défaut.
+
+Sources : [next-intl et next/root-params](https://next-intl.dev/blog/nextjs-root-params) · [Paraglide JS pour Next.js](https://paraglidejs.com/next-js) · [next-intl — App Router avec routing i18n](https://next-intl.dev/docs/getting-started/app-router)
 
 ## Ce qu'on n'installe pas
 

@@ -66,7 +66,7 @@ explorant son cœur de métier à mon échelle :
 | Paiement | Simulé : une server action `purchase()` dans une modale |
 | Email | Simulé : boîte de réception en modale, vrai lien magique |
 | Infra | Vercel + Neon + AI Gateway, ni Redis ni service d'email |
-| Langues | Langue par produit (fr / en) via next-intl, backoffice en français |
+| Langues | Langue par produit (fr / en) via next-intl ; sélecteur fr/en avec détection navigateur sur la landing et le making-of ; sélecteur manuel fr/en dans le backoffice |
 | Démo publique | Identifiants admin envoyés, pas de verrou sur les produits seedés, remise à zéro depuis une page cachée avant chaque présentation (cron nocturne en bonus) |
 | Budget | Moins de 2 $ au total |
 | Planning | Environ 14,5 jours, démo montrable en fin de semaine 1 |

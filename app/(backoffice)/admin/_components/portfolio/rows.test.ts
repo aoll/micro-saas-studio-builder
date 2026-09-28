@@ -44,17 +44,17 @@ function product(overrides: Partial<PortfolioMetrics["products"][number]> = {}):
 
 describe("toPortfolioRows", () => {
   it("carries the decision suggested by evaluate() for the product's own thresholds", () => {
-    const rows = toPortfolioRows(metrics(product({ productId: "p1" })), { p1: DEFAULT_THRESHOLDS });
+    const rows = toPortfolioRows(metrics(product({ productId: "p1" })), { p1: DEFAULT_THRESHOLDS }, "fr");
     expect(rows[0]!.decision).toBe("scale");
   });
 
   it("falls back to no decision when the product's thresholds are missing", () => {
-    const rows = toPortfolioRows(metrics(product({ productId: "p1" })), {});
+    const rows = toPortfolioRows(metrics(product({ productId: "p1" })), {}, "fr");
     expect(rows[0]!.decision).toBeNull();
   });
 
   it("formats display strings for the table columns", () => {
-    const rows = toPortfolioRows(metrics(product({ productId: "p1" })), { p1: DEFAULT_THRESHOLDS });
+    const rows = toPortfolioRows(metrics(product({ productId: "p1" })), { p1: DEFAULT_THRESHOLDS }, "fr");
     const row = rows[0]!;
     expect(row.display.visits).toContain("1");
     expect(row.display.conversion).toContain("%");
@@ -65,15 +65,17 @@ describe("toPortfolioRows", () => {
 
   it("shows the 30-day margin, (revenue − AI cost) / revenue, not the per-generation margin", () => {
     // 24,70 € of revenue, 0,08 $ of AI cost (1:1): (24.70 − 0.08) / 24.70 ≈ 99,7 %.
-    const rows = toPortfolioRows(metrics(product({ productId: "p1" })), { p1: DEFAULT_THRESHOLDS });
+    const rows = toPortfolioRows(metrics(product({ productId: "p1" })), { p1: DEFAULT_THRESHOLDS }, "fr");
     expect(rows[0]!.marginRate).toBeCloseTo((24_700_000 - 80_000) / 24_700_000);
-    expect(rows[0]!.display.margin).toBe("99,7\u00a0%");
+    expect(rows[0]!.display.margin).toBe("99,7 %");
   });
 
   it("shows an em dash for a null conversion or a margin without revenue", () => {
-    const rows = toPortfolioRows(metrics(product({ productId: "p1", signupToPurchaseRate: null, revenueCents: 0 })), {
-      p1: DEFAULT_THRESHOLDS,
-    });
+    const rows = toPortfolioRows(
+      metrics(product({ productId: "p1", signupToPurchaseRate: null, revenueCents: 0 })),
+      { p1: DEFAULT_THRESHOLDS },
+      "fr",
+    );
     const row = rows[0]!;
     expect(row.display.conversion).toBe("—");
     expect(row.display.margin).toBe("—");
@@ -83,7 +85,17 @@ describe("toPortfolioRows", () => {
     const rows = toPortfolioRows(
       metrics(product({ productId: "p1", slug: "a" }), product({ productId: "p2", slug: "b" })),
       { p1: DEFAULT_THRESHOLDS, p2: DEFAULT_THRESHOLDS },
+      "fr",
     );
     expect(rows.map((row) => row.slug)).toEqual(["a", "b"]);
+  });
+
+  // I18N-BACKOFFICE-STRINGS: the locale is threaded through to format.ts,
+  // no more hard-coded "fr-FR".
+  it("formats display strings in en when given the en locale", () => {
+    const rows = toPortfolioRows(metrics(product({ productId: "p1" })), { p1: DEFAULT_THRESHOLDS }, "en");
+    const row = rows[0]!;
+    expect(row.display.revenue).toBe("€24.70");
+    expect(row.display.visits).toBe("1,200");
   });
 });

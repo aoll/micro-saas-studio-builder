@@ -1,0 +1,53 @@
+{
+  "login": {
+    "brand": "SaaS Studio",
+    "subtitle": "Connexion au backoffice",
+    "ownerPrefillNote": "Démo : les identifiants du compte owner sont préremplis à partir des variables d'environnement (<email>SEED_OWNER_EMAIL</email>, <password>SEED_OWNER_PASSWORD</password>) pour faciliter la visite. Il suffit de cliquer sur « {submit} ».",
+    "emailLabel": "Email",
+    "passwordLabel": "Mot de passe",
+    "submit": "Se connecter",
+    "genericError": "Identifiants invalides"
+  },
+  "portfolio": {
+    "title": "Portefeuille",
+    "newProduct": "Nouveau produit",
+    "kpis": {
+      "visits": "Visites · 30 j",
+      "revenue": "Revenu · 30 j",
+      "aiCost": "Coût IA · 30 j",
+      "grossMargin": "Marge brute"
+    },
+    "empty": {
+      "title": "Aucun produit",
+      "description": "Créez votre premier produit pour voir apparaître ses métriques ici.",
+      "cta": "Créer un produit"
+    },
+    "table": {
+      "product": "Produit",
+      "status": "Statut",
+      "visits": "Visites",
+      "conversion": "Conversion",
+      "revenue": "Revenu",
+      "aiCost": "Coût IA",
+      "margin": "Marge",
+      "count": "{count, plural, one {Produit (#)} other {Produits (#)}}"
+    },
+    "decision": {
+      "cut": "à couper",
+      "scale": "à scaler"
+    }
+  },
+  "ops": {
+    "title": "Opérations",
+    "description": "Supprime les produits créés par les visiteurs et toute l'activité, puis rejoue le seed (thèmes, LettrePro, DescriPro, NomDeMarque, comptes admin et owner, seuils par défaut).",
+    "resetButton": "Réinitialiser la démo",
+    "confirmMessage": "Cette action supprime les produits créés par les visiteurs et toute l'activité, puis rejoue le seed. Irréversible.",
+    "cancel": "Annuler",
+    "confirm": "Confirmer la réinitialisation",
+    "successToast": "Démo réinitialisée",
+    "ownerOnlyError": "Réservé au propriétaire de la démo",
+    "failedError": "La réinitialisation a échoué",
+    "notFoundTitle": "Page introuvable",
+    "loading": "Chargement…"
+  }
+}

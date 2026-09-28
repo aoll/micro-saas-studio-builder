@@ -66,6 +66,7 @@ Acceptation :
 
 Périmètre   : lib/ai/generate.ts, lib/ai/generate.test.ts,
               [app]/tool/_lib/tool-input-schema.ts, [app]/tool/_lib/tool-input-schema.test.ts,
+              fixtures/fixtures.test.ts (garde : les entrées des fixtures passent les défauts),
               admin/products/_actions.ts, admin/products/_actions.test.ts
 
 Hors périmètre :

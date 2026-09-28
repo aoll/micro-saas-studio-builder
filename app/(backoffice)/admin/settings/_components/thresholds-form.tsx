@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Thresholds } from "@/lib/dal/thresholds";
@@ -15,17 +16,23 @@ const initialState: ThresholdsActionState = {};
 
 // BO-09 spec bullet 1: the studio's default seuils (`/admin/settings`),
 // with a live preview of the products whose badge would change (bullet 4).
+// I18N-BACKOFFICE-STRINGS lot 8: `useLocale()` is bound alongside `null`
+// (the studio-defaults `productId`) so the Server Action's error/success
+// copy follows the admin's chosen locale (docs/08-stack.md › i18n: a
+// Server Action can't read next/root-params itself).
 export function ThresholdsForm({ defaults, products }: { defaults: Thresholds; products: PreviewProduct[] }) {
+  const t = useTranslations("backoffice-settings");
+  const locale = useLocale();
   const [minVisits, setMinVisits] = useState(String(defaults.minVisits));
   const [killPercent, setKillPercent] = useState(String(rateToPercent(defaults.killMaxConversion)));
   const [scalePercent, setScalePercent] = useState(String(rateToPercent(defaults.scaleMinConversion)));
   const [requiresMargin, setRequiresMargin] = useState(defaults.scaleRequiresPositiveMargin);
-  const [state, formAction, pending] = useActionState(saveThresholdSettings.bind(null, null), initialState);
+  const [state, formAction, pending] = useActionState(saveThresholdSettings.bind(null, null, locale), initialState);
 
   useEffect(() => {
-    if (state.ok) toast.success("Seuils par défaut enregistrés");
+    if (state.ok) toast.success(t("defaultsForm.saved"));
     if (state.formError) toast.error(state.formError);
-  }, [state]);
+  }, [state, t]);
 
   const errors = state.errors ?? {};
 
@@ -46,10 +53,10 @@ export function ThresholdsForm({ defaults, products }: { defaults: Thresholds; p
 
   return (
     <form action={formAction} className="grid gap-4 rounded-md border p-4">
-      <h2 className="text-lg font-semibold">Seuils par défaut du studio</h2>
+      <h2 className="text-lg font-semibold">{t("defaultsForm.heading")}</h2>
 
       <div className="grid gap-1.5">
-        <Label htmlFor="default-min-visits">Visites minimales</Label>
+        <Label htmlFor="default-min-visits">{t("defaultsForm.minVisits")}</Label>
         <Input
           id="default-min-visits"
           name="minVisits"
@@ -62,7 +69,7 @@ export function ThresholdsForm({ defaults, products }: { defaults: Thresholds; p
       </div>
 
       <div className="grid gap-1.5">
-        <Label htmlFor="default-kill">Conversion « à couper » (%)</Label>
+        <Label htmlFor="default-kill">{t("defaultsForm.killConversion")}</Label>
         <Input
           id="default-kill"
           name="killMaxConversion"
@@ -76,7 +83,7 @@ export function ThresholdsForm({ defaults, products }: { defaults: Thresholds; p
       </div>
 
       <div className="grid gap-1.5">
-        <Label htmlFor="default-scale">Conversion « à scaler » (%)</Label>
+        <Label htmlFor="default-scale">{t("defaultsForm.scaleConversion")}</Label>
         <Input
           id="default-scale"
           name="scaleMinConversion"
@@ -97,12 +104,12 @@ export function ThresholdsForm({ defaults, products }: { defaults: Thresholds; p
           checked={requiresMargin}
           onChange={(event) => setRequiresMargin(event.target.checked)}
         />
-        <Label htmlFor="default-margin">Marge positive exigée pour scaler</Label>
+        <Label htmlFor="default-margin">{t("defaultsForm.positiveMargin")}</Label>
       </div>
 
       {changes.length > 0 ? (
         <div className="rounded-md border border-dashed p-3 text-sm">
-          <p className="font-medium">Badges qui changeraient :</p>
+          <p className="font-medium">{t("preview.heading")}</p>
           <ul className="list-disc pl-4">
             {changes.map((change) => (
               <li key={change.productId} data-testid="preview-change">
@@ -114,7 +121,7 @@ export function ThresholdsForm({ defaults, products }: { defaults: Thresholds; p
       ) : null}
 
       <Button type="submit" disabled={pending}>
-        Enregistrer
+        {t("defaultsForm.submit")}
       </Button>
     </form>
   );

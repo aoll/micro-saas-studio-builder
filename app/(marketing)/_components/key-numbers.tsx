@@ -1,3 +1,4 @@
+import { getFormatter, getTranslations } from "next-intl/server";
 import { listProducts } from "@/lib/dal/products";
 
 // What the demo actually is (1 Next.js app driving live sub-apps, counted the
@@ -7,14 +8,18 @@ import { listProducts } from "@/lib/dal/products";
 // agent tally it never goes stale. PRs and tests are re-verified by hand
 // against GitHub (`is:pr is:merged`) and `pnpm vitest run`'s total.
 export async function KeyNumbers() {
-  const subApps = (await listProducts()).filter((product) => product.status !== "killed").length;
+  const [subApps, t, format] = await Promise.all([
+    listProducts().then((products) => products.filter((product) => product.status !== "killed").length),
+    getTranslations("marketing.keyNumbers"),
+    getFormatter(),
+  ]);
 
   const numbers = [
-    { value: "1", label: "app Next.js" },
-    { value: String(subApps), label: "sub-apps dynamiques" },
-    { value: "8", label: "agents spécialisés" },
-    { value: "98", label: "pull requests mergées" },
-    { value: "1 833", label: "tests verts" },
+    { value: format.number(1), label: t("app") },
+    { value: format.number(subApps), label: t("subApps") },
+    { value: format.number(8), label: t("agents") },
+    { value: format.number(98), label: t("pullRequests") },
+    { value: format.number(1833), label: t("tests") },
   ];
 
   return (

@@ -6,7 +6,16 @@ import { expect, test } from "@playwright/test";
 // convention as the rest of e2e/*.spec.ts. Product names come from the seed
 // fixtures (fixtures/lettre-pro.config.json's `name`), same as README.md's
 // own quickstart example.
+//
+// I18N-MARKETING (own commit, see its message): `/` now goes through
+// next-intl's locale detection (proxy.ts). Playwright's default context
+// locale is "en-US", which would redirect every `page.goto("/")` below to
+// `/en` and fail every French assertion in this file. Pinning `fr-FR` is a
+// precondition change only — it makes explicit the French browser this
+// suite always assumed, nothing here weakens an assertion.
 test.describe("Home (/)", () => {
+  test.use({ locale: "fr-FR" });
+
   test("shows the hero and a way into the backoffice", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();

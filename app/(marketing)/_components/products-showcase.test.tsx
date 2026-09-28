@@ -1,12 +1,23 @@
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
+import { createTranslator } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import fr from "@/messages/fr/marketing.json";
 
 afterEach(cleanup);
 
 const listProducts = vi.fn();
 vi.mock("@/lib/dal/products", () => ({ listProducts }));
+
+// I18N-MARKETING (own commit, see its message): ProductsShowcase now calls
+// next-intl/server's getTranslations and getLocale, same pattern as
+// app/(products)/not-found.test.tsx. Assertions below are unchanged.
+vi.mock("next-intl/server", () => ({
+  getLocale: async () => "fr",
+  getTranslations: async (namespace: string) =>
+    createTranslator({ locale: "fr", messages: { marketing: fr }, namespace: namespace as never }),
+}));
 
 function product(overrides: Partial<{ slug: string; name: string; status: string; headline: string }> = {}) {
   return {

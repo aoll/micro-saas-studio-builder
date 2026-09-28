@@ -39,7 +39,7 @@ export function FieldsStep({
   }
 
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-4">
       {fields.map((field, index) => (
         <div key={field.id} className="grid gap-2 rounded-md border p-3">
           <div className="grid grid-cols-2 gap-2">

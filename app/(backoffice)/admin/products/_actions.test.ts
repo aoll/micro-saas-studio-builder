@@ -18,8 +18,18 @@ class RedirectMarker extends Error {
   }
 }
 
+// I18N-BACKOFFICE-STRINGS follow-up (security-reviewer, non-blocking): records which mock ran
+// first, so a dedicated test can assert getTranslations() never runs ahead of requireAdmin() —
+// the products/[slug] _actions.test.ts pattern, extended here.
+const callOrder: string[] = [];
+
 const requireAdmin = vi.fn();
-vi.mock("@/lib/dal/session", () => ({ requireAdmin: () => requireAdmin() }));
+vi.mock("@/lib/dal/session", () => ({
+  requireAdmin: () => {
+    callOrder.push("requireAdmin");
+    return requireAdmin();
+  },
+}));
 
 // I18N-BACKOFFICE-STRINGS (lot 6): next-intl/server picks its "react-server"
 // export via a condition Vitest's node environment doesn't set (same issue
@@ -29,12 +39,14 @@ vi.mock("@/lib/dal/session", () => ({ requireAdmin: () => requireAdmin() }));
 // call (which never passes a locale, defaulting to "fr") keeps resolving
 // the exact same French strings as before this spec.
 vi.mock("next-intl/server", () => ({
-  getTranslations: async ({ locale, namespace }: { locale: "fr" | "en"; namespace: string }) =>
-    createTranslator({
+  getTranslations: async ({ locale, namespace }: { locale: "fr" | "en"; namespace: string }) => {
+    callOrder.push("getTranslations");
+    return createTranslator({
       locale,
       messages: { "backoffice-product-form-b2": locale === "en" ? en : fr },
       namespace: namespace as never,
-    }),
+    });
+  },
 }));
 
 const updateTag = vi.fn();
@@ -58,6 +70,7 @@ afterEach(() => {
   updateTag.mockReset();
   put.mockReset();
   guardRequest.mockReset();
+  callOrder.length = 0;
 });
 
 async function buildConfig(overrides: Partial<ProductConfig> = {}): Promise<ProductConfig> {
@@ -111,6 +124,18 @@ describe("saveProduct · create path", () => {
     await expect(saveProduct(null, {}, configForm(config))).rejects.toThrow("redirect:/admin/login");
     const row = await db.query.products.findFirst({ where: eq(products.slug, config.slug) });
     expect(row).toBeUndefined();
+    expect(callOrder).toEqual(["requireAdmin"]);
+  });
+
+  it("calls getTranslations right after requireAdmin(), on the happy path", async () => {
+    await currentAdmin();
+    const { saveProduct } = await import("./_actions");
+    const config = await buildConfig();
+    const result = await saveProduct(null, {}, configForm(config));
+    if (result.slug)
+      await cleanupProduct((await db.query.products.findFirst({ where: eq(products.slug, result.slug) }))!.id);
+    expect(callOrder[0]).toBe("requireAdmin");
+    expect(callOrder[1]).toBe("getTranslations");
   });
 
   it("returns a form error for unreadable JSON", async () => {
@@ -289,12 +314,15 @@ describe("checkSlug", () => {
     requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
     const { checkSlug } = await import("./_actions");
     await expect(checkSlug("lettre-pro")).rejects.toThrow("redirect:/admin/login");
+    expect(callOrder).toEqual(["requireAdmin"]);
   });
 
   it("reports a format error for a name that is not a slug", async () => {
     await currentAdmin();
     const { checkSlug } = await import("./_actions");
     expect(await checkSlug("Lettre Pro")).toMatchObject({ available: false });
+    expect(callOrder[0]).toBe("requireAdmin");
+    expect(callOrder[1]).toBe("getTranslations");
   });
 
   it("reports a reserved slug", async () => {
@@ -326,6 +354,7 @@ describe("uploadLogo", () => {
     const { uploadLogo } = await import("./_actions");
     const data = new FormData();
     await expect(uploadLogo({}, data)).rejects.toThrow("redirect:/admin/login");
+    expect(callOrder).toEqual(["requireAdmin"]);
   });
 
   it("errors without calling put when no file is given", async () => {
@@ -334,6 +363,8 @@ describe("uploadLogo", () => {
     const result = await uploadLogo({}, new FormData());
     expect(result.error).toBeTruthy();
     expect(put).not.toHaveBeenCalled();
+    expect(callOrder[0]).toBe("requireAdmin");
+    expect(callOrder[1]).toBe("getTranslations");
   });
 
   it("errors without calling put for a file over 512 KB", async () => {
@@ -445,6 +476,7 @@ describe("testPrompt", () => {
     requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
     const { testPrompt } = await import("./_actions");
     await expect(testPrompt(null, {}, testPromptForm())).rejects.toThrow("redirect:/admin/login");
+    expect(callOrder).toEqual(["requireAdmin"]);
   });
 
   it("returns an error without calling the AI when the guard refuses", async () => {
@@ -454,6 +486,8 @@ describe("testPrompt", () => {
     const result = await testPrompt(null, {}, testPromptForm());
     expect(result).toEqual({ error: expect.any(String) });
     expect(guardRequest).toHaveBeenCalledWith("test-prompt");
+    expect(callOrder[0]).toBe("requireAdmin");
+    expect(callOrder[1]).toBe("getTranslations");
   });
 
   it("returns an error for a {{variable}} without a matching field", async () => {
@@ -623,6 +657,7 @@ describe("estimateGenerationCost", () => {
     requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
     const { estimateGenerationCost } = await import("./_actions");
     await expect(estimateGenerationCost("anthropic/claude-haiku-4.5")).rejects.toThrow("redirect:/admin/login");
+    expect(callOrder).toEqual(["requireAdmin"]);
   });
 
   it("returns a plausible cost for an empty model, without throwing", async () => {
@@ -651,6 +686,7 @@ describe("publish · create path", () => {
     await expect(publish(null, {}, configForm(config))).rejects.toThrow("redirect:/admin/login");
     const row = await db.query.products.findFirst({ where: eq(products.slug, config.slug) });
     expect(row).toBeUndefined();
+    expect(callOrder).toEqual(["requireAdmin"]);
   });
 
   it("returns step errors for an invalid config without creating a product", async () => {
@@ -662,6 +698,8 @@ describe("publish · create path", () => {
     expect(result.errors?.slug).toBeTruthy();
     const row = await db.query.products.findFirst({ where: eq(products.slug, "admin") });
     expect(row).toBeUndefined();
+    expect(callOrder[0]).toBe("requireAdmin");
+    expect(callOrder[1]).toBe("getTranslations");
   });
 
   it("returns a step 2 error for an unknown theme", async () => {

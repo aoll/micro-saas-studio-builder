@@ -9,8 +9,18 @@ class RedirectMarker extends Error {
   }
 }
 
+// I18N-BACKOFFICE-STRINGS follow-up (security-reviewer, non-blocking): records which mock ran
+// first, so a dedicated test can assert getTranslations() never runs ahead of requireAdmin() —
+// the products/[slug] _actions.test.ts pattern, extended here.
+const callOrder: string[] = [];
+
 const requireAdmin = vi.fn();
-vi.mock("@/lib/dal/session", () => ({ requireAdmin: () => requireAdmin() }));
+vi.mock("@/lib/dal/session", () => ({
+  requireAdmin: () => {
+    callOrder.push("requireAdmin");
+    return requireAdmin();
+  },
+}));
 
 const listProducts = vi.fn();
 vi.mock("@/lib/dal/products", () => ({ listProducts: () => listProducts() }));
@@ -29,12 +39,14 @@ vi.mock("next/cache", () => ({ updateTag: (tag: string) => updateTag(tag) }));
 // receives, after requireAdmin() (the guard stays the action's first call).
 // next-intl/server is mocked with a real translator, like the login action.
 vi.mock("next-intl/server", () => ({
-  getTranslations: async ({ locale, namespace }: { locale: "fr" | "en"; namespace: string }) =>
-    createTranslator({
+  getTranslations: async ({ locale, namespace }: { locale: "fr" | "en"; namespace: string }) => {
+    callOrder.push("getTranslations");
+    return createTranslator({
       locale,
       messages: { "backoffice-portfolio": locale === "fr" ? fr : en },
       namespace: namespace as never,
-    }),
+    });
+  },
 }));
 
 afterEach(() => {
@@ -43,6 +55,7 @@ afterEach(() => {
   listThemeOptions.mockReset();
   resetDemo.mockReset();
   updateTag.mockReset();
+  callOrder.length = 0;
 });
 
 function stubHappyPath() {
@@ -68,6 +81,15 @@ describe("resetDemoAction", () => {
     const { resetDemoAction } = await import("./_actions");
     await expect(resetDemoAction("fr", {}, new FormData())).rejects.toThrow("redirect:/admin/login");
     expect(resetDemo).not.toHaveBeenCalled();
+    expect(callOrder).toEqual(["requireAdmin"]);
+  });
+
+  it("calls getTranslations right after requireAdmin(), on the happy path", async () => {
+    stubHappyPath();
+    const { resetDemoAction } = await import("./_actions");
+    await resetDemoAction("fr", {}, new FormData());
+    expect(callOrder[0]).toBe("requireAdmin");
+    expect(callOrder[1]).toBe("getTranslations");
   });
 
   it("rejects an admin who is not the owner, without calling resetDemo", async () => {

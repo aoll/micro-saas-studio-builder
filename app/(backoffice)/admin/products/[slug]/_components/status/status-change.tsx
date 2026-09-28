@@ -57,7 +57,7 @@ function StatusChangeForm({
   onDone,
 }: Omit<StatusChangeProps, "productId"> & { onDone: () => void }) {
   const t = useTranslations("backoffice-decision");
-  const locale = useLocale() as "fr" | "en";
+  const locale = useLocale();
   // I18N-BACKOFFICE-STRINGS (lot 3): locale is bound after slug (the spec's
   // "en dernier paramètre" among the client-supplied arguments — the two
   // that follow, prevState and formData, come from useActionState itself),

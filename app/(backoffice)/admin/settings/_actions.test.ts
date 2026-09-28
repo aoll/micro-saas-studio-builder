@@ -16,8 +16,18 @@ class RedirectMarker extends Error {
   }
 }
 
+// I18N-BACKOFFICE-STRINGS follow-up (security-reviewer, non-blocking): records which mock ran
+// first, so a dedicated test can assert getTranslations() never runs ahead of requireAdmin() —
+// the products/[slug] _actions.test.ts pattern, extended here.
+const callOrder: string[] = [];
+
 const requireAdmin = vi.fn();
-vi.mock("@/lib/dal/session", () => ({ requireAdmin: () => requireAdmin() }));
+vi.mock("@/lib/dal/session", () => ({
+  requireAdmin: () => {
+    callOrder.push("requireAdmin");
+    return requireAdmin();
+  },
+}));
 
 const updateTag = vi.fn();
 vi.mock("next/cache", () => ({ updateTag: (tag: string) => updateTag(tag) }));
@@ -30,8 +40,10 @@ vi.mock("next/cache", () => ({ updateTag: (tag: string) => updateTag(tag) }));
 // `locale` argument each action passes, so this test exercises the actual
 // message files instead of a stub translator.
 vi.mock("next-intl/server", () => ({
-  getTranslations: async ({ locale, namespace }: { locale: "fr" | "en"; namespace: string }) =>
-    createTranslator({ locale, messages: { [namespace]: locale === "fr" ? fr : en }, namespace }),
+  getTranslations: async ({ locale, namespace }: { locale: "fr" | "en"; namespace: string }) => {
+    callOrder.push("getTranslations");
+    return createTranslator({ locale, messages: { [namespace]: locale === "fr" ? fr : en }, namespace });
+  },
 }));
 
 let ownerId: string;
@@ -48,6 +60,7 @@ async function currentAdmin() {
 afterEach(() => {
   requireAdmin.mockReset();
   updateTag.mockReset();
+  callOrder.length = 0;
 });
 
 const createdProductIds: string[] = [];
@@ -120,6 +133,7 @@ describe("saveThresholdSettings", () => {
     requireAdmin.mockRejectedValue(new RedirectMarker("/admin/login"));
     const { saveThresholdSettings } = await import("./_actions");
     await expect(saveThresholdSettings(null, "fr", {}, defaultForm())).rejects.toThrow("redirect:/admin/login");
+    expect(callOrder).toEqual(["requireAdmin"]);
   });
 
   it("saves the studio defaults and calls updateTag('thresholds')", async () => {
@@ -128,6 +142,8 @@ describe("saveThresholdSettings", () => {
     const state = await saveThresholdSettings(null, "fr", {}, defaultForm());
     expect(state).toEqual({ ok: true });
     expect(updateTag).toHaveBeenCalledWith("thresholds");
+    expect(callOrder[0]).toBe("requireAdmin");
+    expect(callOrder[1]).toBe("getTranslations");
   });
 
   it("returns French field errors for kill >= scale, without calling updateTag", async () => {
@@ -265,6 +281,7 @@ describe("resetProductThresholds", () => {
     await expect(resetProductThresholds(randomUUID(), "fr", {}, new FormData())).rejects.toThrow(
       "redirect:/admin/login",
     );
+    expect(callOrder).toEqual(["requireAdmin"]);
   });
 
   it("deletes the override and calls updateTag('thresholds')", async () => {
@@ -275,6 +292,8 @@ describe("resetProductThresholds", () => {
     const state = await resetProductThresholds(productId, "fr", {}, new FormData());
     expect(state).toEqual({ ok: true });
     expect(updateTag).toHaveBeenCalledWith("thresholds");
+    expect(callOrder[0]).toBe("requireAdmin");
+    expect(callOrder[1]).toBe("getTranslations");
     const row = await db.query.decisionThresholds.findFirst({ where: eq(decisionThresholds.productId, productId) });
     expect(row).toBeUndefined();
   });

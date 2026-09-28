@@ -11,8 +11,18 @@ class RedirectMarker extends Error {
   }
 }
 
+// I18N-BACKOFFICE-STRINGS follow-up (security-reviewer, non-blocking): records which mock ran
+// first, so a dedicated test can assert getTranslations() never runs ahead of requireAdmin() —
+// the products/[slug] _actions.test.ts pattern, extended here.
+const callOrder: string[] = [];
+
 const requireAdmin = vi.fn();
-vi.mock("@/lib/dal/session", () => ({ requireAdmin: () => requireAdmin() }));
+vi.mock("@/lib/dal/session", () => ({
+  requireAdmin: () => {
+    callOrder.push("requireAdmin");
+    return requireAdmin();
+  },
+}));
 
 const updateTheme = vi.fn();
 vi.mock("@/lib/dal/themes", () => ({ updateTheme: (...args: unknown[]) => updateTheme(...args) }));
@@ -35,6 +45,7 @@ vi.mock("next/font/google", () => {
 // messages/{fr,en}/backoffice-themes.json, like purchase-list.test.tsx.
 vi.mock("next-intl/server", () => ({
   getTranslations: async ({ locale, namespace }: { locale: "fr" | "en"; namespace: "backoffice-themes" }) => {
+    callOrder.push("getTranslations");
     if (locale !== "fr" && locale !== "en") throw new Error(`unsupported locale: ${locale}`);
     return createTranslator({ locale, messages: { "backoffice-themes": locale === "en" ? en : fr }, namespace });
   },
@@ -44,6 +55,7 @@ afterEach(() => {
   requireAdmin.mockReset();
   updateTheme.mockReset();
   updateTag.mockReset();
+  callOrder.length = 0;
 });
 
 function currentAdmin() {
@@ -91,6 +103,15 @@ describe("saveTheme", () => {
     const { saveTheme } = await import("./_actions");
     await expect(saveTheme(randomUUID(), "fr", {}, formDataFor({}))).rejects.toThrow("redirect:/admin/login");
     expect(updateTheme).not.toHaveBeenCalled();
+    expect(callOrder).toEqual(["requireAdmin"]);
+  });
+
+  it("calls getTranslations right after requireAdmin(), on the happy path", async () => {
+    currentAdmin();
+    const { saveTheme } = await import("./_actions");
+    await saveTheme(randomUUID(), "fr", {}, formDataFor({ tokens: validTokens(), landingVariant: "centered" }));
+    expect(callOrder[0]).toBe("requireAdmin");
+    expect(callOrder[1]).toBe("getTranslations");
   });
 
   it("returns a form error for a non-uuid id, without calling the DAL", async () => {

@@ -25,12 +25,7 @@ const BAR_HEIGHT = 10;
 // composition also works with @testing-library/react's synchronous
 // `render()`, which cannot itself await a nested async Server Component.
 export async function DecisionGauge({ metrics, thresholds }: { metrics: DecisionMetrics; thresholds: Thresholds }) {
-  const [t, format, localeRaw] = await Promise.all([
-    getTranslations("backoffice-decision"),
-    getFormatter(),
-    getLocale(),
-  ]);
-  const locale = localeRaw as "fr" | "en";
+  const [t, format, locale] = await Promise.all([getTranslations("backoffice-decision"), getFormatter(), getLocale()]);
   const ZONE_LABEL: Record<GaugeZone, string> = {
     kill: t("gauge.zone.cut"),
     neutral: t("gauge.zone.neutralZone"),

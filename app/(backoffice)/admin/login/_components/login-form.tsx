@@ -15,7 +15,7 @@ export function LoginForm({ prefill }: { prefill?: { email: string; password: st
   // is bound as the action's first argument, before the (prevState,
   // formData) pair useActionState supplies — login() calls getTranslations
   // with it, never app() nor cookies() (both throw in a Server Action).
-  const locale = useLocale() as "fr" | "en";
+  const locale = useLocale();
   const [state, formAction, pending] = useActionState(login.bind(null, locale), initialState);
 
   return (

@@ -1,6 +1,6 @@
 ---
 name: tdd-guide
-description: Test-Driven Development specialist that implements one approved spec test-first, in its own git worktree, committing at every green step and working without pause until the spec is done. Use after the spec is merged and its plan written by /plan, for new features, bug fixes and refactors.
+description: Test-Driven Development specialist that implements one approved spec test-first, in its own git worktree, committing at every green step and working without pause until the spec is done. Use once the spec is approved (on the integration branch) and its plan written by /plan, for new features, bug fixes and refactors.
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: sonnet
 ---

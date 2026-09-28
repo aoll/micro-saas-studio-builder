@@ -30,7 +30,9 @@ a spec yourself, except to take over one that is stuck (below).
    from it and every pull request targets it. **You merge the spec PRs into it
    as they pass** (step 7): that is what it is for.
 2. **Registry:** write the dependency registry (next section), commit and push
-   it to the integration branch.
+   it to the integration branch, together with the run's specs when they are
+   not on `main` yet: a spec is approved once the human asks for its
+   implementation, never by a prior merge into `main`.
 3. **Monitoring:** set up the three layers of the Monitoring section.
 4. **First dispatch:** run the dispatch loop once.
 
@@ -114,7 +116,7 @@ steps of different specs in the same message.
 | # | Step | Who | Done when |
 |---|------|-----|-----------|
 | 0 | Worktree | you: `pnpm tsx scripts/worktree.ts new <slug>` | branch pushed, database migrated and seeded |
-| 1 | Plan | `planner` agent, then you write and commit `.claude/plans/<REF>.plan.md` (`/plan`) | plan committed; no user wait, the merged spec is the approval |
+| 1 | Plan | `planner` agent, then you write and commit `.claude/plans/<REF>.plan.md` (`/plan`) | plan committed; no user wait, the human's request to implement the spec is the approval |
 | 2 | TDD | `tdd-guide` agent (`/tdd`) | every acceptance bullet green, coverage 80%+ on `lib/**`, pushed |
 | 3 | Code review | `/review`: `code-reviewer` + specialists | no CRITICAL or HIGH left; MEDIUM fixed when possible. Findings go back to `tdd-guide`, then review again |
 | 4 | Commit & push | the agent that fixed | nothing uncommitted or unpushed |

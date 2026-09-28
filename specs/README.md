@@ -11,7 +11,7 @@ Les specs de la démo, prêtes à copier dans `specs/`. Chaque bloc de code est 
 - **`Contrat`** : ce que la feature consomme ou implémente, gelé depuis V1.
 - **`Acceptation`** : chaque puce devient au moins un test, Vitest ou Playwright.
 - **`Périmètre`** : les seuls fichiers que l'agent peut créer ou modifier. Les chemins partent de `app/(products)/[app]/`, abrégé `[app]/`, ou de `app/(backoffice)/admin/`, abrégé `admin/`.
-- **Une spec est validée quand elle est mergée sur `main`** (porte 1).
+- **Une spec est validée quand l'humain en demande l'implémentation** (porte 1). Pas besoin de la merger sur `main` avant : elle est commitée sur la branche d'intégration du run et rejoint `main` avec le reste du run.
 
 **Découpage par domaine** : chaque domaine (une route) regroupe ses Server Actions dans `<domaine>/_actions.ts`, au même niveau que `<domaine>/_components/`. Ex. `[app]/checkout/_actions.ts` et `[app]/checkout/_components/`, `admin/products/_actions.ts` et `admin/products/_components/`. Plus de fichier `actions.ts` partagé par zone. `messages/*/<zone>.json` désigne les deux langues : chaque spec livre son fichier en français **et** en anglais.
 

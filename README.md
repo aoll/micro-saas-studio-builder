@@ -1,5 +1,37 @@
 # micro-saas-studio-builder
 
+A demo project: a back-office that launches small AI micro-SaaS products from a
+form, then follows each one with data (funnel, AI cost, margin, and a status
+going Test → Learn → Scale → Killed). Every product is an AI tool sold with
+credits and served on its own URL (`/{slug}`).
+
+I built it as a working sample for a job application, and to practise
+specification-driven development with Claude Code. It is a demo, not a
+product: payment and email are simulated, and the numbers come from seeded
+data. Rough edges remain; the QA reports in `.claude/qa/reports/` list the ones
+I found.
+
+Live demo: https://micro-saas-studio-builder.vercel.app
+
+## What is in it
+
+- **Back-office** (`/admin`): product portfolio, product sheet with funnel and
+  status decision, a 7-step product form with live landing preview and prompt
+  test, theme library and theme editor, decision thresholds.
+- **Product sub-apps** (`/{slug}`): themed landing, streamed generation,
+  signup, simulated checkout, history, account, PDF invoices.
+- **Credits**: insert-only ledger, debit before the AI call, refund on
+  failure, idempotency key on every movement.
+- **i18n**: French and English (next-intl) for the marketing pages and the
+  back-office.
+
+## Stack
+
+Next.js 16.3 (App Router, Cache Components, Server Actions), React 19.2,
+TypeScript, Tailwind 4 and shadcn/ui, Postgres with Drizzle, Better Auth, Zod,
+AI SDK through the Vercel AI Gateway, Vitest and Playwright. Deployed on
+Vercel.
+
 ## Run locally
 
 ```bash
@@ -8,12 +40,16 @@ pnpm tsx scripts/worktree-db.ts ensure --seed
 pnpm dev
 ```
 
-Runs in `AI_MODE=mock` by default: no AI Gateway key is needed. Open
+It runs with `AI_MODE=mock` by default, so no AI Gateway key is needed. Open
 `http://localhost:3000/lettre-pro` for the seeded product (LettrePro) and
-`http://localhost:3000/admin/login` for the backoffice (seeded admin account,
-see `scripts/seed.ts`).
+`http://localhost:3000/admin/login` for the back-office (seeded admin account,
+see `scripts/seed.ts`). Docker Compose (`docker-compose.yml`) is available for
+Postgres if you do not have one locally.
 
-## Security: BotID and the generation rate limit
+`pnpm check` runs typecheck, lint, format check, knip and the unit tests;
+`pnpm test:e2e` runs the Playwright journeys.
+
+## Security notes: BotID and the generation rate limit
 
 Every generation, signup, purchase and "Tester le prompt" request goes
 through `guardRequest(kind)` (`lib/security.ts`): a BotID check first, then

@@ -46,6 +46,8 @@ export async function ProductsShowcase() {
           <Link
             key={product.slug}
             href={`/${product.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="group flex flex-col overflow-hidden mk-card bg-mk-surface transition-colors hover:border-mk-dash"
           >
             <Image

@@ -483,7 +483,7 @@ describe("ProductForm · generation, pricing, publication", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Publier" }));
     await waitFor(() => expect(publish).toHaveBeenCalledTimes(2));
-    expect(publish.mock.calls[1]![0]).toBe("mail-relance");
+    expect(publish.mock.calls[1]![0]).toBe("bio-instagram");
   });
 });
 

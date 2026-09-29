@@ -2,8 +2,8 @@ import type { Theme } from "@/lib/dal/themes";
 import type { ProductConfig } from "@/lib/schemas/product-config";
 import { fromConfig, type ProductDraft } from "./form-values";
 
-// The demo product the ★ button of each step fills in: MailRelance, an
-// invented micro-SaaS that writes polite payment-reminder emails. It is not
+// The demo product the ★ button of each step fills in: FrigoChef, an
+// invented micro-SaaS that suggests a recipe from the ingredients left in the fridge. It is not
 // one of the seeded products (LettrePro, DescriPro, NomDeMarque) nor the
 // BioInsta fixture, so it can be created live without a slug collision. It
 // has no theme (a `themeId` is a database id): step 2 picks the seeded "neon"
@@ -11,50 +11,57 @@ import { fromConfig, type ProductDraft } from "./form-values";
 const DEMO_THEME_SLUG = "neon";
 
 const DEMO_PRODUCT: Omit<ProductConfig, "themeId"> = {
-  slug: "mail-relance",
-  name: "MailRelance",
+  slug: "frigo-chef",
+  name: "FrigoChef",
   status: "test",
   locale: "fr",
   branding: {},
   landing: {
-    headline: "Relancez vos clients sans les froisser",
-    subheadline: "Décrivez la facture impayée, choisissez le ton, recevez un email de relance prêt à envoyer.",
+    headline: "Une recette avec ce qu'il reste dans le frigo",
+    subheadline: "Listez vos ingrédients, dites combien de temps vous avez, recevez une recette prête à cuisiner.",
     faq: [
       {
-        question: "Combien coûte une relance ?",
-        answer: "1 crédit par email. 2 crédits offerts à l'inscription, et la première génération est gratuite.",
+        question: "Combien coûte une recette ?",
+        answer: "1 crédit par recette. 2 crédits offerts à l'inscription, et la première recette est gratuite.",
       },
       {
-        question: "Puis-je adapter le ton ?",
-        answer: "Oui : cordial pour un premier rappel, ferme pour une relance tardive.",
+        question: "Puis-je tenir compte d'un régime alimentaire ?",
+        answer: "Oui : végétarien, sans gluten ou sans lactose, la recette s'adapte à votre choix.",
       },
       {
-        question: "Mes données sont-elles conservées ?",
-        answer: "Seul l'historique de vos générations est gardé sur votre compte, pour retrouver un email.",
+        question: "Faut-il avoir tous les ingrédients de la recette ?",
+        answer:
+          "Non : la recette part de ce que vous avez et n'ajoute que des basiques de placard, comme l'huile ou le sel.",
       },
     ],
-    seoTitle: "Générateur d'email de relance de facture",
+    seoTitle: "Générateur de recette avec les restes du frigo",
     seoDescription:
-      "Rédigez en 15 secondes un email de relance de facture impayée, au bon ton. Essai gratuit, sans carte bancaire.",
+      "Trouvez en 15 secondes une recette avec les ingrédients que vous avez déjà. Essai gratuit, sans carte bancaire.",
     exampleOutput:
-      "Objet : Rappel de la facture n° 2026-042\n\nBonjour Claire,\n\nSauf erreur de ma part, la facture n° 2026-042 de 1 200 € arrivée à échéance le 12 mars n'a pas encore été réglée. Pourriez-vous me confirmer sa date de paiement ?\n\nBien cordialement,\nAlex",
+      "## Omelette aux courgettes et chèvre\n\n**Temps : 15 min**\n\n1. Râpez la courgette et faites-la revenir 5 min.\n2. Battez 3 œufs, versez-les dessus.\n3. Ajoutez le chèvre émietté, pliez, servez.",
     steps: [
-      { title: "Décrivez la situation", description: "Le client, la facture et le retard." },
-      { title: "Choisissez le ton", description: "Cordial ou ferme, selon la relance." },
-      { title: "Envoyez l'email", description: "Un email prêt à copier, généré en quelques secondes." },
+      { title: "Listez vos ingrédients", description: "Ce qu'il y a dans le frigo et les placards." },
+      { title: "Donnez vos contraintes", description: "Le temps disponible et votre régime." },
+      { title: "Cuisinez", description: "Une recette détaillée, générée en quelques secondes." },
     ],
   },
   inputs: [
-    { key: "client", label: "Nom du client", type: "text", required: true, maxLength: 80 },
-    { key: "contexte", label: "Facture et retard", type: "textarea", required: true, maxLength: 500 },
-    { key: "ton", label: "Ton", type: "select", required: true, options: ["cordial", "ferme"] },
+    { key: "ingredients", label: "Ingrédients disponibles", type: "textarea", required: true, maxLength: 400 },
+    { key: "temps", label: "Temps disponible", type: "select", required: true, options: ["15 min", "30 min", "1 h"] },
+    {
+      key: "regime",
+      label: "Régime",
+      type: "select",
+      required: false,
+      options: ["aucun", "végétarien", "sans gluten", "sans lactose"],
+    },
   ],
   generation: {
     model: "anthropic/claude-haiku-4.5",
     systemPrompt:
-      "Tu es un assistant de gestion administrative. Tu écris des emails de relance courts, polis et précis, sans menace ni invention de montant ou de date que l'utilisateur n'a pas fournis.",
+      "Tu es un cuisinier pragmatique. Tu proposes une seule recette réaliste à partir des ingrédients donnés, en n'ajoutant que des basiques de placard, et tu respectes le régime demandé.",
     promptTemplate:
-      "Rédige un email de relance pour {{client}}. Situation : {{contexte}}. Ton : {{ton}}. Donne un objet puis le corps de l'email, sans commentaire.",
+      "Propose une recette réalisable en {{temps}} avec ces ingrédients : {{ingredients}}. Régime : {{regime}}. Donne un titre, puis les étapes numérotées, en markdown.",
     outputType: "markdown",
   },
   pricing: {

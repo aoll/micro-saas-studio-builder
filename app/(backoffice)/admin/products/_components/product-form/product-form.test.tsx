@@ -179,8 +179,8 @@ describe("ProductForm", () => {
     );
     checkSlug.mockResolvedValue({ available: true });
     fireEvent.click(screen.getByRole("button", { name: "Remplir l’étape avec le produit de démo" }));
-    expect((screen.getByLabelText("Slug") as HTMLInputElement).value).toBe("bio-instagram");
-    expect((screen.getByLabelText("Nom") as HTMLInputElement).value).toBe("BioInsta");
+    expect((screen.getByLabelText("Slug") as HTMLInputElement).value).toBe("mail-relance");
+    expect((screen.getByLabelText("Nom") as HTMLInputElement).value).toBe("MailRelance");
   });
 
   it("has no star button in edit mode", () => {
@@ -483,7 +483,7 @@ describe("ProductForm · generation, pricing, publication", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Publier" }));
     await waitFor(() => expect(publish).toHaveBeenCalledTimes(2));
-    expect(publish.mock.calls[1]![0]).toBe("bio-instagram");
+    expect(publish.mock.calls[1]![0]).toBe("mail-relance");
   });
 });
 

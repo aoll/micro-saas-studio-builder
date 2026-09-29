@@ -7,7 +7,7 @@ import { demoStepPatch } from "./demo-fill";
 
 const themes = [
   { id: randomUUID(), slug: "editorial" },
-  { id: randomUUID(), slug: "playful" },
+  { id: randomUUID(), slug: "neon" },
 ] as Theme[];
 
 describe("demoStepPatch", () => {
@@ -17,7 +17,7 @@ describe("demoStepPatch", () => {
     expect(productConfigSchema.safeParse(toConfig(draft)).success).toBe(true);
   });
 
-  it("picks the playful theme, or keeps the current one when it is missing", () => {
+  it("picks the neon theme, or keeps the current one when it is missing", () => {
     expect(demoStepPatch(2, themes, themes[0]!.id).themeId).toBe(themes[1]!.id);
     expect(demoStepPatch(2, [themes[0]!], "current").themeId).toBe("current");
   });

@@ -4,6 +4,7 @@ import type { Route } from "next";
 import { useLocale, useTranslations } from "next-intl";
 import { Activity, useActionState, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { StarIcon } from "lucide-react";
 import { toast } from "sonner";
 import type { Theme } from "@/lib/dal/themes";
 import type { ProductConfig } from "@/lib/schemas/product-config";
@@ -17,6 +18,7 @@ import {
   type PublishState,
   type SaveProductState,
 } from "../../_actions";
+import { demoStepPatch } from "./demo-fill";
 import { FieldsStep } from "./fields-step";
 import { fromConfig, toConfig, type ProductDraft } from "./form-values";
 import { GenerationStep, type GenerationPatch } from "./generation-step";
@@ -235,6 +237,25 @@ export function ProductForm({
     toast.error(t("configImportedWithErrors"));
   }
 
+  // The ★ button of each step (create mode): fills the step with the demo
+  // product (demo-fill.ts) and drops the step's stale errors. Step 1 goes
+  // through `handleIdentityChange`, so the slug gets its availability check.
+  function fillStep() {
+    const patch = demoStepPatch(currentStep, themes, draft.themeId);
+    if (currentStep === 1) {
+      handleIdentityChange({ ...patch, slugEdited: true } as IdentityPatch);
+    } else {
+      patchDraft(patch);
+    }
+    setErrors((current) => {
+      const next: Record<string, string> = {};
+      for (const [path, message] of Object.entries(current)) {
+        if (stepOfPath(path.split(".")) !== currentStep) next[path] = message;
+      }
+      return next;
+    });
+  }
+
   function clearError(path: string) {
     setErrors((current) => {
       if (!(path in current)) return current;
@@ -371,6 +392,18 @@ export function ProductForm({
             {t("previous")}
           </Button>
           <div className="flex gap-2">
+            {mode === "create" && !isLastStep ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={fillStep}
+                aria-label={t("fillStep")}
+                title={t("fillStep")}
+              >
+                <StarIcon aria-hidden="true" />
+              </Button>
+            ) : null}
             <Button type="submit" disabled={pending}>
               {t("save")}
             </Button>

@@ -49,6 +49,7 @@
     "configImportedWithErrors": "Configuration imported with errors to fix",
     "slugUnavailable": "Slug unavailable",
     "slugCheckFailed": "Couldn't check the slug's availability, try again.",
-    "previewSlugPlaceholder": "your-product"
+    "previewSlugPlaceholder": "your-product",
+    "fillStep": "Fill this step with the demo product"
   }
 }

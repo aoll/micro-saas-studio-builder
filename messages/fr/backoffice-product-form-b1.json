@@ -49,6 +49,7 @@
     "configImportedWithErrors": "Configuration importée avec des erreurs à corriger",
     "slugUnavailable": "Slug indisponible",
     "slugCheckFailed": "Impossible de vérifier la disponibilité du slug, réessayez.",
-    "previewSlugPlaceholder": "votre-produit"
+    "previewSlugPlaceholder": "votre-produit",
+    "fillStep": "Remplir l’étape avec le produit de démo"
   }
 }

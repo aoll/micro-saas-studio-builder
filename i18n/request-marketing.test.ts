@@ -74,7 +74,7 @@ describe("i18n/request — marketing branch", () => {
   // this spec's marketing branch never runs for an explicit-locale caller.
   it("returns the explicit params.locale without calling app() or reading requestLocale", async () => {
     const requestLocaleGetter = vi.fn(() => Promise.resolve("fr"));
-    const params = { locale: "en" } as { locale?: string; requestLocale: Promise<string | undefined> };
+    const params = { locale: "en" } as { locale?: "fr" | "en"; requestLocale: Promise<string | undefined> };
     Object.defineProperty(params, "requestLocale", { get: requestLocaleGetter });
     const { default: getRequestConfig } = await import("./request");
     const config = await getRequestConfig(params);

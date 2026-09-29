@@ -11,6 +11,8 @@ product: payment and email are simulated, and the numbers come from seeded
 data. Rough edges remain; the QA reports in `.claude/qa/reports/` list the ones
 I found.
 
+Live demo: https://micro-saas-studio-builder.vercel.app
+
 ## What is in it
 
 - **Back-office** (`/admin`): product portfolio, product sheet with funnel and
@@ -46,27 +48,6 @@ Postgres if you do not have one locally.
 
 `pnpm check` runs typecheck, lint, format check, knip and the unit tests;
 `pnpm test:e2e` runs the Playwright journeys.
-
-## How it was built
-
-The design dossier in `docs/` (in French) is the source of truth for screens,
-data model and decisions. Each feature has a spec in `specs/`, implemented
-test-first by Claude Code agents in parallel git worktrees, then reviewed and
-verified before merging. `CLAUDE.md` describes the workflow and the
-architecture rules (data access only through `lib/dal/`, auth and Zod
-validation on every action, AI calls only through `lib/ai/`). I reviewed the
-specs and the results; I did not write every line by hand, and I would say so
-plainly in an interview.
-
-Where to look first:
-
-| | |
-|---|---|
-| `docs/` | Design dossier (index in `docs/README.md`) |
-| `specs/` | One spec per feature, index in `specs/README.md` |
-| `lib/dal/`, `lib/db/schema.ts` | Data access and schema |
-| `lib/security.ts`, `lib/ai/` | Request guard, AI calls |
-| `e2e/` | Playwright journeys |
 
 ## Security notes: BotID and the generation rate limit
 

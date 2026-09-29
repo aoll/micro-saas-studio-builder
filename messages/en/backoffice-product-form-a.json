@@ -15,12 +15,7 @@
   },
   "themeStep": {
     "themeGroupLabel": "Theme",
-    "logoLabel": "Logo",
-    "logoAlt": "Product logo",
-    "colorLabel": "Theme colour",
-    "clearColor": "Clear colour",
-    "currentTheme": "Current theme",
-    "clearLogo": "Remove logo"
+    "currentTheme": "Current theme"
   },
   "landingStep": {
     "headlineLabel": "Title",

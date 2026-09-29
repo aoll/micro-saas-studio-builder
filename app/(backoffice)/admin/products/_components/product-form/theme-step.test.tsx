@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render } from "@testing-library/react";
 import { screen } from "@testing-library/dom";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -68,14 +68,11 @@ const themeOptions: Theme[] = [
 // zone's messages in context.
 function setup(overrides: Partial<React.ComponentProps<typeof ThemeStep>> = {}, uiLocale: "fr" | "en" = "fr") {
   const onChange = vi.fn();
-  const onUploadLogo = vi.fn();
   const props: React.ComponentProps<typeof ThemeStep> = {
     themes: themeOptions,
     themeId: "theme-editorial",
-    branding: {},
     errors: {},
     onChange,
-    onUploadLogo,
     ...overrides,
   };
   const messages = uiLocale === "fr" ? fr : en;
@@ -84,7 +81,7 @@ function setup(overrides: Partial<React.ComponentProps<typeof ThemeStep>> = {}, 
       <ThemeStep {...props} />
     </NextIntlClientProvider>,
   );
-  return { onChange, onUploadLogo, ...view };
+  return { onChange, ...view };
 }
 
 describe("ThemeStep", () => {
@@ -108,43 +105,10 @@ describe("ThemeStep", () => {
     expect(screen.getAllByText("Thème actuel")).toHaveLength(1);
   });
 
-  it("removes the logo from branding, keeping the colour", () => {
-    const { onChange } = setup({ branding: { logoUrl: "https://blob.example/logo.png", primaryColor: "#112233" } });
-    fireEvent.click(screen.getByRole("button", { name: "Retirer le logo" }));
-    expect(onChange).toHaveBeenCalledWith({ branding: { primaryColor: "#112233" } });
-  });
-
-  it("uploads a logo and stores its url in branding", async () => {
-    const { onChange, onUploadLogo } = setup();
-    onUploadLogo.mockResolvedValue({ url: "https://blob.example/logo.png" });
-    const file = new File([new Uint8Array(10)], "logo.png", { type: "image/png" });
-    fireEvent.change(screen.getByLabelText("Logo"), { target: { files: [file] } });
-
-    await waitFor(() => expect(onUploadLogo).toHaveBeenCalledWith(file));
-    await waitFor(() =>
-      expect(onChange).toHaveBeenCalledWith({ branding: { logoUrl: "https://blob.example/logo.png" } }),
-    );
-  });
-
-  it("shows an error message when the logo upload fails", async () => {
-    const { onUploadLogo } = setup();
-    onUploadLogo.mockResolvedValue({ error: "Le logo dépasse 512 Ko" });
-    const file = new File([new Uint8Array(10)], "logo.png", { type: "image/png" });
-    fireEvent.change(screen.getByLabelText("Logo"), { target: { files: [file] } });
-
-    await screen.findByText("Le logo dépasse 512 Ko");
-  });
-
-  it("accepts a hex colour and stores it in branding", () => {
-    const { onChange } = setup();
-    fireEvent.change(screen.getByLabelText("Couleur du thème"), { target: { value: "#d946ef" } });
-    expect(onChange).toHaveBeenLastCalledWith({ branding: { primaryColor: "#d946ef" } });
-  });
-
-  it("clears the colour override", () => {
-    const { onChange } = setup({ branding: { primaryColor: "#d946ef" } });
-    fireEvent.click(screen.getByRole("button", { name: "Effacer la couleur" }));
-    expect(onChange).toHaveBeenCalledWith({ branding: {} });
+  it("has no logo or colour field", () => {
+    setup();
+    expect(screen.queryByLabelText("Logo")).toBeNull();
+    expect(screen.queryByLabelText("Couleur du thème")).toBeNull();
   });
 
   // I18N-BACKOFFICE-STRINGS: catches a label left hardcoded in French once
@@ -152,8 +116,6 @@ describe("ThemeStep", () => {
   it("renders every label in English when the locale is en", () => {
     setup({}, "en");
     expect(screen.getByRole("radiogroup", { name: "Theme" })).toBeTruthy();
-    expect(screen.getByLabelText("Logo")).toBeTruthy();
-    expect(screen.getByLabelText("Theme colour")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Clear colour" })).toBeTruthy();
+    expect(screen.getByText("Current theme")).toBeTruthy();
   });
 });

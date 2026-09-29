@@ -16,7 +16,6 @@ import {
   testPrompt,
   type PublishState,
   type SaveProductState,
-  uploadLogo,
 } from "../../_actions";
 import { FieldsStep } from "./fields-step";
 import { fromConfig, toConfig, type ProductDraft } from "./form-values";
@@ -264,12 +263,6 @@ export function ProductForm({
     }
   }
 
-  async function handleUploadLogo(file: File) {
-    const data = new FormData();
-    data.set("file", file);
-    return uploadLogo({}, data, locale);
-  }
-
   async function handleTestPrompt(sample: Record<string, string>): Promise<PromptTestResult> {
     const data = new FormData();
     const config = toConfig(draft);
@@ -413,10 +406,8 @@ export function ProductForm({
           <ThemeStep
             themes={themes}
             themeId={draft.themeId}
-            branding={draft.branding}
             errors={errors}
             onChange={(patch: ThemePatch) => patchDraft(patch)}
-            onUploadLogo={handleUploadLogo}
           />
         </Activity>
         <Activity mode={currentStep === 3 ? "visible" : "hidden"}>

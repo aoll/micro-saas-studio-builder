@@ -61,6 +61,8 @@ describe("SummaryStep", () => {
     setup({ state: { ok: true, slug: "bio-instagram", version: 1, url: "/bio-instagram" } });
     const link = screen.getByRole("link", { name: /bio-instagram/ });
     expect(link.getAttribute("href")).toBe("/bio-instagram");
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toContain("noopener");
   });
 
   it("submits through the injected formAction when Publier is clicked", () => {

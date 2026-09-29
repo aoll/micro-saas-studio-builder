@@ -65,7 +65,7 @@ export function SummaryStep({
       {state.ok && state.url ? (
         <p className="text-sm">
           {t("published")} ·{" "}
-          <Link href={state.url as Route} className="underline">
+          <Link href={state.url as Route} target="_blank" rel="noopener noreferrer" className="underline">
             {t("viewProduct", { url: state.url })}
           </Link>
         </p>

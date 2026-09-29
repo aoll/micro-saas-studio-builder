@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { formatUsd } from "./margin";
+import { formatMicros } from "./margin";
 import type { FieldDraft } from "./form-values";
 
 export type PromptTestResult = {
@@ -36,6 +36,7 @@ export function PromptTester({
   onTested?: (result: PromptTestResult) => void;
 }) {
   const t = useTranslations("backoffice-product-form-b2.promptTester");
+  const locale = useLocale();
   const [sample, setSample] = useState<Record<string, string>>({});
   const [pending, setPending] = useState(false);
   const [result, setResult] = useState<PromptTestResult>({});
@@ -103,7 +104,7 @@ export function PromptTester({
             {t("result", {
               inputTokens: result.inputTokens ?? 0,
               outputTokens: result.outputTokens ?? 0,
-              cost: formatUsd(result.costMicros ?? 0),
+              cost: formatMicros(result.costMicros ?? 0, locale),
             })}
           </p>
         </div>

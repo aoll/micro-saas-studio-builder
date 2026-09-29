@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/components/utils";
-import { formatEur, formatUsd, type PackMargin } from "./margin";
+import { formatEur, formatMicros, type PackMargin } from "./margin";
 
 type Pricing = ProductConfig["pricing"];
 
@@ -170,7 +170,7 @@ export function PricingStep({
                 <p data-testid="pack-margin" className={cn("text-sm", negative && "text-destructive")}>
                   {t("packMargin", {
                     price: formatEur(pack.priceCents, locale),
-                    margin: marginValid ? formatUsd(margin.marginMicros) : "—",
+                    margin: marginValid ? formatMicros(margin.marginMicros, locale) : "—",
                   })}
                 </p>
               ) : null}

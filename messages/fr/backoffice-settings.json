@@ -24,7 +24,8 @@
     "resetDone": "Surcharge réinitialisée"
   },
   "preview": {
-    "heading": "Badges qui changeraient :"
+    "heading": "Badges qui changeraient :",
+    "badge": { "kill": "à couper", "scale": "à scaler", "none": "aucun badge" }
   },
   "errors": {
     "minVisitsTooSmall": "Doit être au moins {minimum}",

@@ -50,12 +50,27 @@ export function formatEur(cents: number, locale: string = "fr"): string {
   return formatter.format(cents / 100);
 }
 
-// The AI cost (or a margin) in micro-dollars, formatted with 6 decimals: a
-// single generation costs a fraction of a cent (docs/05's "moins de 0,5
-// centime"), so 2 decimals of a plain dollar amount would round every
-// figure in this panel down to $0.00.
-export function formatUsd(micros: number): string {
-  const dollars = Math.abs(micros) / 1_000_000;
-  const sign = micros < 0 ? "-" : "";
-  return `${sign}$${dollars.toFixed(6)}`;
+// The AI cost (or a margin) in micro-currency, shown in euros like every
+// other amount of the backoffice (EUR and USD are treated 1:1, see the top of
+// this file; QA 2026-09-29 B6 — it used to print "$0.486500"). A single
+// generation costs a fraction of a cent (docs/05's "moins de 0,5 centime"),
+// so up to 6 decimals are kept; trailing zeros beyond 2 are dropped.
+const MICROS_FORMATTERS = {
+  fr: new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 6,
+  }),
+  en: new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 6,
+  }),
+};
+
+export function formatMicros(micros: number, locale: string = "fr"): string {
+  const formatter = locale === "en" ? MICROS_FORMATTERS.en : MICROS_FORMATTERS.fr;
+  return formatter.format(micros / 1_000_000);
 }

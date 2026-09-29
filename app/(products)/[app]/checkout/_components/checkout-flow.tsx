@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { startTransition, useEffect, useRef, useState } from "react";
 import { Loader2Icon } from "lucide-react";
-import { useBalanceDelta } from "@/components/product/balance";
+import { useBalanceDelta, useSettledBalance } from "@/components/product/balance";
 import { RouteModal } from "@/components/product/route-modal";
 import { Button } from "@/components/ui/button";
 import type { Pack } from "@/lib/schemas/pack";
@@ -41,6 +41,7 @@ export function CheckoutFlow({
   const format = useFormatter();
   const router = useRouter();
   const addDelta = useBalanceDelta();
+  const settleBalance = useSettledBalance();
 
   const [status, setStatus] = useState<Status>("idle");
   const [errorCode, setErrorCode] = useState<PurchaseError | null>(null);
@@ -91,6 +92,7 @@ export function CheckoutFlow({
       const result = await purchase(slug, pack.id, key);
       if (result.ok) {
         setBalance(result.balance);
+        settleBalance(result.balance);
         setStatus("confirmed");
         // purchase() no longer calls refresh() itself (root cause: a server
         // refresh re-fetches the /pricing background kept behind the modal,

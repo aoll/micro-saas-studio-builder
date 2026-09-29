@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import type { Decision } from "@/lib/decision";
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { thresholdsInputSchema } from "@/lib/schemas/inputs";
@@ -32,6 +33,7 @@ function ProductOverrideForm({
   allProducts: SettingsView["products"];
 }) {
   const t = useTranslations("backoffice-settings");
+  const badgeLabel = (decision: Decision) => t(`preview.badge.${decision ?? "none"}`);
   const locale = useLocale();
   const merged = mergeThresholds(defaults, product.override);
   const [minVisits, setMinVisits] = useState(String(merged.minVisits));
@@ -141,7 +143,7 @@ function ProductOverrideForm({
           <ul className="list-disc pl-4">
             {changes.map((change) => (
               <li key={change.productId} data-testid="preview-change">
-                {change.name} : {change.before ?? "—"} → {change.after ?? "—"}
+                {change.name} : {badgeLabel(change.before)} → {badgeLabel(change.after)}
               </li>
             ))}
           </ul>

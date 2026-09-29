@@ -12,6 +12,7 @@
     "logoFormatsAccepted": "Formats acceptés : PNG, JPEG, WebP",
     "logoUploadFailed": "Échec de l'envoi du logo",
     "tooManyTests": "Trop de tests pour le moment, réessayez dans un instant.",
+    "botRefused": "Le test a été refusé par la protection anti-robot, rechargez la page et réessayez.",
     "toolFieldsInvalid": "Les champs de l'outil sont invalides",
     "generationConfigInvalid": "La configuration de génération est invalide",
     "modelNotAllowed": "Modèle non autorisé",

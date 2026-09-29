@@ -1,11 +1,16 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { createContext, startTransition, useContext, useOptimistic } from "react";
+import { createContext, startTransition, useContext, useEffect, useOptimistic, useState } from "react";
 import type { ReactNode } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-type BalanceContextValue = { delta: number; addDelta: (delta: number) => void };
+type BalanceContextValue = {
+  delta: number;
+  addDelta: (delta: number) => void;
+  settled: number | null;
+  settle: (balance: number | null) => void;
+};
 
 const BalanceContext = createContext<BalanceContextValue | null>(null);
 
@@ -31,7 +36,13 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  return <BalanceContext.Provider value={{ delta, addDelta }}>{children}</BalanceContext.Provider>;
+  // A balance the server already confirmed (purchase) but the header's own
+  // server value does not show yet: the router refresh is deferred while the
+  // checkout modal is open over /pricing (QA 2026-09-29 B4). The badge drops
+  // it as soon as its server balance changes.
+  const [settled, settle] = useState<number | null>(null);
+
+  return <BalanceContext.Provider value={{ delta, addDelta, settled, settle }}>{children}</BalanceContext.Provider>;
 }
 
 export function useBalanceDelta(): (delta: number) => void {
@@ -40,13 +51,23 @@ export function useBalanceDelta(): (delta: number) => void {
   return ctx.addDelta;
 }
 
+export function useSettledBalance(): (balance: number) => void {
+  const ctx = useContext(BalanceContext);
+  if (!ctx) throw new Error("useSettledBalance must be used within a BalanceProvider");
+  return ctx.settle;
+}
+
 export function BalanceBadge({ balance }: { balance: number }) {
   const ctx = useContext(BalanceContext);
   const t = useTranslations("common.header");
   // Never below zero (docs/01-produit.md: "aucun solde négatif"): at 0, the
   // optimistic -1 of "Générer" would show "-1" until the 402 opens the
   // paywall (QA1 B11).
-  const displayed = Math.max(0, balance + (ctx?.delta ?? 0));
+  const settle = ctx?.settle;
+  useEffect(() => {
+    settle?.(null);
+  }, [balance, settle]);
+  const displayed = Math.max(0, ctx?.settled ?? balance + (ctx?.delta ?? 0));
   return (
     <span key={displayed} className="animate-[badge-pop_0.3s_ease-out] rounded-full border px-2 py-0.5 text-sm">
       {t("credits", { count: displayed })}

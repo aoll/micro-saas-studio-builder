@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import type { Decision } from "@/lib/decision";
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Thresholds } from "@/lib/dal/thresholds";
@@ -22,6 +23,7 @@ const initialState: ThresholdsActionState = {};
 // Server Action can't read next/root-params itself).
 export function ThresholdsForm({ defaults, products }: { defaults: Thresholds; products: PreviewProduct[] }) {
   const t = useTranslations("backoffice-settings");
+  const badgeLabel = (decision: Decision) => t(`preview.badge.${decision ?? "none"}`);
   const locale = useLocale();
   const [minVisits, setMinVisits] = useState(String(defaults.minVisits));
   const [killPercent, setKillPercent] = useState(String(rateToPercent(defaults.killMaxConversion)));
@@ -113,7 +115,7 @@ export function ThresholdsForm({ defaults, products }: { defaults: Thresholds; p
           <ul className="list-disc pl-4">
             {changes.map((change) => (
               <li key={change.productId} data-testid="preview-change">
-                {change.name} : {change.before ?? "—"} → {change.after ?? "—"}
+                {change.name} : {badgeLabel(change.before)} → {badgeLabel(change.after)}
               </li>
             ))}
           </ul>

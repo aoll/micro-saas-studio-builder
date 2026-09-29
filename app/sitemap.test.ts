@@ -2,6 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/env", () => ({ env: { BETTER_AUTH_URL: "https://studio.example.com/" } }));
 
+const connection = vi.fn();
+vi.mock("next/server", () => ({ connection }));
+
 const listProducts = vi.fn();
 vi.mock("@/lib/dal/products", () => ({ listProducts }));
 
@@ -10,6 +13,13 @@ function product(overrides: Partial<{ slug: string; status: string }>) {
 }
 
 describe("sitemap", () => {
+  it("opts out of prerendering so a product published live shows up", async () => {
+    listProducts.mockResolvedValue([]);
+    const { default: sitemap } = await import("./sitemap");
+    await sitemap();
+    expect(connection).toHaveBeenCalled();
+  });
+
   it("lists the root landing, the making-of and every non-killed product", async () => {
     listProducts.mockResolvedValue([
       product({ slug: "lettre-pro", status: "test" }),

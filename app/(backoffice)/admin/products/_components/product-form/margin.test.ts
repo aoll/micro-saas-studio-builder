@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Pack } from "@/lib/schemas/pack";
-import { estimateMargins, formatEur, formatUsd, revenuePerGenerationMicros } from "./margin";
+import { estimateMargins, formatEur, formatMicros, revenuePerGenerationMicros } from "./margin";
 
 const pack10: Pack = { id: "pack-10", credits: 10, priceCents: 490 };
 const pack50: Pack = { id: "pack-50", credits: 50, priceCents: 1490, recommended: true };
@@ -75,16 +75,16 @@ describe("formatEur", () => {
   });
 });
 
-describe("formatUsd", () => {
-  it("formats micro-dollars as a small dollar amount", () => {
-    expect(formatUsd(910)).toBe("$0.000910");
+describe("formatMicros", () => {
+  it("formats micro-currency as a small euro amount, French by default", () => {
+    expect(formatMicros(910).replace(/\s/g, " ")).toBe("0,00091 €");
   });
 
   it("formats 0 micros", () => {
-    expect(formatUsd(0)).toBe("$0.000000");
+    expect(formatMicros(0).replace(/\s/g, " ")).toBe("0,00 €");
   });
 
-  it("formats a negative amount with its sign", () => {
-    expect(formatUsd(-110_000)).toBe("-$0.110000");
+  it("formats a negative amount with its sign, in English too", () => {
+    expect(formatMicros(-110_000, "en")).toBe("-€0.11");
   });
 });

@@ -93,7 +93,7 @@ export default async function ProductLayout({ children, modal }: LayoutProps<"/[
       className={fontFor(theme.tokens.fontKey).variable}
       style={themeCssVars(theme.tokens, product.branding)}
     >
-      <body className="flex min-h-dvh flex-col">
+      <body className="flex min-h-dvh flex-col bg-background text-foreground">
         <NextIntlClientProvider locale={product.locale} messages={messages}>
           <BalanceProvider>
             <DemoBanner />

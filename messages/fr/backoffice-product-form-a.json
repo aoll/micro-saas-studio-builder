@@ -18,7 +18,9 @@
     "logoLabel": "Logo",
     "logoAlt": "Logo du produit",
     "colorLabel": "Couleur du thème",
-    "clearColor": "Effacer la couleur"
+    "clearColor": "Effacer la couleur",
+    "currentTheme": "Thème actuel",
+    "clearLogo": "Retirer le logo"
   },
   "landingStep": {
     "headlineLabel": "Titre",

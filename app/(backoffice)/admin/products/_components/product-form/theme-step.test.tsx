@@ -103,6 +103,17 @@ describe("ThemeStep", () => {
     expect(onChange).toHaveBeenCalledWith({ themeId: "theme-neon" });
   });
 
+  it("labels only the selected theme as the current one", () => {
+    setup();
+    expect(screen.getAllByText("Thème actuel")).toHaveLength(1);
+  });
+
+  it("removes the logo from branding, keeping the colour", () => {
+    const { onChange } = setup({ branding: { logoUrl: "https://blob.example/logo.png", primaryColor: "#112233" } });
+    fireEvent.click(screen.getByRole("button", { name: "Retirer le logo" }));
+    expect(onChange).toHaveBeenCalledWith({ branding: { primaryColor: "#112233" } });
+  });
+
   it("uploads a logo and stores its url in branding", async () => {
     const { onChange, onUploadLogo } = setup();
     onUploadLogo.mockResolvedValue({ url: "https://blob.example/logo.png" });

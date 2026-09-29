@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Theme } from "@/lib/dal/themes";
 import type { ProductConfig } from "@/lib/schemas/product-config";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ export function ThemeStep({
 }) {
   const [logoError, setLogoError] = useState<string | undefined>(undefined);
   const [uploading, setUploading] = useState(false);
+  const logoInput = useRef<HTMLInputElement>(null);
   const t = useTranslations("backoffice-product-form-a");
 
   async function handleFile(file: File | undefined) {
@@ -46,6 +47,12 @@ export function ThemeStep({
       return;
     }
     if (result.url) onChange({ branding: { ...branding, logoUrl: result.url } });
+  }
+
+  function clearLogo() {
+    const { logoUrl: _drop, ...rest } = branding;
+    onChange({ branding: rest });
+    if (logoInput.current) logoInput.current.value = "";
   }
 
   function clearColor() {
@@ -65,9 +72,16 @@ export function ThemeStep({
               role="radio"
               aria-checked={checked}
               onClick={() => onChange({ themeId: theme.id })}
-              className="rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className={`relative rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                checked ? "ring-2 ring-primary" : ""
+              }`}
             >
               <ThemeThumbnail tokens={theme.tokens} landingVariant={theme.landingVariant} name={theme.name} />
+              {checked ? (
+                <span className="absolute top-2 right-2 rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
+                  {t("themeStep.currentTheme")}
+                </span>
+              ) : null}
             </button>
           );
         })}
@@ -78,13 +92,19 @@ export function ThemeStep({
         <Label htmlFor="product-logo">{t("themeStep.logoLabel")}</Label>
         <input
           id="product-logo"
+          ref={logoInput}
           type="file"
           accept="image/png,image/jpeg,image/webp"
           disabled={uploading}
           onChange={(event) => handleFile(event.target.files?.[0])}
         />
         {branding.logoUrl ? (
-          <Image src={branding.logoUrl} alt={t("themeStep.logoAlt")} width={64} height={64} unoptimized />
+          <div className="flex items-center gap-2">
+            <Image src={branding.logoUrl} alt={t("themeStep.logoAlt")} width={64} height={64} unoptimized />
+            <Button type="button" variant="ghost" size="sm" onClick={clearLogo}>
+              {t("themeStep.clearLogo")}
+            </Button>
+          </div>
         ) : null}
         {logoError ? <p className="text-sm text-destructive">{logoError}</p> : null}
       </div>

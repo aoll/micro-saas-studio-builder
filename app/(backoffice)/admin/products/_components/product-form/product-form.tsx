@@ -2,7 +2,7 @@
 
 import type { Route } from "next";
 import { useLocale, useTranslations } from "next-intl";
-import { Activity, useActionState, useCallback, useEffect, useState } from "react";
+import { Activity, useActionState, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Theme } from "@/lib/dal/themes";
@@ -181,8 +181,15 @@ export function ProductForm({
   }
 
   // Side effects (toast, navigation) stay in an effect: they are not state
-  // derivations.
+  // derivations. Each action response is handled once: `router.refresh()`
+  // re-renders with new intl/router identities, which would otherwise re-run
+  // these effects on the same state, toast again and refresh again, forever.
+  const handledSaveEffect = useRef(initialState);
+  const handledPublishEffect = useRef(initialPublishState);
+
   useEffect(() => {
+    if (handledSaveEffect.current === state) return;
+    handledSaveEffect.current = state;
     if (state.ok && state.slug) {
       // `SaveProductState.version` is typed optional even though it's always
       // set alongside `ok`/`slug` at runtime; `?? 0` only satisfies
@@ -194,6 +201,8 @@ export function ProductForm({
   }, [state, mode, router, t]);
 
   useEffect(() => {
+    if (handledPublishEffect.current === publishState) return;
+    handledPublishEffect.current = publishState;
     if (publishState.ok && publishState.slug) {
       toast.success(t("productPublished", { version: publishState.version ?? 0 }));
       if (mode === "edit") router.refresh();

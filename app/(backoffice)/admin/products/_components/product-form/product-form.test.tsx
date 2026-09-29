@@ -173,6 +173,28 @@ describe("ProductForm", () => {
     expect(screen.getByLabelText("Nom")).toBeTruthy(); // still on step 1
   });
 
+  it("fills the current step with the demo product through the star button", () => {
+    render(
+      <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,
+    );
+    checkSlug.mockResolvedValue({ available: true });
+    fireEvent.click(screen.getByRole("button", { name: "Remplir l’étape avec le produit de démo" }));
+    expect((screen.getByLabelText("Slug") as HTMLInputElement).value).toBe("bio-instagram");
+    expect((screen.getByLabelText("Nom") as HTMLInputElement).value).toBe("BioInsta");
+  });
+
+  it("has no star button in edit mode", () => {
+    render(
+      <ProductForm
+        mode="edit"
+        slug="bio-instagram"
+        initialDraft={newProductDraft("theme-editorial")}
+        themes={themeOptions}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: "Remplir l’étape avec le produit de démo" })).toBeNull();
+  });
+
   it("switches steps freely through the step nav", () => {
     render(
       <ProductForm mode="create" slug={null} initialDraft={newProductDraft("theme-editorial")} themes={themeOptions} />,

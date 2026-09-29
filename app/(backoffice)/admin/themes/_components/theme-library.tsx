@@ -29,7 +29,7 @@ export async function ThemeLibrary() {
   return (
     <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {themes.map((theme) => (
-        <li key={theme.id}>
+        <li key={theme.id} className="flex">
           <ThemeCard theme={theme} productNames={grouped.get(theme.id) ?? []} t={t} />
         </li>
       ))}

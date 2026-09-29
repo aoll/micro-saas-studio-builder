@@ -22,7 +22,7 @@ import { formatUsage, type ThemesTranslator } from "./theme-usage";
 // component's own tests use does not provide.
 export function ThemeCard({ theme, productNames, t }: { theme: Theme; productNames: string[]; t: ThemesTranslator }) {
   return (
-    <Card className="gap-3 p-4">
+    <Card className="w-full gap-3 p-4">
       <h2 className="text-base font-semibold">
         <Link
           href={`/admin/themes/${theme.id}`}
@@ -32,7 +32,7 @@ export function ThemeCard({ theme, productNames, t }: { theme: Theme; productNam
         </Link>
       </h2>
       <ThemeThumbnail tokens={theme.tokens} landingVariant={theme.landingVariant} />
-      <p className="text-sm text-muted-foreground" data-count={productNames.length}>
+      <p className="flex-1 text-sm text-muted-foreground" data-count={productNames.length}>
         {formatUsage(productNames, t)}
       </p>
       <p className="text-xs text-muted-foreground">

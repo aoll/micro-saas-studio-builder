@@ -48,6 +48,12 @@ describe("ProductsShowcase", () => {
     render(await ProductsShowcase());
     const links = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
     expect(links).toEqual(["/descri-pro", "/lettre-pro", "/nom-de-marque", "/admin/login"]);
+    // A product link leaves the marketing site: it opens in a new tab.
+    const productLinks = screen.getAllByRole("link").filter((link) => link.getAttribute("href") !== "/admin/login");
+    for (const link of productLinks) {
+      expect(link.getAttribute("target")).toBe("_blank");
+      expect(link.getAttribute("rel")).toContain("noopener");
+    }
     // Name and headline are drawn in the Open Graph preview, so they reach
     // assistive tech through its alt text, built from the product's own data.
     expect(

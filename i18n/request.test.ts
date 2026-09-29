@@ -138,7 +138,10 @@ describe("explicit locale (Server Actions)", () => {
     const cookiesModule = await import("next/headers");
     const cookiesSpy = vi.spyOn(cookiesModule, "cookies");
     const { default: getRequestConfig } = await import("./request");
-    const config = await getRequestConfig({ locale: "de", requestLocale: params.requestLocale });
+    // `as "fr"`: a Server Action's `locale` is a runtime value TypeScript can't fully
+    // guard (i18n/global.d.ts's AppConfig.Locale narrows the real type to "fr" | "en"),
+    // exactly the case this test defends against.
+    const config = await getRequestConfig({ locale: "de" as "fr", requestLocale: params.requestLocale });
     expect(config.locale).toBe("fr");
     expect(app).not.toHaveBeenCalled();
     expect(cookiesSpy).not.toHaveBeenCalled();

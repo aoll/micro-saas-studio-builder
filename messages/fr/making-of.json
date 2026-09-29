@@ -85,7 +85,7 @@
   },
   "sinceLaunch": {
     "heading": "04 · Après la mise en production",
-    "intro": "Le run ci-dessus s'arrête à la mise en production. Depuis, plusieurs chantiers ont avancé en parallèle : certains par le même flow spec → orchestrateur → PR, d'autres construits directement avec l'humain, en une session.",
+    "intro": "Le run ci-dessus s'arrête à la mise en production. Depuis, plusieurs chantiers ont avancé en parallèle, par le même flow spec → orchestrateur → PR.",
     "items": {
       "invoices": {
         "title": "Facture",

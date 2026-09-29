@@ -9,9 +9,9 @@ import { PromptTester } from "./prompt-tester";
 
 afterEach(cleanup);
 
-const fields = [
-  { id: "input-poste", key: "poste", label: "Poste visé", required: true },
-  { id: "input-ton", key: "ton", label: "Ton", required: false },
+const fields: React.ComponentProps<typeof PromptTester>["fields"] = [
+  { id: "input-poste", key: "poste", label: "Poste visé", required: true, type: "text" },
+  { id: "input-ton", key: "ton", label: "Ton", required: false, type: "text" },
 ];
 
 // I18N-BACKOFFICE-STRINGS (lot 6): PromptTester now reads its own zone via
@@ -91,8 +91,8 @@ describe("PromptTester", () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     setup({
       fields: [
-        { id: "input-a", key: "niche", label: "Niche A", required: false },
-        { id: "input-b", key: "niche", label: "Niche B", required: false },
+        { id: "input-a", key: "niche", label: "Niche A", required: false, type: "text" },
+        { id: "input-b", key: "niche", label: "Niche B", required: false, type: "text" },
       ],
     });
     const duplicateKeyWarning = consoleError.mock.calls.some((call) => String(call[0]).includes("same key"));
@@ -115,5 +115,29 @@ describe("PromptTester", () => {
     fireEvent.click(screen.getByRole("button", { name: "Test the prompt" }));
     await screen.findByText("Hi");
     expect(screen.getByText(/210 in \/ 140 out/)).toBeTruthy();
+  });
+
+  // The admin picks a sample value from the field's own options instead of
+  // guessing what a "select" field accepts (report: a plain text input made
+  // the admin guess valid values).
+  it("renders a select with the field's own options for a select field, not a text input", async () => {
+    const { onTest } = setup({
+      fields: [
+        { id: "input-ton", key: "ton", label: "Ton", required: true, type: "select", options: ["formel", "amical"] },
+      ],
+    });
+    onTest.mockResolvedValue({ ok: true, output: "Résultat" });
+    const select = screen.getByLabelText("Ton") as HTMLSelectElement;
+    expect(select.tagName).toBe("SELECT");
+    fireEvent.change(select, { target: { value: "amical" } });
+    fireEvent.click(screen.getByRole("button", { name: "Tester le prompt" }));
+    await waitFor(() => expect(onTest).toHaveBeenCalledWith({ ton: "amical" }));
+  });
+
+  it("renders a textarea for a textarea field", () => {
+    setup({
+      fields: [{ id: "input-brief", key: "brief", label: "Brief", required: true, type: "textarea" }],
+    });
+    expect(screen.getByLabelText("Brief").tagName).toBe("TEXTAREA");
   });
 });

@@ -434,6 +434,8 @@ export function ProductForm({
                 key: field.key,
                 label: field.label,
                 required: field.required,
+                type: field.type,
+                options: field.options,
               }))}
               onTest={handleTestPrompt}
               onTested={setLastTest}

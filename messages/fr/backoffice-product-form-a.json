@@ -15,10 +15,7 @@
   },
   "themeStep": {
     "themeGroupLabel": "Thème",
-    "logoLabel": "Logo",
-    "logoAlt": "Logo du produit",
-    "colorLabel": "Couleur du thème",
-    "clearColor": "Effacer la couleur"
+    "currentTheme": "Thème actuel"
   },
   "landingStep": {
     "headlineLabel": "Titre",

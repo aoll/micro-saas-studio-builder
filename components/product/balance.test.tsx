@@ -5,7 +5,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it } from "vitest";
 import en from "@/messages/en/common.json";
 import fr from "@/messages/fr/common.json";
-import { BalanceBadge, BalanceBadgeSkeleton, BalanceProvider, useBalanceDelta } from "./balance";
+import { BalanceBadge, BalanceBadgeSkeleton, BalanceProvider, useBalanceDelta, useSettledBalance } from "./balance";
 
 afterEach(cleanup);
 
@@ -22,6 +22,15 @@ function DeltaButton({ delta }: { delta: number }) {
   return (
     <button type="button" onClick={() => addDelta(delta)}>
       apply
+    </button>
+  );
+}
+
+function SettleButton({ balance }: { balance: number }) {
+  const settle = useSettledBalance();
+  return (
+    <button type="button" onClick={() => settle(balance)}>
+      settle
     </button>
   );
 }
@@ -90,5 +99,35 @@ describe("useBalanceDelta", () => {
       return null;
     }
     expect(() => render(<Standalone />)).toThrow(/BalanceProvider/);
+  });
+});
+
+describe("useSettledBalance (QA 2026-09-29 B4)", () => {
+  it("keeps showing the balance a purchase confirmed until the server value changes", async () => {
+    const { rerender } = render(
+      <Wrapper>
+        <BalanceBadge balance={0} />
+        <SettleButton balance={50} />
+      </Wrapper>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "settle" }));
+    await waitFor(() => expect(screen.getByText("50 crédits")).toBeTruthy());
+    // The badge still gets the stale server value (the refresh is deferred
+    // while the checkout modal is open): the settled balance wins.
+    rerender(
+      <Wrapper>
+        <BalanceBadge balance={0} />
+        <SettleButton balance={50} />
+      </Wrapper>,
+    );
+    expect(screen.getByText("50 crédits")).toBeTruthy();
+    // Once the refreshed server balance arrives, it takes over again.
+    rerender(
+      <Wrapper>
+        <BalanceBadge balance={49} />
+        <SettleButton balance={50} />
+      </Wrapper>,
+    );
+    await waitFor(() => expect(screen.getByText("49 crédits")).toBeTruthy());
   });
 });

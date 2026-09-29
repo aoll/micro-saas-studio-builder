@@ -241,7 +241,7 @@ export async function testPrompt(
 
   const guard = await guardRequest("test-prompt");
   if (!guard.ok) {
-    return { error: t("actions.tooManyTests") };
+    return { error: t(guard.reason === "bot" ? "actions.botRefused" : "actions.tooManyTests") };
   }
 
   const parsedForm = parseConfigForm(formData, t);

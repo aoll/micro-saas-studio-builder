@@ -490,6 +490,17 @@ describe("testPrompt", () => {
     expect(callOrder[1]).toBe("getTranslations");
   });
 
+  it("tells a bot refusal apart from a rate limit", async () => {
+    await currentAdmin();
+    guardRequest.mockResolvedValue({ ok: false, reason: "bot" });
+    const { testPrompt } = await import("./_actions");
+    const bot = await testPrompt(null, {}, testPromptForm());
+    guardRequest.mockResolvedValue({ ok: false, reason: "rate_limited" });
+    const limited = await testPrompt(null, {}, testPromptForm());
+    expect(bot.error).toBeDefined();
+    expect(bot.error).not.toEqual(limited.error);
+  });
+
   it("returns an error for a {{variable}} without a matching field", async () => {
     await currentAdmin();
     const { testPrompt } = await import("./_actions");

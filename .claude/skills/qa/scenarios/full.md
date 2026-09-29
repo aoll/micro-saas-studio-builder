@@ -58,7 +58,7 @@ l'étape 6 : n'en fais aucune qui n'y soit pas notée.
 ### 1. Connexion admin (BO-01)
 
 1.1 `/admin` sans session → redirection vers `/admin/login`. [SETUP › Acceptation 4]
-1.2 Champs Email et Mot de passe vides à l'ouverture. [BO-01 › Acceptation 2 · mockup BO-01]
+1.2 Champs Email et Mot de passe préremplis avec les identifiants de l'owner (`SEED_OWNER_*` posées) et message dans la carte qui le signale ; vides et sans message sinon (décision du 2026-09-28). Les identifiants admin ne sont jamais affichés. [BO-01 › Acceptation 2 · mockup BO-01]
 1.3 Mauvais mot de passe → « Identifiants invalides », sans dire lequel. [BO-01 › 1]
 1.4 Compte admin du seed → `/admin`. Navigation : Portefeuille, Thèmes, Réglages, déconnexion. [CONTRACT-ui › 1]
 
@@ -91,7 +91,7 @@ l'étape 6 : n'en fais aucune qui n'y soit pas notée.
 ### 5. Funnel utilisateur (SA-02 → SA-07), visiteur puis inscrit
 
 5.1 Anonyme : génération gratuite streamée (`POST /bio-instagram/api/generate` en 200), carte de résultat : copier, télécharger, régénérer. [SA-02 › 2, 7]
-5.2 Dès la fin du flux gratuit, la modale d'inscription s'ouvre sur l'outil (URL `/bio-instagram/signup`) ; une nouvelle tentative anonyme répond 401 `signup_required` et rouvre la modale. [SA-02 › 4 · SA-03 › 1]
+5.2 Fin du flux gratuit : le résultat reste affiché avec un lien discret vers `/bio-instagram/signup`, la modale ne s'ouvre pas d'elle-même (décision du 2026-09-27) ; une nouvelle tentative anonyme répond 401 `signup_required` et ouvre la modale d'inscription sur l'outil (URL `/bio-instagram/signup`). [SA-02 › 4 · SA-03 › 1]
 5.3 Email jetable → boîte de réception simulée aux couleurs du produit → « Sign me in » (`messages/en/auth.json`) → retour sur l'outil, solde 3. [SA-03 › 2-3 · docs/08 › Email simulé]
 5.4 Générer jusqu'à 0 crédit : chaque génération -1 (badge animé) ; à 0, la génération répond 402 et la modale tarifs s'ouvre. [SA-02 › 5 · SA-04 › 2 · docs/01 › Script 4]
 5.5 Pack recommandé mis en avant, prix par génération ; « Buy » → modale de paiement « Pay … (simulated) » (URL `/bio-instagram/checkout/pack-50`). [SA-04 · mockup SA-04]

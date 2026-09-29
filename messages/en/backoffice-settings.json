@@ -24,7 +24,8 @@
     "resetDone": "Override reset"
   },
   "preview": {
-    "heading": "Badges that would change:"
+    "heading": "Badges that would change:",
+    "badge": { "kill": "cut", "scale": "scale", "none": "no badge" }
   },
   "errors": {
     "minVisitsTooSmall": "Must be at least {minimum}",

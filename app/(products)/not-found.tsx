@@ -24,7 +24,7 @@ export default async function RootNotFound() {
 
   return (
     <html lang={product?.locale ?? "fr"}>
-      <body className="flex min-h-dvh flex-col">{content}</body>
+      <body className="flex min-h-dvh flex-col bg-background text-foreground">{content}</body>
     </html>
   );
 }

@@ -118,5 +118,7 @@ describe("ThresholdsSettings", () => {
     const previewed = screen.getAllByTestId("preview-change").map((node) => node.textContent);
     expect(previewed.some((text) => text?.includes("Produit Un"))).toBe(true);
     expect(previewed.some((text) => text?.includes("Produit Deux"))).toBe(false);
+    // QA 2026-09-29 B5: badges are labelled, never the raw "kill" / "scale" codes.
+    expect(previewed.join(" ")).not.toMatch(/\b(kill|scale)\b/);
   });
 });

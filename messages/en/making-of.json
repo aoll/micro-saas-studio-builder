@@ -85,7 +85,7 @@
   },
   "sinceLaunch": {
     "heading": "04 · After going live",
-    "intro": "The run above stops at going to production. Since then, several workstreams have moved forward in parallel: some through the same spec → orchestrator → PR flow, others built directly with the human, in one session.",
+    "intro": "The run above stops at going to production. Since then, several workstreams have moved forward in parallel, through the same spec → orchestrator → PR flow.",
     "items": {
       "invoices": {
         "title": "Invoicing",

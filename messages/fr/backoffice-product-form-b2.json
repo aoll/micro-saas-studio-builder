@@ -55,7 +55,8 @@
   "promptTester": {
     "test": "Tester le prompt",
     "testing": "Test en cours…",
-    "result": "{inputTokens} entrée / {outputTokens} sortie · {cost}"
+    "result": "{inputTokens} entrée / {outputTokens} sortie · {cost}",
+    "selectPlaceholder": "Choisir…"
   },
   "landingPreview": {
     "ariaLabel": "Aperçu de la landing",

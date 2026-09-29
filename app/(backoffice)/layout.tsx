@@ -38,12 +38,12 @@ export default async function BackofficeLayout({ children }: { children: React.R
 
   return (
     <html lang={locale} className={`mk-theme ${display.variable} ${sans.variable} ${mono.variable}`}>
-      <body className="flex min-h-dvh mk-backdrop text-foreground">
+      <body className="flex h-dvh overflow-hidden mk-backdrop text-foreground">
         <NextIntlClientProvider locale={locale} messages={clientMessages}>
           <Suspense fallback={null}>
             <AdminSidebar />
           </Suspense>
-          <div className="flex-1">
+          <div className="flex-1 overflow-y-auto">
             <div className="flex justify-end px-6 pt-4">
               <LocaleSwitcher />
             </div>

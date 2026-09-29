@@ -38,8 +38,7 @@ const MAX_CONNECTIONS = 300;
 // recycled) takes precedence over the Docker service from docker-compose.yml.
 // Raises max_connections (restarting a running cluster once) and starts the
 // clusters that are down. Returns what was done, or null when nothing was.
-function preparePostgres(root) {
-  const clusters = sh("pg_lsclusters", ["--no-header"]);
+function preparePostgres(root, clusters) {
   if (clusters) {
     const done = [];
     for (const [version, name, , status] of clusters.split("\n").map((line) => line.split(/\s+/))) {
@@ -60,13 +59,37 @@ function preparePostgres(root) {
   return null;
 }
 
+// A freshly initialized native cluster (cloud sandbox base image) often only
+// allows local peer auth for its own superuser, with no password set, while
+// every script here (scripts/worktree-db.ts's default POSTGRES_ADMIN_URL,
+// docker-compose.yml's own POSTGRES_PASSWORD) assumes postgres:postgres over
+// TCP. Docker already bakes that password into docker-compose.yml, so this
+// only runs for the native-cluster path, and only when `sudo -u postgres`
+// peer access already works without a password: that access already grants
+// unrestricted local control over this Postgres instance, so setting the TCP
+// password to match is not a new privilege, only syncing a credential — safe
+// to do without asking on a disposable sandbox VM. Never touches a cluster
+// where that peer access itself is restricted (a real, hardened machine).
+function ensurePostgresPassword(isNativeCluster) {
+  if (!isNativeCluster) return null;
+  const probe = ["-tAc", "select 1"];
+  if (sh("psql", ["postgres://postgres:postgres@localhost:5432/postgres", ...probe]) === "1") return null;
+  if (sh("sudo", ["-u", "postgres", "psql", ...probe]) !== "1") return null;
+
+  sh("sudo", ["-u", "postgres", "psql", "-c", "ALTER ROLE postgres PASSWORD 'postgres';"]);
+  return sh("psql", ["postgres://postgres:postgres@localhost:5432/postgres", ...probe]) === "1"
+    ? "set the postgres role's password to postgres, matching scripts/worktree-db.ts's default"
+    : null;
+}
+
 async function main() {
   const root = sh("git", ["rev-parse", "--show-toplevel"]) ?? process.env.CLAUDE_PROJECT_DIR;
   if (!root) return;
 
   const wasUp = await portOpen(5432);
+  const clusters = sh("pg_lsclusters", ["--no-header"]);
   // The Docker service is only started when nothing answers on 5432.
-  const how = wasUp && !sh("pg_lsclusters", ["--no-header"]) ? null : preparePostgres(root);
+  const how = wasUp && !clusters ? null : preparePostgres(root, clusters);
   if (how) {
     console.log(
       (await portOpen(5432))
@@ -74,6 +97,9 @@ async function main() {
         : `Postgres is down and \`${how}\` did not bring it up; start it before running DB tests.`,
     );
   }
+
+  const passwordFix = ensurePostgresPassword(!!clusters);
+  if (passwordFix) console.log(`Postgres: ${passwordFix}.`);
 
   const gitDir = sh("git", ["rev-parse", "--path-format=absolute", "--git-dir"], { cwd: root });
   const commonDir = sh("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], { cwd: root });

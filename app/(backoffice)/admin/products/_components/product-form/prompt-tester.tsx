@@ -5,7 +5,9 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { formatUsd } from "./margin";
+import type { FieldDraft } from "./form-values";
 
 export type PromptTestResult = {
   ok?: boolean;
@@ -29,7 +31,7 @@ export function PromptTester({
   // generation-step.tsx — the client-only `id` (FieldDraft.id,
   // form-values.ts) is the React key, not the editable `key`, which can
   // transiently duplicate another field's while the admin is editing it.
-  fields: { id: string; key: string; label: string; required: boolean }[];
+  fields: { id: string; key: string; label: string; required: boolean; type: FieldDraft["type"]; options?: string[] }[];
   onTest: (sample: Record<string, string>) => Promise<PromptTestResult>;
   onTested?: (result: PromptTestResult) => void;
 }) {
@@ -52,11 +54,35 @@ export function PromptTester({
       {fields.map((field) => (
         <div key={field.id} className="grid gap-1.5">
           <Label htmlFor={`prompt-tester-${field.key}`}>{field.label}</Label>
-          <Input
-            id={`prompt-tester-${field.key}`}
-            value={sample[field.key] ?? ""}
-            onChange={(event) => setSample((current) => ({ ...current, [field.key]: event.target.value }))}
-          />
+          {field.type === "select" ? (
+            <select
+              id={`prompt-tester-${field.key}`}
+              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+              value={sample[field.key] ?? ""}
+              onChange={(event) => setSample((current) => ({ ...current, [field.key]: event.target.value }))}
+            >
+              <option value="" disabled>
+                {t("selectPlaceholder")}
+              </option>
+              {(field.options ?? []).map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          ) : field.type === "textarea" ? (
+            <Textarea
+              id={`prompt-tester-${field.key}`}
+              value={sample[field.key] ?? ""}
+              onChange={(event) => setSample((current) => ({ ...current, [field.key]: event.target.value }))}
+            />
+          ) : (
+            <Input
+              id={`prompt-tester-${field.key}`}
+              value={sample[field.key] ?? ""}
+              onChange={(event) => setSample((current) => ({ ...current, [field.key]: event.target.value }))}
+            />
+          )}
         </div>
       ))}
 

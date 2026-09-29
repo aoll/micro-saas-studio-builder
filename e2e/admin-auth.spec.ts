@@ -65,6 +65,11 @@ test.describe("BO-01 · Connexion admin", () => {
 
     await expect(page).toHaveURL(/\/admin$/);
 
+    // Already signed in: going back to /admin/login sends the admin
+    // straight to /admin instead of showing the form again.
+    await page.goto("/admin/login");
+    await expect(page).toHaveURL(/\/admin$/);
+
     await page.getByRole("button", { name: "Se déconnecter" }).click();
     await expect(page).toHaveURL(/\/admin\/login$/);
 
@@ -102,6 +107,11 @@ test.describe("BO-01 · Connexion admin", () => {
       await expect(page).toHaveURL(/\/admin\/login$/);
 
       await page.goto("/admin");
+      await expect(page).toHaveURL(/\/admin\/login$/);
+
+      // A signed-in but non-admin session still sees the login form (no
+      // loop): only an admin/owner session is redirected away from it.
+      await page.goto("/admin/login");
       await expect(page).toHaveURL(/\/admin\/login$/);
     } finally {
       await db.delete(magicLinkOutbox).where(eq(magicLinkOutbox.email, email));

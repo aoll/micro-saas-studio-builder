@@ -1,18 +1,31 @@
 import { getTranslations } from "next-intl/server";
+import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { env } from "@/lib/env";
+import { getSession } from "@/lib/dal/session";
 import { LoginForm } from "./_components/login-form";
 
-// BO-01 (specs/mockups/BO-01.png). Server Component, no session read: it
-// stays static and never loops with the admin guard's redirect (this page
-// must stay reachable without a session). The owner's credentials prefill
-// the form when both SEED_OWNER_* variables are set (BO-01, human decision
-// of 2026-09-28: easier demo); the admin's never appear.
+// Same admin/owner check as lib/dal/session.ts's requireAdmin, duplicated
+// here on purpose (mirrors components/backoffice/admin-sidebar.tsx): an
+// already-authenticated admin/owner hitting /admin/login is sent straight to
+// /admin instead of seeing the form again. A role=user session (or none at
+// all) still renders the form below, so requireAdmin()'s own redirect back
+// to /admin/login from a protected page never loops.
+const ADMIN_ROLES = new Set(["admin", "owner"]);
+
+// BO-01 (specs/mockups/BO-01.png). The owner's credentials prefill the form
+// when both SEED_OWNER_* variables are set (BO-01, human decision of
+// 2026-09-28: easier demo); the admin's never appear.
 // I18N-BACKOFFICE-STRINGS: `t.rich` renders the two env var names as
 // <code> chunks (literal identifiers, not translated) inside the
 // otherwise-translated prose, and interpolates the submit button's own
 // translated label.
 export default async function LoginPage() {
+  const session = await getSession();
+  if (session && ADMIN_ROLES.has(session.user.role)) {
+    redirect("/admin");
+  }
+
   const t = await getTranslations("backoffice-portfolio");
   const owner =
     env.SEED_OWNER_EMAIL && env.SEED_OWNER_PASSWORD

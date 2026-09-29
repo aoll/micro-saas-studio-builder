@@ -17,6 +17,20 @@ const env = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/env", () => ({ env }));
 
+class RedirectMarker extends Error {
+  constructor(public url: string) {
+    super(`redirect:${url}`);
+  }
+}
+
+const getSession = vi.fn(async () => null as { user: { role: string } } | null);
+vi.mock("@/lib/dal/session", () => ({ getSession: () => getSession() }));
+vi.mock("next/navigation", () => ({
+  redirect: (url: string) => {
+    throw new RedirectMarker(url);
+  },
+}));
+
 // LoginPage is now an async Server Component (getTranslations, incl.
 // t.rich for the owner-prefill note): next-intl/server is mocked with a
 // real translator (see i18n/request.test.ts), and its LoginForm child (a
@@ -48,6 +62,8 @@ afterEach(() => {
   vi.resetModules();
   env.SEED_OWNER_EMAIL = undefined;
   env.SEED_OWNER_PASSWORD = undefined;
+  getSession.mockReset();
+  getSession.mockResolvedValue(null);
 });
 
 function fieldValues() {
@@ -102,5 +118,21 @@ describe("LoginPage", () => {
     expect(screen.getByText("Sign in to the backoffice")).toBeTruthy();
     expect(screen.getByRole("note").textContent).toContain("prefilled");
     expect(screen.getByRole("note").textContent).toContain("SEED_OWNER_EMAIL");
+  });
+
+  it.each(["admin", "owner"])(
+    "redirects an already-authenticated %s straight to /admin instead of rendering the form",
+    async (role) => {
+      getSession.mockResolvedValue({ user: { role } });
+      mockNextIntlServer("fr");
+      const { default: LoginPage } = await import("./page");
+      await expect(LoginPage()).rejects.toThrow("redirect:/admin");
+    },
+  );
+
+  it("renders the form, no redirect, for a role=user session", async () => {
+    getSession.mockResolvedValue({ user: { role: "user" } });
+    await renderPage();
+    expect(screen.getByText("Connexion au backoffice")).toBeTruthy();
   });
 });
